@@ -23,7 +23,7 @@ Describe your charm in one or two sentences.
 
 * get the server to be accessible via ingress - done
 
-* be able to create a user (via config change at this point)
+* be able to create a user (via config change at this point) - done
 
 * deal with configuration changes consistently (merge existing with new)
 
@@ -43,7 +43,7 @@ Describe your charm in one or two sentences.
 
 * look into using the new postgresql interface (the current one used is being deprecated)
 
-* demo (spin up the charm with relations, configure two users, get them to chat via a client)
+* demo (spin up the charm with relations, configure two users, get them to chat via a client) - done
 
 ## Other resources
 

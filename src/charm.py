@@ -49,6 +49,7 @@ class MatrixOperatorCharm(CharmBase):
                 self._on_config_changed
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.register_user_action, self._register_user)
         require_nginx_route(
             charm=self,
             service_hostname=self._external_hostname,
@@ -149,6 +150,40 @@ class MatrixOperatorCharm(CharmBase):
                 "POSTGRES_PASSWORD": self._stored.db_password,
                 }
         return pod_config
+
+    def _register_user(self, event):
+        """Registers a user for usage with Synapse."""
+        Result = collections.namedtuple(
+                "CommandExecResult", "return_code stdout stderr")
+
+        user = event.params["username"]
+        password = event.params["password"]
+        admin = event.params["admin"]
+        admin_switch = "--admin" if admin == "yes" else "--no-admin"
+
+        cmd = ["register_new_matrix_user",
+               "-u", user, "-p", password,
+               admin_switch, "-c", self._SYNAPSE_CONFIG_PATH,
+               "http://localhost:8008"]
+        process = self._container().exec(
+            cmd,
+            working_dir="/data",
+            environment=self._populate_synapse_env_settings(),
+        )
+        try:
+            stdout, stderr = process.wait_output()
+            result = Result(
+                    return_code=0, stdout=stdout, stderr=stderr)
+        except ops.pebble.ExecError as error:
+            result = Result(error.exit_code, error.stdout, error.stderr)
+        return_code = result.return_code
+        logger.debug(
+                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+                  cmd,
+                  return_code,
+                  result.stdout,
+                  result.stderr,
+         )
 
     def _run_generate_synapse(self):
         """Runs the generate command for synapse"""
