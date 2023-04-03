@@ -1,0 +1,30 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+options:
+  log-level:
+    description: |
+      Configures the log level of synapse.
+
+      Acceptable values are: "info", "debug", "warning", "error" and "critical"
+    default: "info"
+    type: string
+  server_name:
+    description: |
+      Synapse server name.
+
+    default: "synapse-local"
+    type: string
+  report_stats:
+    description: |
+      Configures whether to report statistics.
+
+      Acceptable values are: "yes" and "no"
+    default: "no"
+    type: string
+  media_store_path:
+    description: |
+      Configures where to store media files.
+
+    default: "/data/media"
+    type: string
