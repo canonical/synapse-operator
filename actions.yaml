@@ -1,0 +1,20 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+#
+
+register-user:
+  description: Registers a user for the Synapse server.
+  properties:
+    username:
+      description: User name
+      type: string
+    password:
+      description: User password
+      type: string
+    admin:
+      description: Whether to create an admin user ("yes" or "no")
+      type: boolean
+  required:
+    - username
+    - password
+    - admin
