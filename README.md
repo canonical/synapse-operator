@@ -10,10 +10,28 @@ Use links instead.
 
 # matrix-operator
 
-Charmhub package name: operator-template
+Charmhub package name: matrix-operator
 More information: https://charmhub.io/matrix-operator
 
 Describe your charm in one or two sentences.
+
+## Taking this for a spin
+
+* build the charm with `charmcraft pack`
+
+* deploy it in a model with `juju deploy ./synapse_ubuntu-22.04-amd64.charm --resource synapse-image=matrixdotorg/synapse:latest`
+
+* deploy nginx-ingress-integrator with `juju deploy nginx-ingress-integrator`
+
+* relate to synapse with `juju relate synapse nginx-ingress-integrator`
+
+* deploy postgresql-k8s with `juju deploy postgresql-k8s`
+
+* relate to synapse with `juju relate postgresql-k8s:db synapse`
+
+* create a user with `juju run-action synapse/0 register-user username=alice password=hialice admin=no`
+
+* login via element-desktop
 
 ## TODO
 
