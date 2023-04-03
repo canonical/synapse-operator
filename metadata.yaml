@@ -1,0 +1,39 @@
+name: synapse
+display-name: Synapse
+summary: Matrix synapse chat server.
+description: |
+  A charm for the matrix synapse chat server.
+
+  The charm deploys a matrix synapse server.
+
+  Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
+
+  This charm is useful if you want to spin up your own chat instance.
+
+assumes:
+  - k8s-api
+
+containers:
+  synapse:
+    resource: synapse-image
+    mounts:
+      - storage: data
+        location: /data
+
+resources:
+  synapse-image:
+    type: oci-image
+    description: OCI image for Synapse
+    upstream-source: matrixdotorg/synapse:latest
+
+storage:
+  data:
+    type: filesystem
+    location: /data
+
+requires:
+  nginx-route:
+    interface: nginx-route
+  db:
+    interface: pgsql
+    limit: 1
