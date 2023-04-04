@@ -1,6 +1,10 @@
 venv/
 build/
 *.charm
+.terraform.lock.hcl
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
 .tox/
 .coverage
 __pycache__/
