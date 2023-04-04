@@ -15,7 +15,23 @@ More information: https://charmhub.io/matrix-operator
 
 Describe your charm in one or two sentences.
 
-## Taking this for a spin
+## Taking this for a spin - terraform version
+
+Make sure you have a setup with juju and microk8s.
+You need to have some environment variables set up
+for the provider to work, reference [here](https://github.com/juju/terraform-provider-juju).
+After that is done, you should be good to go with:
+
+```shell
+cd terraform/
+terraform init
+terraform plan
+terraform apply -yes
+juju switch synapsium #or how you called your model
+juju status
+```
+
+## Taking this for a spin - manual version
 
 * build the charm with `charmcraft pack`
 
