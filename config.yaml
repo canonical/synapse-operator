@@ -12,6 +12,7 @@ options:
   server_name:
     description: |
       Synapse server name.
+      The name should be in FQDN form such as matrix.example.org.
 
     default: "synapse-local"
     type: string
