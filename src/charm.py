@@ -151,11 +151,35 @@ class MatrixOperatorCharm(CharmBase):
                 }
         return pod_config
 
-    def _register_user(self, event):
-        """Registers a user for usage with Synapse."""
+    def _run_synapse_command(self, synapse_cmd):
+        """Runs a synapse command such as generate or migrate
+        for configs and register_new_matrix_user for creating users."""
         Result = collections.namedtuple(
                 "CommandExecResult", "return_code stdout stderr")
 
+        cmd = synapse_cmd
+        process = self._container().exec(
+            cmd,
+            working_dir="/data",
+            environment=self._populate_synapse_env_settings(),
+        )
+        try:
+            stdout, stderr = process.wait_output()
+            result = Result(
+                    return_code=0, stdout=stdout, stderr=stderr)
+        except ops.pebble.ExecError as error:
+            result = Result(error.exit_code, error.stdout, error.stderr)
+        return_code = result.return_code
+        logger.debug(
+                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+                  cmd,
+                  return_code,
+                  result.stdout,
+                  result.stderr,
+         )
+
+    def _register_user(self, event):
+        """Registers a user for usage with Synapse."""
         user = event.params["username"]
         password = event.params["password"]
         admin = event.params["admin"]
@@ -165,76 +189,17 @@ class MatrixOperatorCharm(CharmBase):
                "-u", user, "-p", password,
                admin_switch, "-c", self._SYNAPSE_CONFIG_PATH,
                "http://localhost:8008"]
-        process = self._container().exec(
-            cmd,
-            working_dir="/data",
-            environment=self._populate_synapse_env_settings(),
-        )
-        try:
-            stdout, stderr = process.wait_output()
-            result = Result(
-                    return_code=0, stdout=stdout, stderr=stderr)
-        except ops.pebble.ExecError as error:
-            result = Result(error.exit_code, error.stdout, error.stderr)
-        return_code = result.return_code
-        logger.debug(
-                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-                  cmd,
-                  return_code,
-                  result.stdout,
-                  result.stderr,
-         )
+        self._run_synapse_command(cmd)
 
     def _run_generate_synapse(self):
         """Runs the generate command for synapse"""
-        Result = collections.namedtuple(
-                "CommandExecResult", "return_code stdout stderr")
-
         cmd = ["/start.py", "generate"]
-        process = self._container().exec(
-            cmd,
-            working_dir="/data",
-            environment=self._populate_synapse_env_settings(),
-        )
-        try:
-            stdout, stderr = process.wait_output()
-            result = Result(
-                    return_code=0, stdout=stdout, stderr=stderr)
-        except ops.pebble.ExecError as error:
-            result = Result(error.exit_code, error.stdout, error.stderr)
-        return_code = result.return_code
-        logger.debug(
-                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-                  cmd,
-                  return_code,
-                  result.stdout,
-                  result.stderr,
-         )
+        self._run_synapse_command(cmd)
 
     def _run_migrate_synapse(self):
         """Runs the migrate command for synapse"""
-        Result = collections.namedtuple(
-                "CommandExecResult", "return_code stdout stderr")
         cmd = ["/start.py", "migrate_config"]
-        process = self._container().exec(
-            cmd,
-            working_dir="/data",
-            environment=self._populate_synapse_env_settings(),
-        )
-        try:
-            stdout, stderr = process.wait_output()
-            result = Result(
-                    return_code=0, stdout=stdout, stderr=stderr)
-        except ops.pebble.ExecError as error:
-            result = Result(error.exit_code, error.stdout, error.stderr)
-        return_code = result.return_code
-        logger.debug(
-                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-                  cmd,
-                  return_code,
-                  result.stdout,
-                  result.stderr,
-         )
+        self._run_synapse_command(cmd)
 
     def _current_synapse_config(self):
         """Retrieve the current version of /data/homeserver.yaml from server.
