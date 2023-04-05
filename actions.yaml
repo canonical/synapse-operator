@@ -3,13 +3,20 @@
 #
 
 register-user:
-  description: Registers a user for the Synapse server.
+  description: |
+    Registers a user for the Synapse server.
+    You need to supply a user name and user password
+    and whether that user should be an admin or not.
   properties:
     username:
-      description: User name
+      description: |
+        When not using SSO, a user name is needed
+        for the creation of a matrix account.
       type: string
     password:
-      description: User password
+      description: |
+        Specifies a user password that relates to a user name
+        when creating a matrix account.
       type: string
     admin:
       description: Whether to create an admin user ("yes" or "no")
