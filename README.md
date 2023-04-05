@@ -1,19 +1,9 @@
-<!--
-Avoid using this README file for information that is maintained or published elsewhere, e.g.:
-
-* metadata.yaml > published on Charmhub
-* documentation > published on (or linked to from) Charmhub
-* detailed contribution guide > documentation or CONTRIBUTING.md
-
-Use links instead.
--->
-
 # matrix-operator
 
 Charmhub package name: matrix-operator
 More information: https://charmhub.io/matrix-operator
 
-Describe your charm in one or two sentences.
+This is a charm for Synapse, a Matrix server implementation.
 
 ## Taking this for a spin - terraform version
 
@@ -80,8 +70,6 @@ juju status
 * demo (spin up the charm with relations, configure two users, get them to chat via a client) - done
 
 ## Other resources
-
-<!-- If your charm is documented somewhere else other than Charmhub, provide a link separately. -->
 
 - [Read more](https://example.com)
 
