@@ -33,7 +33,11 @@ VALID_LOG_LEVELS = ["info", "debug", "warning", "error", "critical"]
 
 
 class MatrixOperatorCharm(CharmBase):
-    """Charm the service."""
+    """Charm the synapse matrix server.
+
+    The controller will generate a template config file,
+    then wait until there is a DB relation, migrate to
+    a static config file based on env variables and start the service."""
 
     _CONTAINER_NAME = "synapse"
     _SYNAPSE_CONFIG_PATH = "/data/homeserver.yaml"
