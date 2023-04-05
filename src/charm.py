@@ -114,7 +114,11 @@ class MatrixOperatorCharm(CharmBase):
         self._on_config_changed(event)
 
     def _on_install(self, _):
-        """Generate a config template to be rendered later."""
+        """Generate a config template to be rendered later.
+
+        Generating with environment variables will render
+        a config file with PostgreSQL enabled for instance
+        instead of the default SQLite backend."""
         self._run_generate_synapse()
 
     @property
