@@ -42,8 +42,7 @@ class MatrixOperatorCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.install, self._on_install)
-        self.framework.observe(self.on.start, self._on_install)
+        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(
                 self.on.synapse_pebble_ready,
                 self._on_config_changed
@@ -113,7 +112,7 @@ class MatrixOperatorCharm(CharmBase):
 
         self._on_config_changed(event)
 
-    def _on_install(self, _):
+    def _on_start(self, _):
         """Generate a config template to be rendered later.
 
         Generating with environment variables will render
