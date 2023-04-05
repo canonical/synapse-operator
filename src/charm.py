@@ -82,6 +82,9 @@ class MatrixOperatorCharm(CharmBase):
     ) -> None:
         """Handle db-relation-joined.
 
+        Here we set the database name for the synapse charm and
+        extensions needed.
+
         Args:
             event: Event triggering the database relation joined handler.
         """
