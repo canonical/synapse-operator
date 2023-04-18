@@ -32,8 +32,5 @@ storage:
     location: /data
 
 requires:
-  nginx-route:
-    interface: nginx-route
-  db:
-    interface: pgsql
-    limit: 1
+  database:
+    interface: postgresql_client

@@ -21,14 +21,9 @@ resource "juju_application" "synapse" {
     channel = "edge"
     series  = "jammy"
   }
-}
-
-resource "juju_application" "ingress" {
-  name  = "ingress"
-  model = juju_model.synapse.name
-  charm {
-    name = "nginx-ingress-integrator"
-  }
+  depends_on = [
+    juju_application.db
+  ]
 }
 
 resource "juju_application" "db" {
@@ -36,30 +31,6 @@ resource "juju_application" "db" {
   model = juju_model.synapse.name
   charm {
     name = "postgresql-k8s"
-  }
-}
-
-resource "juju_integration" "ingress" {
-  model = juju_model.synapse.name
-
-  application {
-    name = juju_application.synapse.name
-  }
-
-  application {
-    name = juju_application.ingress.name
-  }
-}
-
-resource "juju_integration" "db" {
-  model = juju_model.synapse.name
-
-  application {
-    name     = juju_application.db.name
-    endpoint = "db"
-  }
-
-  application {
-    name = juju_application.synapse.name
+    channel = "14"
   }
 }

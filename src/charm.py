@@ -15,9 +15,14 @@ https://discourse.charmhub.io/t/4208
 import collections
 import logging
 import os
+import psycopg2
+from psycopg2 import sql
 
 import ops.lib
-from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
+from charms.data_platform_libs.v0.data_interfaces import (
+    DatabaseCreatedEvent,
+    DatabaseRequires,
+)
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
@@ -26,8 +31,7 @@ from ops.model import ActiveStatus, WaitingStatus
 # Log messages can be retrieved using juju debug-log
 logger = logging.getLogger(__name__)
 
-pgsql = ops.lib.use("pgsql", 1, "postgresql-charmers@lists.launchpad.net")
-DATABASE_NAME = "synapse"
+DATABASE_NAME = "synapse-db"
 
 VALID_LOG_LEVELS = ["info", "debug", "warning", "error", "critical"]
 
@@ -42,20 +46,10 @@ class MatrixOperatorCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.start, self._on_install)
-        self.framework.observe(
-                self.on.synapse_pebble_ready,
-                self._on_config_changed
-        )
+        self.framework.observe(self.on.synapse_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.register_user_action, self._register_user)
-        require_nginx_route(
-            charm=self,
-            service_hostname=self._external_hostname,
-            service_name=self.app.name,
-            service_port=8008,
-        )
         self._stored.set_default(
             db_name=None,
             db_user=None,
@@ -64,57 +58,84 @@ class MatrixOperatorCharm(CharmBase):
             db_port=None,
         )
 
-        self.db = pgsql.PostgreSQLClient(self, "db")  # pylint: disable=C0103
-        self.framework.observe(
-              self.db.on.database_relation_joined,
-              self._on_database_relation_joined
-          )
-        self.framework.observe(
-              self.db.on.master_changed,
-              self._on_master_changed
-          )
+        self.database = DatabaseRequires(
+            self, relation_name="database", database_name="unused", extra_user_roles="CREATEDB"
+        )
+        self.framework.observe(self.database.on.database_created, self._on_database_created)
+        self.framework.observe(self.database.on.endpoints_changed, self._on_database_created)
 
-    def _on_database_relation_joined(
-         self, event: pgsql.DatabaseRelationJoinedEvent  # type: ignore
-    ) -> None:
-        """Handle db-relation-joined.
+    def _create_database(self, event: DatabaseCreatedEvent) -> None:
+        """Creates a new database and grant privileges to a user on it.
+        Args:
+            database: database to be created.
+            user: user that will have access to the database.
+        """
+        try:
+            host = event.endpoints.split(":")[0]
+            database = DATABASE_NAME
+            user = event.username
+            connection = psycopg2.connect(
+                f"dbname='unused' user='{event.username}' host='{host}'"
+                f"password='{event.password}' connect_timeout=1"
+            )
+            connection.autocommit = True
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT datname FROM pg_database WHERE datname='{database}';")
+            if cursor.fetchone() is None:
+                cursor.execute(sql.SQL("CREATE DATABASE {} WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';").format(sql.Identifier(database)))
+            cursor.execute(
+                sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {};").format(
+                    sql.Identifier(database), sql.Identifier(user)
+                )
+            )
+            with self._connect_to_database(database=database) as conn:
+                with conn.cursor() as curs:
+                    statements = []
+                    curs.execute(
+                        "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' and schema_name <> 'information_schema';"
+                    )
+                    for row in curs:
+                        schema = sql.Identifier(row[0])
+                        statements.append(
+                            sql.SQL(
+                                "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {} TO {};"
+                            ).format(schema, sql.Identifier(user))
+                        )
+                        statements.append(
+                            sql.SQL(
+                                "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA {} TO {};"
+                            ).format(schema, sql.Identifier(user))
+                        )
+                        statements.append(
+                            sql.SQL(
+                                "GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA {} TO {};"
+                            ).format(schema, sql.Identifier(user))
+                        )
+                    for statement in statements:
+                        curs.execute(statement)
+        except psycopg2.Error as e:
+            logger.error(f"Failed to create database: {e}")
+            raise
+
+    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
+        """Handle database created.
 
         Args:
-            event: Event triggering the database relation joined handler.
+            event: Event triggering the database created handler.
         """
-        if self.model.unit.is_leader():
-            # Provide requirements to the PostgreSQL server.
-            event.database = DATABASE_NAME
-            event.extensions = ["hstore:public", "pg_trgm:public"]
-        elif event.database != DATABASE_NAME:
-            # Leader has not yet set requirements. Defer, in case this unit
-            # becomes leader and needs to perform that operation.
-            event.defer()
-
-    # pgsql.MasterChangedEvent is actually defined
-    def _on_master_changed(self, event: pgsql.MasterChangedEvent) -> None:
-        """Handle changes in the primary database unit.
-
-        Args:
-            event: Event triggering the database master changed handler.
-        """
-        if event.master is None:
-            self._stored.db_name = None
-            self._stored.db_user = None
-            self._stored.db_password = None
-            self._stored.db_host = None
-            self._stored.db_port = None
-        else:
-            self._stored.db_name = event.master.dbname
-            self._stored.db_user = event.master.user
-            self._stored.db_password = event.master.password
-            self._stored.db_host = event.master.host
-            self._stored.db_port = event.master.port
+        self._create_database(event)
+        self._stored.db_name = DATABASE_NAME
+        self._stored.db_user = event.username
+        self._stored.db_password = event.password
+        # expected endpoint postgresql-k8s-primary:5432
+        self._stored.db_host = event.endpoints.split(":")[0]
+        self._stored.db_port = event.endpoints.split(":")[1]
 
         self._on_config_changed(event)
 
     def _on_install(self, _):
         """Generate a config template to be rendered later."""
+        logger.debug("Generating synapse config")
         self._run_generate_synapse()
 
     @property
@@ -140,31 +161,37 @@ class MatrixOperatorCharm(CharmBase):
         if os.getenv("SYNAPSE_REPORT_STATS") is None:
             os.environ["SYNAPSE_REPORT_STATS"] = self.config["report_stats"]
         pod_config = {
-                "SYNAPSE_SERVER_NAME": os.getenv("SYNAPSE_SERVER_NAME"),
-                "SYNAPSE_REPORT_STATS": os.getenv("SYNAPSE_REPORT_STATS"),
-                "SYNAPSE_NO_TLS": "True",
-                "POSTGRES_DB": self._stored.db_name,
-                "POSTGRES_HOST": self._stored.db_host,
-                "POSTGRES_PORT": self._stored.db_port,
-                "POSTGRES_USER": self._stored.db_user,
-                "POSTGRES_PASSWORD": self._stored.db_password,
-                }
+            "SYNAPSE_SERVER_NAME": os.getenv("SYNAPSE_SERVER_NAME"),
+            "SYNAPSE_REPORT_STATS": os.getenv("SYNAPSE_REPORT_STATS"),
+            "SYNAPSE_NO_TLS": "True",
+            "POSTGRES_DB": self._stored.db_name,
+            "POSTGRES_HOST": self._stored.db_host,
+            "POSTGRES_PORT": self._stored.db_port,
+            "POSTGRES_USER": self._stored.db_user,
+            "POSTGRES_PASSWORD": self._stored.db_password,
+        }
         return pod_config
 
     def _register_user(self, event):
         """Registers a user for usage with Synapse."""
-        Result = collections.namedtuple(
-                "CommandExecResult", "return_code stdout stderr")
+        Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
 
         user = event.params["username"]
         password = event.params["password"]
         admin = event.params["admin"]
         admin_switch = "--admin" if admin == "yes" else "--no-admin"
 
-        cmd = ["register_new_matrix_user",
-               "-u", user, "-p", password,
-               admin_switch, "-c", self._SYNAPSE_CONFIG_PATH,
-               "http://localhost:8008"]
+        cmd = [
+            "register_new_matrix_user",
+            "-u",
+            user,
+            "-p",
+            password,
+            admin_switch,
+            "-c",
+            self._SYNAPSE_CONFIG_PATH,
+            "http://localhost:8008",
+        ]
         process = self._container().exec(
             cmd,
             working_dir="/data",
@@ -172,23 +199,21 @@ class MatrixOperatorCharm(CharmBase):
         )
         try:
             stdout, stderr = process.wait_output()
-            result = Result(
-                    return_code=0, stdout=stdout, stderr=stderr)
+            result = Result(return_code=0, stdout=stdout, stderr=stderr)
         except ops.pebble.ExecError as error:
             result = Result(error.exit_code, error.stdout, error.stderr)
         return_code = result.return_code
         logger.debug(
-                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-                  cmd,
-                  return_code,
-                  result.stdout,
-                  result.stderr,
-         )
+            "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+            cmd,
+            return_code,
+            result.stdout,
+            result.stderr,
+        )
 
     def _run_generate_synapse(self):
-        """Runs the generate command for synapse"""
-        Result = collections.namedtuple(
-                "CommandExecResult", "return_code stdout stderr")
+        """Runs the generate command for synapse."""
+        Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
 
         cmd = ["/start.py", "generate"]
         process = self._container().exec(
@@ -198,23 +223,21 @@ class MatrixOperatorCharm(CharmBase):
         )
         try:
             stdout, stderr = process.wait_output()
-            result = Result(
-                    return_code=0, stdout=stdout, stderr=stderr)
+            result = Result(return_code=0, stdout=stdout, stderr=stderr)
         except ops.pebble.ExecError as error:
             result = Result(error.exit_code, error.stdout, error.stderr)
         return_code = result.return_code
         logger.debug(
-                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-                  cmd,
-                  return_code,
-                  result.stdout,
-                  result.stderr,
-         )
+            "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+            cmd,
+            return_code,
+            result.stdout,
+            result.stderr,
+        )
 
     def _run_migrate_synapse(self):
-        """Runs the migrate command for synapse"""
-        Result = collections.namedtuple(
-                "CommandExecResult", "return_code stdout stderr")
+        """Runs the migrate command for synapse."""
+        Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
         cmd = ["/start.py", "migrate_config"]
         process = self._container().exec(
             cmd,
@@ -223,18 +246,17 @@ class MatrixOperatorCharm(CharmBase):
         )
         try:
             stdout, stderr = process.wait_output()
-            result = Result(
-                    return_code=0, stdout=stdout, stderr=stderr)
+            result = Result(return_code=0, stdout=stdout, stderr=stderr)
         except ops.pebble.ExecError as error:
             result = Result(error.exit_code, error.stdout, error.stderr)
         return_code = result.return_code
         logger.debug(
-                  "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-                  cmd,
-                  return_code,
-                  result.stdout,
-                  result.stderr,
-         )
+            "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+            cmd,
+            return_code,
+            result.stdout,
+            result.stderr,
+        )
 
     def _current_synapse_config(self):
         """Retrieve the current version of /data/homeserver.yaml from server.
@@ -264,21 +286,17 @@ class MatrixOperatorCharm(CharmBase):
 
         # Do some validation of the configuration option
         if self._stored.db_password is not None:
-            if self._current_synapse_config() is None:
-                self._run_migrate_synapse()
+            self._run_migrate_synapse()
             # The config is good, so update the configuration of the workload
             container = self.unit.get_container(self._CONTAINER_NAME)
             # Verify that we can connect to the Pebble API
             # in the workload container
             if container.can_connect():
                 # Push an updated layer with the new config
-                container.add_layer(
-                        self._CONTAINER_NAME, self._pebble_layer, combine=True)
+                container.add_layer(self._CONTAINER_NAME, self._pebble_layer, combine=True)
                 container.replan()
 
-                logger.debug(
-                        "Log level for synapse changed to '%s'", log_level
-                        )
+                logger.debug("Log level for synapse changed to '%s'", log_level)
                 self.unit.status = ActiveStatus()
             else:
                 # We were unable to connect to the Pebble API,
@@ -288,7 +306,7 @@ class MatrixOperatorCharm(CharmBase):
         else:
             # In this case, the config option is bad,
             # so block the charm and notify the operator.
-            # generate files in /data if not present
+            # generate files in /data if not presents
             event.defer()
             self.unit.status = WaitingStatus("waiting for db")
 

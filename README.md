@@ -8,7 +8,7 @@ Avoid using this README file for information that is maintained or published els
 Use links instead.
 -->
 
-# matrix-operator
+# matrix-main-operator
 
 Charmhub package name: matrix-operator
 More information: https://charmhub.io/matrix-operator
@@ -26,7 +26,7 @@ After that is done, you should be good to go with:
 cd terraform/
 terraform init
 terraform plan
-terraform apply -yes
+terraform apply -auto-approve
 juju switch synapsium #or how you called your model
 juju status
 ```

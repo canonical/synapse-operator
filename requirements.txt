@@ -1,2 +1,3 @@
 ops >= 1.5.0
 ops-lib-pgsql
+psycopg2-binary
