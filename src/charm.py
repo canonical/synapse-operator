@@ -46,8 +46,6 @@ class MatrixOperatorCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.start, self._on_install)
-        self.framework.observe(self.on.synapse_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.register_user_action, self._register_user)
         self._stored.set_default(
@@ -74,45 +72,44 @@ class MatrixOperatorCharm(CharmBase):
             host = event.endpoints.split(":")[0]
             database = DATABASE_NAME
             user = event.username
-            connection = psycopg2.connect(
+            conn = psycopg2.connect(
                 f"dbname='unused' user='{event.username}' host='{host}'"
                 f"password='{event.password}' connect_timeout=1"
             )
-            connection.autocommit = True
-            cursor = connection.cursor()
-            cursor.execute(f"SELECT datname FROM pg_database WHERE datname='{database}';")
-            if cursor.fetchone() is None:
-                cursor.execute(sql.SQL("CREATE DATABASE {} WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';").format(sql.Identifier(database)))
-            cursor.execute(
-                sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {};").format(
-                    sql.Identifier(database), sql.Identifier(user)
-                )
-            )
-            with self._connect_to_database(database=database) as conn:
-                with conn.cursor() as curs:
-                    statements = []
-                    curs.execute(
-                        "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' and schema_name <> 'information_schema';"
+            conn.autocommit = True
+            cursor = conn.cursor()
+            with conn.cursor() as curs:
+                cursor.execute(f"SELECT datname FROM pg_database WHERE datname='{database}';")
+                if cursor.fetchone() is None:
+                    cursor.execute(sql.SQL("CREATE DATABASE {} WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';").format(sql.Identifier(database)))
+                cursor.execute(
+                    sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {};").format(
+                        sql.Identifier(database), sql.Identifier(user)
                     )
-                    for row in curs:
-                        schema = sql.Identifier(row[0])
-                        statements.append(
-                            sql.SQL(
-                                "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {} TO {};"
-                            ).format(schema, sql.Identifier(user))
-                        )
-                        statements.append(
-                            sql.SQL(
-                                "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA {} TO {};"
-                            ).format(schema, sql.Identifier(user))
-                        )
-                        statements.append(
-                            sql.SQL(
-                                "GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA {} TO {};"
-                            ).format(schema, sql.Identifier(user))
-                        )
-                    for statement in statements:
-                        curs.execute(statement)
+                )
+                statements = []
+                curs.execute(
+                    "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' and schema_name <> 'information_schema';"
+                )
+                for row in curs:
+                    schema = sql.Identifier(row[0])
+                    statements.append(
+                        sql.SQL(
+                            "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {} TO {};"
+                        ).format(schema, sql.Identifier(user))
+                    )
+                    statements.append(
+                        sql.SQL(
+                            "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA {} TO {};"
+                        ).format(schema, sql.Identifier(user))
+                    )
+                    statements.append(
+                        sql.SQL(
+                            "GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA {} TO {};"
+                        ).format(schema, sql.Identifier(user))
+                    )
+                for statement in statements:
+                    curs.execute(statement)
         except psycopg2.Error as e:
             logger.error(f"Failed to create database: {e}")
             raise
@@ -286,12 +283,12 @@ class MatrixOperatorCharm(CharmBase):
 
         # Do some validation of the configuration option
         if self._stored.db_password is not None:
-            self._run_migrate_synapse()
             # The config is good, so update the configuration of the workload
             container = self.unit.get_container(self._CONTAINER_NAME)
             # Verify that we can connect to the Pebble API
             # in the workload container
             if container.can_connect():
+                self._run_migrate_synapse()
                 # Push an updated layer with the new config
                 container.add_layer(self._CONTAINER_NAME, self._pebble_layer, combine=True)
                 container.replan()
