@@ -44,8 +44,14 @@ class MatrixOperatorCharm(CharmBase):
     """Charm the service."""
 
     _CONTAINER_NAME = "synapse"
-    _SYNAPSE_CONFIG_PATH = "/data/homeserver.yaml"
-    _SYNAPSE_CLIENT_PORT = 8008
+    _SYNAPSE_MAIN_CONFIG_PATH = "/data/homeserver.yaml"
+    _SYNAPSE_WORKER_CONFIG_PATH = "/data/worker.yaml"
+    _SYNAPSE_PORT = 8008
+    _SYNAPSE_REPLICATION_PORT = 9093
+
+    # TODO set different port for federation
+    # TODO set different routes for main and workers
+    # TODO review why is not getting HOSTNAME env in worker config generation
 
     _stored = StoredState()
     on = RedisRelationCharmEvents()
@@ -71,7 +77,7 @@ class MatrixOperatorCharm(CharmBase):
         self.framework.observe(self.on.redis_relation_changed, self._on_config_changed)
         self.ingress = IngressPerAppRequirer(
             self,
-            port=self._SYNAPSE_CLIENT_PORT,
+            port=self._SYNAPSE_PORT,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
@@ -244,7 +250,7 @@ class MatrixOperatorCharm(CharmBase):
             password,
             admin_switch,
             "-c",
-            self._SYNAPSE_CONFIG_PATH,
+            self._SYNAPSE_MAIN_CONFIG_PATH,
             "http://localhost:8008",
         ]
         process = self._container().exec(
@@ -312,11 +318,44 @@ class MatrixOperatorCharm(CharmBase):
             result.stdout,
             result.stderr,
         )
-        # Add Redis config
-        config = self._container().pull(self._SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        current_yaml["redis"] = self._get_redis_backend()
-        self._container().push(self._SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+        # Add Replication and Redis config
+        config = self._current_synapse_config()
+        if config is not None:
+            current_yaml = yaml.safe_load(config)
+            replication = {
+                "port": self._SYNAPSE_REPLICATION_PORT,
+                "type": "http",
+                "resources": [{"names": ["replication"]}],
+            }
+            current_yaml["listeners"].append(replication)
+            current_yaml["redis"] = self._get_redis_backend()
+            self._container().push(self._SYNAPSE_MAIN_CONFIG_PATH, yaml.safe_dump(current_yaml))
+
+        # Push worker config
+        self._container().push(self._SYNAPSE_WORKER_CONFIG_PATH, self._worker_config())
+
+    def _worker_config(self):
+        """Generate worker config.
+
+        Returns:
+            Yaml stream to push to the container
+        """
+        hostname = os.getenv("HOSTNAME")
+        config = {
+            "worker_app": "synapse.app.generic_worker",
+            "worker_listeners": [
+                {
+                    "port": self._SYNAPSE_PORT,
+                    "resources": [{"names": ["client", "federation"]}],
+                    "type": "http",
+                    "x_forwarded": True,
+                }
+            ],
+            "worker_name": f"generic_worker_{hostname}",
+            "worker_replication_host": os.getenv("SYNAPSE_SERVICE_HOST", "main"),
+            "worker_replication_http_port": self._SYNAPSE_REPLICATION_PORT,
+        }
+        return yaml.safe_dump(config)
 
     def _current_synapse_config(self):
         """Retrieve the current version of /data/homeserver.yaml from server.
@@ -326,7 +365,7 @@ class MatrixOperatorCharm(CharmBase):
         Returns:
         The content of the current homeserver.yaml file, str.
         """
-        synapse_config_path = self._SYNAPSE_CONFIG_PATH
+        synapse_config_path = self._SYNAPSE_MAIN_CONFIG_PATH
         container = self._container()
         if container.exists(synapse_config_path):
             return self._container().pull(synapse_config_path).read()
@@ -376,7 +415,7 @@ class MatrixOperatorCharm(CharmBase):
         command = "/start.py"
         if not self.unit.is_leader():
             logging.debug("starting a worker")
-            command = "/start.py"
+            command = f"/start.py run --config-path={self._SYNAPSE_MAIN_CONFIG_PATH} --config-path={self._SYNAPSE_WORKER_CONFIG_PATH}"
         return {
             "summary": "matrix synapse layer",
             "description": "pebble config layer for matrix synapse",
