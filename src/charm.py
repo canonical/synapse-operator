@@ -15,18 +15,21 @@ https://discourse.charmhub.io/t/4208
 import collections
 import logging
 import os
-import psycopg2
-from psycopg2 import sql
+from typing import Dict, Optional
 
 import ops.lib
+import psycopg2
+import yaml
 from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
     DatabaseRequires,
 )
+from charms.redis_k8s.v0.redis import RedisRelationCharmEvents, RedisRequires
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, Relation, WaitingStatus
+from psycopg2 import sql
 
 # Log messages can be retrieved using juju debug-log
 logger = logging.getLogger(__name__)
@@ -43,6 +46,7 @@ class MatrixOperatorCharm(CharmBase):
     _SYNAPSE_CONFIG_PATH = "/data/homeserver.yaml"
 
     _stored = StoredState()
+    on = RedisRelationCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -54,19 +58,55 @@ class MatrixOperatorCharm(CharmBase):
             db_password=None,
             db_host=None,
             db_port=None,
+            redis_relation={},
         )
-
+        self.redis = RedisRequires(self, self._stored)
         self.database = DatabaseRequires(
             self, relation_name="database", database_name="unused", extra_user_roles="CREATEDB"
         )
         self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(self.database.on.endpoints_changed, self._on_database_created)
+        self.framework.observe(self.on.redis_relation_changed, self._on_config_changed)
+
+    def _get_redis_rel(self) -> Optional[Relation]:
+        """Get Redis relation.
+
+        Args:
+            name: Relation name to look up as prefix.
+
+
+        Returns:
+            Relation between synapse and redis accordingly to name. If not found, returns None.
+        """
+        return next(
+            (rel for rel in self.model.relations["redis"]),
+            None,
+        )
+
+    def _get_redis_backend(self) -> Dict:
+        """Generate Redis Backend URL formed by Redis host and port for the relation.
+
+        Returns:
+            Redis Backend URL as expected by Synapse.
+        """
+        redis_host = ""
+        redis_port = ""
+
+        if (redis_rel := self._get_redis_rel()) is not None:
+            redis_unit = next(unit for unit in redis_rel.data if unit.name.startswith("redis"))
+            redis_host = redis_rel.data[redis_unit].get("hostname")
+            redis_port = redis_rel.data[redis_unit].get("port")
+        enabled = True
+        if not redis_host:
+            logger.debug("Redis is not ready")
+            enabled = False
+        return {"enabled": enabled, "host": redis_host, "port": int(redis_port)}
 
     def _create_database(self, event: DatabaseCreatedEvent) -> None:
-        """Creates a new database and grant privileges to a user on it.
+        """Create a new database and grant privileges to a user on it.
+
         Args:
-            database: database to be created.
-            user: user that will have access to the database.
+            event: DatabaseCreated event
         """
         try:
             host = event.endpoints.split(":")[0]
@@ -81,7 +121,11 @@ class MatrixOperatorCharm(CharmBase):
             with conn.cursor() as curs:
                 cursor.execute(f"SELECT datname FROM pg_database WHERE datname='{database}';")
                 if cursor.fetchone() is None:
-                    cursor.execute(sql.SQL("CREATE DATABASE {} WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';").format(sql.Identifier(database)))
+                    cursor.execute(
+                        sql.SQL(
+                            "CREATE DATABASE {} WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';"
+                        ).format(sql.Identifier(database))
+                    )
                 cursor.execute(
                     sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {};").format(
                         sql.Identifier(database), sql.Identifier(user)
@@ -94,9 +138,9 @@ class MatrixOperatorCharm(CharmBase):
                 for row in curs:
                     schema = sql.Identifier(row[0])
                     statements.append(
-                        sql.SQL(
-                            "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {} TO {};"
-                        ).format(schema, sql.Identifier(user))
+                        sql.SQL("GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {} TO {};").format(
+                            schema, sql.Identifier(user)
+                        )
                     )
                     statements.append(
                         sql.SQL(
@@ -120,7 +164,9 @@ class MatrixOperatorCharm(CharmBase):
         Args:
             event: Event triggering the database created handler.
         """
-        self._create_database(event)
+        if self.unit.is_leader():
+            logger.debug("Leader elected creating database")
+            self._create_database(event)
         self._stored.db_name = DATABASE_NAME
         self._stored.db_user = event.username
         self._stored.db_password = event.password
@@ -170,7 +216,7 @@ class MatrixOperatorCharm(CharmBase):
         return pod_config
 
     def _register_user(self, event):
-        """Registers a user for usage with Synapse."""
+        """Register a user for usage with Synapse."""
         Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
 
         user = event.params["username"]
@@ -209,7 +255,7 @@ class MatrixOperatorCharm(CharmBase):
         )
 
     def _run_generate_synapse(self):
-        """Runs the generate command for synapse."""
+        """Run the generate command for synapse."""
         Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
 
         cmd = ["/start.py", "generate"]
@@ -233,7 +279,7 @@ class MatrixOperatorCharm(CharmBase):
         )
 
     def _run_migrate_synapse(self):
-        """Runs the migrate command for synapse."""
+        """Run the migrate command for synapse."""
         Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
         cmd = ["/start.py", "migrate_config"]
         process = self._container().exec(
@@ -254,6 +300,11 @@ class MatrixOperatorCharm(CharmBase):
             result.stdout,
             result.stderr,
         )
+        # Add Redis config
+        config = self._container().pull(self._SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["redis"] = self._get_redis_backend()
+        self._container().push(self._SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
 
     def _current_synapse_config(self):
         """Retrieve the current version of /data/homeserver.yaml from server.
@@ -281,35 +332,40 @@ class MatrixOperatorCharm(CharmBase):
         # Fetch the new config value
         log_level = self.model.config["log-level"].lower()
 
-        # Do some validation of the configuration option
-        if self._stored.db_password is not None:
-            # The config is good, so update the configuration of the workload
-            container = self.unit.get_container(self._CONTAINER_NAME)
-            # Verify that we can connect to the Pebble API
-            # in the workload container
-            if container.can_connect():
-                self._run_migrate_synapse()
-                # Push an updated layer with the new config
-                container.add_layer(self._CONTAINER_NAME, self._pebble_layer, combine=True)
-                container.replan()
+        if self._get_redis_rel() is None:
+            event.defer()
+            self.unit.status = WaitingStatus("waiting for redis")
 
-                logger.debug("Log level for synapse changed to '%s'", log_level)
-                self.unit.status = ActiveStatus()
-            else:
-                # We were unable to connect to the Pebble API,
-                # so we defer this event
-                event.defer()
-                self.unit.status = WaitingStatus("waiting for Pebble API")
-        else:
-            # In this case, the config option is bad,
-            # so block the charm and notify the operator.
-            # generate files in /data if not presents
+        if self._stored.db_password is None:
             event.defer()
             self.unit.status = WaitingStatus("waiting for db")
+
+        # The config is good, so update the configuration of the workload
+        container = self.unit.get_container(self._CONTAINER_NAME)
+        # Verify that we can connect to the Pebble API
+        # in the workload container
+        if container.can_connect():
+            self._run_migrate_synapse()
+            # Push an updated layer with the new config
+            container.add_layer(self._CONTAINER_NAME, self._pebble_layer, combine=True)
+            container.replan()
+
+            logger.debug("Log level for synapse changed to '%s'", log_level)
+            self.unit.status = ActiveStatus()
+        else:
+            # We were unable to connect to the Pebble API,
+            # so we defer this event
+            event.defer()
+            self.unit.status = WaitingStatus("waiting for Pebble API")
+
 
     @property
     def _pebble_layer(self):
         """Return a dictionary representing a Pebble layer."""
+        command = "/start.py"
+        if not self.unit.is_leader():
+            logging.debug("starting a worker")
+            command = "/start.py"
         return {
             "summary": "matrix synapse layer",
             "description": "pebble config layer for matrix synapse",
@@ -317,7 +373,7 @@ class MatrixOperatorCharm(CharmBase):
                 "synapse": {
                     "override": "replace",
                     "summary": "matrix synapse",
-                    "command": "/start.py",
+                    "command": command,
                     "startup": "enabled",
                     "environment": self._populate_synapse_env_settings(),
                 }

@@ -34,3 +34,5 @@ storage:
 requires:
   database:
     interface: postgresql_client
+  redis:
+    interface: redis
