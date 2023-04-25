@@ -49,17 +49,12 @@ class MatrixOperatorCharm(CharmBase):
     _SYNAPSE_PORT = 8008
     _SYNAPSE_REPLICATION_PORT = 9093
 
-    # TODO set different port for federation
-    # TODO set different routes for main and workers
-    # TODO review why is not getting HOSTNAME env in worker config generation
-
     _stored = StoredState()
     on = RedisRelationCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.register_user_action, self._register_user)
+
         self._stored.set_default(
             db_name=None,
             db_user=None,
@@ -68,13 +63,13 @@ class MatrixOperatorCharm(CharmBase):
             db_port=None,
             redis_relation={},
         )
+
         self.redis = RedisRequires(self, self._stored)
+
         self.database = DatabaseRequires(
             self, relation_name="database", database_name="unused", extra_user_roles="CREATEDB"
         )
-        self.framework.observe(self.database.on.database_created, self._on_database_created)
-        self.framework.observe(self.database.on.endpoints_changed, self._on_database_created)
-        self.framework.observe(self.on.redis_relation_changed, self._on_config_changed)
+
         self.ingress = IngressPerAppRequirer(
             self,
             port=self._SYNAPSE_PORT,
@@ -86,15 +81,17 @@ class MatrixOperatorCharm(CharmBase):
         )
         # TODO port for federation?
 
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.register_user_action, self._register_user)
+        self.framework.observe(self.database.on.database_created, self._on_database_created)
+        self.framework.observe(self.database.on.endpoints_changed, self._on_database_created)
+        self.framework.observe(self.on.redis_relation_changed, self._on_config_changed)
+
     def _get_redis_rel(self) -> Optional[Relation]:
         """Get Redis relation.
 
-        Args:
-            name: Relation name to look up as prefix.
-
-
         Returns:
-            Relation between synapse and redis accordingly to name. If not found, returns None.
+            Relation between synapse and redis. If not found, returns None.
         """
         return next(
             (rel for rel in self.model.relations["redis"]),
@@ -108,16 +105,19 @@ class MatrixOperatorCharm(CharmBase):
             Redis Backend URL as expected by Synapse.
         """
         redis_host = ""
-        redis_port = ""
+        redis_port = "0"
 
         if (redis_rel := self._get_redis_rel()) is not None:
+            logger.debug(redis_rel.data)
             redis_unit = next(unit for unit in redis_rel.data if unit.name.startswith("redis"))
-            redis_host = redis_rel.data[redis_unit].get("hostname")
-            redis_port = redis_rel.data[redis_unit].get("port")
+            redis_host = redis_rel.data[redis_unit].get("hostname","")
+            redis_port = redis_rel.data[redis_unit].get("port","0")
+
         enabled = True
         if not redis_host:
             logger.debug("Redis is not ready")
             enabled = False
+
         return {"enabled": enabled, "host": redis_host, "port": int(redis_port)}
 
     def _create_database(self, event: DatabaseCreatedEvent) -> None:
@@ -170,6 +170,11 @@ class MatrixOperatorCharm(CharmBase):
                             "GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA {} TO {};"
                         ).format(schema, sql.Identifier(user))
                     )
+                statements.append(
+                        sql.SQL(
+                            "GRANT ALL PRIVILEGES ON SCHEMA PUBLIC TO {};"
+                        ).format(sql.Identifier(user))
+                    )
                 for statement in statements:
                     curs.execute(statement)
         except psycopg2.Error as e:
@@ -182,6 +187,7 @@ class MatrixOperatorCharm(CharmBase):
         Args:
             event: Event triggering the database created handler.
         """
+        logger.debug("on.database.created handled")
         if self.unit.is_leader():
             logger.debug("Leader elected creating database")
             self._create_database(event)
@@ -331,16 +337,20 @@ class MatrixOperatorCharm(CharmBase):
             current_yaml["redis"] = self._get_redis_backend()
             self._container().push(self._SYNAPSE_MAIN_CONFIG_PATH, yaml.safe_dump(current_yaml))
 
-        # Push worker config
-        self._container().push(self._SYNAPSE_WORKER_CONFIG_PATH, self._worker_config())
+            # Push worker config
+            self._container().push(
+                self._SYNAPSE_WORKER_CONFIG_PATH, self._worker_config(current_yaml)
+            )
 
-    def _worker_config(self):
+    def _worker_config(self, current_yaml: Dict):
         """Generate worker config.
 
         Returns:
             Yaml stream to push to the container
         """
-        hostname = os.getenv("HOSTNAME")
+        unit = os.environ["JUJU_UNIT_NAME"]
+        unit_name = unit.split("/")[0]
+        unit_id = unit.split("/")[1]
         config = {
             "worker_app": "synapse.app.generic_worker",
             "worker_listeners": [
@@ -351,9 +361,11 @@ class MatrixOperatorCharm(CharmBase):
                     "x_forwarded": True,
                 }
             ],
-            "worker_name": f"generic_worker_{hostname}",
+            "worker_name": f"generic_worker_{unit_name}_{unit_id}",
             "worker_replication_host": os.getenv("SYNAPSE_SERVICE_HOST", "main"),
             "worker_replication_http_port": self._SYNAPSE_REPLICATION_PORT,
+            "redis": current_yaml.get("redis"),
+            "database": current_yaml.get("database"),
         }
         return yaml.safe_dump(config)
 
@@ -387,7 +399,7 @@ class MatrixOperatorCharm(CharmBase):
             event.defer()
             self.unit.status = WaitingStatus("waiting for redis")
 
-        if self._stored.db_password is None:
+        if not self._stored.db_password:
             event.defer()
             self.unit.status = WaitingStatus("waiting for db")
 
@@ -413,9 +425,11 @@ class MatrixOperatorCharm(CharmBase):
     def _pebble_layer(self):
         """Return a dictionary representing a Pebble layer."""
         command = "/start.py"
+        env_vars = self._populate_synapse_env_settings()
         if not self.unit.is_leader():
             logging.debug("starting a worker")
             command = f"/start.py run --config-path={self._SYNAPSE_MAIN_CONFIG_PATH} --config-path={self._SYNAPSE_WORKER_CONFIG_PATH}"
+            env_vars["SYNAPSE_WORKER"] = "synapse.app.generic_worker"
         return {
             "summary": "matrix synapse layer",
             "description": "pebble config layer for matrix synapse",
@@ -425,7 +439,7 @@ class MatrixOperatorCharm(CharmBase):
                     "summary": "matrix synapse",
                     "command": command,
                     "startup": "enabled",
-                    "environment": self._populate_synapse_env_settings(),
+                    "environment": env_vars,
                 }
             },
             "checks": {
