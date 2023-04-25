@@ -24,8 +24,8 @@ from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
     DatabaseRequires,
 )
-from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents, RedisRequires
+from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
@@ -369,7 +369,6 @@ class MatrixOperatorCharm(CharmBase):
             # so we defer this event
             event.defer()
             self.unit.status = WaitingStatus("waiting for Pebble API")
-
 
     @property
     def _pebble_layer(self):
