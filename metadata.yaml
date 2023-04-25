@@ -36,3 +36,6 @@ requires:
     interface: postgresql_client
   redis:
     interface: redis
+  ingress:
+    interface: ingress
+    limit: 1

@@ -24,6 +24,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
     DatabaseRequires,
 )
+from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents, RedisRequires
 from ops.charm import CharmBase
 from ops.framework import StoredState
@@ -44,6 +45,7 @@ class MatrixOperatorCharm(CharmBase):
 
     _CONTAINER_NAME = "synapse"
     _SYNAPSE_CONFIG_PATH = "/data/homeserver.yaml"
+    _SYNAPSE_CLIENT_PORT = 8008
 
     _stored = StoredState()
     on = RedisRelationCharmEvents()
@@ -67,6 +69,16 @@ class MatrixOperatorCharm(CharmBase):
         self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(self.database.on.endpoints_changed, self._on_database_created)
         self.framework.observe(self.on.redis_relation_changed, self._on_config_changed)
+        self.ingress = IngressPerAppRequirer(
+            self,
+            port=self._SYNAPSE_CLIENT_PORT,
+            # We're forced to use the app's service endpoint
+            # as the ingress per app interface currently always routes to the leader.
+            # https://github.com/canonical/traefik-k8s-operator/issues/159
+            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
+            strip_prefix=True,
+        )
+        # TODO port for federation?
 
     def _get_redis_rel(self) -> Optional[Relation]:
         """Get Redis relation.
