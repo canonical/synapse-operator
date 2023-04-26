@@ -1,0 +1,21 @@
+name: synapse-main-configurator
+
+display-name: Synapse Main Configurator
+
+summary: Configurator for Synapse server main application.
+
+description: |
+  This charm serves the main configuration needed to start a Synapse server.
+
+  The charm lets you configure your Synapse server and provides this
+  configuration over an interface, so that a Synapse charm can receive it via
+  a relation.
+
+  With a configurator charm, you can decouple configuration from the application
+  code.
+
+  This charm should be used next (in relation) to a Synapse charm.
+
+provides:
+  synapse-main-configurator:
+    interface: synapse_main_configurator

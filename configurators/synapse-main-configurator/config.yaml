@@ -1,0 +1,25 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+options:
+  log-level:
+    description: |
+      Configures the log level of synapse.
+
+      Acceptable values are: "info", "debug", "warning", "error" and "critical"
+    default: "info"
+    type: string
+  server_name:
+    description: |
+      Synapse server name.
+      The name should be in FQDN form such as matrix.example.org.
+
+    default: "synapse-local"
+    type: string
+  report_stats:
+    description: |
+      Configures whether to report statistics.
+
+      Acceptable values are: "yes" and "no"
+    default: "no"
+    type: string
