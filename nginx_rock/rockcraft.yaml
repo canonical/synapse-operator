@@ -23,9 +23,11 @@ parts:
       common_headers.conf: etc/nginx/common_headers.conf
       worker_location.conf: etc/nginx/worker_location.conf
       main_location.conf.template: etc/nginx/main_location.conf.template
+      main_location.conf: etc/nginx/main_location.conf
   nginx:
     stage-packages:
       - nginx
+      - sed
     plugin: nil
     override-build: |
       craftctl default

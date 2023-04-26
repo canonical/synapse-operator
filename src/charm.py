@@ -70,7 +70,7 @@ class MatrixOperatorCharm(CharmBase):
 
         peer_relation = self.model.get_relation("synapse-peers")
         assert peer_relation is not None  # nosec
-        return peer_relation.data[self.app].get("leader-address")
+        return peer_relation.data[self.app].get("leader-address", self._address)
 
     @property
     def _external_hostname(self):
@@ -410,7 +410,6 @@ class MatrixOperatorCharm(CharmBase):
                     "summary": "Nginx service",
                     "command": "/usr/sbin/nginx",
                     "startup": "enabled",
-                    "environment": {"LEADER_ADDRESS": self._leader_address},
                 },
             },
             "checks": {
@@ -431,6 +430,8 @@ class MatrixOperatorCharm(CharmBase):
     def _on_leader_elected(self, _) -> None:
         """Handle leader-elected event."""
         peer_relation = self.model.get_relation("synapse-peers")
+        logger.debug("synapse leader elected")
+        logger.debug(peer_relation.data[self.app])
         if peer_relation and not peer_relation.data[self.app].get("leader-address"):
             peer_relation.data[self.app].update({"leader-address": self._address})
 
@@ -451,28 +452,27 @@ class MatrixOperatorCharm(CharmBase):
             self.unit.status = WaitingStatus("waiting for db")
             return
 
-        # The config is good, so update the configuration of the workload
-        container = self.unit.get_container(self._CONTAINER_NAME)
-        # Verify that we can connect to the Pebble API
-        # in the workload container
-        if container.can_connect():
-            self._run_migrate_synapse()
-            # Push an updated layer with the new config
-            container.add_layer(self._CONTAINER_NAME, self._pebble_layer, combine=True)
-            container.add_layer(
-                "synapse-nginx", self._get_synapse_nginx_pebble_config(), combine=True
-            )
-            container.replan()
-            self._create_main_nginx_conf()
-            logger.debug("Log level for synapse changed to '%s'", log_level)
-            self.unit.status = ActiveStatus()
-        else:
-            # We were unable to connect to the Pebble API,
-            # so we defer this event
-            event.defer()
-            self.unit.status = WaitingStatus("waiting for Pebble API")
+        for container_name in self.model.unit.containers:
+            container = self.unit.get_container(container_name)
+            if not container.can_connect():
+                event.defer()
+                self.unit.status = WaitingStatus("waiting for Pebble API")
+                return
+            if container_name == "synapse":
+                self._run_migrate_synapse()
+                # Push an updated layer with the new config
+                container.add_layer(self._CONTAINER_NAME, self._pebble_layer, combine=True)
+                container.replan()
+                logger.debug("Log level for synapse changed to '%s'", log_level)
+            if container_name == "synapse-nginx":
+                container.add_layer(
+                    "synapse-nginx", self._get_synapse_nginx_pebble_config(), combine=True
+                )
+                container.replan()
+                self._create_main_nginx_conf()
+        self.unit.status = ActiveStatus()
 
-    def _execute_command_nginx(self,cmd: list) -> None:
+    def _execute_command_nginx(self, cmd: list) -> None:
         container = self.unit.get_container("synapse-nginx")
 
         if container.can_connect():
@@ -497,16 +497,16 @@ class MatrixOperatorCharm(CharmBase):
             )
 
     def _create_main_nginx_conf(self):
-        """Create main nginx conf"""
+        """Create main nginx conf."""
         cmd = [
-            "envsubst",
-            "<",
-            "/etc/nginx/conf/main_location.conf.template",
-            ">",
-            "/etc/nginx/conf/main_location.conf",
+            "cp", "/etc/nginx/main_location.conf.template","/etc/nginx/main_location.conf",
         ]
         self._execute_command_nginx(cmd)
-        self._execute_command_nginx(["/usr/sbin/nginx","reload"])
+
+        cmd = ["sed","-i",f"s/leader-address/{self._leader_address}/g","/etc/nginx/main_location.conf"]
+        self._execute_command_nginx(cmd)
+
+        self._execute_command_nginx(["/usr/sbin/nginx", "-s", "reload"])
 
     def _register_user(self, event):
         """Register a user for usage with Synapse."""
