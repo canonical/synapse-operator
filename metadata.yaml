@@ -19,12 +19,18 @@ containers:
     mounts:
       - storage: data
         location: /data
+  synapse-nginx:
+    resource: synapse-nginx-image
 
 resources:
   synapse-image:
     type: oci-image
     description: OCI image for Synapse
     upstream-source: matrixdotorg/synapse:latest
+  synapse-nginx-image:
+    type: oci-image
+    description: Docker image for nginx Synapse
+    auto-fetch: true
 
 storage:
   data:
@@ -34,8 +40,15 @@ storage:
 requires:
   database:
     interface: postgresql_client
+    limit: 1
   redis:
     interface: redis
+    limit: 1
   ingress:
     interface: ingress
     limit: 1
+
+peers:
+  synapse-peers:
+    interface: synapse-instance
+

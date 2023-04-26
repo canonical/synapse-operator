@@ -15,6 +15,7 @@ https://discourse.charmhub.io/t/4208
 import collections
 import logging
 import os
+import socket
 from typing import Dict, Optional
 
 import ops.lib
@@ -52,6 +53,65 @@ class MatrixOperatorCharm(CharmBase):
     _stored = StoredState()
     on = RedisRelationCharmEvents()
 
+    @property
+    def _address(self) -> str:
+        """Unit's hostname."""
+        return socket.getfqdn()
+
+    @property
+    def _leader_address(self) -> str:
+        """Get leader address from relation data.
+
+        Returns:
+            Leader address
+        """
+        if self.unit.is_leader():
+            return self._address
+
+        peer_relation = self.model.get_relation("synapse-peers")
+        assert peer_relation is not None  # nosec
+        return peer_relation.data[self.app].get("leader-address")
+
+    @property
+    def _external_hostname(self):
+        """Return the external hostname passed to ingress via the relation."""
+        # It is recommended to default to `self.app.name` so that the external
+        # hostname will correspond to the deployed application name in the
+        # model, but allow it to be set to something specific via config.
+        return self.config["server_name"] or self.app.name
+
+    @property
+    def _pebble_layer(self):
+        """Return a dictionary representing a Pebble layer."""
+        command = "/start.py"
+        env_vars = self._populate_synapse_env_settings()
+        if not self.unit.is_leader():
+            logging.debug("starting a worker")
+            command = f"/start.py run --config-path={self._SYNAPSE_MAIN_CONFIG_PATH} --config-path={self._SYNAPSE_WORKER_CONFIG_PATH}"
+            env_vars["SYNAPSE_WORKER"] = "synapse.app.generic_worker"
+        return {
+            "summary": "matrix synapse layer",
+            "description": "pebble config layer for matrix synapse",
+            "services": {
+                "synapse": {
+                    "override": "replace",
+                    "summary": "matrix synapse",
+                    "command": command,
+                    "startup": "enabled",
+                    "environment": env_vars,
+                }
+            },
+            "checks": {
+                "synapse-ready": {
+                    "override": "replace",
+                    "level": "alive",
+                    "http": {
+                        "url": "http://localhost:8008/health",
+                    },
+                },
+            },
+        }
+
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -86,6 +146,7 @@ class MatrixOperatorCharm(CharmBase):
         self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(self.database.on.endpoints_changed, self._on_database_created)
         self.framework.observe(self.on.redis_relation_changed, self._on_config_changed)
+        self.framework.observe(self.on.leader_elected, self._on_config_changed)
 
     def _get_redis_rel(self) -> Optional[Relation]:
         """Get Redis relation.
@@ -110,8 +171,8 @@ class MatrixOperatorCharm(CharmBase):
         if (redis_rel := self._get_redis_rel()) is not None:
             logger.debug(redis_rel.data)
             redis_unit = next(unit for unit in redis_rel.data if unit.name.startswith("redis"))
-            redis_host = redis_rel.data[redis_unit].get("hostname","")
-            redis_port = redis_rel.data[redis_unit].get("port","0")
+            redis_host = redis_rel.data[redis_unit].get("hostname", "")
+            redis_port = redis_rel.data[redis_unit].get("port", "0")
 
         enabled = True
         if not redis_host:
@@ -144,6 +205,8 @@ class MatrixOperatorCharm(CharmBase):
                             "CREATE DATABASE {} WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';"
                         ).format(sql.Identifier(database))
                     )
+                    # Bug: if you recreate the relation, the new user won't be able to access the database
+                    # created by the previous relation user.
                 cursor.execute(
                     sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {};").format(
                         sql.Identifier(database), sql.Identifier(user)
@@ -171,10 +234,10 @@ class MatrixOperatorCharm(CharmBase):
                         ).format(schema, sql.Identifier(user))
                     )
                 statements.append(
-                        sql.SQL(
-                            "GRANT ALL PRIVILEGES ON SCHEMA PUBLIC TO {};"
-                        ).format(sql.Identifier(user))
+                    sql.SQL("GRANT ALL PRIVILEGES ON SCHEMA PUBLIC TO {};").format(
+                        sql.Identifier(user)
                     )
+                )
                 for statement in statements:
                     curs.execute(statement)
         except psycopg2.Error as e:
@@ -200,19 +263,6 @@ class MatrixOperatorCharm(CharmBase):
 
         self._on_config_changed(event)
 
-    def _on_install(self, _):
-        """Generate a config template to be rendered later."""
-        logger.debug("Generating synapse config")
-        self._run_generate_synapse()
-
-    @property
-    def _external_hostname(self):
-        """Return the external hostname passed to ingress via the relation."""
-        # It is recommended to default to `self.app.name` so that the external
-        # hostname will correspond to the deployed application name in the
-        # model, but allow it to be set to something specific via config.
-        return self.config["server_name"] or self.app.name
-
     def _container(self):
         """Get the Synapse workload container.
 
@@ -228,6 +278,7 @@ class MatrixOperatorCharm(CharmBase):
         if os.getenv("SYNAPSE_REPORT_STATS") is None:
             os.environ["SYNAPSE_REPORT_STATS"] = self.config["report_stats"]
         pod_config = {
+            # TODO server name and report stats will be received via configurator
             "SYNAPSE_SERVER_NAME": os.getenv("SYNAPSE_SERVER_NAME"),
             "SYNAPSE_REPORT_STATS": os.getenv("SYNAPSE_REPORT_STATS"),
             "SYNAPSE_NO_TLS": "True",
@@ -238,45 +289,6 @@ class MatrixOperatorCharm(CharmBase):
             "POSTGRES_PASSWORD": self._stored.db_password,
         }
         return pod_config
-
-    def _register_user(self, event):
-        """Register a user for usage with Synapse."""
-        Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
-
-        user = event.params["username"]
-        password = event.params["password"]
-        admin = event.params["admin"]
-        admin_switch = "--admin" if admin == "yes" else "--no-admin"
-
-        cmd = [
-            "register_new_matrix_user",
-            "-u",
-            user,
-            "-p",
-            password,
-            admin_switch,
-            "-c",
-            self._SYNAPSE_MAIN_CONFIG_PATH,
-            "http://localhost:8008",
-        ]
-        process = self._container().exec(
-            cmd,
-            working_dir="/data",
-            environment=self._populate_synapse_env_settings(),
-        )
-        try:
-            stdout, stderr = process.wait_output()
-            result = Result(return_code=0, stdout=stdout, stderr=stderr)
-        except ops.pebble.ExecError as error:
-            result = Result(error.exit_code, error.stdout, error.stderr)
-        return_code = result.return_code
-        logger.debug(
-            "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
-            cmd,
-            return_code,
-            result.stdout,
-            result.stderr,
-        )
 
     def _run_generate_synapse(self):
         """Run the generate command for synapse."""
@@ -325,7 +337,7 @@ class MatrixOperatorCharm(CharmBase):
             result.stderr,
         )
         # Add Replication and Redis config
-        config = self._current_synapse_config()
+        config = self._current_synapse_main_config()
         if config is not None:
             current_yaml = yaml.safe_load(config)
             replication = {
@@ -362,14 +374,14 @@ class MatrixOperatorCharm(CharmBase):
                 }
             ],
             "worker_name": f"generic_worker_{unit_name}_{unit_id}",
-            "worker_replication_host": os.getenv("SYNAPSE_SERVICE_HOST", "main"),
+            "worker_replication_host": self._leader_address,
             "worker_replication_http_port": self._SYNAPSE_REPLICATION_PORT,
             "redis": current_yaml.get("redis"),
             "database": current_yaml.get("database"),
         }
         return yaml.safe_dump(config)
 
-    def _current_synapse_config(self):
+    def _current_synapse_main_config(self):
         """Retrieve the current version of /data/homeserver.yaml from server.
 
         return None if not exists.
@@ -383,25 +395,61 @@ class MatrixOperatorCharm(CharmBase):
             return self._container().pull(synapse_config_path).read()
         return None
 
-    def _on_config_changed(self, event):
-        """Handle changed configuration.
+    def _get_synapse_nginx_pebble_config(self) -> Dict:
+        """Generate pebble config for the synapse-nginx container.
 
-        Change this example to suit your needs.
-        If you don't need to handle config, you can remove
-        this method.
-
-        Learn more about config at https://juju.is/docs/sdk/config
+        Returns:
+            The pebble configuration for the container.
         """
+        return {
+            "summary": "Synapse nginx layer",
+            "description": "Synapse nginx layer",
+            "services": {
+                "synapse-nginx": {
+                    "override": "replace",
+                    "summary": "Nginx service",
+                    "command": "/usr/sbin/nginx",
+                    "startup": "enabled",
+                    "environment": {"LEADER_ADDRESS": self._leader_address},
+                },
+            },
+            "checks": {
+                "nginx-ready": {
+                    "override": "replace",
+                    "level": "alive",
+                    "http": {"url": "http://localhost:8080/health"},
+                },
+            },
+        }
+
+    def _on_install(self, _):
+        """Generate a config template to be rendered later."""
+        logger.debug("Generating synapse config")
+        self._run_generate_synapse()
+        self._on_config_changed()
+
+    def _on_leader_elected(self, _) -> None:
+        """Handle leader-elected event."""
+        peer_relation = self.model.get_relation("synapse-peers")
+        if peer_relation and not peer_relation.data[self.app].get("leader-address"):
+            peer_relation.data[self.app].update({"leader-address": self._address})
+
+    def _on_config_changed(self, event):
+        """Handle changed configuration."""
+        # TODO Handle configurator event
+
         # Fetch the new config value
         log_level = self.model.config["log-level"].lower()
 
         if self._get_redis_rel() is None:
             event.defer()
             self.unit.status = WaitingStatus("waiting for redis")
+            return
 
         if not self._stored.db_password:
             event.defer()
             self.unit.status = WaitingStatus("waiting for db")
+            return
 
         # The config is good, so update the configuration of the workload
         container = self.unit.get_container(self._CONTAINER_NAME)
@@ -411,8 +459,11 @@ class MatrixOperatorCharm(CharmBase):
             self._run_migrate_synapse()
             # Push an updated layer with the new config
             container.add_layer(self._CONTAINER_NAME, self._pebble_layer, combine=True)
+            container.add_layer(
+                "synapse-nginx", self._get_synapse_nginx_pebble_config(), combine=True
+            )
             container.replan()
-
+            self._create_main_nginx_conf()
             logger.debug("Log level for synapse changed to '%s'", log_level)
             self.unit.status = ActiveStatus()
         else:
@@ -421,37 +472,80 @@ class MatrixOperatorCharm(CharmBase):
             event.defer()
             self.unit.status = WaitingStatus("waiting for Pebble API")
 
-    @property
-    def _pebble_layer(self):
-        """Return a dictionary representing a Pebble layer."""
-        command = "/start.py"
-        env_vars = self._populate_synapse_env_settings()
-        if not self.unit.is_leader():
-            logging.debug("starting a worker")
-            command = f"/start.py run --config-path={self._SYNAPSE_MAIN_CONFIG_PATH} --config-path={self._SYNAPSE_WORKER_CONFIG_PATH}"
-            env_vars["SYNAPSE_WORKER"] = "synapse.app.generic_worker"
-        return {
-            "summary": "matrix synapse layer",
-            "description": "pebble config layer for matrix synapse",
-            "services": {
-                "synapse": {
-                    "override": "replace",
-                    "summary": "matrix synapse",
-                    "command": command,
-                    "startup": "enabled",
-                    "environment": env_vars,
-                }
-            },
-            "checks": {
-                "synapse-ready": {
-                    "override": "replace",
-                    "level": "alive",
-                    "http": {
-                        "url": "http://localhost:8008/health",
-                    },
-                },
-            },
-        }
+    def _execute_command_nginx(self,cmd: list) -> None:
+        container = self.unit.get_container("synapse-nginx")
+
+        if container.can_connect():
+            Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
+
+            process = container.exec(
+                cmd,
+                environment=self._populate_synapse_env_settings(),
+            )
+            try:
+                stdout, stderr = process.wait_output()
+                result = Result(return_code=0, stdout=stdout, stderr=stderr)
+            except ops.pebble.ExecError as error:
+                result = Result(error.exit_code, error.stdout, error.stderr)
+            return_code = result.return_code
+            logger.debug(
+                "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+                cmd,
+                return_code,
+                result.stdout,
+                result.stderr,
+            )
+
+    def _create_main_nginx_conf(self):
+        """Create main nginx conf"""
+        cmd = [
+            "envsubst",
+            "<",
+            "/etc/nginx/conf/main_location.conf.template",
+            ">",
+            "/etc/nginx/conf/main_location.conf",
+        ]
+        self._execute_command_nginx(cmd)
+        self._execute_command_nginx(["/usr/sbin/nginx","reload"])
+
+    def _register_user(self, event):
+        """Register a user for usage with Synapse."""
+        Result = collections.namedtuple("CommandExecResult", "return_code stdout stderr")
+
+        user = event.params["username"]
+        password = event.params["password"]
+        admin = event.params["admin"]
+        admin_switch = "--admin" if admin == "yes" else "--no-admin"
+
+        cmd = [
+            "register_new_matrix_user",
+            "-u",
+            user,
+            "-p",
+            password,
+            admin_switch,
+            "-c",
+            self._SYNAPSE_MAIN_CONFIG_PATH,
+            "http://localhost:8008",
+        ]
+        process = self._container().exec(
+            cmd,
+            working_dir="/data",
+            environment=self._populate_synapse_env_settings(),
+        )
+        try:
+            stdout, stderr = process.wait_output()
+            result = Result(return_code=0, stdout=stdout, stderr=stderr)
+        except ops.pebble.ExecError as error:
+            result = Result(error.exit_code, error.stdout, error.stderr)
+        return_code = result.return_code
+        logger.debug(
+            "Run command: %s, return code %s\nstdout: %s\nstderr:%s",
+            cmd,
+            return_code,
+            result.stdout,
+            result.stderr,
+        )
 
 
 if __name__ == "__main__":  # pragma: nocover
