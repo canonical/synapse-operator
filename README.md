@@ -15,7 +15,7 @@ More information: https://charmhub.io/matrix-operator
 
 Describe your charm in one or two sentences.
 
-## Taking this for a spin - terraform version
+## Taking this for a spin - terraform version (WIP)
 
 Make sure you have a setup with juju and microk8s.
 You need to have some environment variables set up
@@ -35,19 +35,34 @@ juju status
 
 * build the charm with `charmcraft pack`
 
-* deploy it in a model with `juju deploy ./synapse_ubuntu-22.04-amd64.charm --resource synapse-image=matrixdotorg/synapse:latest`
+* build the nginx_rock
 
-* deploy nginx-ingress-integrator with `juju deploy nginx-ingress-integrator`
+* deploy it in a model with `juju deploy ./synapse_ubuntu-22.04-amd64.charm --resource synapse-image=matrixdotorg/synapse:latest --resource synapse-nginx-image=localhost:32000/synapse-nginx:latest --trust`
 
-* relate to synapse with `juju relate synapse nginx-ingress-integrator`
+* deploy redis-k8s with `juju deploy redis-k8s`
+
+* relate to synapse with `juju relate synapse redis-k8s`
 
 * deploy postgresql-k8s with `juju deploy postgresql-k8s`
 
 * relate to synapse with `juju relate postgresql-k8s:db synapse`
 
+* config the server name as the one used in traefik with `juju config synapse server_name=<model-name>-synapse.juju.local`
+
+* deploy postgresql-k8s with `juju deploy traefik-k8s  traefik-synapse --trust`
+
+* config external hostname in traefik with `juju config traefik-synapse external_hostname=juju.local`
+
+* config route mode in traefik with `juju config traefik-synapse routing_mode=subdomain`
+
+* relate to synapse with `juju relate synapse traefik-synapse`
+
 * create a user with `juju run-action synapse/0 register-user username=alice password=hialice admin=no`
 
-* login via element-desktop
+* Add the server name and Traefik IP in your /etc/hosts. Example:
+`10.152.183.110 testing11-synapse.juju.local`
+
+* login via element-desktop (server name = <model-name>-synapse.juju.local)
 
 ## TODO
 
@@ -65,9 +80,9 @@ juju status
 
 * explore an SSO option for signup
 
-* check on Redis option present in architecture
+* check on Redis option present in architecture - done
 
-* see how charm behaves when scaling in/out
+* see how charm behaves when scaling in/out - done/wip
 
 * see how to disable users locally
 
@@ -75,7 +90,7 @@ juju status
 
 * think about test cases for basic functionality
 
-* look into using the new postgresql interface (the current one used is being deprecated)
+* look into using the new postgresql interface (the current one used is being deprecated) - done
 
 * demo (spin up the charm with relations, configure two users, get them to chat via a client) - done
 

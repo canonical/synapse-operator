@@ -49,6 +49,7 @@ class MatrixOperatorCharm(CharmBase):
     _SYNAPSE_WORKER_CONFIG_PATH = "/data/worker.yaml"
     _SYNAPSE_PORT = 8008
     _SYNAPSE_REPLICATION_PORT = 9093
+    _SYNAPSE_NGINX_PORT = 8080
 
     _stored = StoredState()
     on = RedisRelationCharmEvents()
@@ -70,7 +71,7 @@ class MatrixOperatorCharm(CharmBase):
 
         peer_relation = self.model.get_relation("synapse-peers")
         assert peer_relation is not None  # nosec
-        return peer_relation.data[self.app].get("leader-address", self._address)
+        return peer_relation.data[self.app].get("leader-address", "localhost")
 
     @property
     def _external_hostname(self):
@@ -132,7 +133,7 @@ class MatrixOperatorCharm(CharmBase):
 
         self.ingress = IngressPerAppRequirer(
             self,
-            port=self._SYNAPSE_PORT,
+            port=self._SYNAPSE_NGINX_PORT,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
@@ -340,12 +341,19 @@ class MatrixOperatorCharm(CharmBase):
         config = self._current_synapse_main_config()
         if config is not None:
             current_yaml = yaml.safe_load(config)
+            client = {
+                "port": self._SYNAPSE_PORT,
+                "type": "http",
+                "resources": [{"names": ["client","media"]}],
+                "tls": False,
+                "x_forwarded": True,
+            }
             replication = {
                 "port": self._SYNAPSE_REPLICATION_PORT,
                 "type": "http",
                 "resources": [{"names": ["replication"]}],
             }
-            current_yaml["listeners"].append(replication)
+            current_yaml["listeners"] = [client,replication]
             current_yaml["redis"] = self._get_redis_backend()
             self._container().push(self._SYNAPSE_MAIN_CONFIG_PATH, yaml.safe_dump(current_yaml))
 
@@ -368,8 +376,9 @@ class MatrixOperatorCharm(CharmBase):
             "worker_listeners": [
                 {
                     "port": self._SYNAPSE_PORT,
-                    "resources": [{"names": ["client", "federation"]}],
+                    "resources": [{"names": ["client"]}],
                     "type": "http",
+                    "tls": False,
                     "x_forwarded": True,
                 }
             ],
@@ -432,7 +441,7 @@ class MatrixOperatorCharm(CharmBase):
         peer_relation = self.model.get_relation("synapse-peers")
         logger.debug("synapse leader elected")
         logger.debug(peer_relation.data[self.app])
-        if peer_relation and not peer_relation.data[self.app].get("leader-address"):
+        if peer_relation:
             peer_relation.data[self.app].update({"leader-address": self._address})
 
     def _on_config_changed(self, event):
@@ -451,6 +460,12 @@ class MatrixOperatorCharm(CharmBase):
             event.defer()
             self.unit.status = WaitingStatus("waiting for db")
             return
+
+        if self.unit.is_leader():
+            peer_relation = self.model.get_relation("synapse-peers")
+            if peer_relation:
+                logging.debug("setting peer relation")
+                peer_relation.data[self.app].update({"leader-address": self._address})
 
         for container_name in self.model.unit.containers:
             container = self.unit.get_container(container_name)
