@@ -37,6 +37,13 @@ juju status
 
 * build the nginx_rock
 
+```bash
+cd nginx_rock
+rockcraft pack
+sudo skopeo --insecure-policy copy oci-archive:synapse-nginx_1.0_amd64.rock docker-daemon:localhost:32000/synapse-nginx:latest
+sudo docker push localhost:32000/synapse-nginx:latest
+```
+
 * deploy it in a model with `juju deploy ./synapse_ubuntu-22.04-amd64.charm --resource synapse-image=matrixdotorg/synapse:latest --resource synapse-nginx-image=localhost:32000/synapse-nginx:latest --trust`
 
 * deploy redis-k8s with `juju deploy redis-k8s`
