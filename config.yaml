@@ -9,6 +9,13 @@ options:
       Acceptable values are: "info", "debug", "warning", "error" and "critical"
     default: "info"
     type: string
+  saml_metadata_url:
+    description: |
+      SAML Metadata URL.
+
+      Example: https://login.staging.ubuntu.com/saml/metadata
+    default: ""
+    type: string
   server_name:
     description: |
       Synapse server name.

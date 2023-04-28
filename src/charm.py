@@ -251,7 +251,6 @@ class MatrixOperatorCharm(CharmBase):
         Args:
             event: Event triggering the database created handler.
         """
-        logger.debug("on.database.created handled")
         if self.unit.is_leader():
             logger.debug("Leader elected creating database")
             self._create_database(event)
@@ -355,6 +354,8 @@ class MatrixOperatorCharm(CharmBase):
             }
             current_yaml["listeners"] = [client,replication]
             current_yaml["redis"] = self._get_redis_backend()
+            if self.config["saml_metadata_url"]:
+                current_yaml["saml2_config"] = self._saml_config(self.config["saml_metadata_url"])
             self._container().push(self._SYNAPSE_MAIN_CONFIG_PATH, yaml.safe_dump(current_yaml))
 
             # Push worker config
@@ -389,6 +390,23 @@ class MatrixOperatorCharm(CharmBase):
             "database": current_yaml.get("database"),
         }
         return yaml.safe_dump(config)
+
+    def _saml_config(self, url: str):
+        """Generate SAML config.
+
+        Args:
+            url (str): SAML metadata URL. Example:
+                'https://login.staging.ubuntu.com/saml/metadata'
+        """
+        config = {'sp_config':
+            {'metadata':
+                {'remote': [{'url': url}]},
+                'service': {'sp': {'allow_unsolicited': True}},
+                'description': ['Ubuntu Login Stg', 'en'],
+                'name': ['Ubuntu Login Stg', 'en']},
+            'user_mapping_provider': {'config': {'mxid_source_attribute': 'username', 'mxid_mapping': 'dotreplace'}}
+            }
+        return config
 
     def _current_synapse_main_config(self):
         """Retrieve the current version of /data/homeserver.yaml from server.
