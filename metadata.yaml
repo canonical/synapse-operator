@@ -1,0 +1,17 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: synapse
+display-name: Synapse
+summary: Matrix synapse chat server.
+description: |
+  A charm for the matrix synapse chat server.
+  Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
+  This charm is useful if you want to spin up your own chat instance.
+docs: ""
+issues: https://github.com/canonical/synapse-operator/issues
+maintainers:
+  - launchpad.net/~canonical-is-devops
+source: https://github.com/canonical/synapse-operator
+assumes:
+  - k8s-api
