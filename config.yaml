@@ -1,0 +1,7 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+# This file defines charm config options, and populates the Configure tab on Charmhub.
+# If your charm does not require configuration options, delete this file entirely.
+#
+# See https://juju.is/docs/config for guidance.
