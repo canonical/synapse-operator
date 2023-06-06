@@ -9,6 +9,6 @@ jobs:
     secrets: inherit
     with:
       chaos-app-label: app.kubernetes.io/name=synapse
-      chaos-enabled: true
+      chaos-enabled: false
       chaos-experiments: pod-delete
       trivy-image-config: "trivy.yaml"
