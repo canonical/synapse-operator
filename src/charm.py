@@ -3,4 +3,4 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charm for Synapse."""
+"""Charm for Synapse."""  # pragma: no cover
