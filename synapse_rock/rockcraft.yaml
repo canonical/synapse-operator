@@ -1,0 +1,80 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: synapse
+summary: Synapse rock
+description: Synapse OCI image for the Synapse charm
+version: "1.0"
+base: bare
+build-base: ubuntu:22.04
+license: Apache-2.0
+platforms:
+  amd64:
+parts:
+    synapse:
+        build-packages:
+            - build-essential
+            - curl
+            - git
+            - libffi-dev
+            - libssl-dev
+            - pkg-config
+            - libjpeg-dev
+            - libpq-dev
+            - libwebp-dev
+            - libxml++2.6-dev
+            - libxslt1-dev
+            - openssl
+            - zlib1g-dev
+            - libicu-dev
+            - python3-dev
+            - python3-pip
+            - python3-setuptools
+        stage-packages:
+            - bash
+            - build-essential
+            - coreutils
+            - curl
+            - gosu
+            - libffi-dev
+            - libjpeg-turbo8
+            - libpq5
+            - libwebp7
+            - xmlsec1
+            - libjemalloc2
+            - libicu70
+            - libssl-dev
+            - openssl
+            - python3-dev
+        plugin: nil
+        source: https://github.com/matrix-org/synapse/
+        source-type: git
+        source-tag: v1.85.2
+        override-build: |
+            craftctl default
+            export RUSTUP_HOME=$CRAFT_PART_INSTALL/rust
+            export CARGO_HOME=$CRAFT_PART_INSTALL/cargo
+            export PATH=$CRAFT_PART_INSTALL/cargo/bin:$CRAFT_PART_INSTALL/rust/bin:$PATH
+            export CARGO_NET_GIT_FETCH_WITH_CLI=false
+            mkdir -p $CRAFT_PART_INSTALL/rust $CRAFT_PART_INSTALL/cargo /synapse /install
+            curl -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal
+            pip3 install -U pip setuptools
+            pip3 install --root-user-action=ignore "poetry==1.3.2"
+            cp pyproject.toml poetry.lock /synapse/
+            /usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
+            pip3 install --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
+            cp -r synapse /synapse/
+            cp -r rust /synapse/
+            cp docker/start.py $CRAFT_PART_INSTALL/
+            sed -i 's/#!\/usr\/local\/bin\/python/#!\/usr\/bin\/python3/' $CRAFT_PART_INSTALL/start.py
+            cp -r docker/conf $CRAFT_PART_INSTALL/
+            cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
+            pip3 install --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
+            cp -r /usr/local $CRAFT_PART_INSTALL/usr/
+            cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
+        override-prime: |
+            craftctl default
+            cp -r $CRAFT_PART_INSTALL/rust rust
+            cp -r $CRAFT_PART_INSTALL/cargo cargo
+            cp -r $CRAFT_PART_INSTALL/conf conf
+            chmod 755 start.py
