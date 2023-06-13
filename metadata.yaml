@@ -15,3 +15,11 @@ maintainers:
 source: https://github.com/canonical/synapse-operator
 assumes:
   - k8s-api
+containers:
+  synapse:
+    resource: synapse-image
+resources:
+  synapse-image:
+    type: oci-image
+    description: Docker image for Synapse
+    auto-fetch: true
