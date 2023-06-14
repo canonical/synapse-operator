@@ -125,6 +125,8 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
         match argv:
             case [synapse.COMMAND_PATH, synapse.COMMAND_MIGRATE_CONFIG]:
                 return ExecResult(0, "", "")
+            case [synapse.COMMAND_PATH, "error"]:
+                return ExecResult(1, "", "")
             case _:
                 raise RuntimeError(f"unknown command: {argv}")
 

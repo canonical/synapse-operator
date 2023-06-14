@@ -6,6 +6,7 @@
 from secrets import token_hex
 
 import ops
+import pytest
 from ops.testing import Harness
 
 import synapse
@@ -91,3 +92,21 @@ def test_report_stats_empty(harness: Harness) -> None:
     harness.framework.reemit()
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "Configuration is not valid" in str(harness.model.unit.status)
+
+
+def test_exec_error(harness: Harness) -> None:
+    """
+    arrange: none
+    act: execute command not mocked and command to raise an error
+    assert: exception RuntimeError is raised and exit code is different than 0.
+    """
+    with pytest.raises(RuntimeError):
+        # protected member being accessed to test exceptions
+        synapse._exec(  # pylint: disable=protected-access
+            harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], [synapse.COMMAND_PATH], {}
+        )
+    # protected member being accessed to test exceptions
+    error_result = synapse._exec(  # pylint: disable=protected-access
+        harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], [synapse.COMMAND_PATH, "error"], {}
+    )
+    assert error_result != 0
