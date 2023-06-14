@@ -6,15 +6,16 @@
 """State of the Charm."""
 import ops
 
+SYNAPSE_CONTAINER_NAME = "synapse"
+SYNAPSE_PORT = 8008
+
 
 class CharmState:
     """State of the Charm.
 
     Attrs:
-        container_name: Synapse container name.
         server_name: server_name config.
         report_stats: report_stats config.
-        synapse_port: port to expose Synapse.
     """
 
     def __init__(self, charm: ops.CharmBase) -> None:
@@ -24,15 +25,6 @@ class CharmState:
             charm: Synapse charm
         """
         self._charm = charm
-
-    @property
-    def container_name(self) -> str:
-        """Return the Synapse container name.
-
-        Returns:
-            str: container name.
-        """
-        return "synapse"
 
     @property
     def server_name(self) -> str:
@@ -51,12 +43,3 @@ class CharmState:
             str: report_stats config.
         """
         return self._charm.config["report_stats"]
-
-    @property
-    def synapse_port(self) -> int:
-        """Return the port to expose Synapse.
-
-        Returns:
-            int: port number.
-        """
-        return 8008

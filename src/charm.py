@@ -12,13 +12,13 @@ import ops
 from ops.main import main
 
 import synapse
-from charm_state import CharmState
+from charm_state import SYNAPSE_CONTAINER_NAME, CharmState
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
 
 logger = logging.getLogger(__name__)
 
 
-class SynapseOperatorCharm(ops.CharmBase):
+class SynapseCharm(ops.CharmBase):
     """Charm the service."""
 
     def __init__(self, *args: Any) -> None:
@@ -37,7 +37,7 @@ class SynapseOperatorCharm(ops.CharmBase):
         Args:
             event: Event triggering after config is changed.
         """
-        container = self.unit.get_container(self.state.container_name)
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             event.defer()
             self.unit.status = ops.WaitingStatus("Waiting for pebble")
@@ -49,7 +49,7 @@ class SynapseOperatorCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             event.defer()
             return
-        container.add_layer(self.state.container_name, self._pebble_layer, combine=True)
+        container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
@@ -62,17 +62,17 @@ class SynapseOperatorCharm(ops.CharmBase):
             "services": {
                 "synapse": {
                     "override": "replace",
-                    "summary": "synapse",
+                    "summary": "Synapse application service",
                     "startup": "enabled",
                     "command": synapse.COMMAND_PATH,
                     "environment": synapse.synapse_environment(self.state),
                 }
             },
             "checks": {
-                synapse.CHECK_READY_NAME: synapse.check_ready(self.state),
+                synapse.CHECK_READY_NAME: synapse.check_ready(),
             },
         }
 
 
 if __name__ == "__main__":  # pragma: nocover
-    main(SynapseOperatorCharm)
+    main(SynapseCharm)

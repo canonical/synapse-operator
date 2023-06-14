@@ -11,21 +11,19 @@ import typing
 import ops
 from ops.pebble import Check, ExecError
 
-from charm_state import CharmState
+from charm_state import SYNAPSE_PORT, CharmState
 from charm_types import ExecResult
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
 
+COMMAND_MIGRATE_CONFIG = "migrate_config"
 COMMAND_PATH = "/start.py"
 CHECK_READY_NAME = "synapse-ready"
 
 logger = logging.getLogger(__name__)
 
 
-def check_ready(state: CharmState) -> typing.Dict:
+def check_ready() -> typing.Dict:
     """Return the Synapse container check.
-
-    Args:
-        state: The state of the charm.
 
     Returns:
         Dict: check object converted to its dict representation.
@@ -33,7 +31,7 @@ def check_ready(state: CharmState) -> typing.Dict:
     check = Check(CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.tcp = {"port": state.synapse_port}
+    check.tcp = {"port": SYNAPSE_PORT}
     # _CheckDict cannot be imported
     return check.to_dict()  # type: ignore
 
@@ -50,6 +48,7 @@ def synapse_environment(state: CharmState) -> typing.Dict[str, str]:
     return {
         "SYNAPSE_SERVER_NAME": f"{state.server_name}",
         "SYNAPSE_REPORT_STATS": f"{state.report_stats}",
+        # TLS disabled so the listener is HTTP instead of HTTPS
         "SYNAPSE_NO_TLS": "True",
     }
 
@@ -97,7 +96,7 @@ def execute_migrate_config(container: ops.Container, state: CharmState) -> None:
         raise CharmConfigInvalidError(
             "Configuration is not valid, please review your charm configuration"
         )
-    migrate_config_command = [COMMAND_PATH, "migrate_config"]
+    migrate_config_command = [COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
     migrate_config_result = _exec(
         container, migrate_config_command, environment=synapse_environment(state)
     )
