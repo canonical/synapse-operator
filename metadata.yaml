@@ -27,7 +27,6 @@ resources:
   synapse-image:
     type: oci-image
     description: OCI image for Synapse
-    auto-fetch: true
 
 storage:
   data:
