@@ -4,7 +4,7 @@
 # See LICENSE file for licensing details.
 
 """State of the Charm."""
-from ops.charm import CharmBase
+import ops
 
 
 class CharmState:
@@ -17,7 +17,7 @@ class CharmState:
         synapse_port: port to expose Synapse.
     """
 
-    def __init__(self, charm: CharmBase) -> None:
+    def __init__(self, charm: ops.CharmBase) -> None:
         """Construct.
 
         Args:

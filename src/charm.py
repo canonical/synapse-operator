@@ -8,9 +8,8 @@
 import logging
 from typing import Any, Dict
 
-from ops.charm import CharmBase, HookEvent
+import ops
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
 import synapse
 from charm_state import CharmState
@@ -19,7 +18,7 @@ from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
 logger = logging.getLogger(__name__)
 
 
-class SynapseOperatorCharm(CharmBase):
+class SynapseOperatorCharm(ops.CharmBase):
     """Charm the service."""
 
     def __init__(self, *args: Any) -> None:
@@ -32,7 +31,7 @@ class SynapseOperatorCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.state: CharmState = CharmState(self)
 
-    def _on_config_changed(self, event: HookEvent) -> None:
+    def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
 
         Args:
@@ -41,18 +40,18 @@ class SynapseOperatorCharm(CharmBase):
         container = self.unit.get_container(self.state.container_name)
         if not container.can_connect():
             event.defer()
-            self.unit.status = WaitingStatus("Waiting for pebble")
+            self.unit.status = ops.WaitingStatus("Waiting for pebble")
             return
-        self.model.unit.status = MaintenanceStatus("Configuring Synapse")
+        self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
             synapse.execute_migrate_config(container, self.state)
         except (CommandMigrateConfigError, CharmConfigInvalidError) as exc:
-            self.model.unit.status = BlockedStatus(exc.msg)
+            self.model.unit.status = ops.BlockedStatus(exc.msg)
             event.defer()
             return
         container.add_layer(self.state.container_name, self._pebble_layer, combine=True)
         container.replan()
-        self.unit.status = ActiveStatus()
+        self.unit.status = ops.ActiveStatus()
 
     @property
     def _pebble_layer(self) -> Dict:

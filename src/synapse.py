@@ -8,7 +8,7 @@
 import logging
 import typing
 
-from ops.model import Container
+import ops
 from ops.pebble import Check, ExecError
 
 from charm_state import CharmState
@@ -78,7 +78,7 @@ def is_server_name_valid(state: CharmState) -> bool:
     return bool(state.server_name)
 
 
-def execute_migrate_config(container: Container, state: CharmState) -> None:
+def execute_migrate_config(container: ops.Container, state: CharmState) -> None:
     """Run the Synapse command migrate_config.
 
     Args:
@@ -113,7 +113,7 @@ def execute_migrate_config(container: Container, state: CharmState) -> None:
 
 
 def _exec(
-    container: Container, command: list[str], environment: dict[str, str] | None = None
+    container: ops.Container, command: list[str], environment: dict[str, str] | None = None
 ) -> ExecResult:
     """Execute a command inside the Synapse workload container.
 
