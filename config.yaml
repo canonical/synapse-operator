@@ -4,7 +4,9 @@
 options:
   server_name:
     type: string
-    description: Synapse server name. Must be set to deploy the charm.
+    description: |
+      Synapse server name. Must be set to deploy the charm. Corresponds to the
+      server_name option on Synapse configuration file.
     default: ""
   report_stats:
     description: |

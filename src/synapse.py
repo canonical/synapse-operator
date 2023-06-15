@@ -48,8 +48,8 @@ def synapse_environment(state: CharmState) -> typing.Dict[str, str]:
     return {
         "SYNAPSE_SERVER_NAME": f"{state.server_name}",
         "SYNAPSE_REPORT_STATS": f"{state.report_stats}",
-        # TLS disabled so the listener is HTTP instead of HTTPS
-        "SYNAPSE_NO_TLS": "True",
+        # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
+        "SYNAPSE_NO_TLS": str(True),
     }
 
 
