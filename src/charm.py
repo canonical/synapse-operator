@@ -11,9 +11,9 @@ from typing import Any, Dict
 import ops
 from ops.main import main
 
-import synapse
-from charm_state import SYNAPSE_CONTAINER_NAME, CharmState
+from charm_state import CharmState
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
+from synapse import CHECK_READY_NAME, COMMAND_PATH, Synapse
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,12 @@ class SynapseCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.state: CharmState = CharmState(self)
+        try:
+            self._charm_state = CharmState.from_charm(charm=self)
+        except CharmConfigInvalidError as exc:
+            self.model.unit.status = ops.BlockedStatus(exc.msg)
+            return
+        self._synapse = Synapse(charm_state=self._charm_state)
 
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
@@ -37,19 +42,21 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering after config is changed.
         """
-        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self.unit.get_container(self._charm_state.synapse_container_name)
         if not container.can_connect():
             event.defer()
             self.unit.status = ops.WaitingStatus("Waiting for pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            synapse.execute_migrate_config(container, self.state)
-        except (CommandMigrateConfigError, CharmConfigInvalidError) as exc:
+            self._synapse.execute_migrate_config(container)
+        except CommandMigrateConfigError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             event.defer()
             return
-        container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
+        container.add_layer(
+            self._charm_state.synapse_container_name, self._pebble_layer, combine=True
+        )
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
@@ -64,12 +71,12 @@ class SynapseCharm(ops.CharmBase):
                     "override": "replace",
                     "summary": "Synapse application service",
                     "startup": "enabled",
-                    "command": synapse.COMMAND_PATH,
-                    "environment": synapse.synapse_environment(self.state),
+                    "command": COMMAND_PATH,
+                    "environment": self._synapse.synapse_environment(),
                 }
             },
             "checks": {
-                synapse.CHECK_READY_NAME: synapse.check_ready(),
+                CHECK_READY_NAME: self._synapse.check_ready(),
             },
         }
 

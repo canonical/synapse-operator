@@ -12,9 +12,7 @@ import pytest
 from ops.pebble import ExecError
 from ops.testing import Harness
 
-import synapse
 from charm import SynapseCharm
-from charm_state import SYNAPSE_CONTAINER_NAME
 from charm_types import ExecResult
 
 
@@ -106,8 +104,8 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     harness = Harness(SynapseCharm)
-    synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
-    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    synapse_container: ops.Container = harness.model.unit.get_container("synapse")
+    harness.set_can_connect("synapse", True)
     synapse_container.make_dir("/data", make_parents=True)
 
     def start_cmd_handler(argv: list[str]) -> ExecResult:
@@ -123,9 +121,9 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
             RuntimeError: command unknown.
         """
         match argv:
-            case [synapse.COMMAND_PATH, synapse.COMMAND_MIGRATE_CONFIG]:
+            case ["/start.py", "migrate_config"]:
                 return ExecResult(0, "", "")
-            case [synapse.COMMAND_PATH, "error"]:
+            case ["/start.py", "error"]:
                 return ExecResult(1, "", "")
             case _:
                 raise RuntimeError(f"unknown command: {argv}")

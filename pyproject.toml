@@ -48,8 +48,10 @@ docstring-convention = "google"
 copyright-check = "True"
 copyright-author = "Canonical Ltd."
 copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
+classmethod-decorators = ['classmethod', 'validator', 'root_validator']
 
 [tool.mypy]
+ignore_missing_imports = true
 check_untyped_defs = true
 disallow_untyped_defs = true
 

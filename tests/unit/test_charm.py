@@ -6,11 +6,9 @@
 from secrets import token_hex
 
 import ops
-import pytest
 from ops.testing import Harness
 
-import synapse
-from charm_state import SYNAPSE_CONTAINER_NAME
+from synapse import COMMAND_PATH
 
 
 def test_synapse_pebble_layer(harness: Harness) -> None:
@@ -19,20 +17,18 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should submit the correct Synapse pebble layer to pebble.
     """
-    harness.begin_with_initial_hooks()
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.disable_hooks()
     server_name = token_hex(16)
     harness.update_config({"server_name": server_name})
     harness.enable_hooks()
+    harness.begin_with_initial_hooks()
+    harness.set_can_connect(harness.model.unit.containers["synapse"], True)
     harness.framework.reemit()
-    synapse_layer = harness.get_container_pebble_plan(SYNAPSE_CONTAINER_NAME).to_dict()[
-        "services"
-    ]["synapse"]
+    synapse_layer = harness.get_container_pebble_plan("synapse").to_dict()["services"]["synapse"]
     assert synapse_layer == {
         "override": "replace",
         "summary": "Synapse application service",
-        "command": synapse.COMMAND_PATH,
+        "command": COMMAND_PATH,
         "environment": {
             "SYNAPSE_NO_TLS": "True",
             "SYNAPSE_REPORT_STATS": "no",
@@ -49,14 +45,14 @@ def test_container_down(harness: Harness) -> None:
         and then try to change report_stats.
     assert: Synapse charm should submit the correct status.
     """
-    harness.begin_with_initial_hooks()
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.disable_hooks()
     server_name = token_hex(16)
     harness.update_config({"server_name": server_name})
     harness.enable_hooks()
+    harness.begin_with_initial_hooks()
+    harness.set_can_connect(harness.model.unit.containers["synapse"], True)
     harness.framework.reemit()
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
+    harness.set_can_connect(harness.model.unit.containers["synapse"], False)
     harness.update_config({"report_stats": "yes"})
     assert isinstance(harness.model.unit.status, ops.WaitingStatus)
     assert "Waiting for" in str(harness.model.unit.status)
@@ -68,11 +64,9 @@ def test_server_name_empty(harness: Harness) -> None:
     act: start the Synapse charm and set Synapse container to be ready.
     assert: Synapse charm waits for server_name to be set.
     """
-    harness.begin_with_initial_hooks()
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
-    harness.framework.reemit()
+    harness.begin()
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "server_name is empty" in str(harness.model.unit.status)
+    assert "invalid configuration: server_name" in str(harness.model.unit.status)
 
 
 def test_report_stats_empty(harness: Harness) -> None:
@@ -82,31 +76,11 @@ def test_report_stats_empty(harness: Harness) -> None:
         set server_name and report_stats.
     assert: Synapse charm is blocked because of invalid configuration.
     """
-    harness.begin_with_initial_hooks()
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.disable_hooks()
     server_name = token_hex(16)
     harness.update_config({"server_name": server_name})
     harness.update_config({"report_stats": ""})
     harness.enable_hooks()
-    harness.framework.reemit()
+    harness.begin()
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "Configuration is not valid" in str(harness.model.unit.status)
-
-
-def test_exec_error(harness: Harness) -> None:
-    """
-    arrange: none
-    act: execute command not mocked and command to raise an error
-    assert: exception RuntimeError is raised and exit code is different than 0.
-    """
-    with pytest.raises(RuntimeError):
-        # protected member being accessed to test exceptions
-        synapse._exec(  # pylint: disable=protected-access
-            harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], [synapse.COMMAND_PATH], {}
-        )
-    # protected member being accessed to test exceptions
-    error_result = synapse._exec(  # pylint: disable=protected-access
-        harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], [synapse.COMMAND_PATH, "error"], {}
-    )
-    assert error_result != 0
+    assert "invalid configuration: report_stats" in str(harness.model.unit.status)
