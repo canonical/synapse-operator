@@ -14,12 +14,7 @@ from ops.testing import Harness
 
 from charm import SynapseCharm
 from charm_types import ExecResult
-from constants import (
-    COMMAND_ARG_ERROR,
-    COMMAND_MIGRATE_CONFIG,
-    COMMAND_PATH,
-    SYNAPSE_CONTAINER_NAME,
-)
+from constants import COMMAND_MIGRATE_CONFIG, COMMAND_PATH, SYNAPSE_CONTAINER_NAME
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
@@ -107,7 +102,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 
 
 @pytest.fixture(name="harness")
-def fixture_harness(monkeypatch) -> typing.Generator[Harness, None, None]:
+def fixture_harness(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     harness = Harness(SynapseCharm)
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
@@ -117,7 +112,9 @@ def fixture_harness(monkeypatch) -> typing.Generator[Harness, None, None]:
     # unused-variable disabled to pass constants values to inner function
     command_path = COMMAND_PATH  # pylint: disable=unused-variable
     command_migrate_config = COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
-    command_arg_error = COMMAND_ARG_ERROR  # pylint: disable=unused-variable
+    exit_code = 0
+    if hasattr(request, "param"):
+        exit_code = request.param
 
     def start_cmd_handler(argv: list[str]) -> ExecResult:
         """Handle the python command execution inside the Synapse container.
@@ -131,12 +128,10 @@ def fixture_harness(monkeypatch) -> typing.Generator[Harness, None, None]:
         Raises:
             RuntimeError: command unknown.
         """
-        nonlocal command_path, command_migrate_config, command_arg_error
+        nonlocal command_path, command_migrate_config, exit_code
         match argv:
             case [command_path, command_migrate_config]:  # pylint: disable=unused-variable
-                return ExecResult(0, "", "")
-            case [command_path, command_arg_error]:  # pylint: disable=unused-variable
-                return ExecResult(1, "", "")
+                return ExecResult(exit_code, "", "")
             case _:
                 raise RuntimeError(f"unknown command: {argv}")
 

@@ -6,12 +6,14 @@
 from secrets import token_hex
 
 import ops
+import pytest
 from ops.testing import Harness
 
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
 from synapse import COMMAND_PATH
 
 
+@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_synapse_pebble_layer(harness: Harness) -> None:
     """
     arrange: none
@@ -39,6 +41,24 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
         },
         "startup": "enabled",
     }
+
+
+@pytest.mark.parametrize("harness", [1], indirect=True)
+def test_synapse_migrate_config_error(harness: Harness) -> None:
+    """
+    arrange: none
+    act: start the Synapse charm, set Synapse container to be ready and set server_name.
+    assert: Synapse charm should be blocked by error on migrate_config command.
+    """
+    harness.disable_hooks()
+    server_name = token_hex(16)
+    harness.update_config({"server_name": server_name})
+    harness.enable_hooks()
+    harness.begin_with_initial_hooks()
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
+    harness.framework.reemit()
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "Migrate config failed" in str(harness.model.unit.status)
 
 
 def test_container_down(harness: Harness) -> None:

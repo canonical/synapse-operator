@@ -4,7 +4,6 @@
 """This module defines constants used throughout the Synapse application."""
 
 CHECK_READY_NAME = "synapse-ready"
-COMMAND_ARG_ERROR = "error"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
 COMMAND_PATH = "/start.py"
 SYNAPSE_CONTAINER_NAME = "synapse"
