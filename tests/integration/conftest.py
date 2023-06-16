@@ -32,18 +32,26 @@ async def fixture_synapse_charm(ops_test) -> str:
     return charm
 
 
+@pytest_asyncio.fixture(scope="module", name="synapse_image")
+def fixture_synapse_image(pytestconfig: Config):
+    """Get value from parameter synapse-image."""
+    synapse_image = pytestconfig.getoption("--synapse-image")
+    assert synapse_image, "--synapse-image must be set"
+    return synapse_image
+
+
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def fixture_synapse_app(
-    synapse_charm: str,
+    synapse_image: str,
     model: Model,
     server_name: str,
-    pytestconfig: Config,
+    synapse_charm: str,
 ):
     """Build and deploy the Synapse charm."""
     app_name = "synapse-k8s"
 
     resources = {
-        "synapse-image": pytestconfig.getoption("--synapse-image"),
+        "synapse-image": synapse_image,
     }
     app = await model.deploy(
         synapse_charm,
