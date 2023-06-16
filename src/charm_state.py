@@ -26,8 +26,6 @@ KNOWN_CHARM_CONFIG = (
     "server_name",
     "report_stats",
 )
-SYNAPSE_CONTAINER_NAME = "synapse"
-SYNAPSE_PORT = 8008
 
 
 class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
@@ -90,8 +88,6 @@ class CharmState:
     Attrs:
         server_name: server_name config.
         report_stats: report_stats config.
-        synapse_container_name: synapse container name.
-        synapse_port: synapse port.
     """
 
     def __init__(
@@ -123,24 +119,6 @@ class CharmState:
             str: report_stats config as yes or no.
         """
         return self._synapse_config.report_stats
-
-    @property
-    def synapse_container_name(self) -> str:
-        """Return synapse container name.
-
-        Returns:
-            str: synapse container name.
-        """
-        return SYNAPSE_CONTAINER_NAME
-
-    @property
-    def synapse_port(self) -> int:
-        """Return synapse port.
-
-        Returns:
-            str: synapse port.
-        """
-        return SYNAPSE_PORT
 
     @classmethod
     def from_charm(cls, charm: "SynapseCharm") -> "CharmState":

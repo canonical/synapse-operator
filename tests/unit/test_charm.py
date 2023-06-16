@@ -8,6 +8,7 @@ from secrets import token_hex
 import ops
 from ops.testing import Harness
 
+from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
 from synapse import COMMAND_PATH
 
 
@@ -22,9 +23,11 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     harness.update_config({"server_name": server_name})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()
-    harness.set_can_connect(harness.model.unit.containers["synapse"], True)
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
-    synapse_layer = harness.get_container_pebble_plan("synapse").to_dict()["services"]["synapse"]
+    synapse_layer = harness.get_container_pebble_plan(SYNAPSE_CONTAINER_NAME).to_dict()[
+        "services"
+    ][SYNAPSE_SERVICE_NAME]
     assert synapse_layer == {
         "override": "replace",
         "summary": "Synapse application service",
@@ -50,9 +53,9 @@ def test_container_down(harness: Harness) -> None:
     harness.update_config({"server_name": server_name})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()
-    harness.set_can_connect(harness.model.unit.containers["synapse"], True)
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
-    harness.set_can_connect(harness.model.unit.containers["synapse"], False)
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     harness.update_config({"report_stats": True})
     assert isinstance(harness.model.unit.status, ops.WaitingStatus)
     assert "Waiting for" in str(harness.model.unit.status)

@@ -14,6 +14,12 @@ from ops.testing import Harness
 
 from charm import SynapseCharm
 from charm_types import ExecResult
+from constants import (
+    COMMAND_ARG_ERROR,
+    COMMAND_MIGRATE_CONFIG,
+    COMMAND_PATH,
+    SYNAPSE_CONTAINER_NAME,
+)
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
@@ -104,9 +110,14 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     harness = Harness(SynapseCharm)
-    synapse_container: ops.Container = harness.model.unit.get_container("synapse")
-    harness.set_can_connect("synapse", True)
+    synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
     synapse_container.make_dir("/data", make_parents=True)
+
+    # unused-variable disabled to pass constants values to inner function
+    command_path = COMMAND_PATH  # pylint: disable=unused-variable
+    command_migrate_config = COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
+    command_arg_error = COMMAND_ARG_ERROR  # pylint: disable=unused-variable
 
     def start_cmd_handler(argv: list[str]) -> ExecResult:
         """Handle the python command execution inside the Synapse container.
@@ -120,17 +131,18 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
         Raises:
             RuntimeError: command unknown.
         """
+        nonlocal command_path, command_migrate_config, command_arg_error
         match argv:
-            case ["/start.py", "migrate_config"]:
+            case [command_path, command_migrate_config]:  # pylint: disable=unused-variable
                 return ExecResult(0, "", "")
-            case ["/start.py", "error"]:
+            case [command_path, command_arg_error]:  # pylint: disable=unused-variable
                 return ExecResult(1, "", "")
             case _:
                 raise RuntimeError(f"unknown command: {argv}")
 
     inject_register_command_handler(monkeypatch, harness)
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=synapse_container, executable="/start.py", handler=start_cmd_handler
+        container=synapse_container, executable=command_path, handler=start_cmd_handler
     )
     yield harness
     harness.cleanup()

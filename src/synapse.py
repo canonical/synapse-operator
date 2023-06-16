@@ -13,11 +13,8 @@ from ops.pebble import Check, ExecError
 
 from charm_state import CharmState
 from charm_types import ExecResult
+from constants import CHECK_READY_NAME, COMMAND_MIGRATE_CONFIG, COMMAND_PATH, SYNAPSE_PORT
 from exceptions import CommandMigrateConfigError
-
-COMMAND_MIGRATE_CONFIG = "migrate_config"
-COMMAND_PATH = "/start.py"
-CHECK_READY_NAME = "synapse-ready"
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +39,7 @@ class Synapse:  # pylint: disable=too-few-public-methods
         check = Check(CHECK_READY_NAME)
         check.override = "replace"
         check.level = "ready"
-        check.tcp = {"port": self._charm_state.synapse_port}
+        check.tcp = {"port": SYNAPSE_PORT}
         # _CheckDict cannot be imported
         return check.to_dict()  # type: ignore
 

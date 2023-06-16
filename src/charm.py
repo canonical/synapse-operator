@@ -12,6 +12,7 @@ import ops
 from ops.main import main
 
 from charm_state import CharmState
+from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
 from synapse import CHECK_READY_NAME, COMMAND_PATH, Synapse
 
@@ -42,7 +43,7 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering after config is changed.
         """
-        container = self.unit.get_container(self._charm_state.synapse_container_name)
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             event.defer()
             self.unit.status = ops.WaitingStatus("Waiting for pebble")
@@ -54,9 +55,7 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             event.defer()
             return
-        container.add_layer(
-            self._charm_state.synapse_container_name, self._pebble_layer, combine=True
-        )
+        container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
@@ -67,7 +66,7 @@ class SynapseCharm(ops.CharmBase):
             "summary": "Synapse layer",
             "description": "pebble config layer for Synapse",
             "services": {
-                "synapse": {
+                SYNAPSE_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Synapse application service",
                     "startup": "enabled",
