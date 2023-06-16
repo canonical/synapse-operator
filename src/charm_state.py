@@ -13,7 +13,6 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
     Extra,
     Field,
     ValidationError,
-    root_validator,
     validator,
 )
 
@@ -40,7 +39,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """
 
     server_name: str | None = Field(None, min_length=0)
-    report_stats: str | None = Field(None, min_length=2, regex="(?i)^(yes|no)$")
+    report_stats: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -50,24 +49,6 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         """
 
         extra = Extra.allow
-
-    @root_validator(skip_on_failure=True)
-    # no-self-argument disabled due to cls usage as expected by validator
-    def check_all_set(cls, values: dict) -> dict:  # pylint: disable=no-self-argument
-        """Check all values from configuration.
-
-        Args:
-            values: values to be validated.
-
-        Raises:
-            ValueError: Raised if values are not valid.
-
-        Returns:
-            values if they are as expected.
-        """
-        if all(not field for field in list(values.values())):
-            raise ValueError("Configuration is not valid, please review your charm configuration")
-        return values
 
     @validator("server_name")
     # no-self-argument disabled due to cls usage as expected by validator
@@ -86,6 +67,21 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         if not value:
             raise ValueError("The server_name is empty, please review your charm configuration")
         return value
+
+    @validator("report_stats")
+    @classmethod
+    def to_yes_or_no(cls, value: str) -> str:
+        """Convert the report_stats field to yes or no.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The string converted to yes or no.
+        """
+        if value == str(True):
+            return "yes"
+        return "no"
 
 
 class CharmState:
@@ -120,11 +116,11 @@ class CharmState:
         return self._synapse_config.server_name
 
     @property
-    def report_stats(self) -> typing.Optional[str]:
+    def report_stats(self) -> typing.Union[str, bool, None]:
         """Return report_stats config.
 
         Returns:
-            str: report_stats config.
+            str: report_stats config as yes or no.
         """
         return self._synapse_config.report_stats
 

@@ -53,7 +53,7 @@ def test_container_down(harness: Harness) -> None:
     harness.set_can_connect(harness.model.unit.containers["synapse"], True)
     harness.framework.reemit()
     harness.set_can_connect(harness.model.unit.containers["synapse"], False)
-    harness.update_config({"report_stats": "yes"})
+    harness.update_config({"report_stats": True})
     assert isinstance(harness.model.unit.status, ops.WaitingStatus)
     assert "Waiting for" in str(harness.model.unit.status)
 
@@ -67,20 +67,3 @@ def test_server_name_empty(harness: Harness) -> None:
     harness.begin()
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "invalid configuration: server_name" in str(harness.model.unit.status)
-
-
-def test_report_stats_empty(harness: Harness) -> None:
-    """
-    arrange: none
-    act: start the Synapse charm, set Synapse container to be ready,
-        set server_name and report_stats.
-    assert: Synapse charm is blocked because of invalid configuration.
-    """
-    harness.disable_hooks()
-    server_name = token_hex(16)
-    harness.update_config({"server_name": server_name})
-    harness.update_config({"report_stats": ""})
-    harness.enable_hooks()
-    harness.begin()
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "invalid configuration: report_stats" in str(harness.model.unit.status)
