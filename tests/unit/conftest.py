@@ -107,7 +107,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 
 
 @pytest.fixture(name="harness")
-def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
+def fixture_harness(monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     harness = Harness(SynapseCharm)
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)

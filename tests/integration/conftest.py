@@ -25,16 +25,16 @@ async def fixture_model(ops_test: OpsTest) -> Model:
     return ops_test.model
 
 
-@pytest_asyncio.fixture(scope="module", name="build_charm")
-async def build_charm_fixture(ops_test) -> str:
+@pytest_asyncio.fixture(scope="module", name="synapse_charm")
+async def fixture_synapse_charm(ops_test) -> str:
     """Build the charm"""
     charm = await ops_test.build_charm(".")
     return charm
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
-async def synapse_app_fixture(
-    build_charm: str,
+async def fixture_synapse_app(
+    synapse_charm: str,
     model: Model,
     server_name: str,
     pytestconfig: Config,
@@ -46,7 +46,7 @@ async def synapse_app_fixture(
         "synapse-image": pytestconfig.getoption("--synapse-image"),
     }
     app = await model.deploy(
-        build_charm,
+        synapse_charm,
         resources=resources,
         application_name=app_name,
         series="jammy",

@@ -12,9 +12,9 @@ import ops
 from ops.main import main
 
 from charm_state import CharmState
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
+from constants import CHECK_READY_NAME, COMMAND_PATH, SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
-from synapse import CHECK_READY_NAME, COMMAND_PATH, Synapse
+from synapse import Synapse
 
 logger = logging.getLogger(__name__)
 
