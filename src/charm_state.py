@@ -36,7 +36,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         report_stats: report_stats config.
     """
 
-    server_name: str | None = Field(None, min_length=0)
+    server_name: str | None = Field(..., min_length=2)
     report_stats: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
@@ -47,24 +47,6 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         """
 
         extra = Extra.allow
-
-    @validator("server_name")
-    # no-self-argument disabled due to cls usage as expected by validator
-    def check_server_name_empty(cls, value: str) -> str:  # pylint: disable=no-self-argument
-        """Check if server name is empty.
-
-        Args:
-            value: server_name value.
-
-        Raises:
-            ValueError: Raised if server_name is empty.
-
-        Returns:
-            server_name value.
-        """
-        if not value:
-            raise ValueError("The server_name is empty, please review your charm configuration")
-        return value
 
     @validator("report_stats")
     @classmethod

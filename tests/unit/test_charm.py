@@ -3,8 +3,6 @@
 
 """Synapse charm unit tests."""
 
-from secrets import token_hex
-
 import ops
 import pytest
 from ops.testing import Harness
@@ -21,7 +19,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     assert: Synapse charm should submit the correct Synapse pebble layer to pebble.
     """
     harness.disable_hooks()
-    server_name = token_hex(16)
+    server_name = "pebble-layer.synapse.com"
     harness.update_config({"server_name": server_name})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()
@@ -30,6 +28,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     synapse_layer = harness.get_container_pebble_plan(SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
     ][SYNAPSE_SERVICE_NAME]
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
     assert synapse_layer == {
         "override": "replace",
         "summary": "Synapse application service",
@@ -51,7 +50,7 @@ def test_synapse_migrate_config_error(harness: Harness) -> None:
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
     harness.disable_hooks()
-    server_name = token_hex(16)
+    server_name = "migrate-config-error.synapse.com"
     harness.update_config({"server_name": server_name})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()
@@ -69,7 +68,7 @@ def test_container_down(harness: Harness) -> None:
     assert: Synapse charm should submit the correct status.
     """
     harness.disable_hooks()
-    server_name = token_hex(16)
+    server_name = "container-down.synapse.com"
     harness.update_config({"server_name": server_name})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()

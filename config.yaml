@@ -8,7 +8,6 @@ options:
       Synapse server name. Must be set to deploy the charm. Corresponds to the
       server_name option on Synapse configuration file and sets the
       public-facing domain of the server.
-    default: ""
   report_stats:
     description: |
       Configures whether to report statistics.
