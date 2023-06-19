@@ -19,7 +19,7 @@ from exceptions import CommandMigrateConfigError
 logger = logging.getLogger(__name__)
 
 
-class Synapse:  # pylint: disable=too-few-public-methods
+class Synapse:
     """A class representing the Synapse application."""
 
     def __init__(self, charm_state: CharmState):
@@ -53,6 +53,7 @@ class Synapse:  # pylint: disable=too-few-public-methods
             "SYNAPSE_SERVER_NAME": f"{self._charm_state.server_name}",
             "SYNAPSE_REPORT_STATS": f"{self._charm_state.report_stats}",
             # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
+            # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
             "SYNAPSE_NO_TLS": str(True),
         }
 
