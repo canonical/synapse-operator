@@ -12,7 +12,12 @@ import ops
 from ops.main import main
 
 from charm_state import CharmState
-from constants import CHECK_READY_NAME, COMMAND_PATH, SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
+from constants import (
+    CHECK_READY_NAME,
+    SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONTAINER_NAME,
+    SYNAPSE_SERVICE_NAME,
+)
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
 from synapse import Synapse
 
@@ -69,7 +74,7 @@ class SynapseCharm(ops.CharmBase):
                     "override": "replace",
                     "summary": "Synapse application service",
                     "startup": "enabled",
-                    "command": COMMAND_PATH,
+                    "command": SYNAPSE_COMMAND_PATH,
                     "environment": self._synapse.synapse_environment(),
                 }
             },

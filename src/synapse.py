@@ -13,7 +13,7 @@ from ops.pebble import Check, ExecError
 
 from charm_state import CharmState
 from charm_types import ExecResult
-from constants import CHECK_READY_NAME, COMMAND_MIGRATE_CONFIG, COMMAND_PATH, SYNAPSE_PORT
+from constants import CHECK_READY_NAME, COMMAND_MIGRATE_CONFIG, SYNAPSE_COMMAND_PATH, SYNAPSE_PORT
 from exceptions import CommandMigrateConfigError
 
 logger = logging.getLogger(__name__)
@@ -65,8 +65,8 @@ class Synapse:  # pylint: disable=too-few-public-methods
         Raises:
             CommandMigrateConfigError: something went wrong running migrate_config.
         """
-        # TODO validate if is possible to use SDK instead of command
-        migrate_config_command = [COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
+        # TODO validate if is possible to use SDK instead of command  # pylint: disable=fixme
+        migrate_config_command = [SYNAPSE_COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
         migrate_config_result = self._exec(
             container,
             migrate_config_command,

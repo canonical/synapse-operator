@@ -7,8 +7,7 @@ import ops
 import pytest
 from ops.testing import Harness
 
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
-from synapse import COMMAND_PATH
+from constants import SYNAPSE_COMMAND_PATH, SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
@@ -32,7 +31,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     assert synapse_layer == {
         "override": "replace",
         "summary": "Synapse application service",
-        "command": COMMAND_PATH,
+        "command": SYNAPSE_COMMAND_PATH,
         "environment": {
             "SYNAPSE_NO_TLS": "True",
             "SYNAPSE_REPORT_STATS": "no",

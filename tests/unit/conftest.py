@@ -14,7 +14,7 @@ from ops.testing import Harness
 
 from charm import SynapseCharm
 from charm_types import ExecResult
-from constants import COMMAND_MIGRATE_CONFIG, COMMAND_PATH, SYNAPSE_CONTAINER_NAME
+from constants import COMMAND_MIGRATE_CONFIG, SYNAPSE_COMMAND_PATH, SYNAPSE_CONTAINER_NAME
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
@@ -110,7 +110,7 @@ def fixture_harness(request, monkeypatch) -> typing.Generator[Harness, None, Non
     synapse_container.make_dir("/data", make_parents=True)
 
     # unused-variable disabled to pass constants values to inner function
-    command_path = COMMAND_PATH  # pylint: disable=unused-variable
+    command_path = SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
     command_migrate_config = COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
     exit_code = 0
     if hasattr(request, "param"):
