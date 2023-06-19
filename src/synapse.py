@@ -65,6 +65,7 @@ class Synapse:  # pylint: disable=too-few-public-methods
         Raises:
             CommandMigrateConfigError: something went wrong running migrate_config.
         """
+        # TODO validate if is possible to use SDK instead of command
         migrate_config_command = [COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
         migrate_config_result = self._exec(
             container,

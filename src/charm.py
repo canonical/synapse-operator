@@ -53,7 +53,6 @@ class SynapseCharm(ops.CharmBase):
             self._synapse.execute_migrate_config(container)
         except CommandMigrateConfigError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
-            event.defer()
             return
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
