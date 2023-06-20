@@ -12,4 +12,4 @@ def pytest_addoption(parser: Parser) -> None:
     Args:
         parser: Pytest parser.
     """
-    parser.addoption("--synapse-image", action="store")
+    parser.addoption("--synapse-image", action="store", help="Synapse image to be deployed")
