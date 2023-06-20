@@ -1,7 +1,15 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# This file defines charm config options, and populates the Configure tab on Charmhub.
-# If your charm does not require configuration options, delete this file entirely.
-#
-# See https://juju.is/docs/config for guidance.
+options:
+  server_name:
+    type: string
+    description: |
+      Synapse server name. Must be set to deploy the charm. Corresponds to the
+      server_name option on Synapse configuration file and sets the
+      public-facing domain of the server.
+  report_stats:
+    description: |
+      Configures whether to report statistics.
+    default: false
+    type: boolean
