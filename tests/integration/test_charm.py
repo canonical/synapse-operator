@@ -55,10 +55,8 @@ async def test_with_ingress(
 
     traefik_ip = (await get_unit_ips(traefik_app_name))[0]
     response = requests.get(
-        f"http://{traefik_ip}",
-        headers={
-            "Host": f"{ops_test.model_name}-{synapse_app.name}.{external_hostname}/_matrix/static/"
-        },
+        f"http://{traefik_ip}/_matrix/static/",
+        headers={"Host": f"{ops_test.model_name}-{synapse_app.name}.{external_hostname}"},
         timeout=5,
     )
     assert response.status_code == 200
