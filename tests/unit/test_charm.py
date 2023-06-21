@@ -7,7 +7,12 @@ import ops
 import pytest
 from ops.testing import Harness
 
-from constants import SYNAPSE_COMMAND_PATH, SYNAPSE_CONTAINER_NAME, SYNAPSE_SERVICE_NAME
+from constants import (
+    SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_PATH,
+    SYNAPSE_CONTAINER_NAME,
+    SYNAPSE_SERVICE_NAME,
+)
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
@@ -88,3 +93,28 @@ def test_server_name_empty(harness: Harness) -> None:
     harness.begin()
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "invalid configuration: server_name" in str(harness.model.unit.status)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_server_name_change(harness: Harness) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: change to a different server_name.
+    assert: Synapse charm should prevent the change with a BlockStatus.
+    """
+    harness.disable_hooks()
+    server_name = "pebble-layer.synapse.com"
+    harness.update_config({"server_name": server_name})
+    harness.enable_hooks()
+    harness.begin_with_initial_hooks()
+    container = harness.model.unit.containers[SYNAPSE_CONTAINER_NAME]
+    harness.set_can_connect(container, True)
+    harness.framework.reemit()
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+    server_name_changed = "pebble-layer-1.synapse.com"
+    container.push(
+        f"{SYNAPSE_CONFIG_PATH}", f'server_name: "{server_name_changed}"', make_dirs=True
+    )
+    harness.update_config({"server_name": server_name_changed})
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "is different from the existing" in str(harness.model.unit.status)

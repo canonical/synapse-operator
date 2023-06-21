@@ -9,11 +9,18 @@ import logging
 import typing
 
 import ops
-from ops.pebble import Check, ExecError
+import yaml
+from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
 from charm_types import ExecResult
-from constants import CHECK_READY_NAME, COMMAND_MIGRATE_CONFIG, SYNAPSE_COMMAND_PATH, SYNAPSE_PORT
+from constants import (
+    CHECK_READY_NAME,
+    COMMAND_MIGRATE_CONFIG,
+    SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_PATH,
+    SYNAPSE_PORT,
+)
 from exceptions import CommandMigrateConfigError
 
 logger = logging.getLogger(__name__)
@@ -82,6 +89,24 @@ class Synapse:
             raise CommandMigrateConfigError(
                 "Migrate config failed, please review your charm configuration"
             )
+
+    def server_name_configured(self, container: ops.Container) -> str | None:
+        """Get server_name from configuration file.
+
+        Args:
+            container: Container of the charm.
+
+        Returns:
+            str | None: server_name or None if configuration file is not found.
+        """
+        try:
+            configuration_content = str(
+                container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read()
+            )
+        except PathError:
+            logger.error("configuration file %s does not exist", SYNAPSE_CONFIG_PATH)
+            return None
+        return yaml.safe_load(configuration_content)["server_name"]
 
     def _exec(
         self,

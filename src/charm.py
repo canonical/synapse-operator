@@ -53,6 +53,18 @@ class SynapseCharm(ops.CharmBase):
             event.defer()
             self.unit.status = ops.WaitingStatus("Waiting for pebble")
             return
+        server_name_configured = self._synapse.server_name_configured(container)
+        if (
+            server_name_configured is not None
+            and server_name_configured != self._charm_state.server_name
+        ):
+            msg = (
+                f"server_name {self._charm_state.server_name} is different from the existing one"
+                f" {server_name_configured}."
+                " Please run the action reset-instance if you really want to change it."
+            )
+            self.model.unit.status = ops.BlockedStatus(msg)
+            return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
             self._synapse.execute_migrate_config(container)
