@@ -32,3 +32,9 @@ storage:
   data:
     type: filesystem
     location: /data
+
+requires:
+    ingress:
+        interface: ingress
+        limit: 1
+        optional: true

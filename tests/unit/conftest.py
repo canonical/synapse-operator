@@ -14,7 +14,12 @@ from ops.testing import Harness
 
 from charm import SynapseCharm
 from charm_types import ExecResult
-from constants import COMMAND_MIGRATE_CONFIG, SYNAPSE_COMMAND_PATH, SYNAPSE_CONTAINER_NAME
+from constants import (
+    COMMAND_MIGRATE_CONFIG,
+    SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONTAINER_NAME,
+    TEST_SERVER_NAME,
+)
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
@@ -105,6 +110,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def fixture_harness(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     harness = Harness(SynapseCharm)
+    harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
     synapse_container.make_dir("/data", make_parents=True)
@@ -141,3 +147,15 @@ def fixture_harness(request, monkeypatch) -> typing.Generator[Harness, None, Non
     )
     yield harness
     harness.cleanup()
+
+
+@pytest.fixture(name="harness_server_name_configured")
+def fixture_harness_server_name_configured(harness: Harness) -> Harness:
+    """Ops testing framework harness fixture with server_name already configured."""
+    harness.disable_hooks()
+    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.enable_hooks()
+    harness.begin_with_initial_hooks()
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
+    harness.framework.reemit()
+    return harness
