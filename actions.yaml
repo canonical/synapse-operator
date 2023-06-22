@@ -1,0 +1,5 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+reset-instance:
+  description: Set a new server_name before running this action. This will erase all existing data.

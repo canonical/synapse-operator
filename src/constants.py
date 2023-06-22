@@ -5,7 +5,8 @@
 
 CHECK_READY_NAME = "synapse-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
-SYNAPSE_CONFIG_PATH = "/data/homeserver.yaml"
+SYNAPSE_CONFIG_DIR = "/data"
+SYNAPSE_CONFIG_PATH = SYNAPSE_CONFIG_DIR + "/homeserver.yaml"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONTAINER_NAME = "synapse"
 SYNAPSE_PORT = 8008

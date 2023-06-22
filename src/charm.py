@@ -10,6 +10,7 @@ from typing import Any, Dict
 
 import ops
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from ops.charm import ActionEvent
 from ops.main import main
 
 from charm_state import CharmState
@@ -36,7 +37,6 @@ class SynapseCharm(ops.CharmBase):
             args: class arguments.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
@@ -52,6 +52,8 @@ class SynapseCharm(ops.CharmBase):
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.reset_instance_action, self._reset_instance_action)
 
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
@@ -107,6 +109,21 @@ class SynapseCharm(ops.CharmBase):
                 CHECK_READY_NAME: self._synapse.check_ready(),
             },
         }
+
+    def _reset_instance_action(self, event: ActionEvent) -> None:
+        """Reset instance and report action result.
+
+        Args:
+            event: Event triggering the reset instance action.
+        """
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        results = {"stderr": "Failed to connect to container"}
+        if container.can_connect():
+            self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
+            results = self._synapse.reset_instance_action(container)
+            results["stderr"] = ""
+            self.model.unit.status = ops.ActiveStatus()
+        event.set_results(results)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":  # pragma: nocover

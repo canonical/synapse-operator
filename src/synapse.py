@@ -18,6 +18,7 @@ from constants import (
     CHECK_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
     SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_DIR,
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_PORT,
 )
@@ -107,6 +108,23 @@ class Synapse:
             logger.error("configuration file %s does not exist", SYNAPSE_CONFIG_PATH)
             return None
         return yaml.safe_load(configuration_content)["server_name"]
+
+    def reset_instance_action(self, container: ops.Container) -> typing.Dict:
+        """Erase data and config server_name.
+
+        Args:
+            container: Container of the charm.
+
+        Returns:
+            Dictionary containing the execution results for each of the operations executed.
+        """
+        results = {
+            "reset-instance": False,
+        }
+        logging.debug("Erasing directory %s", SYNAPSE_CONFIG_DIR)
+        container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
+        results["reset-instance"] = True
+        return results
 
     def _exec(
         self,
