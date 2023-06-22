@@ -10,8 +10,8 @@ import pytest
 from ops.testing import Harness
 
 from constants import (
-    SYNAPSE_CONFIG_PATH,
     SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_PORT,
     SYNAPSE_SERVICE_NAME,
@@ -80,6 +80,7 @@ def test_server_name_empty(harness: Harness) -> None:
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "invalid configuration: server_name" in str(harness.model.unit.status)
 
+
 def test_traefik_integration(harness_server_name_configured: Harness) -> None:
     """
     arrange: add relation with Traefik charm.
@@ -108,6 +109,7 @@ def test_traefik_integration(harness_server_name_configured: Harness) -> None:
         "strip-prefix": "true",
     }
 
+
 @pytest.mark.parametrize("harness", [0], indirect=True)
 def test_server_name_change(harness: Harness) -> None:
     """
@@ -131,4 +133,3 @@ def test_server_name_change(harness: Harness) -> None:
     harness.update_config({"server_name": server_name_changed})
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "is different from the existing" in str(harness.model.unit.status)
-

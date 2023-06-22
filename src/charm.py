@@ -72,7 +72,9 @@ class SynapseCharm(ops.CharmBase):
             msg = (
                 f"server_name {self._charm_state.server_name} is different from the existing one"
                 f" {server_name_configured}."
-                " Please run the action reset-instance if you really want to change it."
+                " Please revert the config or"
+                " run the action reset-instance if you to erase the existing instance and start a"
+                " new one."
             )
             self.model.unit.status = ops.BlockedStatus(msg)
             return

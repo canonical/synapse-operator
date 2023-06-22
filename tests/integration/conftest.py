@@ -19,6 +19,12 @@ async def fixture_server_name() -> str:
     return "my.synapse.local"
 
 
+@pytest_asyncio.fixture(scope="module", name="different_server_name")
+async def fixture_different_server_name() -> str:
+    """Return a server_name."""
+    return "different.synapse.local"
+
+
 @pytest_asyncio.fixture(scope="module", name="model")
 async def fixture_model(ops_test: OpsTest) -> Model:
     """Return the current testing juju model."""
@@ -119,5 +125,4 @@ async def fixture_traefik_app(
         },
     )
     await model.wait_for_idle(raise_on_blocked=True)
-
     return app

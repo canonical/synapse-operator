@@ -61,3 +61,20 @@ async def test_with_ingress(
     )
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
+
+
+async def test_server_name_changed(
+    model: Model, synapse_app: Application, different_server_name: str
+):
+    """
+    arrange: build and deploy the Synapse charm.
+    act: change server_name via juju config.
+    assert: the Synapse application should prevent the change.
+    """
+    await model.applications[synapse_app.name].set_config({"server_name": different_server_name})
+    await model.wait_for_idle()
+    unit = model.applications[synapse_app.name].units[0]
+    # Status string defined in Juju
+    # https://github.com/juju/juju/blob/2.9/core/status/status.go#L150
+    assert unit.workload_status == "blocked"
+    assert "is different from the existing" in unit.workload_status_message
