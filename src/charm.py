@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict
 
 import ops
+from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.main import main
 
 from charm_state import CharmState
@@ -16,6 +17,7 @@ from constants import (
     CHECK_READY_NAME,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONTAINER_NAME,
+    SYNAPSE_PORT,
     SYNAPSE_SERVICE_NAME,
 )
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
@@ -41,6 +43,15 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
         self._synapse = Synapse(charm_state=self._charm_state)
+        self._ingress = IngressPerAppRequirer(
+            self,
+            port=SYNAPSE_PORT,
+            # We're forced to use the app's service endpoint
+            # as the ingress per app interface currently always routes to the leader.
+            # https://github.com/canonical/traefik-k8s-operator/issues/159
+            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
+            strip_prefix=True,
+        )
 
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.

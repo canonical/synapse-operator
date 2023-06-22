@@ -6,6 +6,7 @@
 
 import json
 
+import pytest
 import pytest_asyncio
 from juju.model import Model
 from pytest import Config
@@ -86,3 +87,37 @@ async def fixture_get_unit_ips(ops_test: OpsTest):
         )
 
     return get_unit_ips
+
+
+@pytest.fixture(scope="module", name="external_hostname")
+def external_hostname_fixture() -> str:
+    """Return the external hostname for ingress-related tests."""
+    return "juju.test"
+
+
+@pytest.fixture(scope="module", name="traefik_app_name")
+def traefik_app_name_fixture() -> str:
+    """Return the name of the traefix application deployed for tests."""
+    return "traefik-k8s"
+
+
+@pytest_asyncio.fixture(scope="module", name="traefik_app")
+async def fixture_traefik_app(
+    model: Model,
+    synapse_app,  # pylint: disable=unused-argument
+    traefik_app_name: str,
+    external_hostname: str,
+):
+    """Deploy traefik."""
+    app = await model.deploy(
+        "traefik-k8s",
+        application_name=traefik_app_name,
+        trust=True,
+        config={
+            "external_hostname": external_hostname,
+            "routing_mode": "subdomain",
+        },
+    )
+    await model.wait_for_idle(raise_on_blocked=True)
+
+    return app
