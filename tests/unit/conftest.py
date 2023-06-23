@@ -17,6 +17,7 @@ from charm_types import ExecResult
 from constants import (
     COMMAND_MIGRATE_CONFIG,
     SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
     TEST_SERVER_NAME,
 )
@@ -156,6 +157,8 @@ def fixture_harness_server_name_configured(harness: Harness) -> Harness:
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()
+    container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container.push(f"{SYNAPSE_CONFIG_PATH}", f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
     return harness

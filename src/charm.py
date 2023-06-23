@@ -61,6 +61,11 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering after config is changed.
         """
+        try:
+            self._charm_state = CharmState.from_charm(charm=self)
+        except CharmConfigInvalidError as exc:
+            self.model.unit.status = ops.BlockedStatus(exc.msg)
+            return
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             event.defer()
@@ -116,19 +121,23 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering the reset instance action.
         """
+        if not self.model.unit.is_leader():
+            event.defer()
+            return
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
-        results = {"msg": "Failed to connect to container"}
-        if container.can_connect():
-            self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
-            results = self._synapse.reset_instance_action(container)
-            try:
-                self._synapse.execute_migrate_config(container)
-            except CommandMigrateConfigError as exc:
-                self.model.unit.status = ops.BlockedStatus(exc.msg)
-                results["msg"] = exc.msg
-                return
-            self.model.unit.status = ops.ActiveStatus()
-        results["msg"] = "Synapse successfully reset"
+        if not container.can_connect():
+            event.fail("Failed to connect to container")
+            return
+        self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
+        results = self._synapse.reset_instance_action(container)
+        try:
+            self._synapse.execute_migrate_config(container)
+        except CommandMigrateConfigError as exc:
+            self.model.unit.status = ops.BlockedStatus(exc.msg)
+            event.fail(exc.msg)
+            return
+        self.model.unit.status = ops.ActiveStatus()
+        # results is a dict and set_results expects _SerializedData
         event.set_results(results)  # type: ignore[arg-type]
 
 

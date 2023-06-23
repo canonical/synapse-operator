@@ -4,6 +4,7 @@
 """Synapse charm unit tests."""
 
 import json
+import unittest.mock
 
 import ops
 import pytest
@@ -11,7 +12,6 @@ from ops.testing import Harness
 
 from constants import (
     SYNAPSE_COMMAND_PATH,
-    SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_PORT,
     SYNAPSE_SERVICE_NAME,
@@ -111,25 +111,90 @@ def test_traefik_integration(harness_server_name_configured: Harness) -> None:
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_server_name_change(harness: Harness) -> None:
+def test_server_name_change(harness_server_name_configured: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: change to a different server_name.
     assert: Synapse charm should prevent the change with a BlockStatus.
     """
-    harness.disable_hooks()
-    server_name = "pebble-layer.synapse.com"
-    harness.update_config({"server_name": server_name})
-    harness.enable_hooks()
-    harness.begin_with_initial_hooks()
-    container = harness.model.unit.containers[SYNAPSE_CONTAINER_NAME]
-    harness.set_can_connect(container, True)
-    harness.framework.reemit()
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+    harness = harness_server_name_configured
     server_name_changed = "pebble-layer-1.synapse.com"
-    container.push(
-        f"{SYNAPSE_CONFIG_PATH}", f'server_name: "{server_name_changed}"', make_dirs=True
-    )
     harness.update_config({"server_name": server_name_changed})
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "is different from the existing" in str(harness.model.unit.status)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_reset_instance_action(harness_server_name_configured: Harness) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: run reset-instance action.
+    assert: Synapse charm should reset the instance.
+    """
+    harness = harness_server_name_configured
+    harness.set_leader(True)
+    server_name_changed = "pebble-layer-1.synapse.com"
+    harness.update_config({"server_name": server_name_changed})
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "is different from the existing" in str(harness.model.unit.status)
+    event = unittest.mock.Mock()
+    # Calling to test the action since is not possible calling via harness
+    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    assert event.set_results.call_count == 1
+    event.set_results.assert_called_with({"reset-instance": True})
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@pytest.mark.parametrize("harness", [1], indirect=True)
+def test_reset_instance_action_failed(harness_server_name_configured: Harness) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: run reset-instance action.
+    assert: Synapse charm should be blocked by error on migrate_config command.
+    """
+    harness = harness_server_name_configured
+    harness.set_leader(True)
+    server_name_changed = "pebble-layer-1.synapse.com"
+    harness.update_config({"server_name": server_name_changed})
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "is different from the existing" in str(harness.model.unit.status)
+    event = unittest.mock.Mock()
+    # Calling to test the action since is not possible calling via harness
+    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    assert event.set_results.call_count == 0
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "Migrate config failed" in str(harness.model.unit.status)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_reset_instance_action_path_error(
+    monkeypatch: pytest.MonkeyPatch, harness_server_name_configured: Harness
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: run reset-instance action.
+    assert: Synapse charm should reset the instance even if a PathError occurs.
+    """
+    harness = harness_server_name_configured
+    harness.set_leader(True)
+    server_name_changed = "pebble-layer-1.synapse.com"
+    harness.update_config({"server_name": server_name_changed})
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "is different from the existing" in str(harness.model.unit.status)
+    path_error = ops.pebble.PathError(kind="fake", message="fake")
+    remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
+    container = unittest.mock.Mock()
+    monkeypatch.setattr(container, "remove_path", remove_path_mock)
+    monkeypatch.setattr(container, "can_connect", lambda: True)
+    exec_process = unittest.mock.MagicMock()
+    exec_process.wait_output = unittest.mock.MagicMock(return_value=(0, 0))
+    exec_mock = unittest.mock.Mock(return_value=exec_process)
+    monkeypatch.setattr(container, "exec", exec_mock)
+    harness.charm.unit.get_container = unittest.mock.MagicMock(return_value=container)
+    event = unittest.mock.MagicMock()
+    # Calling to test the action since is not possible calling via harness
+    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    assert remove_path_mock.call_count == 1
+    assert event.set_results.call_count == 1
+    event.set_results.assert_called_with({"reset-instance": True})
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
