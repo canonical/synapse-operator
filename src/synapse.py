@@ -122,7 +122,12 @@ class Synapse:
             "reset-instance": False,
         }
         logging.debug("Erasing directory %s", SYNAPSE_CONFIG_DIR)
-        container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
+        try:
+            container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
+        except PathError as path_error:
+            logger.debug(
+                "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
+            )
         results["reset-instance"] = True
         return results
 

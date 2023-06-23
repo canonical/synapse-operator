@@ -117,12 +117,18 @@ class SynapseCharm(ops.CharmBase):
             event: Event triggering the reset instance action.
         """
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
-        results = {"stderr": "Failed to connect to container"}
+        results = {"msg": "Failed to connect to container"}
         if container.can_connect():
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
             results = self._synapse.reset_instance_action(container)
-            results["stderr"] = ""
+            try:
+                self._synapse.execute_migrate_config(container)
+            except CommandMigrateConfigError as exc:
+                self.model.unit.status = ops.BlockedStatus(exc.msg)
+                results["msg"] = exc.msg
+                return
             self.model.unit.status = ops.ActiveStatus()
+        results["msg"] = "Synapse successfully reset"
         event.set_results(results)  # type: ignore[arg-type]
 
 
