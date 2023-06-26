@@ -6,6 +6,7 @@
 # pylint: disable=too-few-public-methods
 
 import typing
+import unittest.mock
 
 import ops
 import pytest
@@ -162,3 +163,18 @@ def fixture_harness_server_name_configured(harness: Harness) -> Harness:
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
     return harness
+
+
+@pytest.fixture(name="container_with_path_error")
+def fixture_container_with_path_error(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
+    """Mock container that gives an error while executing remove_path."""
+    path_error = ops.pebble.PathError(kind="fake", message="Error erasing directory")
+    remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
+    container = unittest.mock.MagicMock()
+    monkeypatch.setattr(container, "remove_path", remove_path_mock)
+    monkeypatch.setattr(container, "can_connect", lambda: True)
+    exec_process = unittest.mock.MagicMock()
+    exec_process.wait_output = unittest.mock.MagicMock(return_value=(0, 0))
+    exec_mock = unittest.mock.MagicMock(return_value=exec_process)
+    monkeypatch.setattr(container, "exec", exec_mock)
+    return container

@@ -109,27 +109,23 @@ class Synapse:
             return None
         return yaml.safe_load(configuration_content)["server_name"]
 
-    def reset_instance_action(self, container: ops.Container) -> typing.Dict:
+    def reset_instance_action(self, container: ops.Container) -> None:
         """Erase data and config server_name.
 
         Args:
             container: Container of the charm.
 
-        Returns:
-            Dictionary containing the execution results for each of the operations executed.
+        Raises:
+            PathError: if somethings goes wrong while erasing the Synapse directory.
         """
-        results = {
-            "reset-instance": False,
-        }
         logging.debug("Erasing directory %s", SYNAPSE_CONFIG_DIR)
         try:
             container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
         except PathError as path_error:
-            logger.debug(
+            logger.error(
                 "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
             )
-        results["reset-instance"] = True
-        return results
+            raise
 
     def _exec(
         self,

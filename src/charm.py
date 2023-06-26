@@ -121,6 +121,9 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering the reset instance action.
         """
+        results = {
+            "reset-instance": False,
+        }
         if not self.model.unit.is_leader():
             event.defer()
             return
@@ -129,12 +132,13 @@ class SynapseCharm(ops.CharmBase):
             event.fail("Failed to connect to container")
             return
         self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
-        results = self._synapse.reset_instance_action(container)
         try:
+            self._synapse.reset_instance_action(container)
             self._synapse.execute_migrate_config(container)
-        except CommandMigrateConfigError as exc:
-            self.model.unit.status = ops.BlockedStatus(exc.msg)
-            event.fail(exc.msg)
+            results["reset-instance"] = True
+        except (ops.pebble.PathError, CommandMigrateConfigError) as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            event.fail(str(exc))
             return
         self.model.unit.status = ops.ActiveStatus()
         # results is a dict and set_results expects _SerializedData
