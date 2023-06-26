@@ -122,10 +122,15 @@ class Synapse:
         try:
             container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
         except PathError as path_error:
-            logger.error(
-                "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
-            )
-            raise
+            # The error "unlinkat //data: device or resource busy" is expected
+            # while removing the entire directory
+            if "device or resource busy" in str(path_error):
+                pass
+            else:
+                logger.error(
+                    "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
+                )
+                raise
 
     def _exec(
         self,

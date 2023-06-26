@@ -7,6 +7,7 @@ import logging
 import typing
 
 import requests
+from juju.action import Action
 from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
@@ -86,7 +87,7 @@ async def test_reset_instance_action(
     """
     arrange: build and deploy the Synapse charm.
     act: change server_name via juju config.
-    assert: the Synapse application should prevent the change.
+    assert: the old instance is deleted and the new one configured.
     """
     await model.applications[synapse_app.name].set_config({"server_name": different_server_name})
     await model.wait_for_idle()
@@ -95,3 +96,13 @@ async def test_reset_instance_action(
     # https://github.com/juju/juju/blob/2.9/core/status/status.go#L150
     assert unit.workload_status == "blocked"
     assert "is different from the existing" in unit.workload_status_message
+    action_reset_instance: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "reset-instance"
+    )
+    await action_reset_instance.wait()
+    assert action_reset_instance.status == "completed"
+    assert action_reset_instance.results["reset-instance"]
+    assert unit.workload_status == "active"
+    config = await model.applications[synapse_app.name].get_config()
+    current_server_name = config.get("server_name", {}).get("value")
+    assert current_server_name == different_server_name

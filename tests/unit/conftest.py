@@ -165,16 +165,37 @@ def fixture_harness_server_name_configured(harness: Harness) -> Harness:
     return harness
 
 
-@pytest.fixture(name="container_with_path_error")
-def fixture_container_with_path_error(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
-    """Mock container that gives an error while executing remove_path."""
-    path_error = ops.pebble.PathError(kind="fake", message="Error erasing directory")
-    remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
+@pytest.fixture(name="container_mocked")
+def fixture_container_mocked(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
+    """Mock container base to others fixtures."""
     container = unittest.mock.MagicMock()
-    monkeypatch.setattr(container, "remove_path", remove_path_mock)
     monkeypatch.setattr(container, "can_connect", lambda: True)
     exec_process = unittest.mock.MagicMock()
     exec_process.wait_output = unittest.mock.MagicMock(return_value=(0, 0))
     exec_mock = unittest.mock.MagicMock(return_value=exec_process)
     monkeypatch.setattr(container, "exec", exec_mock)
     return container
+
+
+@pytest.fixture(name="container_with_path_error_blocked")
+def container_with_path_error_blocked(
+    container_mocked: unittest.mock.MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> unittest.mock.MagicMock:
+    """Mock container that gives an error on remove_path that blocks the action."""
+    path_error = ops.pebble.PathError(kind="fake", message="Error erasing directory")
+    remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
+    monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
+    return container_mocked
+
+
+@pytest.fixture(name="container_with_path_error_pass")
+def container_with_path_error_pass(
+    container_mocked: unittest.mock.MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> unittest.mock.MagicMock:
+    """Mock container that gives an error on remove_path that doesn't block the action."""
+    path_error = ops.pebble.PathError(
+        kind="generic-file-error", message="unlinkat //data: device or resource busy"
+    )
+    remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
+    monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
+    return container_mocked

@@ -167,8 +167,9 @@ def test_reset_instance_action_failed(harness_server_name_configured: Harness) -
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_reset_instance_action_path_error(
-    container_with_path_error: unittest.mock.MagicMock, harness_server_name_configured: Harness
+def test_reset_instance_action_path_error_blocked(
+    container_with_path_error_blocked: unittest.mock.MagicMock,
+    harness_server_name_configured: Harness,
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -182,11 +183,37 @@ def test_reset_instance_action_path_error(
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "is different from the existing" in str(harness.model.unit.status)
     harness.charm.unit.get_container = unittest.mock.MagicMock(
-        return_value=container_with_path_error
+        return_value=container_with_path_error_blocked
     )
     event = unittest.mock.MagicMock()
     # Calling to test the action since is not possible calling via harness
     harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
-    assert container_with_path_error.remove_path.call_count == 1
+    assert container_with_path_error_blocked.remove_path.call_count == 1
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "Error erasing" in str(harness.model.unit.status)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_reset_instance_action_path_error_pass(
+    container_with_path_error_pass: unittest.mock.MagicMock,
+    harness_server_name_configured: Harness,
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: change server_name and run reset-instance action.
+    assert: Synapse charm should reset the instance.
+    """
+    harness = harness_server_name_configured
+    harness.set_leader(True)
+    server_name_changed = "pebble-layer-1.synapse.com"
+    harness.update_config({"server_name": server_name_changed})
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "is different from the existing" in str(harness.model.unit.status)
+    harness.charm.unit.get_container = unittest.mock.MagicMock(
+        return_value=container_with_path_error_pass
+    )
+    event = unittest.mock.MagicMock()
+    # Calling to test the action since is not possible calling via harness
+    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    assert container_with_path_error_pass.remove_path.call_count == 1
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
