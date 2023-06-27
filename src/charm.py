@@ -21,7 +21,7 @@ from constants import (
     SYNAPSE_PORT,
     SYNAPSE_SERVICE_NAME,
 )
-from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
+from exceptions import CharmConfigInvalidError, CommandMigrateConfigError, ServerNameModifiedError
 from synapse import Synapse
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class SynapseCharm(ops.CharmBase):
             strip_prefix=True,
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.reset_instance_action, self._reset_instance_action)
+        self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
 
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
@@ -61,35 +61,24 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering after config is changed.
         """
-        try:
-            self._charm_state = CharmState.from_charm(charm=self)
-        except CharmConfigInvalidError as exc:
-            self.model.unit.status = ops.BlockedStatus(exc.msg)
-            return
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             event.defer()
             self.unit.status = ops.WaitingStatus("Waiting for pebble")
             return
-        server_name_configured = self._synapse.server_name_configured(container)
-        if (
-            server_name_configured is not None
-            and server_name_configured != self._charm_state.server_name
-        ):
-            msg = (
-                f"server_name {self._charm_state.server_name} is different from the existing one"
-                f" {server_name_configured}."
-                " Please revert the config or"
-                " run the action reset-instance if you to erase the existing instance and start a"
-                " new one."
-            )
-            self.model.unit.status = ops.BlockedStatus(msg)
-            return
-        self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
+            self._charm_state = CharmState.from_charm(charm=self)
+            self._synapse = Synapse(charm_state=self._charm_state)
+            self._synapse.check_server_name(container)
+            self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
             self._synapse.execute_migrate_config(container)
-        except CommandMigrateConfigError as exc:
-            self.model.unit.status = ops.BlockedStatus(exc.msg)
+        except (
+            CharmConfigInvalidError,
+            CommandMigrateConfigError,
+            ops.pebble.PathError,
+            ServerNameModifiedError,
+        ) as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
             return
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
@@ -115,7 +104,7 @@ class SynapseCharm(ops.CharmBase):
             },
         }
 
-    def _reset_instance_action(self, event: ActionEvent) -> None:
+    def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.
 
         Args:

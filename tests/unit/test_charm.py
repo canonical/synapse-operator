@@ -139,7 +139,7 @@ def test_reset_instance_action(harness_server_name_configured: Harness) -> None:
     assert "is different from the existing" in str(harness.model.unit.status)
     event = unittest.mock.Mock()
     # Calling to test the action since is not possible calling via harness
-    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    harness.charm._on_reset_instance_action(event)  # pylint: disable=protected-access
     assert event.set_results.call_count == 1
     event.set_results.assert_called_with({"reset-instance": True})
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
@@ -160,7 +160,7 @@ def test_reset_instance_action_failed(harness_server_name_configured: Harness) -
     assert "is different from the existing" in str(harness.model.unit.status)
     event = unittest.mock.Mock()
     # Calling to test the action since is not possible calling via harness
-    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    harness.charm._on_reset_instance_action(event)  # pylint: disable=protected-access
     assert event.set_results.call_count == 0
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "Migrate config failed" in str(harness.model.unit.status)
@@ -187,7 +187,7 @@ def test_reset_instance_action_path_error_blocked(
     )
     event = unittest.mock.MagicMock()
     # Calling to test the action since is not possible calling via harness
-    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    harness.charm._on_reset_instance_action(event)  # pylint: disable=protected-access
     assert container_with_path_error_blocked.remove_path.call_count == 1
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "Error erasing" in str(harness.model.unit.status)
@@ -214,6 +214,28 @@ def test_reset_instance_action_path_error_pass(
     )
     event = unittest.mock.MagicMock()
     # Calling to test the action since is not possible calling via harness
-    harness.charm._reset_instance_action(event)  # pylint: disable=protected-access
+    harness.charm._on_reset_instance_action(event)  # pylint: disable=protected-access
     assert container_with_path_error_pass.remove_path.call_count == 1
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_reset_instance_action_no_leader(
+    harness_server_name_configured: Harness,
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: change server_name and run reset-instance action.
+    assert: Synapse charm should take no action if no leader.
+    """
+    harness = harness_server_name_configured
+    harness.set_leader(True)
+    server_name_changed = "pebble-layer-1.synapse.com"
+    harness.update_config({"server_name": server_name_changed})
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "is different from the existing" in str(harness.model.unit.status)
+    harness.set_leader(False)
+    event = unittest.mock.MagicMock()
+    # Calling to test the action since is not possible calling via harness
+    harness.charm._on_reset_instance_action(event)  # pylint: disable=protected-access
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)

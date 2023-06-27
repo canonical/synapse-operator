@@ -22,7 +22,7 @@ from constants import (
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_PORT,
 )
-from exceptions import CommandMigrateConfigError
+from exceptions import CommandMigrateConfigError, ServerNameModifiedError
 
 logger = logging.getLogger(__name__)
 
@@ -91,23 +91,49 @@ class Synapse:
                 "Migrate config failed, please review your charm configuration"
             )
 
-    def server_name_configured(self, container: ops.Container) -> str | None:
-        """Get server_name from configuration file.
+    def check_server_name(self, container: ops.Container) -> None:
+        """Check server_name.
+
+        Check if server_name of the state has been modified in relation to the configuration file.
 
         Args:
             container: Container of the charm.
 
-        Returns:
-            str | None: server_name or None if configuration file is not found.
+        Raises:
+            PathError: if somethings goes wrong while reading the configuration file.
+            ServerNameModifiedError: if server_name from state is different than the one in the
+                configuration file.
         """
         try:
             configuration_content = str(
                 container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read()
             )
-        except PathError:
-            logger.error("configuration file %s does not exist", SYNAPSE_CONFIG_PATH)
-            return None
-        return yaml.safe_load(configuration_content)["server_name"]
+            configured_server_name = yaml.safe_load(configuration_content)["server_name"]
+            if (
+                configured_server_name is not None
+                and configured_server_name != self._charm_state.server_name
+            ):
+                msg = (
+                    f"server_name {self._charm_state.server_name} is different from the existing "
+                    f" one {configured_server_name}."
+                    " Please revert the config or"
+                    " run the action reset-instance if you to erase the existing instance and "
+                    " start a new one."
+                )
+                raise ServerNameModifiedError(msg)
+        except PathError as path_error:
+            if path_error.kind == "not-found":
+                logger.debug(
+                    "configuration file %s not found, will be created by config-changed",
+                    SYNAPSE_CONFIG_PATH,
+                )
+            else:
+                logger.error(
+                    "exception while reading configuration file %s: %s",
+                    SYNAPSE_CONFIG_PATH,
+                    path_error,
+                )
+                raise
 
     def reset_instance_action(self, container: ops.Container) -> None:
         """Erase data and config server_name.
@@ -123,7 +149,9 @@ class Synapse:
             container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
         except PathError as path_error:
             # The error "unlinkat //data: device or resource busy" is expected
-            # while removing the entire directory
+            # when removing the entire directory because it's a volume mount.
+            # The files will be removed but SYNAPSE_CONFIG_DIR directory will
+            # remain.
             if "device or resource busy" in str(path_error):
                 pass
             else:
