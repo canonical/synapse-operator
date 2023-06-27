@@ -115,12 +115,13 @@ class Synapse:
             ):
                 msg = (
                     f"server_name {self._charm_state.server_name} is different from the existing "
-                    f" one {configured_server_name}."
-                    " Please revert the config or"
-                    " run the action reset-instance if you to erase the existing instance and "
-                    " start a new one."
+                    f" one {configured_server_name}. Please revert the config or run the action "
+                    "reset-instance if you to erase the existing instance and start a new one."
                 )
-                raise ServerNameModifiedError(msg)
+                logger.error(msg)
+                raise ServerNameModifiedError(
+                    "The server_name modification is not allowed, please check the logs"
+                )
         except PathError as path_error:
             if path_error.kind == "not-found":
                 logger.debug(

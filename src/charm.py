@@ -114,7 +114,7 @@ class SynapseCharm(ops.CharmBase):
             "reset-instance": False,
         }
         if not self.model.unit.is_leader():
-            event.defer()
+            event.fail("Only the juju leader unit can run reset instance action")
             return
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
