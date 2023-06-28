@@ -3,7 +3,7 @@
 
 """pytest fixtures for the unit test."""
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, protected-access
 
 import typing
 import unittest.mock
@@ -162,6 +162,26 @@ def harness_server_name_configured_fixture(harness: Harness) -> Harness:
     container.push(SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
+    return harness
+
+
+@pytest.fixture(name="harness_server_name_changed")
+def harness_server_name_changed_fixture(harness_server_name_configured: Harness) -> Harness:
+    """Ops testing framework harness fixture with server_name changed.
+
+    This is a workaround for the fact that Harness doesn't reinitialize the charm as expected.
+    Reference: https://github.com/canonical/operator/issues/736
+    """
+    harness = harness_server_name_configured
+    harness.disable_hooks()
+    harness._framework = ops.framework.Framework(
+        harness._storage, harness._charm_dir, harness._meta, harness._model
+    )
+    harness._charm = None
+    server_name_changed = "pebble-layer-1.synapse.com"
+    harness.update_config({"server_name": server_name_changed})
+    harness.enable_hooks()
+    harness.begin_with_initial_hooks()
     return harness
 
 

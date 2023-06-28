@@ -67,9 +67,6 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.WaitingStatus("Waiting for pebble")
             return
         try:
-            self._charm_state = CharmState.from_charm(charm=self)
-            self._synapse = Synapse(charm_state=self._charm_state)
-            self._synapse.check_server_name(container)
             self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
             self._synapse.execute_migrate_config(container)
         except (

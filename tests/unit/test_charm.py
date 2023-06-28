@@ -114,32 +114,26 @@ def test_traefik_integration(harness_server_name_configured: Harness) -> None:
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_server_name_change(harness_server_name_configured: Harness) -> None:
+def test_server_name_change(harness_server_name_changed: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: change to a different server_name.
     assert: Synapse charm should prevent the change with a BlockStatus.
     """
-    harness = harness_server_name_configured
-    server_name_changed = "pebble-layer-1.synapse.com"
-    harness.update_config({"server_name": server_name_changed})
+    harness = harness_server_name_changed
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_reset_instance_action(harness_server_name_configured: Harness) -> None:
+def test_reset_instance_action(harness_server_name_changed: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness = harness_server_name_configured
+    harness = harness_server_name_changed
     harness.set_leader(True)
-    server_name_changed = "pebble-layer-1.synapse.com"
-    harness.update_config({"server_name": server_name_changed})
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "server_name modification is not allowed" in str(harness.model.unit.status)
     event = unittest.mock.Mock()
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
@@ -149,18 +143,14 @@ def test_reset_instance_action(harness_server_name_configured: Harness) -> None:
 
 
 @pytest.mark.parametrize("harness", [1], indirect=True)
-def test_reset_instance_action_failed(harness_server_name_configured: Harness) -> None:
+def test_reset_instance_action_failed(harness_server_name_changed: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: change server_name and run reset-instance action.
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
-    harness = harness_server_name_configured
+    harness = harness_server_name_changed
     harness.set_leader(True)
-    server_name_changed = "pebble-layer-1.synapse.com"
-    harness.update_config({"server_name": server_name_changed})
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "server_name modification is not allowed" in str(harness.model.unit.status)
     event = unittest.mock.Mock()
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
@@ -172,19 +162,15 @@ def test_reset_instance_action_failed(harness_server_name_configured: Harness) -
 @pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action_path_error_blocked(
     container_with_path_error_blocked: unittest.mock.MagicMock,
-    harness_server_name_configured: Harness,
+    harness_server_name_changed: Harness,
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: change server_name and run reset-instance action.
     assert: Synapse charm should be blocked by error on remove_path.
     """
-    harness = harness_server_name_configured
+    harness = harness_server_name_changed
     harness.set_leader(True)
-    server_name_changed = "pebble-layer-1.synapse.com"
-    harness.update_config({"server_name": server_name_changed})
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "server_name modification is not allowed" in str(harness.model.unit.status)
     harness.charm.unit.get_container = unittest.mock.MagicMock(
         return_value=container_with_path_error_blocked
     )
@@ -199,7 +185,7 @@ def test_reset_instance_action_path_error_blocked(
 @pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action_path_error_pass(
     container_with_path_error_pass: unittest.mock.MagicMock,
-    harness_server_name_configured: Harness,
+    harness_server_name_changed: Harness,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -207,12 +193,9 @@ def test_reset_instance_action_path_error_pass(
     act: change server_name and run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness = harness_server_name_configured
+    harness = harness_server_name_changed
     harness.set_leader(True)
     server_name_changed = "pebble-layer-1.synapse.com"
-    harness.update_config({"server_name": server_name_changed})
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "server_name modification is not allowed" in str(harness.model.unit.status)
     content = io.StringIO(f'server_name: "{server_name_changed}"')
     pull_mock = unittest.mock.MagicMock(return_value=content)
     monkeypatch.setattr(container_with_path_error_pass, "pull", pull_mock)
@@ -228,19 +211,14 @@ def test_reset_instance_action_path_error_pass(
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action_no_leader(
-    harness_server_name_configured: Harness,
+    harness_server_name_changed: Harness,
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: change server_name and run reset-instance action.
     assert: Synapse charm should take no action if no leader.
     """
-    harness = harness_server_name_configured
-    harness.set_leader(True)
-    server_name_changed = "pebble-layer-1.synapse.com"
-    harness.update_config({"server_name": server_name_changed})
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "server_name modification is not allowed" in str(harness.model.unit.status)
+    harness = harness_server_name_changed
     harness.set_leader(False)
     event = unittest.mock.MagicMock()
     # Calling to test the action since is not possible calling via harness
