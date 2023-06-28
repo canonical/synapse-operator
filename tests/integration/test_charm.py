@@ -81,8 +81,8 @@ async def test_reset_instance_action(
     model: Model, another_synapse_app: Application, another_server_name: str
 ):
     """
-    arrange: build and deploy the Synapse charm.
-    act: change server_name via juju config.
+    arrange: a deployed Synapse charm in a blocked state due to a server_name change.
+    act: call the reset_instance action.
     assert: the old instance is deleted and the new one configured.
     """
     unit = model.applications[another_synapse_app.name].units[0]
