@@ -5,6 +5,7 @@
 
 # pylint: disable=protected-access
 
+import io
 import json
 import unittest.mock
 
@@ -199,6 +200,7 @@ def test_reset_instance_action_path_error_blocked(
 def test_reset_instance_action_path_error_pass(
     container_with_path_error_pass: unittest.mock.MagicMock,
     harness_server_name_configured: Harness,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -211,6 +213,9 @@ def test_reset_instance_action_path_error_pass(
     harness.update_config({"server_name": server_name_changed})
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)
+    content = io.StringIO(f'server_name: "{server_name_changed}"')
+    pull_mock = unittest.mock.MagicMock(return_value=content)
+    monkeypatch.setattr(container_with_path_error_pass, "pull", pull_mock)
     harness.charm.unit.get_container = unittest.mock.MagicMock(
         return_value=container_with_path_error_pass
     )

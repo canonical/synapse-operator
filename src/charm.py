@@ -122,7 +122,7 @@ class SynapseCharm(ops.CharmBase):
             return
         self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
         try:
-            self._synapse.reset_instance_action(container)
+            self._synapse.reset_instance(container)
             self._synapse.execute_migrate_config(container)
             results["reset-instance"] = True
         except (ops.pebble.PathError, CommandMigrateConfigError) as exc:

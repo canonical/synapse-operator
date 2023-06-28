@@ -74,6 +74,7 @@ class Synapse:
         Raises:
             CommandMigrateConfigError: something went wrong running migrate_config.
         """
+        self.check_server_name(container)
         # TODO validate if is possible to use SDK instead of command  # pylint: disable=fixme
         migrate_config_command = [SYNAPSE_COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
         migrate_config_result = self._exec(
@@ -136,7 +137,7 @@ class Synapse:
                 )
                 raise
 
-    def reset_instance_action(self, container: ops.Container) -> None:
+    def reset_instance(self, container: ops.Container) -> None:
         """Erase data and config server_name.
 
         Args:
