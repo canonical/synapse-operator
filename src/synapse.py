@@ -9,12 +9,20 @@ import logging
 import typing
 
 import ops
-from ops.pebble import Check, ExecError
+import yaml
+from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
 from charm_types import ExecResult
-from constants import CHECK_READY_NAME, COMMAND_MIGRATE_CONFIG, SYNAPSE_COMMAND_PATH, SYNAPSE_PORT
-from exceptions import CommandMigrateConfigError
+from constants import (
+    CHECK_READY_NAME,
+    COMMAND_MIGRATE_CONFIG,
+    SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_DIR,
+    SYNAPSE_CONFIG_PATH,
+    SYNAPSE_PORT,
+)
+from exceptions import CommandMigrateConfigError, ServerNameModifiedError
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +74,7 @@ class Synapse:
         Raises:
             CommandMigrateConfigError: something went wrong running migrate_config.
         """
+        self.check_server_name(container)
         # TODO validate if is possible to use SDK instead of command  # pylint: disable=fixme
         migrate_config_command = [SYNAPSE_COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
         migrate_config_result = self._exec(
@@ -82,6 +91,76 @@ class Synapse:
             raise CommandMigrateConfigError(
                 "Migrate config failed, please review your charm configuration"
             )
+
+    def check_server_name(self, container: ops.Container) -> None:
+        """Check server_name.
+
+        Check if server_name of the state has been modified in relation to the configuration file.
+
+        Args:
+            container: Container of the charm.
+
+        Raises:
+            PathError: if somethings goes wrong while reading the configuration file.
+            ServerNameModifiedError: if server_name from state is different than the one in the
+                configuration file.
+        """
+        try:
+            configuration_content = str(
+                container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read()
+            )
+            configured_server_name = yaml.safe_load(configuration_content)["server_name"]
+            if (
+                configured_server_name is not None
+                and configured_server_name != self._charm_state.server_name
+            ):
+                msg = (
+                    f"server_name {self._charm_state.server_name} is different from the existing "
+                    f" one {configured_server_name}. Please revert the config or run the action "
+                    "reset-instance if you to erase the existing instance and start a new one."
+                )
+                logger.error(msg)
+                raise ServerNameModifiedError(
+                    "The server_name modification is not allowed, please check the logs"
+                )
+        except PathError as path_error:
+            if path_error.kind == "not-found":
+                logger.debug(
+                    "configuration file %s not found, will be created by config-changed",
+                    SYNAPSE_CONFIG_PATH,
+                )
+            else:
+                logger.error(
+                    "exception while reading configuration file %s: %s",
+                    SYNAPSE_CONFIG_PATH,
+                    path_error,
+                )
+                raise
+
+    def reset_instance(self, container: ops.Container) -> None:
+        """Erase data and config server_name.
+
+        Args:
+            container: Container of the charm.
+
+        Raises:
+            PathError: if somethings goes wrong while erasing the Synapse directory.
+        """
+        logging.debug("Erasing directory %s", SYNAPSE_CONFIG_DIR)
+        try:
+            container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
+        except PathError as path_error:
+            # The error "unlinkat //data: device or resource busy" is expected
+            # when removing the entire directory because it's a volume mount.
+            # The files will be removed but SYNAPSE_CONFIG_DIR directory will
+            # remain.
+            if "device or resource busy" in str(path_error):
+                pass
+            else:
+                logger.error(
+                    "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
+                )
+                raise
 
     def _exec(
         self,

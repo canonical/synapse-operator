@@ -1,0 +1,8 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+reset-instance:
+  description: |
+    Set a new server_name before running this action.
+    Once a server_name is configured, you must start a new instance if you wish a different one.
+    This actions will erase all data and create a instance with the new server_name.
