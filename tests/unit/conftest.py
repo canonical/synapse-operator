@@ -3,9 +3,10 @@
 
 """pytest fixtures for the unit test."""
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, protected-access
 
 import typing
+import unittest.mock
 
 import ops
 import pytest
@@ -17,6 +18,7 @@ from charm_types import ExecResult
 from constants import (
     COMMAND_MIGRATE_CONFIG,
     SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
     TEST_SERVER_NAME,
 )
@@ -107,7 +109,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 
 
 @pytest.fixture(name="harness")
-def fixture_harness(request, monkeypatch) -> typing.Generator[Harness, None, None]:
+def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     harness = Harness(SynapseCharm)
     harness.set_model_name("testmodel")  # needed for testing Traefik
@@ -150,12 +152,70 @@ def fixture_harness(request, monkeypatch) -> typing.Generator[Harness, None, Non
 
 
 @pytest.fixture(name="harness_server_name_configured")
-def fixture_harness_server_name_configured(harness: Harness) -> Harness:
+def harness_server_name_configured_fixture(harness: Harness) -> Harness:
     """Ops testing framework harness fixture with server_name already configured."""
     harness.disable_hooks()
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()
+    container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container.push(SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
     return harness
+
+
+@pytest.fixture(name="harness_server_name_changed")
+def harness_server_name_changed_fixture(harness_server_name_configured: Harness) -> Harness:
+    """Ops testing framework harness fixture with server_name changed.
+
+    This is a workaround for the fact that Harness doesn't reinitialize the charm as expected.
+    Reference: https://github.com/canonical/operator/issues/736
+    """
+    harness = harness_server_name_configured
+    harness.disable_hooks()
+    harness._framework = ops.framework.Framework(
+        harness._storage, harness._charm_dir, harness._meta, harness._model
+    )
+    harness._charm = None
+    server_name_changed = "pebble-layer-1.synapse.com"
+    harness.update_config({"server_name": server_name_changed})
+    harness.enable_hooks()
+    harness.begin_with_initial_hooks()
+    return harness
+
+
+@pytest.fixture(name="container_mocked")
+def container_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
+    """Mock container base to others fixtures."""
+    container = unittest.mock.MagicMock()
+    monkeypatch.setattr(container, "can_connect", lambda: True)
+    exec_process = unittest.mock.MagicMock()
+    exec_process.wait_output = unittest.mock.MagicMock(return_value=(0, 0))
+    exec_mock = unittest.mock.MagicMock(return_value=exec_process)
+    monkeypatch.setattr(container, "exec", exec_mock)
+    return container
+
+
+@pytest.fixture(name="container_with_path_error_blocked")
+def container_with_path_error_blocked_fixture(
+    container_mocked: unittest.mock.MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> unittest.mock.MagicMock:
+    """Mock container that gives an error on remove_path that blocks the action."""
+    path_error = ops.pebble.PathError(kind="fake", message="Error erasing directory")
+    remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
+    monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
+    return container_mocked
+
+
+@pytest.fixture(name="container_with_path_error_pass")
+def container_with_path_error_pass_fixture(
+    container_mocked: unittest.mock.MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> unittest.mock.MagicMock:
+    """Mock container that gives an error on remove_path that doesn't block the action."""
+    path_error = ops.pebble.PathError(
+        kind="generic-file-error", message="unlinkat //data: device or resource busy"
+    )
+    remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
+    monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
+    return container_mocked
