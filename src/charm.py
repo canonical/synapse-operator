@@ -21,6 +21,7 @@ from constants import (
     SYNAPSE_PORT,
     SYNAPSE_SERVICE_NAME,
 )
+from database import DatabaseObserver
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError, ServerNameModifiedError
 from synapse import Synapse
 
@@ -42,7 +43,10 @@ class SynapseCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
-        self._synapse = Synapse(charm_state=self._charm_state)
+        self._database = DatabaseObserver(self)
+        self._synapse = Synapse(
+            charm_state=self._charm_state, database_data=self._database.get_relation_data()
+        )
         self._ingress = IngressPerAppRequirer(
             self,
             port=SYNAPSE_PORT,
