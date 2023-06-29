@@ -10,6 +10,7 @@ from typing import Any, Dict
 
 import ops
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from ops.charm import ActionEvent
 from ops.main import main
 
 from charm_state import CharmState
@@ -20,7 +21,7 @@ from constants import (
     SYNAPSE_PORT,
     SYNAPSE_SERVICE_NAME,
 )
-from exceptions import CharmConfigInvalidError, CommandMigrateConfigError
+from exceptions import CharmConfigInvalidError, CommandMigrateConfigError, ServerNameModifiedError
 from synapse import Synapse
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,6 @@ class SynapseCharm(ops.CharmBase):
             args: class arguments.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
@@ -52,6 +52,8 @@ class SynapseCharm(ops.CharmBase):
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
 
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
@@ -64,11 +66,16 @@ class SynapseCharm(ops.CharmBase):
             event.defer()
             self.unit.status = ops.WaitingStatus("Waiting for pebble")
             return
-        self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
+            self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
             self._synapse.execute_migrate_config(container)
-        except CommandMigrateConfigError as exc:
-            self.model.unit.status = ops.BlockedStatus(exc.msg)
+        except (
+            CharmConfigInvalidError,
+            CommandMigrateConfigError,
+            ops.pebble.PathError,
+            ServerNameModifiedError,
+        ) as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
             return
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
@@ -93,6 +100,35 @@ class SynapseCharm(ops.CharmBase):
                 CHECK_READY_NAME: self._synapse.check_ready(),
             },
         }
+
+    def _on_reset_instance_action(self, event: ActionEvent) -> None:
+        """Reset instance and report action result.
+
+        Args:
+            event: Event triggering the reset instance action.
+        """
+        results = {
+            "reset-instance": False,
+        }
+        if not self.model.unit.is_leader():
+            event.fail("Only the juju leader unit can run reset instance action")
+            return
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            event.fail("Failed to connect to container")
+            return
+        self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
+        try:
+            self._synapse.reset_instance(container)
+            self._synapse.execute_migrate_config(container)
+            results["reset-instance"] = True
+        except (ops.pebble.PathError, CommandMigrateConfigError) as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            event.fail(str(exc))
+            return
+        self.model.unit.status = ops.ActiveStatus()
+        # results is a dict and set_results expects _SerializedData
+        event.set_results(results)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":  # pragma: nocover

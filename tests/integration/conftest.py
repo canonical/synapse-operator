@@ -8,33 +8,40 @@ import json
 
 import pytest
 import pytest_asyncio
+from juju.application import Application
 from juju.model import Model
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
 
 @pytest_asyncio.fixture(scope="module", name="server_name")
-async def fixture_server_name() -> str:
+async def server_name_fixture() -> str:
     """Return a server_name."""
     return "my.synapse.local"
 
 
+@pytest_asyncio.fixture(scope="module", name="another_server_name")
+async def another_server_name_fixture() -> str:
+    """Return a server_name."""
+    return "another.synapse.local"
+
+
 @pytest_asyncio.fixture(scope="module", name="model")
-async def fixture_model(ops_test: OpsTest) -> Model:
+async def model_fixture(ops_test: OpsTest) -> Model:
     """Return the current testing juju model."""
     assert ops_test.model
     return ops_test.model
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_charm")
-async def fixture_synapse_charm(ops_test) -> str:
+async def synapse_charm_fixture(ops_test) -> str:
     """Build the charm"""
     charm = await ops_test.build_charm(".")
     return charm
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_image")
-def fixture_synapse_image(pytestconfig: Config):
+def synapse_image_fixture(pytestconfig: Config):
     """Get value from parameter synapse-image."""
     synapse_image = pytestconfig.getoption("--synapse-image")
     assert synapse_image, "--synapse-image must be set"
@@ -42,7 +49,7 @@ def fixture_synapse_image(pytestconfig: Config):
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
-async def fixture_synapse_app(
+async def synapse_app_fixture(
     synapse_image: str,
     model: Model,
     server_name: str,
@@ -66,7 +73,7 @@ async def fixture_synapse_app(
 
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ips")
-async def fixture_get_unit_ips(ops_test: OpsTest):
+async def get_unit_ips_fixture(ops_test: OpsTest):
     """Return an async function to retrieve unit ip addresses of a certain application."""
 
     async def get_unit_ips(application_name: str):
@@ -102,7 +109,7 @@ def traefik_app_name_fixture() -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="traefik_app")
-async def fixture_traefik_app(
+async def traefik_app_fixture(
     model: Model,
     synapse_app,  # pylint: disable=unused-argument
     traefik_app_name: str,
@@ -119,5 +126,22 @@ async def fixture_traefik_app(
         },
     )
     await model.wait_for_idle(raise_on_blocked=True)
-
     return app
+
+
+@pytest_asyncio.fixture(scope="function", name="another_synapse_app")
+async def another_synapse_app_fixture(
+    model: Model, synapse_app: Application, server_name: str, another_server_name: str
+):
+    """Change server_name."""
+    # First we guarantee that the first server_name is set
+    # Then change it.
+    await synapse_app.set_config({"server_name": server_name})
+
+    await model.wait_for_idle()
+
+    await synapse_app.set_config({"server_name": another_server_name})
+
+    await model.wait_for_idle()
+
+    yield synapse_app
