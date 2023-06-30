@@ -23,6 +23,7 @@ if typing.TYPE_CHECKING:
 
 
 KNOWN_CHARM_CONFIG = (
+    "external_hostname",
     "server_name",
     "report_stats",
 )
@@ -32,10 +33,12 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """Represent Synapse builtin configuration values.
 
     Attrs:
+        external_hostname: external_hostname config.
         server_name: server_name config.
         report_stats: report_stats config.
     """
 
+    external_hostname: str | None = Field(None)
     server_name: str | None = Field(..., min_length=2)
     report_stats: str | None = Field(None)
 
@@ -68,6 +71,7 @@ class CharmState:
     """State of the Charm.
 
     Attrs:
+        external_hostname: external_hostname config.
         server_name: server_name config.
         report_stats: report_stats config.
     """
@@ -83,6 +87,15 @@ class CharmState:
             synapse_config: The value of the synapse_config charm configuration.
         """
         self._synapse_config = synapse_config
+
+    @property
+    def external_hostname(self) -> typing.Optional[str]:
+        """Return external_hostname config.
+
+        Returns:
+            str: external_hostname config.
+        """
+        return self._synapse_config.external_hostname
 
     @property
     def server_name(self) -> typing.Optional[str]:
@@ -116,6 +129,8 @@ class CharmState:
             CharmConfigInvalidError: if the charm configuration is invalid.
         """
         synapse_config = {k: v for k, v in charm.config.items() if k in KNOWN_CHARM_CONFIG}
+        if not charm.config.get("external_hostname"):
+            synapse_config["external_hostname"] = charm.app.name
         try:
             valid_synapse_config = SynapseConfig(**synapse_config)  # type: ignore
         except ValidationError as exc:

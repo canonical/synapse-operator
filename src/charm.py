@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict
 
 import ops
+from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
@@ -43,6 +44,12 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
         self._synapse = Synapse(charm_state=self._charm_state)
+        require_nginx_route(
+            charm=self,
+            service_hostname=self._charm_state.external_hostname,
+            service_name=self.app.name,
+            service_port=SYNAPSE_PORT,
+        )
         self._ingress = IngressPerAppRequirer(
             self,
             port=SYNAPSE_PORT,
@@ -54,6 +61,16 @@ class SynapseCharm(ops.CharmBase):
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
+
+    def _get_external_hostname(self) -> str:
+        """Extract and return hostname from site_url or default to [application name].
+
+        Returns:
+            The site hostname defined as part of the site_url configuration or a default value.
+        """
+        return (
+            self.config["external_hostname"] if self.config["external_hostname"] else self.app.name
+        )
 
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.

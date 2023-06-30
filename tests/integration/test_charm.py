@@ -64,6 +64,30 @@ async def test_with_ingress(
     assert "Welcome to the Matrix" in response.text
 
 
+async def test_with_nginx_route(
+    model: Model,
+    synapse_app_name: str,
+    synapse_app: Application,  # pylint: disable=unused-argument
+    nginx_integrator_app,  # pylint: disable=unused-argument
+    nginx_integrator_app_name: str,
+):
+    """
+    arrange: build and deploy the Synapse charm, and deploy the nginx-integrator.
+    act: relate the nginx-integrator charm with the Synapse charm.
+    assert: requesting the charm through nginx-integrator should return a correct response.
+    """
+    await model.add_relation(
+        f"{synapse_app_name}:nginx-route", f"{nginx_integrator_app_name}:nginx-route"
+    )
+    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+
+    response = requests.get(
+        "http://127.0.0.1/_matrix/static/", headers={"Host": synapse_app_name}, timeout=5
+    )
+    assert response.status_code == 200
+    assert "Welcome to the Matrix" in response.text
+
+
 async def test_server_name_changed(model: Model, another_synapse_app: Application):
     """
     arrange: build and deploy the Synapse charm.
