@@ -62,16 +62,6 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
 
-    def _get_external_hostname(self) -> str:
-        """Extract and return hostname from site_url or default to [application name].
-
-        Returns:
-            The site hostname defined as part of the site_url configuration or a default value.
-        """
-        return (
-            self.config["external_hostname"] if self.config["external_hostname"] else self.app.name
-        )
-
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
 
