@@ -44,9 +44,12 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
         self._synapse = Synapse(charm_state=self._charm_state)
+        # service-hostname is a required field so we're hardcoding to the same
+        # value as service-name. service-hostname should be set via Nginx
+        # Ingress Integrator charm config.
         require_nginx_route(
             charm=self,
-            service_hostname=None,
+            service_hostname=self.app.name,
             service_name=self.app.name,
             service_port=SYNAPSE_PORT,
         )
