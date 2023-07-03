@@ -18,6 +18,9 @@ from constants import SYNAPSE_PORT
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
 
+# mypy has trouble to inferred types for variables that are initialized in subclasses.
+ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,8 +54,7 @@ async def test_with_ingress(
     assert: requesting the charm through Traefik should return a correct response.
     """
     await model.add_relation(synapse_app.name, traefik_app_name)
-    # mypy doesn't see that ActiveStatus has a name
-    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
     traefik_ip = (await get_unit_ips(traefik_app_name))[0]
     response = requests.get(
@@ -79,7 +81,7 @@ async def test_with_nginx_route(
     await model.add_relation(
         f"{synapse_app_name}:nginx-route", f"{nginx_integrator_app_name}:nginx-route"
     )
-    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
     response = requests.get(
         "http://127.0.0.1/_matrix/static/", headers={"Host": synapse_app_name}, timeout=5
