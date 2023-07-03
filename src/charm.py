@@ -46,7 +46,7 @@ class SynapseCharm(ops.CharmBase):
         self._synapse = Synapse(charm_state=self._charm_state)
         require_nginx_route(
             charm=self,
-            service_hostname=self._charm_state.external_hostname,
+            service_hostname=None,
             service_name=self.app.name,
             service_port=SYNAPSE_PORT,
         )

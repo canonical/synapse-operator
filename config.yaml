@@ -2,10 +2,6 @@
 # See LICENSE file for licensing details.
 
 options:
-  external_hostname:
-      type: string
-      description: "External hostname this Synapse instance responds to. Defaults to application name."
-      default: ""
   server_name:
     type: string
     description: |

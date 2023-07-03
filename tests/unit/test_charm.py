@@ -84,16 +84,6 @@ def test_server_name_empty(harness: Harness) -> None:
     assert "invalid configuration: server_name" in str(harness.model.unit.status)
 
 
-def test_external_hostname_default(harness_server_name_configured: Harness) -> None:
-    """
-    arrange: none
-    act: Synapse charm is ready and server_name is configured.
-    assert: Default external_hostname is application name.
-    """
-    harness = harness_server_name_configured
-    assert harness.charm._charm_state.external_hostname == harness.model.app.name
-
-
 def test_traefik_integration(harness_server_name_configured: Harness) -> None:
     """
     arrange: add relation with Traefik charm.
