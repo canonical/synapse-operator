@@ -1,4 +1,5 @@
 jsonschema >= 4.17
 ops >= 2.2.0
-psycopg2==2.9.6
-pydantic >= 1.10
+pydantic == 1.10.10
+ops-lib-pgsql >= 1.4
+psycopg2-binary == 2.9.6
