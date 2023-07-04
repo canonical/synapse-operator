@@ -9,6 +9,8 @@ import logging
 import typing
 
 import ops
+import psycopg2
+from charms.data_platform_libs.v0.data_interfaces import DatabaseCreatedEvent
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
@@ -45,6 +47,9 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
         self._database = DatabaseObserver(self)
+        self.framework.observe(
+            self._database.database.on.database_created, self._on_database_created
+        )
         self._synapse = Synapse(
             charm_state=self._charm_state, database_data=self._database.get_relation_data()
         )
@@ -144,6 +149,24 @@ class SynapseCharm(ops.CharmBase):
         self.model.unit.status = ops.ActiveStatus()
         # results is a dict and set_results expects _SerializedData
         event.set_results(results)  # type: ignore[arg-type]
+
+    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
+        """Handle database created.
+
+        Args:
+            event: Event triggering the database created handler.
+        """
+        if not self.unit.is_leader():
+            event.defer()
+            return
+
+        self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
+        try:
+            self._database.prepare_database()
+            self._on_config_changed(event)
+        except psycopg2.Error as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            return
 
 
 if __name__ == "__main__":  # pragma: nocover

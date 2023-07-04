@@ -5,9 +5,8 @@
 import logging
 import typing
 
-import ops
 import psycopg2
-from charms.data_platform_libs.v0.data_interfaces import DatabaseCreatedEvent, DatabaseRequires
+from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from ops.charm import CharmBase
 from ops.framework import Object
 
@@ -33,7 +32,6 @@ class DatabaseObserver(Object):
             database_name=self._charm.app.name,
             extra_user_roles="SUPERUSER",
         )
-        self._charm.framework.observe(self.database.on.database_created, self._on_database_created)
 
     def get_relation_data(self) -> typing.Optional[typing.Dict]:
         """Get database data from relation.
@@ -57,24 +55,7 @@ class DatabaseObserver(Object):
             "POSTGRES_DB": self._charm.app.name,
         }
 
-    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
-        """Handle database created.
-
-        Args:
-            event: Event triggering the database created handler.
-        """
-        if not self._charm.unit.is_leader():
-            event.defer()
-            return
-
-        self._charm.model.unit.status = ops.MaintenanceStatus("Preparing the database")
-        try:
-            self._prepare_database()
-        except psycopg2.Error as exc:
-            self._charm.model.unit.status = ops.BlockedStatus(str(exc))
-            return
-
-    def _prepare_database(self) -> None:
+    def prepare_database(self) -> None:
         """Change database collate and ctype as required by Synapse.
 
         Raises:
