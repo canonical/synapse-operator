@@ -48,23 +48,28 @@ def synapse_image_fixture(pytestconfig: Config):
     return synapse_image
 
 
+@pytest_asyncio.fixture(scope="module", name="synapse_app_name")
+def synapse_app_name_fixture() -> str:
+    """Get Synapse application name."""
+    return "synapse"
+
+
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
+    synapse_app_name: str,
     synapse_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
 ):
     """Build and deploy the Synapse charm."""
-    app_name = "synapse-k8s"
-
     resources = {
         "synapse-image": synapse_image,
     }
     app = await model.deploy(
         synapse_charm,
         resources=resources,
-        application_name=app_name,
+        application_name=synapse_app_name,
         series="jammy",
         config={"server_name": server_name},
     )
@@ -124,6 +129,28 @@ async def traefik_app_fixture(
             "external_hostname": external_hostname,
             "routing_mode": "subdomain",
         },
+    )
+    await model.wait_for_idle(raise_on_blocked=True)
+    return app
+
+
+@pytest.fixture(scope="module", name="nginx_integrator_app_name")
+def nginx_integrator_app_name_fixture() -> str:
+    """Return the name of the nginx integrator application deployed for tests."""
+    return "nginx-ingress-integrator"
+
+
+@pytest_asyncio.fixture(scope="module", name="nginx_integrator_app")
+async def nginx_integrator_app_fixture(
+    model: Model,
+    synapse_app,  # pylint: disable=unused-argument
+    nginx_integrator_app_name: str,
+):
+    """Deploy nginx-ingress-integrator."""
+    app = await model.deploy(
+        "nginx-ingress-integrator",
+        application_name=nginx_integrator_app_name,
+        trust=True,
     )
     await model.wait_for_idle(raise_on_blocked=True)
     return app

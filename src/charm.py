@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict
 
 import ops
+from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
@@ -45,7 +46,16 @@ class SynapseCharm(ops.CharmBase):
             return
         self._database = DatabaseObserver(self)
         self._synapse = Synapse(
-            charm_state=self._charm_state, database_data=self._database.get_relation_data()
+            charm_state=self._charm_state, database_data=self._database.get_relation_data())
+        self._synapse = Synapse(charm_state=self._charm_state)
+        # service-hostname is a required field so we're hardcoding to the same
+        # value as service-name. service-hostname should be set via Nginx
+        # Ingress Integrator charm config.
+        require_nginx_route(
+            charm=self,
+            service_hostname=self.app.name,
+            service_name=self.app.name,
+            service_port=SYNAPSE_PORT,
         )
         self._ingress = IngressPerAppRequirer(
             self,
