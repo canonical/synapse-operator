@@ -6,7 +6,7 @@
 """Charm for Synapse on kubernetes."""
 
 import logging
-from typing import Any, Dict
+import typing
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class SynapseCharm(ops.CharmBase):
     """Charm the service."""
 
-    def __init__(self, *args: Any) -> None:
+    def __init__(self, *args: typing.Any) -> None:
         """Construct.
 
         Args:
@@ -46,8 +46,8 @@ class SynapseCharm(ops.CharmBase):
             return
         self._database = DatabaseObserver(self)
         self._synapse = Synapse(
-            charm_state=self._charm_state, database_data=self._database.get_relation_data())
-        self._synapse = Synapse(charm_state=self._charm_state)
+            charm_state=self._charm_state, database_data=self._database.get_relation_data()
+        )
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -96,9 +96,9 @@ class SynapseCharm(ops.CharmBase):
         self.unit.status = ops.ActiveStatus()
 
     @property
-    def _pebble_layer(self) -> Dict:
+    def _pebble_layer(self) -> ops.pebble.LayerDict:
         """Return a dictionary representing a Pebble layer."""
-        return {
+        layer = {
             "summary": "Synapse layer",
             "description": "pebble config layer for Synapse",
             "services": {
@@ -114,6 +114,7 @@ class SynapseCharm(ops.CharmBase):
                 CHECK_READY_NAME: self._synapse.check_ready(),
             },
         }
+        return typing.cast(ops.pebble.LayerDict, layer)
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.

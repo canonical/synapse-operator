@@ -28,7 +28,10 @@ class DatabaseObserver(Object):
         super().__init__(charm, "database-observer")
         self._charm = charm
         self.database = DatabaseRequires(
-            self._charm, relation_name=self._RELATION_NAME, database_name=self._charm.app.name
+            self._charm,
+            relation_name=self._RELATION_NAME,
+            database_name=self._charm.app.name,
+            extra_user_roles="SUPERUSER",
         )
         self._charm.framework.observe(self.database.on.database_created, self._on_database_created)
 
@@ -85,7 +88,7 @@ class DatabaseObserver(Object):
                 host = relation_data.get("POSTGRES_HOST")
                 database_name = relation_data.get("POSTGRES_DB")
                 conn = psycopg2.connect(
-                    f"dbname='unused' user='{user}' host='{host}'"
+                    f"dbname='{database_name}' user='{user}' host='{host}'"
                     f"password='{password}' connect_timeout=1"
                 )
                 conn.autocommit = True
