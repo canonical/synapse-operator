@@ -13,6 +13,7 @@ from pytest_operator.plugin import OpsTest
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 
+
 @pytest.mark.usefixtures("synapse_app")
 async def test_with_database(
     ops_test: OpsTest, model: Model, synapse_app_name: str, postgresql_app_name: str

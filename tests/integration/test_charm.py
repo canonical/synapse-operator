@@ -6,12 +6,12 @@
 import logging
 import typing
 
+import pytest
 import requests
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
-import pytest
 from pytest_operator.plugin import OpsTest
 
 from constants import SYNAPSE_PORT
@@ -39,6 +39,7 @@ async def test_synapse_is_up(
         assert response.status_code == 200
         assert "Welcome to the Matrix" in response.text
 
+
 @pytest.mark.usefixtures("traefik_app")
 async def test_with_ingress(
     ops_test: OpsTest,
@@ -65,7 +66,8 @@ async def test_with_ingress(
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
 
-@pytest.mark.usefixtures("synapse_app","nginx_integrator_app")
+
+@pytest.mark.usefixtures("synapse_app", "nginx_integrator_app")
 async def test_with_nginx_route(
     model: Model,
     synapse_app_name: str,
