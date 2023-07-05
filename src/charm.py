@@ -50,6 +50,9 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(
             self._database.database.on.database_created, self._on_database_created
         )
+        self.framework.observe(
+            self._database.database.on.endpoints_changed, self._on_config_changed
+        )
         self._synapse = Synapse(
             charm_state=self._charm_state, database_data=self._database.get_relation_data()
         )
@@ -156,10 +159,6 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering the database created handler.
         """
-        if not self.unit.is_leader():
-            event.defer()
-            return
-
         self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         try:
             self._database.prepare_database()

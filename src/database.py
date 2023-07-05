@@ -26,6 +26,7 @@ class DatabaseObserver(Object):
         """
         super().__init__(charm, "database-observer")
         self._charm = charm
+        # SUPERUSER is required to update pg_database
         self.database = DatabaseRequires(
             self._charm,
             relation_name=self._RELATION_NAME,
@@ -39,7 +40,7 @@ class DatabaseObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
-        if not self.model.relations[self._RELATION_NAME]:
+        if self.model.get_relation(self._RELATION_NAME) is None:
             return None
 
         relation_id = self.database.relations[0].id
