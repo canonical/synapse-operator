@@ -9,6 +9,7 @@ import psycopg2
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from ops.charm import CharmBase
 from ops.framework import Object
+from psycopg2.extensions import connection
 
 logger = logging.getLogger(__name__)
 
@@ -62,18 +63,10 @@ class DatabaseObserver(Object):
         Raises:
            Error: something went wrong while preparing the database.
         """
-        relation_data = self.get_relation_data()
-        if relation_data is not None:
+        conn = self.get_conn()
+        database_name = self.get_database_name()
+        if conn is not None:
             try:
-                user = relation_data.get("POSTGRES_USER")
-                password = relation_data.get("POSTGRES_PASSWORD")
-                host = relation_data.get("POSTGRES_HOST")
-                database_name = relation_data.get("POSTGRES_DB")
-                conn = psycopg2.connect(
-                    f"dbname='{database_name}' user='{user}' host='{host}'"
-                    f"password='{password}' connect_timeout=1"
-                )
-                conn.autocommit = True
                 with conn.cursor() as curs:
                     curs.execute(
                         "UPDATE pg_database "
@@ -84,3 +77,63 @@ class DatabaseObserver(Object):
             except psycopg2.Error as exc:
                 logger.error("Failed to prepare database: %s", str(exc))
                 raise
+
+    def erase_database(self) -> None:
+        """Erase database.
+
+        Raises:
+           Error: something went wrong while erasing the database.
+        """
+        conn = self.get_conn()
+        if conn is not None:
+            try:
+                with conn.cursor() as curs:
+                    curs.execute(
+                        "SELECT table_schema,table_name FROM information_schema.tables "
+                        "WHERE table_schema = 'public' ORDER BY table_schema,table_name"
+                    )
+                    rows = curs.fetchall()
+                    for row in rows:
+                        curs.execute("drop table " + row[1] + " cascade")
+                        logger.debug("Table %s deleted", row[1])
+            except psycopg2.Error as exc:
+                logger.error("Failed to erase database: %s", str(exc))
+                raise
+
+    def get_conn(self) -> connection | None:
+        """Erase database.
+
+        Raises:
+           Error: something went wrong while erasing the database.
+
+        Returns:
+            Connection or None if there is no relation data
+        """
+        relation_data = self.get_relation_data()
+        if relation_data is not None:
+            try:
+                user = relation_data.get("POSTGRES_USER")
+                password = relation_data.get("POSTGRES_PASSWORD")
+                host = relation_data.get("POSTGRES_HOST")
+                database_name = self.get_database_name()
+                conn = psycopg2.connect(
+                    f"dbname='{database_name}' user='{user}' host='{host}'"
+                    f"password='{password}' connect_timeout=1"
+                )
+                conn.autocommit = True
+                return conn
+            except psycopg2.Error as exc:
+                logger.error("Failed to connect to database: %s", str(exc))
+                raise
+        return None
+
+    def get_database_name(self) -> str:
+        """Get database name from relation.
+
+        Returns:
+            database name
+        """
+        relation_data = self.get_relation_data()
+        if relation_data is not None:
+            return relation_data.get("POSTGRES_DB", "")
+        return ""

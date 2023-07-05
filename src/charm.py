@@ -143,9 +143,11 @@ class SynapseCharm(ops.CharmBase):
         self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
         try:
             self._synapse.reset_instance(container)
+            if self._database.get_relation_data() is not None:
+                self._database.erase_database()
             self._synapse.execute_migrate_config(container)
             results["reset-instance"] = True
-        except (ops.pebble.PathError, CommandMigrateConfigError) as exc:
+        except (psycopg2.Error, ops.pebble.PathError, CommandMigrateConfigError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return

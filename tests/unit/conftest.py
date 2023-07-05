@@ -219,3 +219,14 @@ def container_with_path_error_pass_fixture(
     remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
     monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
     return container_mocked
+
+
+@pytest.fixture(name="erase_database_mocked")
+def erase_database_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
+    """Mock erase_database."""
+    database_mocked = unittest.mock.MagicMock()
+    erase_database_mock = unittest.mock.MagicMock(side_effect=None)
+    monkeypatch.setattr(database_mocked, "erase_database", erase_database_mock)
+    monkeypatch.setattr(database_mocked, "get_conn", unittest.mock.MagicMock())
+    monkeypatch.setattr(database_mocked, "get_relation_data", unittest.mock.MagicMock())
+    return database_mocked

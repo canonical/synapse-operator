@@ -24,6 +24,7 @@ def test_relation_data(
     """
     harness = harness_server_name_configured
     assert not harness.charm._database.get_relation_data()
+    assert not harness.charm._database.get_conn()
     # reinitialize the charm as would happen in real environment
     harness.disable_hooks()
     harness._framework = ops.framework.Framework(
@@ -50,6 +51,7 @@ def test_relation_data(
         "POSTGRES_USER": "user",
     }
     assert expected == harness.charm._database.get_relation_data()
+    assert harness.charm.app.name == harness.charm._database.get_database_name()
     synapse_env = harness.charm._synapse.synapse_environment()
     assert all(key in synapse_env and synapse_env[key] == value for key, value in expected.items())
 
@@ -86,5 +88,31 @@ def test_prepare_database_error(
     monkeypatch.setattr(database_mocked, "prepare_database", prepare_database_mock)
     harness.charm._database = database_mocked
     harness.charm._on_database_created(unittest.mock.MagicMock())
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert error_msg in str(harness.model.unit.status)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_erase_database_error(
+    harness_server_name_configured: Harness,
+    monkeypatch: pytest.MonkeyPatch,
+    erase_database_mocked: unittest.mock.MagicMock,
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: add database relation.
+    assert: database data and synapse environment should be the same as relation data.
+    """
+    harness = harness_server_name_configured
+    harness.charm._synapse = unittest.mock.MagicMock()
+    harness.set_leader(True)
+    harness.charm._database = erase_database_mocked
+    harness.charm._on_reset_instance_action(unittest.mock.MagicMock())
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+    error_msg = "Invalid query"
+    erase_database_mock = unittest.mock.MagicMock(side_effect=psycopg2.Error(error_msg))
+    monkeypatch.setattr(erase_database_mocked, "erase_database", erase_database_mock)
+    harness.charm._database = erase_database_mocked
+    harness.charm._on_reset_instance_action(unittest.mock.MagicMock())
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert error_msg in str(harness.model.unit.status)
