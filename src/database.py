@@ -75,9 +75,10 @@ class DatabaseObserver(Object):
                 conn.autocommit = True
                 with conn.cursor() as curs:
                     curs.execute(
-                        "UPDATE pg_database SET datcollate='C', datctype='C' "
-                        f"WHERE datname='{database_name}' AND datcollate='en_US.UTF-8' "
-                        "AND datctype='en_US.UTF-8';"
+                        "UPDATE pg_database "
+                        "SET datcollate='C', datctype='C' "
+                        "WHERE datname=%s",
+                        (database_name,),
                     )
             except psycopg2.Error as exc:
                 logger.error("Failed to prepare database: %s", str(exc))
