@@ -172,3 +172,9 @@ async def another_synapse_app_fixture(
     await model.wait_for_idle()
 
     yield synapse_app
+
+
+@pytest.fixture(scope="module", name="postgresql_app_name")
+def postgresql_app_name_app_name_fixture() -> str:
+    """Return the name of the postgresql application deployed for tests."""
+    return "postgresql-k8s"
