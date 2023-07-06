@@ -126,7 +126,8 @@ class Synapse:
                 msg = (
                     f"server_name {self._charm_state.server_name} is different from the existing "
                     f"one {configured_server_name}. Please revert the config or run the action "
-                    "reset-instance if you to erase the existing instance and start a new one."
+                    "reset-instance if you want to erase the existing instance and start a new "
+                    "one."
                 )
                 logger.error(msg)
                 raise ServerNameModifiedError(

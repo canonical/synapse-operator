@@ -140,12 +140,34 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             event.fail("Failed to connect to container")
             return
-        self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
+        current_plan = container.get_plan().to_dict()
+        if "on-failure" not in current_plan:
+            logger.info("Replan service to not restart")
+            new_layer = self._pebble_layer
+            new_layer["services"][SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
+            new_layer["services"][SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
+            ignore = {CHECK_READY_NAME: "ignore"}
+            new_layer["services"][SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
+            container.add_layer(SYNAPSE_CONTAINER_NAME, new_layer, combine=True)
+            container.replan()
         try:
+            self.model.unit.status = ops.MaintenanceStatus("Stop Synapse instance")
+            logger.info("Stop Synapse instance")
+            container.stop(SYNAPSE_SERVICE_NAME)
+            if container.get_service(SYNAPSE_SERVICE_NAME).is_running():
+                logger.info("Service is still running, defer")
+                event.defer()
+                return
+            self.model.unit.status = ops.MaintenanceStatus("Erase Synapse data")
             self._synapse.reset_instance(container)
             if self._database.get_relation_data() is not None:
+                self.model.unit.status = ops.MaintenanceStatus("Erase Synapse database")
                 self._database.erase_database()
             self._synapse.execute_migrate_config(container)
+            self.model.unit.status = ops.MaintenanceStatus("Start Synapse database")
+            logger.info("Start Synapse database")
+            container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
+            container.replan()
             results["reset-instance"] = True
         except (psycopg2.Error, ops.pebble.PathError, CommandMigrateConfigError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))

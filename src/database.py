@@ -9,6 +9,7 @@ import psycopg2
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from ops.charm import CharmBase
 from ops.framework import Object
+from psycopg2 import sql
 from psycopg2.extensions import connection
 
 logger = logging.getLogger(__name__)
@@ -84,24 +85,27 @@ class DatabaseObserver(Object):
         Raises:
            Error: something went wrong while erasing the database.
         """
-        conn = self.get_conn()
+        conn = self.get_conn("template1")
+        database_name = self.get_database_name()
         if conn is not None:
             try:
                 with conn.cursor() as curs:
+                    curs.execute(sql.SQL("DROP DATABASE {}").format(sql.Identifier(database_name)))
                     curs.execute(
-                        "SELECT table_schema,table_name FROM information_schema.tables "
-                        "WHERE table_schema = 'public' ORDER BY table_schema,table_name"
+                        sql.SQL(
+                            "CREATE DATABASE {} "
+                            "WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';"
+                        ).format(sql.Identifier(database_name))
                     )
-                    rows = curs.fetchall()
-                    for row in rows:
-                        curs.execute("drop table " + row[1] + " cascade")
-                        logger.debug("Table %s deleted", row[1])
             except psycopg2.Error as exc:
                 logger.error("Failed to erase database: %s", str(exc))
                 raise
 
-    def get_conn(self) -> connection | None:
+    def get_conn(self, database_name: str = "") -> connection | None:
         """Erase database.
+
+        Args:
+            database_name: database to connect to.
 
         Raises:
            Error: something went wrong while erasing the database.
@@ -115,7 +119,8 @@ class DatabaseObserver(Object):
                 user = relation_data.get("POSTGRES_USER")
                 password = relation_data.get("POSTGRES_PASSWORD")
                 host = relation_data.get("POSTGRES_HOST")
-                database_name = self.get_database_name()
+                if not database_name:
+                    database_name = self.get_database_name()
                 conn = psycopg2.connect(
                     f"dbname='{database_name}' user='{user}' host='{host}'"
                     f"password='{password}' connect_timeout=1"
