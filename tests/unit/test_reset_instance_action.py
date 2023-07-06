@@ -12,6 +12,8 @@ import ops
 import pytest
 from ops.testing import Harness
 
+from constants import SYNAPSE_CONTAINER_NAME
+
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action(harness_server_name_changed: Harness) -> None:
@@ -28,6 +30,23 @@ def test_reset_instance_action(harness_server_name_changed: Harness) -> None:
     assert event.set_results.call_count == 1
     event.set_results.assert_called_with({"reset-instance": True})
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_reset_instance_action_container_down(harness_server_name_changed: Harness) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: run reset-instance action.
+    assert: Synapse charm should reset the instance.
+    """
+    harness = harness_server_name_changed
+    harness.set_leader(True)
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
+    event = unittest.mock.Mock()
+    # Calling to test the action since is not possible calling via harness
+    harness.charm._on_reset_instance_action(event)
+    assert event.set_results.call_count == 0
+    assert event.fail.call_count == 1
 
 
 @pytest.mark.parametrize("harness", [1], indirect=True)

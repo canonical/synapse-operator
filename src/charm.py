@@ -124,6 +124,16 @@ class SynapseCharm(ops.CharmBase):
         }
         return typing.cast(ops.pebble.LayerDict, layer)
 
+    @property
+    def _pebble_layer_without_restart(self) -> ops.pebble.LayerDict:
+        """Return a dictionary representing a Pebble layer without restart."""
+        new_layer = self._pebble_layer
+        new_layer["services"][SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
+        new_layer["services"][SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
+        ignore = {CHECK_READY_NAME: "ignore"}
+        new_layer["services"][SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
+        return new_layer
+
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.
 
@@ -140,24 +150,15 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             event.fail("Failed to connect to container")
             return
-        current_plan = container.get_plan().to_dict()
-        if "on-failure" not in current_plan:
-            logger.info("Replan service to not restart")
-            new_layer = self._pebble_layer
-            new_layer["services"][SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
-            new_layer["services"][SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
-            ignore = {CHECK_READY_NAME: "ignore"}
-            new_layer["services"][SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
-            container.add_layer(SYNAPSE_CONTAINER_NAME, new_layer, combine=True)
-            container.replan()
+        logger.info("Replan service to not restart")
+        container.add_layer(
+            SYNAPSE_CONTAINER_NAME, self._pebble_layer_without_restart, combine=True
+        )
+        container.replan()
         try:
             self.model.unit.status = ops.MaintenanceStatus("Stop Synapse instance")
             logger.info("Stop Synapse instance")
             container.stop(SYNAPSE_SERVICE_NAME)
-            if container.get_service(SYNAPSE_SERVICE_NAME).is_running():
-                logger.info("Service is still running, defer")
-                event.defer()
-                return
             self.model.unit.status = ops.MaintenanceStatus("Erase Synapse data")
             self._synapse.reset_instance(container)
             if self._database.get_relation_data() is not None:
