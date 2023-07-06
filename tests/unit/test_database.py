@@ -134,6 +134,33 @@ def test_erase_database(
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
+def test_erase_database_conn_error(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: add database relation and erase database.
+    assert: error is raised.
+    """
+    harness = harness_server_name_configured
+    relation_id = harness.add_relation("database", "postgresql")
+    harness.add_relation_unit(relation_id, "postgresql/0")
+    harness.update_relation_data(
+        relation_id,
+        "postgresql",
+        {
+            "endpoints": "myhost:5432",
+            "username": "user",
+            "password": "password",
+        },
+    )
+    conn_func_mock = unittest.mock.MagicMock(return_value=None)
+    monkeypatch.setattr(harness.charm._database, "get_conn", conn_func_mock)
+    harness.charm._database.erase_database()
+    conn_func_mock.assert_called_once()
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_prepare_database_error(
     harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
