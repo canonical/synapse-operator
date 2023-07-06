@@ -11,6 +11,7 @@ import ops
 import psycopg2
 import pytest
 from ops.testing import Harness
+from psycopg2 import sql
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
@@ -87,6 +88,49 @@ def test_prepare_database(
     cursor_mock.execute.assert_called_once_with(
         "UPDATE pg_database SET datcollate='C', datctype='C' WHERE datname=%s", ("synapse",)
     )
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_erase_database(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: add database relation and erase database.
+    assert: erase query is executed.
+    """
+    harness = harness_server_name_configured
+    relation_id = harness.add_relation("database", "postgresql")
+    harness.add_relation_unit(relation_id, "postgresql/0")
+    harness.update_relation_data(
+        relation_id,
+        "postgresql",
+        {
+            "endpoints": "myhost:5432",
+            "username": "user",
+            "password": "password",
+        },
+    )
+    conn_mock = unittest.mock.MagicMock()
+    cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
+    cursor_mock.execute.side_effect = None
+    conn_func_mock = unittest.mock.MagicMock(return_value=conn_mock)
+    monkeypatch.setattr(harness.charm._database, "get_conn", conn_func_mock)
+    harness.charm._database.erase_database()
+    conn_mock.cursor.assert_called_once()
+    calls = [
+        unittest.mock.call(sql.Composed([sql.SQL("DROP DATABASE "), sql.Identifier("synapse")])),
+        unittest.mock.call(
+            sql.Composed(
+                [
+                    sql.SQL("CREATE DATABASE "),
+                    sql.Identifier("synapse"),
+                    sql.SQL(" WITH LC_CTYPE = 'C' LC_COLLATE='C' TEMPLATE='template0';"),
+                ]
+            )
+        ),
+    ]
+    cursor_mock.execute.assert_has_calls(calls)
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
