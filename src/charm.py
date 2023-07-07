@@ -158,6 +158,8 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             event.fail("Failed to connect to container")
             return
+        # This is needed in the case of relation with Postgresql.
+        # If there is open connections it won't be possible to drop the database.
         logger.info("Replan service to not restart")
         container.add_layer(
             SYNAPSE_CONTAINER_NAME, self._pebble_layer_without_restart, combine=True
