@@ -51,7 +51,7 @@ class SynapseCharm(ops.CharmBase):
             self._database.database.on.database_created, self._on_database_created
         )
         self.framework.observe(
-            self._database.database.on.endpoints_changed, self._on_config_changed
+            self._database.database.on.endpoints_changed, self._on_endpoints_changed
         )
         self._synapse = Synapse(
             charm_state=self._charm_state, database_data=self._database.get_relation_data()
@@ -199,6 +199,14 @@ class SynapseCharm(ops.CharmBase):
         except psycopg2.Error as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
+
+    def _on_endpoints_changed(self, event: DatabaseCreatedEvent) -> None:
+        """Handle endpoints change.
+
+        Args:
+            event: Event triggering the endpoints changed handler.
+        """
+        self._change_config(event)
 
 
 if __name__ == "__main__":  # pragma: nocover
