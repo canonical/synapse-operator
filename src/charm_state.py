@@ -70,19 +70,20 @@ class CharmState:
     Attrs:
         server_name: server_name config.
         report_stats: report_stats config.
+        database_data: database data from database relation.
     """
 
     def __init__(
-        self,
-        *,
-        synapse_config: SynapseConfig,
+        self, *, synapse_config: SynapseConfig, database_data: typing.Optional[typing.Dict]
     ) -> None:
         """Construct.
 
         Args:
             synapse_config: The value of the synapse_config charm configuration.
+            database_data: Database observer relation data.
         """
         self._synapse_config = synapse_config
+        self._database_data: typing.Optional[typing.Dict] = database_data
 
     @property
     def server_name(self) -> typing.Optional[str]:
@@ -102,12 +103,24 @@ class CharmState:
         """
         return self._synapse_config.report_stats
 
+    @property
+    def database_data(self) -> typing.Optional[typing.Dict]:
+        """Return database data from database relation.
+
+        Returns:
+            Dict: Information needed for setting connection with database.
+        """
+        return self._database_data
+
     @classmethod
-    def from_charm(cls, charm: "SynapseCharm") -> "CharmState":
+    def from_charm(
+        cls, charm: "SynapseCharm", database_data: typing.Optional[typing.Dict]
+    ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
         Args:
             charm: The charm instance associated with this state.
+            database_data: database data from database relation.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -124,4 +137,4 @@ class CharmState:
             )
             error_field_str = " ".join(f"{f}" for f in error_fields)
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
-        return cls(synapse_config=valid_synapse_config)
+        return cls(synapse_config=valid_synapse_config, database_data=database_data)

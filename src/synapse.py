@@ -30,15 +30,13 @@ logger = logging.getLogger(__name__)
 class Synapse:
     """A class representing the Synapse application."""
 
-    def __init__(self, charm_state: CharmState, database_data: typing.Optional[typing.Dict]):
+    def __init__(self, charm_state: CharmState):
         """Initialize a new instance of the Synapse class.
 
         Args:
             charm_state: The state of the charm that the Synapse instance belongs to.
-            database_data: Database observer relation data.
         """
         self._charm_state = charm_state
-        self._database_data = database_data
 
     def check_ready(self) -> typing.Dict:
         """Return the Synapse container check.
@@ -66,12 +64,13 @@ class Synapse:
             # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
             "SYNAPSE_NO_TLS": str(True),
         }
-        if self._database_data is not None:
-            environment["POSTGRES_DB"] = self._database_data.get("POSTGRES_DB", "")
-            environment["POSTGRES_HOST"] = self._database_data.get("POSTGRES_HOST", "")
-            environment["POSTGRES_PORT"] = self._database_data.get("POSTGRES_PORT", "")
-            environment["POSTGRES_USER"] = self._database_data.get("POSTGRES_USER", "")
-            environment["POSTGRES_PASSWORD"] = self._database_data.get("POSTGRES_PASSWORD", "")
+        database_data = self._charm_state.database_data
+        if database_data is not None:
+            environment["POSTGRES_DB"] = database_data.get("POSTGRES_DB", "")
+            environment["POSTGRES_HOST"] = database_data.get("POSTGRES_HOST", "")
+            environment["POSTGRES_PORT"] = database_data.get("POSTGRES_PORT", "")
+            environment["POSTGRES_USER"] = database_data.get("POSTGRES_USER", "")
+            environment["POSTGRES_PASSWORD"] = database_data.get("POSTGRES_PASSWORD", "")
         return environment
 
     def execute_migrate_config(self, container: ops.Container) -> None:

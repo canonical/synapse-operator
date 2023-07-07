@@ -41,21 +41,21 @@ class SynapseCharm(ops.CharmBase):
             args: class arguments.
         """
         super().__init__(*args)
+        self._database = DatabaseObserver(self)
         try:
-            self._charm_state = CharmState.from_charm(charm=self)
+            self._charm_state = CharmState.from_charm(
+                charm=self, database_data=self._database.get_relation_data()
+            )
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
-        self._database = DatabaseObserver(self)
         self.framework.observe(
             self._database.database.on.database_created, self._on_database_created
         )
         self.framework.observe(
             self._database.database.on.endpoints_changed, self._on_endpoints_changed
         )
-        self._synapse = Synapse(
-            charm_state=self._charm_state, database_data=self._database.get_relation_data()
-        )
+        self._synapse = Synapse(charm_state=self._charm_state)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
