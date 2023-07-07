@@ -1,4 +1,4 @@
-jsonschema >=4.10.0,<4.18.0
+jsonschema == 4.17.3
 ops >= 2.2.0
 pydantic == 1.10.10
 ops-lib-pgsql >= 1.4
