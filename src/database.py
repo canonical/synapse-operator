@@ -70,10 +70,11 @@ class DatabaseObserver(Object):
             try:
                 with conn.cursor() as curs:
                     curs.execute(
-                        "UPDATE pg_database "
-                        "SET datcollate='C', datctype='C' "
-                        "WHERE datname=%s",
-                        (database_name,),
+                        sql.SQL(
+                            "UPDATE pg_database "
+                            "SET datcollate='C', datctype='C' "
+                            "WHERE datname={}"
+                        ).format(sql.Identifier(database_name))
                     )
             except psycopg2.Error as exc:
                 logger.error("Failed to prepare database: %s", str(exc))
@@ -85,6 +86,8 @@ class DatabaseObserver(Object):
         Raises:
            Error: something went wrong while erasing the database.
         """
+        # Since is not possible to delete the database while connected to it
+        # this connection will use the template1 database, provided by PostgreSQL.
         conn = self.get_conn("template1")
         database_name = self.get_database_name()
         if conn is not None:
@@ -102,13 +105,13 @@ class DatabaseObserver(Object):
                 raise
 
     def get_conn(self, database_name: str = "") -> connection | None:
-        """Erase database.
+        """Get connection.
 
         Args:
             database_name: database to connect to.
 
         Raises:
-           Error: something went wrong while erasing the database.
+           Error: something went wrong while connecting to the database.
 
         Returns:
             Connection or None if there is no relation data

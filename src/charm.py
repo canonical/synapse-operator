@@ -171,7 +171,7 @@ class SynapseCharm(ops.CharmBase):
             container.stop(SYNAPSE_SERVICE_NAME)
             self.model.unit.status = ops.MaintenanceStatus("Erase Synapse data")
             self._synapse.reset_instance(container)
-            if self._database.get_relation_data() is not None:
+            if self._charm_state.database_data is not None:
                 self.model.unit.status = ops.MaintenanceStatus("Erase Synapse database")
                 self._database.erase_database()
             self._synapse.execute_migrate_config(container)

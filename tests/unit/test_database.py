@@ -97,7 +97,12 @@ def test_prepare_database(
     harness.charm._database.prepare_database()
     conn_mock.cursor.assert_called_once()
     cursor_mock.execute.assert_called_once_with(
-        "UPDATE pg_database SET datcollate='C', datctype='C' WHERE datname=%s", ("synapse",)
+        sql.Composed(
+            [
+                sql.SQL("UPDATE pg_database SET datcollate='C', datctype='C' WHERE datname="),
+                sql.Identifier("synapse"),
+            ]
+        )
     )
 
 
@@ -246,11 +251,30 @@ def test_erase_database_error(
     assert: database data and synapse environment should be the same as relation data.
     """
     harness = harness_server_name_configured
+    relation_id = harness.add_relation("database", "postgresql")
+    harness.add_relation_unit(relation_id, "postgresql/0")
+    harness.update_relation_data(
+        relation_id,
+        "postgresql",
+        {
+            "endpoints": "myhost:5432",
+            "username": "user",
+            "password": "password",
+        },
+    )
     harness.charm._synapse = unittest.mock.MagicMock()
     harness.set_leader(True)
     harness.charm._database = erase_database_mocked
     harness.charm._on_reset_instance_action(unittest.mock.MagicMock())
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+    harness.disable_hooks()
+    harness._framework = ops.framework.Framework(
+        harness._storage, harness._charm_dir, harness._meta, harness._model
+    )
+    harness._charm = None
+    harness.enable_hooks()
+    harness.begin_with_initial_hooks()
+    harness.set_leader(True)
     error_msg = "Invalid query"
     erase_database_mock = unittest.mock.MagicMock(side_effect=psycopg2.Error(error_msg))
     monkeypatch.setattr(erase_database_mocked, "erase_database", erase_database_mock)
