@@ -77,11 +77,11 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
 
-    def _on_config_changed(self, event: ops.HookEvent) -> None:
-        """Handle changed configuration.
+    def _change_config(self, event: ops.HookEvent) -> None:
+        """Change the configuration.
 
         Args:
-            event: Event triggering after config is changed.
+            event: Event triggering the need of changing the configuration.
         """
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -102,6 +102,14 @@ class SynapseCharm(ops.CharmBase):
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
+
+    def _on_config_changed(self, event: ops.HookEvent) -> None:
+        """Handle changed configuration.
+
+        Args:
+            event: Event triggering after config is changed.
+        """
+        self._change_config(event)
 
     @property
     def _pebble_layer(self) -> ops.pebble.LayerDict:
@@ -187,7 +195,7 @@ class SynapseCharm(ops.CharmBase):
         self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         try:
             self._database.prepare_database()
-            self._on_config_changed(event)
+            self._change_config(event)
         except psycopg2.Error as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
