@@ -73,8 +73,8 @@ class DatabaseObserver(Object):
                         sql.SQL(
                             "UPDATE pg_database "
                             "SET datcollate='C', datctype='C' "
-                            "WHERE datname={}"
-                        ).format(sql.Identifier(database_name))
+                            "WHERE datname = {}"
+                        ).format(sql.Literal(database_name))
                     )
             except psycopg2.Error as exc:
                 logger.error("Failed to prepare database: %s", str(exc))

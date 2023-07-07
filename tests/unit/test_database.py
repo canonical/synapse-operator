@@ -99,8 +99,8 @@ def test_prepare_database(
     cursor_mock.execute.assert_called_once_with(
         sql.Composed(
             [
-                sql.SQL("UPDATE pg_database SET datcollate='C', datctype='C' WHERE datname="),
-                sql.Identifier("synapse"),
+                sql.SQL("UPDATE pg_database SET datcollate='C', datctype='C' WHERE datname = "),
+                sql.Literal("synapse"),
             ]
         )
     )

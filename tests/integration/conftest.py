@@ -81,7 +81,7 @@ async def synapse_app_fixture(
     )
     async with ops_test.fast_forward():
         await model.wait_for_idle(raise_on_blocked=True)
-        await model.add_relation(synapse_app_name, postgresql_app_name)
+        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle()
     return app
 
@@ -197,5 +197,5 @@ async def postgresql_app_fixture(
 ):
     """Deploy postgresql."""
     async with ops_test.fast_forward():
-        await model.deploy(postgresql_app_name, trust=True)
+        await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
         await model.wait_for_idle()
