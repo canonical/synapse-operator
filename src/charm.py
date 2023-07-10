@@ -195,12 +195,11 @@ class SynapseCharm(ops.CharmBase):
             event: Event triggering the database created handler.
         """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
-        try:
-            self._database.prepare_database()
-            self._change_config(event)
-        except psycopg2.Error as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            return
+        # In case of psycopg2.Error, Juju will set ErrorStatus
+        # See discussion here:
+        # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
+        self._database.prepare_database()
+        self._change_config(event)
 
     def _on_endpoints_changed(self, event: DatabaseCreatedEvent) -> None:
         """Handle endpoints change.

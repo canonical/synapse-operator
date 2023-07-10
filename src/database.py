@@ -126,7 +126,7 @@ class DatabaseObserver(Object):
                     database_name = self.get_database_name()
                 conn = psycopg2.connect(
                     f"dbname='{database_name}' user='{user}' host='{host}'"
-                    f"password='{password}' connect_timeout=1"
+                    f" password='{password}' connect_timeout=1"
                 )
                 conn.autocommit = True
                 return conn
