@@ -131,7 +131,7 @@ class DatabaseObserver(Object):
                 conn.autocommit = True
                 return conn
             except psycopg2.Error as exc:
-                logger.error("Failed to connect to database: %s", str(exc))
+                logger.exception("Failed to connect to database: %s", str(exc))
                 raise
         return None
 
