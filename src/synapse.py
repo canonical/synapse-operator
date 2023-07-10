@@ -64,13 +64,13 @@ class Synapse:
             # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
             "SYNAPSE_NO_TLS": str(True),
         }
-        database_data = self._charm_state.database_data
-        if database_data is not None:
-            environment["POSTGRES_DB"] = database_data.get("POSTGRES_DB", "")
-            environment["POSTGRES_HOST"] = database_data.get("POSTGRES_HOST", "")
-            environment["POSTGRES_PORT"] = database_data.get("POSTGRES_PORT", "")
-            environment["POSTGRES_USER"] = database_data.get("POSTGRES_USER", "")
-            environment["POSTGRES_PASSWORD"] = database_data.get("POSTGRES_PASSWORD", "")
+        db_connection_params = self._charm_state.db_connection_params
+        if db_connection_params is not None:
+            environment["POSTGRES_DB"] = db_connection_params["POSTGRES_DB"]
+            environment["POSTGRES_HOST"] = db_connection_params["POSTGRES_HOST"]
+            environment["POSTGRES_PORT"] = db_connection_params["POSTGRES_PORT"]
+            environment["POSTGRES_USER"] = db_connection_params["POSTGRES_USER"]
+            environment["POSTGRES_PASSWORD"] = db_connection_params["POSTGRES_PASSWORD"]
         return environment
 
     def execute_migrate_config(self, container: ops.Container) -> None:

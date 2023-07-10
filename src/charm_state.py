@@ -16,6 +16,7 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
     validator,
 )
 
+from database import ConnectionParams
 from exceptions import CharmConfigInvalidError
 
 if typing.TYPE_CHECKING:
@@ -70,20 +71,23 @@ class CharmState:
     Attrs:
         server_name: server_name config.
         report_stats: report_stats config.
-        database_data: database data from database relation.
+        db_connection_params: database connection config.
     """
 
     def __init__(
-        self, *, synapse_config: SynapseConfig, database_data: typing.Optional[typing.Dict]
+        self,
+        *,
+        synapse_config: SynapseConfig,
+        db_connection_params: typing.Optional[ConnectionParams],
     ) -> None:
         """Construct.
 
         Args:
             synapse_config: The value of the synapse_config charm configuration.
-            database_data: Database observer relation data.
+            db_connection_params: Database connection config..
         """
         self._synapse_config = synapse_config
-        self._database_data: typing.Optional[typing.Dict] = database_data
+        self._db_connection_params = db_connection_params
 
     @property
     def server_name(self) -> typing.Optional[str]:
@@ -104,23 +108,20 @@ class CharmState:
         return self._synapse_config.report_stats
 
     @property
-    def database_data(self) -> typing.Optional[typing.Dict]:
+    def db_connection_params(self) -> typing.Optional[ConnectionParams]:
         """Return database data from database relation.
 
         Returns:
-            Dict: Information needed for setting connection with database.
+            ConnectionParams: Information needed for setting connection with database or None
         """
-        return self._database_data
+        return self._db_connection_params
 
     @classmethod
-    def from_charm(
-        cls, charm: "SynapseCharm", database_data: typing.Optional[typing.Dict]
-    ) -> "CharmState":
+    def from_charm(cls, charm: "SynapseCharm") -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
         Args:
             charm: The charm instance associated with this state.
-            database_data: database data from database relation.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -137,4 +138,7 @@ class CharmState:
             )
             error_field_str = " ".join(f"{f}" for f in error_fields)
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
-        return cls(synapse_config=valid_synapse_config, database_data=database_data)
+        return cls(
+            synapse_config=valid_synapse_config,
+            db_connection_params=charm.database.connection_params,
+        )

@@ -41,19 +41,17 @@ class SynapseCharm(ops.CharmBase):
             args: class arguments.
         """
         super().__init__(*args)
-        self._database = DatabaseObserver(self)
+        self.database = DatabaseObserver(self)
         try:
-            self._charm_state = CharmState.from_charm(
-                charm=self, database_data=self._database.get_relation_data()
-            )
+            self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
         self.framework.observe(
-            self._database.database.on.database_created, self._on_database_created
+            self.database.database.on.database_created, self._on_database_created
         )
         self.framework.observe(
-            self._database.database.on.endpoints_changed, self._on_endpoints_changed
+            self.database.database.on.endpoints_changed, self._on_endpoints_changed
         )
         self._synapse = Synapse(charm_state=self._charm_state)
         # service-hostname is a required field so we're hardcoding to the same
@@ -171,9 +169,9 @@ class SynapseCharm(ops.CharmBase):
             container.stop(SYNAPSE_SERVICE_NAME)
             self.model.unit.status = ops.MaintenanceStatus("Erase Synapse data")
             self._synapse.reset_instance(container)
-            if self._charm_state.database_data is not None:
+            if self.database.connection_params is not None:
                 self.model.unit.status = ops.MaintenanceStatus("Erase Synapse database")
-                self._database.erase_database()
+                self.database.erase_database()
             self._synapse.execute_migrate_config(container)
             self.model.unit.status = ops.MaintenanceStatus("Start Synapse database")
             logger.info("Start Synapse database")
@@ -198,7 +196,7 @@ class SynapseCharm(ops.CharmBase):
         # In case of psycopg2.Error, Juju will set ErrorStatus
         # See discussion here:
         # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
-        self._database.prepare_database()
+        self.database.prepare_database()
         self._change_config(event)
 
     def _on_endpoints_changed(self, event: DatabaseCreatedEvent) -> None:
