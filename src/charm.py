@@ -6,7 +6,7 @@
 """Charm for Synapse on kubernetes."""
 
 import logging
-from typing import Any, Dict
+import typing
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class SynapseCharm(ops.CharmBase):
     """Charm the service."""
 
-    def __init__(self, *args: Any) -> None:
+    def __init__(self, *args: typing.Any) -> None:
         """Construct.
 
         Args:
@@ -64,12 +64,13 @@ class SynapseCharm(ops.CharmBase):
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
+        self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
 
-    def _on_config_changed(self, event: ops.HookEvent) -> None:
-        """Handle changed configuration.
+    def _change_config(self, event: ops.HookEvent) -> None:
+        """Change the configuration.
 
         Args:
-            event: Event triggering after config is changed.
+            event: Event triggering the need of changing the configuration.
         """
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -91,10 +92,26 @@ class SynapseCharm(ops.CharmBase):
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
+    def _on_config_changed(self, event: ops.HookEvent) -> None:
+        """Handle changed configuration.
+
+        Args:
+            event: Event triggering after config is changed.
+        """
+        self._change_config(event)
+
+    def _on_pebble_ready(self, event: ops.HookEvent) -> None:
+        """Handle pebble ready event.
+
+        Args:
+            event: Event triggering after pebble is ready.
+        """
+        self._change_config(event)
+
     @property
-    def _pebble_layer(self) -> Dict:
+    def _pebble_layer(self) -> ops.pebble.LayerDict:
         """Return a dictionary representing a Pebble layer."""
-        return {
+        layer = {
             "summary": "Synapse layer",
             "description": "pebble config layer for Synapse",
             "services": {
@@ -110,6 +127,7 @@ class SynapseCharm(ops.CharmBase):
                 CHECK_READY_NAME: self._synapse.check_ready(),
             },
         }
+        return typing.cast(ops.pebble.LayerDict, layer)
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.
