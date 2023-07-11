@@ -74,6 +74,7 @@ class SynapseCharm(ops.CharmBase):
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
+        self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
 
     def _change_config(self, event: ops.HookEvent) -> None:
         """Change the configuration.
@@ -106,6 +107,14 @@ class SynapseCharm(ops.CharmBase):
 
         Args:
             event: Event triggering after config is changed.
+        """
+        self._change_config(event)
+
+    def _on_pebble_ready(self, event: ops.HookEvent) -> None:
+        """Handle pebble ready event.
+
+        Args:
+            event: Event triggering after pebble is ready.
         """
         self._change_config(event)
 
