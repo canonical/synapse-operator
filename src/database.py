@@ -11,6 +11,8 @@ from charms.data_platform_libs.v0.data_interfaces import DatabaseCreatedEvent, D
 from ops.charm import CharmBase
 from ops.framework import Object
 
+from charm import SynapseCharm
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,6 +72,13 @@ class DatabaseObserver(Object):
         self._charm.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         try:
             self._prepare_database()
+            # error: "CharmBase" has no attribute "config_changed"
+            # self._charm.config_changed(event)
+            # Then I tried:
+            synapse_charm = typing.cast(SynapseCharm, self._charm)
+            synapse_charm.config_changed(event)
+            # Result:
+            # tests/integration/__init__.py:1:0: R0401: Cyclic import (charm -> database) (cyclic-import)
         except psycopg2.Error as exc:
             self._charm.model.unit.status = ops.BlockedStatus(str(exc))
             return

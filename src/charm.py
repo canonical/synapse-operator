@@ -69,7 +69,7 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
 
-    def _on_config_changed(self, event: ops.HookEvent) -> None:
+    def config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
 
         Args:
@@ -94,6 +94,14 @@ class SynapseCharm(ops.CharmBase):
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
+
+    def _on_config_changed(self, event: ops.HookEvent) -> None:
+        """Handle changed configuration.
+
+        Args:
+            event: Event triggering after config is changed.
+        """
+        self.config_changed(event)
 
     @property
     def _pebble_layer(self) -> ops.pebble.LayerDict:
