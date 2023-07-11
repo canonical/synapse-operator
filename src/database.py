@@ -5,34 +5,23 @@
 import logging
 import typing
 
+import ops
 import psycopg2
-from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
+from charms.data_platform_libs.v0.data_interfaces import (
+    DatabaseCreatedEvent,
+    DatabaseEndpointsChangedEvent,
+    DatabaseRequires,
+)
 from ops.charm import CharmBase
 from ops.framework import Object
 from psycopg2 import sql
 from psycopg2.extensions import connection
 
+from constants import SYNAPSE_CONTAINER_NAME
 from exceptions import CharmDatabaseRelationNotFoundError
+from pebble import PebbleService
 
 logger = logging.getLogger(__name__)
-
-
-class ConnectionParams(typing.TypedDict):
-    """Represent connection parameters to the database.
-
-    Attrs:
-        POSTGRES_USER: user.
-        POSTGRES_PASSWORD: password.
-        POSTGRES_HOST: host.
-        POSTGRES_PORT: port.
-        POSTGRES_DB: database name.
-    """
-
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_HOST: str
-    POSTGRES_PORT: str
-    POSTGRES_DB: str
 
 
 class DatabaseObserver(Object):
@@ -49,15 +38,58 @@ class DatabaseObserver(Object):
         super().__init__(charm, "database-observer")
         self._charm = charm
         # SUPERUSER is required to update pg_database
+        self.pebble_service: PebbleService | None = None
         self.database = DatabaseRequires(
             self._charm,
             relation_name=self._RELATION_NAME,
             database_name=self._charm.app.name,
             extra_user_roles="SUPERUSER",
         )
-        self.connection_params: ConnectionParams | None = self.get_relation_data()
+        self.connection_params: typing.Dict | None = self.get_relation_data()
+        self.framework.observe(self.database.on.database_created, self._on_database_created)
+        self.framework.observe(self.database.on.endpoints_changed, self._on_endpoints_changed)
 
-    def get_relation_data(self) -> typing.Optional[ConnectionParams]:
+    def _change_config(self, event: typing.Any) -> None:
+        """Change the configuration.
+
+        Args:
+            event: Event triggering the database created or endpoints changed handler.
+        """
+        container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect() or self.pebble_service is None:
+            event.defer()
+            self._charm.unit.status = ops.WaitingStatus("Waiting for pebble")
+            return
+        try:
+            self.pebble_service.change_config(container)
+        # Avoiding duplication of code with _change_config in charm.py
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
+            return
+        self._charm.unit.status = ops.ActiveStatus()
+
+    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
+        """Handle database created.
+
+        Args:
+            event: Event triggering the database created handler.
+        """
+        self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
+        # In case of psycopg2.Error, Juju will set ErrorStatus
+        # See discussion here:
+        # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
+        self.prepare_database()
+        self._change_config(event)
+
+    def _on_endpoints_changed(self, event: DatabaseEndpointsChangedEvent) -> None:
+        """Handle endpoints change.
+
+        Args:
+            event: Event triggering the endpoints changed handler.
+        """
+        self._change_config(event)
+
+    def get_relation_data(self) -> typing.Optional[typing.Dict]:
         """Get database data from relation.
 
         Returns:
@@ -71,15 +103,13 @@ class DatabaseObserver(Object):
 
         endpoint = relation_data.get("endpoints", ":")
 
-        params: ConnectionParams = {
+        return {
             "POSTGRES_USER": relation_data.get("username", ""),
             "POSTGRES_PASSWORD": relation_data.get("password", ""),
             "POSTGRES_HOST": endpoint.split(":")[0],
             "POSTGRES_PORT": endpoint.split(":")[1],
             "POSTGRES_DB": self._charm.app.name,
         }
-
-        return params
 
     def get_database_name(self) -> str:
         """Get database name.
