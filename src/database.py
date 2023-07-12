@@ -17,6 +17,7 @@ from ops.framework import Object
 from psycopg2 import sql
 from psycopg2.extensions import connection
 
+from charm_types import DatasourcePostgreSQL
 from constants import SYNAPSE_CONTAINER_NAME
 from exceptions import CharmDatabaseRelationNotFoundError
 
@@ -99,7 +100,7 @@ class DatabaseObserver(Object):
         """
         self._change_config(event)
 
-    def get_relation_data(self) -> typing.Optional[typing.Dict]:
+    def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
         """Get database data from relation.
 
         Returns:
@@ -113,13 +114,13 @@ class DatabaseObserver(Object):
 
         endpoint = relation_data.get("endpoints", ":")
 
-        return {
-            "POSTGRES_USER": relation_data.get("username", ""),
-            "POSTGRES_PASSWORD": relation_data.get("password", ""),
-            "POSTGRES_HOST": endpoint.split(":")[0],
-            "POSTGRES_PORT": endpoint.split(":")[1],
-            "POSTGRES_DB": self._charm.app.name,
-        }
+        return DatasourcePostgreSQL(
+            user=relation_data.get("username", ""),
+            password=relation_data.get("password", ""),
+            host=endpoint.split(":")[0],
+            port=endpoint.split(":")[1],
+            db=self._charm.app.name,
+        )
 
     def get_database_name(self) -> str:
         """Get database name.
@@ -130,10 +131,10 @@ class DatabaseObserver(Object):
         Returns:
             str: database name.
         """
-        relation_data = self.get_relation_data()
-        if relation_data is None:
+        datasource = self.get_relation_as_datasource()
+        if datasource is None:
             raise CharmDatabaseRelationNotFoundError("No database relation was found.")
-        return relation_data["POSTGRES_DB"]
+        return datasource["db"]
 
     def prepare_database(self) -> None:
         """Change database collate and ctype as required by Synapse.
@@ -192,15 +193,15 @@ class DatabaseObserver(Object):
         Returns:
             Connection with the database
         """
-        relation_data = self.get_relation_data()
-        if relation_data is None:
+        datasource = self.get_relation_as_datasource()
+        if datasource is None:
             raise CharmDatabaseRelationNotFoundError("No database relation was found.")
         try:
-            user = relation_data["POSTGRES_USER"]
-            password = relation_data["POSTGRES_PASSWORD"]
-            host = relation_data["POSTGRES_HOST"]
+            user = datasource["user"]
+            password = datasource["password"]
+            host = datasource["host"]
             if not database_name:
-                database_name = relation_data["POSTGRES_DB"]
+                database_name = datasource["db"]
             conn = psycopg2.connect(
                 f"dbname='{database_name}' user='{user}' host='{host}'"
                 f" password='{password}' connect_timeout=1"

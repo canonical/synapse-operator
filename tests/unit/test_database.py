@@ -13,6 +13,7 @@ import pytest
 from ops.testing import Harness
 from psycopg2 import sql
 
+from charm_types import DatasourcePostgreSQL
 from constants import SYNAPSE_CONTAINER_NAME
 from exceptions import CharmDatabaseRelationNotFoundError
 
@@ -156,7 +157,7 @@ def test_prepare_database_error(
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_relation_data(
+def test_relation_as_datasource(
     harness_with_postgresql: Harness,
 ) -> None:
     """
@@ -165,29 +166,33 @@ def test_relation_data(
     assert: database data and synapse environment should be the same as relation data.
     """
     harness = harness_with_postgresql
-    expected = {
-        "POSTGRES_DB": harness.charm.app.name,
-        "POSTGRES_HOST": "myhost",
-        "POSTGRES_PASSWORD": "password",
-        "POSTGRES_PORT": "5432",
-        "POSTGRES_USER": "user",
-    }
-    assert expected == harness.charm.database.get_relation_data()
+    expected = DatasourcePostgreSQL(
+        host="myhost", db=harness.charm.app.name, password="password", port="5432", user="user"
+    )
+    assert expected == harness.charm.database.get_relation_as_datasource()
     assert harness.charm.app.name == harness.charm.database.get_database_name()
     synapse_env = harness.charm._synapse.synapse_environment()
-    assert all(key in synapse_env and synapse_env[key] == value for key, value in expected.items())
+    assert synapse_env["POSTGRES_DB"] == expected["db"]
+    assert synapse_env["POSTGRES_HOST"] == expected["host"]
+    assert synapse_env["POSTGRES_PORT"] == expected["port"]
+    assert synapse_env["POSTGRES_USER"] == expected["user"]
+    assert synapse_env["POSTGRES_PASSWORD"] == expected["password"]
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_relation_data_error(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_relation_as_datasource_error(
+    harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
+):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger change config.
     assert: charm status is active.
     """
     harness = harness_with_postgresql
-    get_relation_data_mock = unittest.mock.MagicMock(return_value=None)
-    monkeypatch.setattr(harness.charm.database, "get_relation_data", get_relation_data_mock)
+    get_relation_as_datasource_mock = unittest.mock.MagicMock(return_value=None)
+    monkeypatch.setattr(
+        harness.charm.database, "get_relation_as_datasource", get_relation_as_datasource_mock
+    )
     with pytest.raises(CharmDatabaseRelationNotFoundError):
         harness.charm.database.get_database_name()
 

@@ -41,9 +41,7 @@ class SynapseCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
-        self._synapse = Synapse(
-            charm_state=self._charm_state, db_connection_params=self.database.get_relation_data()
-        )
+        self._synapse = Synapse(charm_state=self._charm_state)
         self.pebble_service = PebbleService(synapse=self._synapse)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
@@ -126,7 +124,7 @@ class SynapseCharm(ops.CharmBase):
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
             self.pebble_service.reset_instance(container)
-            if self.database.get_relation_data() is not None:
+            if self.database.get_relation_as_datasource() is not None:
                 logger.info("Erase Synapse database")
                 self.database.erase_database()
             self._synapse.execute_migrate_config(container)

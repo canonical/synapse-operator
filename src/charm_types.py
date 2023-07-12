@@ -20,3 +20,21 @@ class ExecResult(typing.NamedTuple):
     exit_code: int
     stdout: str
     stderr: str
+
+
+class DatasourcePostgreSQL(typing.TypedDict):
+    """A named tuple representing a Datasource PostgreSQL.
+
+    Attributes:
+        user: User.
+        password: Password.
+        host: Host (IP or DNS without port or protocol).
+        port: Port.
+        db: Database name.
+    """
+
+    user: str
+    password: str
+    host: str
+    port: str
+    db: str
