@@ -82,7 +82,7 @@ async def synapse_app_fixture(
     async with ops_test.fast_forward():
         await model.wait_for_idle(raise_on_blocked=True)
         await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
-        await model.wait_for_idle()
+        await model.wait_for_idle(wait_for_active=True)
     return app
 
 
