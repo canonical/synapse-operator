@@ -13,6 +13,9 @@ from juju.model import Model
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
+# caused by pytest fixtures, mark does not work in fixtures
+# pylint: disable=too-many-arguments, unused-argument
+
 
 @pytest_asyncio.fixture(scope="module", name="server_name")
 async def server_name_fixture() -> str:
@@ -56,11 +59,14 @@ def synapse_app_name_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
+    ops_test: OpsTest,
     synapse_app_name: str,
     synapse_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
+    postgresql_app: Application,
+    postgresql_app_name: str,
 ):
     """Build and deploy the Synapse charm."""
     resources = {
@@ -73,7 +79,10 @@ async def synapse_app_fixture(
         series="jammy",
         config={"server_name": server_name},
     )
-    await model.wait_for_idle(raise_on_blocked=True)
+    async with ops_test.fast_forward():
+        await model.wait_for_idle(raise_on_blocked=True)
+        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
+        await model.wait_for_idle(wait_for_active=True)
     return app
 
 
@@ -116,7 +125,7 @@ def traefik_app_name_fixture() -> str:
 @pytest_asyncio.fixture(scope="module", name="traefik_app")
 async def traefik_app_fixture(
     model: Model,
-    synapse_app,  # pylint: disable=unused-argument
+    synapse_app,
     traefik_app_name: str,
     external_hostname: str,
 ):
@@ -143,7 +152,7 @@ def nginx_integrator_app_name_fixture() -> str:
 @pytest_asyncio.fixture(scope="module", name="nginx_integrator_app")
 async def nginx_integrator_app_fixture(
     model: Model,
-    synapse_app,  # pylint: disable=unused-argument
+    synapse_app,
     nginx_integrator_app_name: str,
 ):
     """Deploy nginx-ingress-integrator."""
@@ -172,3 +181,21 @@ async def another_synapse_app_fixture(
     await model.wait_for_idle()
 
     yield synapse_app
+
+
+@pytest.fixture(scope="module", name="postgresql_app_name")
+def postgresql_app_name_app_name_fixture() -> str:
+    """Return the name of the postgresql application deployed for tests."""
+    return "postgresql-k8s"
+
+
+@pytest_asyncio.fixture(scope="module", name="postgresql_app")
+async def postgresql_app_fixture(
+    ops_test: OpsTest,
+    model: Model,
+    postgresql_app_name: str,
+):
+    """Deploy postgresql."""
+    async with ops_test.fast_forward():
+        await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
+        await model.wait_for_idle()

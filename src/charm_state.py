@@ -124,4 +124,6 @@ class CharmState:
             )
             error_field_str = " ".join(f"{f}" for f in error_fields)
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
-        return cls(synapse_config=valid_synapse_config)
+        return cls(
+            synapse_config=valid_synapse_config,
+        )

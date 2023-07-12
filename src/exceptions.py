@@ -38,6 +38,22 @@ class CharmConfigInvalidError(Exception):
         self.msg = msg
 
 
+class CharmDatabaseRelationNotFoundError(Exception):
+    """Exception raised when there is no database relation.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the CharmDatabaseRelationNotFoundError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
+
+
 class ServerNameModifiedError(Exception):
     """Exception raised while checking configuration file.
 

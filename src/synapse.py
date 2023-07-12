@@ -30,13 +30,17 @@ logger = logging.getLogger(__name__)
 class Synapse:
     """A class representing the Synapse application."""
 
-    def __init__(self, charm_state: CharmState):
+    def __init__(
+        self, charm_state: CharmState, db_connection_params: typing.Optional[typing.Dict]
+    ):
         """Initialize a new instance of the Synapse class.
 
         Args:
             charm_state: The state of the charm that the Synapse instance belongs to.
+            db_connection_params: connection info.
         """
         self._charm_state = charm_state
+        self._db_connection_params = db_connection_params
 
     def check_ready(self) -> typing.Dict:
         """Return the Synapse container check.
@@ -57,13 +61,20 @@ class Synapse:
         Returns:
             A dictionary representing the Synapse environment variables.
         """
-        return {
+        environment = {
             "SYNAPSE_SERVER_NAME": f"{self._charm_state.server_name}",
             "SYNAPSE_REPORT_STATS": f"{self._charm_state.report_stats}",
             # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
             # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
             "SYNAPSE_NO_TLS": str(True),
         }
+        if self._db_connection_params is not None:
+            environment["POSTGRES_DB"] = self._db_connection_params["POSTGRES_DB"]
+            environment["POSTGRES_HOST"] = self._db_connection_params["POSTGRES_HOST"]
+            environment["POSTGRES_PORT"] = self._db_connection_params["POSTGRES_PORT"]
+            environment["POSTGRES_USER"] = self._db_connection_params["POSTGRES_USER"]
+            environment["POSTGRES_PASSWORD"] = self._db_connection_params["POSTGRES_PASSWORD"]
+        return environment
 
     def execute_migrate_config(self, container: ops.Container) -> None:
         """Run the Synapse command migrate_config.
@@ -116,8 +127,9 @@ class Synapse:
             ):
                 msg = (
                     f"server_name {self._charm_state.server_name} is different from the existing "
-                    f" one {configured_server_name}. Please revert the config or run the action "
-                    "reset-instance if you to erase the existing instance and start a new one."
+                    f"one {configured_server_name}. Please revert the config or run the action "
+                    "reset-instance if you want to erase the existing instance and start a new "
+                    "one."
                 )
                 logger.error(msg)
                 raise ServerNameModifiedError(

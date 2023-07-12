@@ -185,6 +185,36 @@ def harness_server_name_changed_fixture(harness_server_name_configured: Harness)
     return harness
 
 
+@pytest.fixture(name="harness_with_postgresql")
+def harness_with_postgresql_fixture(harness_server_name_configured: Harness) -> Harness:
+    """Ops testing framework harness fixture with postgresql relation.
+
+    This is a workaround for the fact that Harness doesn't reinitialize the charm as expected.
+    Reference: https://github.com/canonical/operator/issues/736
+    """
+    harness = harness_server_name_configured
+    harness.disable_hooks()
+    relation_id = harness.add_relation("database", "postgresql")
+    harness.add_relation_unit(relation_id, "postgresql/0")
+    harness.update_relation_data(
+        relation_id,
+        "postgresql",
+        {
+            "endpoints": "myhost:5432",
+            "username": "user",
+            "password": "password",
+        },
+    )
+    harness._framework = ops.framework.Framework(
+        harness._storage, harness._charm_dir, harness._meta, harness._model
+    )
+    harness._charm = None
+    harness.enable_hooks()
+    harness.begin()
+    harness.set_leader(True)
+    return harness
+
+
 @pytest.fixture(name="container_mocked")
 def container_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
     """Mock container base to others fixtures."""
@@ -219,3 +249,14 @@ def container_with_path_error_pass_fixture(
     remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
     monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
     return container_mocked
+
+
+@pytest.fixture(name="erase_database_mocked")
+def erase_database_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
+    """Mock erase_database."""
+    database_mocked = unittest.mock.MagicMock()
+    erase_database_mock = unittest.mock.MagicMock(side_effect=None)
+    monkeypatch.setattr(database_mocked, "erase_database", erase_database_mock)
+    monkeypatch.setattr(database_mocked, "get_conn", unittest.mock.MagicMock())
+    monkeypatch.setattr(database_mocked, "get_relation_data", unittest.mock.MagicMock())
+    return database_mocked
