@@ -19,13 +19,16 @@ from psycopg2.extensions import connection
 
 from constants import SYNAPSE_CONTAINER_NAME
 from exceptions import CharmDatabaseRelationNotFoundError
-from pebble import PebbleService
 
 logger = logging.getLogger(__name__)
 
 
 class DatabaseObserver(Object):
-    """The Database relation observer."""
+    """The Database relation observer.
+
+    Attrs:
+        _pebble_service: instance of pebble service.
+    """
 
     _RELATION_NAME = "database"
 
@@ -38,7 +41,6 @@ class DatabaseObserver(Object):
         super().__init__(charm, "database-observer")
         self._charm = charm
         # SUPERUSER is required to update pg_database
-        self.pebble_service: PebbleService | None = None
         self.database = DatabaseRequires(
             self._charm,
             relation_name=self._RELATION_NAME,
@@ -49,6 +51,15 @@ class DatabaseObserver(Object):
         self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(self.database.on.endpoints_changed, self._on_endpoints_changed)
 
+    @property
+    def _pebble_service(self) -> typing.Any:
+        """Return instance of pebble service.
+
+        Returns:
+            instance of pebble service or none.
+        """
+        return getattr(self._charm, "pebble_service", None)
+
     def _change_config(self, event: typing.Any) -> None:
         """Change the configuration.
 
@@ -56,12 +67,12 @@ class DatabaseObserver(Object):
             event: Event triggering the database created or endpoints changed handler.
         """
         container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect() or self.pebble_service is None:
+        if not container.can_connect() or self._pebble_service is None:
             event.defer()
             self._charm.unit.status = ops.WaitingStatus("Waiting for pebble")
             return
         try:
-            self.pebble_service.change_config(container)
+            self._pebble_service.change_config(container)
         # Avoiding duplication of code with _change_config in charm.py
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")

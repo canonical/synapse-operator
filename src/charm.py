@@ -44,8 +44,7 @@ class SynapseCharm(ops.CharmBase):
         self._synapse = Synapse(
             charm_state=self._charm_state, db_connection_params=self.database.connection_params
         )
-        self._pebble_service = PebbleService(synapse=self._synapse)
-        self.database.pebble_service = self._pebble_service
+        self.pebble_service = PebbleService(synapse=self._synapse)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -81,7 +80,7 @@ class SynapseCharm(ops.CharmBase):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            self._pebble_service.change_config(container)
+            self.pebble_service.change_config(container)
         except (
             CharmConfigInvalidError,
             CommandMigrateConfigError,
@@ -126,13 +125,13 @@ class SynapseCharm(ops.CharmBase):
             return
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
-            self._pebble_service.reset_instance(container)
+            self.pebble_service.reset_instance(container)
             if self.database.connection_params is not None:
                 logger.info("Erase Synapse database")
                 self.database.erase_database()
             self._synapse.execute_migrate_config(container)
             logger.info("Start Synapse database")
-            self._pebble_service.replan(container)
+            self.pebble_service.replan(container)
             results["reset-instance"] = True
         except (psycopg2.Error, ops.pebble.PathError, CommandMigrateConfigError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
