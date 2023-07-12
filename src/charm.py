@@ -42,7 +42,7 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
         self._synapse = Synapse(
-            charm_state=self._charm_state, db_connection_params=self.database.connection_params
+            charm_state=self._charm_state, db_connection_params=self.database.get_relation_data()
         )
         self.pebble_service = PebbleService(synapse=self._synapse)
         # service-hostname is a required field so we're hardcoding to the same
@@ -126,7 +126,7 @@ class SynapseCharm(ops.CharmBase):
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
             self.pebble_service.reset_instance(container)
-            if self.database.connection_params is not None:
+            if self.database.get_relation_data() is not None:
                 logger.info("Erase Synapse database")
                 self.database.erase_database()
             self._synapse.execute_migrate_config(container)

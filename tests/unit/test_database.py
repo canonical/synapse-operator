@@ -179,16 +179,15 @@ def test_relation_data(
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_relation_data_error(
-    harness_with_postgresql: Harness,
-):
+def test_relation_data_error(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger change config.
     assert: charm status is active.
     """
     harness = harness_with_postgresql
-    harness.charm.database.connection_params = None
+    get_relation_data_mock = unittest.mock.MagicMock(return_value=None)
+    monkeypatch.setattr(harness.charm.database, "get_relation_data", get_relation_data_mock)
     with pytest.raises(CharmDatabaseRelationNotFoundError):
         harness.charm.database.get_database_name()
 

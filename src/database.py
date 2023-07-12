@@ -47,7 +47,6 @@ class DatabaseObserver(Object):
             database_name=self._charm.app.name,
             extra_user_roles="SUPERUSER",
         )
-        self.connection_params: typing.Dict | None = self.get_relation_data()
         self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(self.database.on.endpoints_changed, self._on_endpoints_changed)
 
@@ -131,9 +130,10 @@ class DatabaseObserver(Object):
         Returns:
             str: database name.
         """
-        if self.connection_params is None:
+        relation_data = self.get_relation_data()
+        if relation_data is None:
             raise CharmDatabaseRelationNotFoundError("No database relation was found.")
-        return self.connection_params["POSTGRES_DB"]
+        return relation_data["POSTGRES_DB"]
 
     def prepare_database(self) -> None:
         """Change database collate and ctype as required by Synapse.
@@ -192,14 +192,15 @@ class DatabaseObserver(Object):
         Returns:
             Connection with the database
         """
-        if self.connection_params is None:
+        relation_data = self.get_relation_data()
+        if relation_data is None:
             raise CharmDatabaseRelationNotFoundError("No database relation was found.")
         try:
-            user = self.connection_params["POSTGRES_USER"]
-            password = self.connection_params["POSTGRES_PASSWORD"]
-            host = self.connection_params["POSTGRES_HOST"]
+            user = relation_data["POSTGRES_USER"]
+            password = relation_data["POSTGRES_PASSWORD"]
+            host = relation_data["POSTGRES_HOST"]
             if not database_name:
-                database_name = self.connection_params["POSTGRES_DB"]
+                database_name = relation_data["POSTGRES_DB"]
             conn = psycopg2.connect(
                 f"dbname='{database_name}' user='{user}' host='{host}'"
                 f" password='{password}' connect_timeout=1"
