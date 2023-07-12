@@ -72,6 +72,7 @@ def test_erase_database_error(
 def test_get_conn(
     harness_with_postgresql: Harness,
     monkeypatch: pytest.MonkeyPatch,
+    datasource_postgresql_password: str,
 ):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -84,9 +85,11 @@ def test_get_conn(
     connect_mock = unittest.mock.MagicMock(return_value=mock_connection)
     monkeypatch.setattr("psycopg2.connect", connect_mock)
     harness.charm.database.get_conn()
-    connect_mock.assert_called_once_with(
-        "dbname='synapse' user='user' host='myhost' password='password' connect_timeout=1"
+    query = (
+        "dbname='synapse' user='user' host='myhost' "
+        f"password='{datasource_postgresql_password}' connect_timeout=1"
     )
+    connect_mock.assert_called_once_with(query)
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
@@ -158,7 +161,7 @@ def test_prepare_database_error(
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
 def test_relation_as_datasource(
-    harness_with_postgresql: Harness,
+    harness_with_postgresql: Harness, datasource_postgresql_password: str
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -167,7 +170,11 @@ def test_relation_as_datasource(
     """
     harness = harness_with_postgresql
     expected = DatasourcePostgreSQL(
-        host="myhost", db=harness.charm.app.name, password="password", port="5432", user="user"
+        host="myhost",
+        db=harness.charm.app.name,
+        password=datasource_postgresql_password,
+        port="5432",
+        user="user",
     )
     assert expected == harness.charm.database.get_relation_as_datasource()
     assert harness.charm.app.name == harness.charm.database.get_database_name()

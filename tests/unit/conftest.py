@@ -7,6 +7,7 @@
 
 import typing
 import unittest.mock
+from secrets import token_hex
 
 import ops
 import pytest
@@ -186,7 +187,9 @@ def harness_server_name_changed_fixture(harness_server_name_configured: Harness)
 
 
 @pytest.fixture(name="harness_with_postgresql")
-def harness_with_postgresql_fixture(harness_server_name_configured: Harness) -> Harness:
+def harness_with_postgresql_fixture(
+    harness_server_name_configured: Harness, datasource_postgresql_password: str
+) -> Harness:
     """Ops testing framework harness fixture with postgresql relation.
 
     This is a workaround for the fact that Harness doesn't reinitialize the charm as expected.
@@ -202,7 +205,7 @@ def harness_with_postgresql_fixture(harness_server_name_configured: Harness) -> 
         {
             "endpoints": "myhost:5432",
             "username": "user",
-            "password": "password",
+            "password": datasource_postgresql_password,
         },
     )
     harness._framework = ops.framework.Framework(
@@ -260,3 +263,9 @@ def erase_database_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.m
     monkeypatch.setattr(database_mocked, "get_conn", unittest.mock.MagicMock())
     monkeypatch.setattr(database_mocked, "get_relation_data", unittest.mock.MagicMock())
     return database_mocked
+
+
+@pytest.fixture(name="datasource_postgresql_password")
+def datasource_postgresql_password_fixture() -> str:
+    """Generate random password"""
+    return token_hex(16)
