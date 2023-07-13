@@ -15,9 +15,10 @@ from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
 
+import database
 from charm_state import CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
-from database import DatabaseObserver
+from database_observer import DatabaseObserver
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError, ServerNameModifiedError
 from pebble import PebbleService
 from synapse import Synapse
@@ -124,9 +125,11 @@ class SynapseCharm(ops.CharmBase):
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
             self.pebble_service.reset_instance(container)
-            if self.database.get_relation_as_datasource() is not None:
+            datasource = self.database.get_relation_as_datasource()
+            if datasource is not None:
                 logger.info("Erase Synapse database")
-                self.database.erase_database()
+                database_name = datasource["db"]
+                database.erase(datasource=datasource, database_name=database_name)
             self._synapse.execute_migrate_config(container)
             logger.info("Start Synapse database")
             self.pebble_service.replan(container)
