@@ -15,9 +15,9 @@ from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
 
-import database
 from charm_state import CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
+from database_client import DatabaseClient
 from database_observer import DatabaseObserver
 from exceptions import CharmConfigInvalidError, CommandMigrateConfigError, ServerNameModifiedError
 from pebble import PebbleService
@@ -128,8 +128,10 @@ class SynapseCharm(ops.CharmBase):
             datasource = self.database.get_relation_as_datasource()
             if datasource is not None:
                 logger.info("Erase Synapse database")
-                database_name = datasource["db"]
-                database.erase(datasource=datasource, database_name=database_name)
+                # Connecting to template1 to make it possible to erase the database.
+                # Otherwise PostgreSQL will prevent it if there are open connections.
+                db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
+                db_client.erase()
             self._synapse.execute_migrate_config(container)
             logger.info("Start Synapse database")
             self.pebble_service.replan(container)

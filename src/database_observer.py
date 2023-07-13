@@ -14,9 +14,9 @@ from charms.data_platform_libs.v0.data_interfaces import (
 from ops.charm import CharmBase
 from ops.framework import Object
 
-import database
 from charm_types import DatasourcePostgreSQL
 from constants import SYNAPSE_CONTAINER_NAME
+from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -88,8 +88,8 @@ class DatabaseObserver(Object):
         # See discussion here:
         # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
         datasource = self.get_relation_as_datasource()
-        database_name = self.get_database_name()
-        database.prepare(datasource=datasource, database_name=database_name)
+        db_client = DatabaseClient(datasource=datasource)
+        db_client.prepare()
         self._change_config(event)
 
     def _on_endpoints_changed(self, event: DatabaseEndpointsChangedEvent) -> None:
