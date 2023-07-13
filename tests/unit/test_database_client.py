@@ -15,6 +15,7 @@ from psycopg2 import sql
 
 from charm_types import DatasourcePostgreSQL
 from constants import SYNAPSE_CONTAINER_NAME
+from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
 
 
@@ -26,12 +27,14 @@ def test_erase_database(harness_with_postgresql: Harness, monkeypatch: pytest.Mo
     assert: erase query is executed.
     """
     harness = harness_with_postgresql
+    datasource = harness.charm.database.get_relation_as_datasource()
+    db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
     cursor_mock.execute.side_effect = None
-    conn_func_mock = unittest.mock.MagicMock(return_value=conn_mock)
-    monkeypatch.setattr(harness.charm.database, "get_conn", conn_func_mock)
-    harness.charm.database.erase_database()
+    monkeypatch.setattr(db_client, "_connect", unittest.mock.MagicMock())
+    db_client._conn = conn_mock
+    db_client.erase()
     conn_mock.cursor.assert_called()
     calls = [
         unittest.mock.call(sql.Composed([sql.SQL("DROP DATABASE "), sql.Identifier("synapse")])),
@@ -58,18 +61,20 @@ def test_erase_database_error(
     assert: exception is raised.
     """
     harness = harness_with_postgresql
+    datasource = harness.charm.database.get_relation_as_datasource()
+    db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
     error_msg = "Invalid query"
     cursor_mock.execute.side_effect = psycopg2.Error(error_msg)
-    conn_func_mock = unittest.mock.MagicMock(return_value=conn_mock)
-    monkeypatch.setattr(harness.charm.database, "get_conn", conn_func_mock)
+    monkeypatch.setattr(db_client, "_connect", unittest.mock.MagicMock())
+    db_client._conn = conn_mock
     with pytest.raises(psycopg2.Error):
-        harness.charm.database.erase_database()
+        db_client.erase()
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_get_conn(
+def test_connect(
     harness_with_postgresql: Harness,
     monkeypatch: pytest.MonkeyPatch,
     datasource_postgresql_password: str,
@@ -80,20 +85,22 @@ def test_get_conn(
     assert: connection is called with correct parameters.
     """
     harness = harness_with_postgresql
+    datasource = harness.charm.database.get_relation_as_datasource()
+    db_client = DatabaseClient(datasource=datasource)
     mock_connection = unittest.mock.MagicMock()
     mock_connection.autocommit = True
     connect_mock = unittest.mock.MagicMock(return_value=mock_connection)
     monkeypatch.setattr("psycopg2.connect", connect_mock)
-    harness.charm.database.get_conn()
+    db_client._connect()
     query = (
         "dbname='synapse' user='user' host='myhost' "
-        f"password='{datasource_postgresql_password}' connect_timeout=1"
+        f"password='{datasource_postgresql_password}' connect_timeout=5"
     )
     connect_mock.assert_called_once_with(query)
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_get_conn_error(
+def test_connect_error(
     harness_with_postgresql: Harness,
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -103,31 +110,33 @@ def test_get_conn_error(
     assert: exception is raised.
     """
     harness = harness_with_postgresql
+    datasource = harness.charm.database.get_relation_as_datasource()
+    db_client = DatabaseClient(datasource=datasource)
     error_msg = "Invalid query"
     connect_mock = unittest.mock.MagicMock(side_effect=psycopg2.Error(error_msg))
     monkeypatch.setattr("psycopg2.connect", connect_mock)
     with pytest.raises(psycopg2.Error):
-        harness.charm.database.get_conn()
+        db_client._connect()
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
-def test_on_database_created(
+def test_prepare_database(
     harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: add database relation and trigger on_database_created.
+    act: add database relation and prepare database.
     assert: update query is executed.
     """
     harness = harness_with_postgresql
+    datasource = harness.charm.database.get_relation_as_datasource()
+    db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
     cursor_mock.execute.side_effect = None
-    conn_func_mock = unittest.mock.MagicMock(return_value=conn_mock)
-    change_config_mock = unittest.mock.MagicMock(return_value=None)
-    monkeypatch.setattr(harness.charm.database, "get_conn", conn_func_mock)
-    monkeypatch.setattr(harness.charm.database, "_change_config", change_config_mock)
-    harness.charm.database._on_database_created(unittest.mock.Mock())
+    monkeypatch.setattr(db_client, "_connect", unittest.mock.MagicMock())
+    db_client._conn = conn_mock
+    db_client.prepare()
     conn_mock.cursor.assert_called()
     cursor_mock.execute.assert_called_with(
         sql.Composed(
@@ -149,14 +158,16 @@ def test_prepare_database_error(
     assert: exception is raised.
     """
     harness = harness_with_postgresql
+    datasource = harness.charm.database.get_relation_as_datasource()
+    db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
     error_msg = "Invalid query"
     cursor_mock.execute.side_effect = psycopg2.Error(error_msg)
-    conn_func_mock = unittest.mock.MagicMock(return_value=conn_mock)
-    monkeypatch.setattr(harness.charm.database, "get_conn", conn_func_mock)
+    monkeypatch.setattr(db_client, "_connect", unittest.mock.MagicMock())
+    db_client._conn = conn_mock
     with pytest.raises(psycopg2.Error):
-        harness.charm.database.prepare_database()
+        db_client.prepare()
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
