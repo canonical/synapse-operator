@@ -13,6 +13,7 @@ import pytest
 from ops.testing import Harness
 from psycopg2 import sql
 
+import database_observer
 from charm_types import DatasourcePostgreSQL
 from constants import SYNAPSE_CONTAINER_NAME
 from database_client import DatabaseClient
@@ -242,3 +243,25 @@ def test_change_config_error(
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     harness.charm.database._change_config(unittest.mock.MagicMock())
     assert isinstance(harness.model.unit.status, ops.WaitingStatus)
+
+
+@pytest.mark.parametrize("harness", [0], indirect=True)
+def test_on_database_created(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: add relation and trigger _on_database_created.
+    assert: charm status is active.
+    """
+    harness = harness_with_postgresql
+    harness = harness_with_postgresql
+    db_client_mock = unittest.mock.MagicMock()
+    conn_mock = unittest.mock.MagicMock()
+    cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
+    cursor_mock.execute.side_effect = None
+    monkeypatch.setattr(db_client_mock, "_connect", unittest.mock.MagicMock())
+    db_client_mock._conn = conn_mock
+    monkeypatch.setattr(
+        database_observer, "DatabaseClient", unittest.mock.MagicMock(return_value=db_client_mock)
+    )
+    harness.charm.database._on_database_created(unittest.mock.MagicMock())
+    db_client_mock.prepare.assert_called_once()
