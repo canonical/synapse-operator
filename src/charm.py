@@ -15,11 +15,10 @@ from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
 
-from charm_state import CharmState
+from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
 from database_client import DatabaseClient
 from database_observer import DatabaseObserver
-from exceptions import CharmConfigInvalidError
 from pebble import PebbleService
 from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
 

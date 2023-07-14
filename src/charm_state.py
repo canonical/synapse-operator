@@ -17,7 +17,6 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 )
 
 from charm_types import DatasourcePostgreSQL
-from exceptions import CharmConfigInvalidError
 
 if typing.TYPE_CHECKING:
     from charm import SynapseCharm
@@ -27,6 +26,22 @@ KNOWN_CHARM_CONFIG = (
     "server_name",
     "report_stats",
 )
+
+
+class CharmConfigInvalidError(Exception):
+    """Exception raised when a charm configuration is found to be invalid.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the CharmConfigInvalidError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
 
 
 class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
