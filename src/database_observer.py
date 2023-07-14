@@ -58,16 +58,11 @@ class DatabaseObserver(Object):
         """
         return getattr(self._charm, "pebble_service", None)
 
-    def _change_config(self, event: typing.Any) -> None:
-        """Change the configuration.
-
-        Args:
-            event: Event triggering the database created or endpoints changed handler.
-        """
+    def _change_config(self, _: ops.HookEvent) -> None:
+        """Change the configuration."""
         container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
-            event.defer()
-            self._charm.unit.status = ops.WaitingStatus("Waiting for pebble")
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         try:
             self._pebble_service.change_config(container)

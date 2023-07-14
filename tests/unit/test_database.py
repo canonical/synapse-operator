@@ -242,7 +242,7 @@ def test_change_config_error(
     harness = harness_with_postgresql
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     harness.charm.database._change_config(unittest.mock.MagicMock())
-    assert isinstance(harness.model.unit.status, ops.WaitingStatus)
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 
 
 @pytest.mark.parametrize("harness", [0], indirect=True)

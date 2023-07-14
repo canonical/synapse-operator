@@ -67,7 +67,7 @@ def test_container_down(harness_server_name_configured: Harness) -> None:
     harness = harness_server_name_configured
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     harness.update_config({"report_stats": True})
-    assert isinstance(harness.model.unit.status, ops.WaitingStatus)
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
 
 

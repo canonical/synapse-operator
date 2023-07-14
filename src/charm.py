@@ -66,16 +66,11 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
 
-    def change_config(self, event: ops.HookEvent) -> None:
-        """Change configuration.
-
-        Args:
-            event: Event triggering after config needs to be changed.
-        """
+    def change_config(self, _: ops.HookEvent) -> None:
+        """Change configuration."""
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            event.defer()
-            self.unit.status = ops.WaitingStatus("Waiting for pebble")
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
