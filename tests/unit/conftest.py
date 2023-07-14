@@ -15,7 +15,6 @@ from ops.pebble import ExecError
 from ops.testing import Harness
 
 from charm import SynapseCharm
-from charm_types import ExecResult
 from constants import (
     COMMAND_MIGRATE_CONFIG,
     SYNAPSE_COMMAND_PATH,
@@ -23,6 +22,7 @@ from constants import (
     SYNAPSE_CONTAINER_NAME,
     TEST_SERVER_NAME,
 )
+from synapse import ExecResult
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
