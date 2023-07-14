@@ -21,9 +21,42 @@ from constants import (
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_PORT,
 )
-from exceptions import CommandMigrateConfigError, ServerNameModifiedError
 
 logger = logging.getLogger(__name__)
+
+
+class CommandMigrateConfigError(Exception):
+    """Exception raised when a charm configuration is found to be invalid.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the CommandMigrateConfigError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
+
+
+class ServerNameModifiedError(Exception):
+    """Exception raised while checking configuration file.
+
+    Raised if server_name from state is different than the one in the configuration file.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the ServerNameModifiedError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
 
 
 class ExecResult(typing.NamedTuple):

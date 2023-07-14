@@ -19,9 +19,9 @@ from charm_state import CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
 from database_client import DatabaseClient
 from database_observer import DatabaseObserver
-from exceptions import CharmConfigInvalidError, CommandMigrateConfigError, ServerNameModifiedError
+from exceptions import CharmConfigInvalidError
 from pebble import PebbleService
-from synapse import Synapse
+from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
 
 logger = logging.getLogger(__name__)
 
