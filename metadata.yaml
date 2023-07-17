@@ -15,3 +15,34 @@ maintainers:
 source: https://github.com/canonical/synapse-operator
 assumes:
   - k8s-api
+
+containers:
+  synapse:
+    resource: synapse-image
+    mounts:
+      - storage: data
+        location: /data
+
+resources:
+  synapse-image:
+    type: oci-image
+    description: OCI image for Synapse
+
+storage:
+  data:
+    type: filesystem
+    location: /data
+
+requires:
+    ingress:
+        interface: ingress
+        limit: 1
+        optional: true
+    database:
+        interface: postgresql_client
+        limit: 1
+        optional: true
+    nginx-route:
+        interface: nginx-route
+        limit: 1
+        optional: true
