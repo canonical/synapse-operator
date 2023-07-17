@@ -38,6 +38,10 @@ requires:
         interface: ingress
         limit: 1
         optional: true
+    database:
+        interface: postgresql_client
+        limit: 1
+        optional: true
     nginx-route:
         interface: nginx-route
         limit: 1
