@@ -16,7 +16,7 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
     validator,
 )
 
-from exceptions import CharmConfigInvalidError
+from charm_types import DatasourcePostgreSQL
 
 if typing.TYPE_CHECKING:
     from charm import SynapseCharm
@@ -26,6 +26,22 @@ KNOWN_CHARM_CONFIG = (
     "server_name",
     "report_stats",
 )
+
+
+class CharmConfigInvalidError(Exception):
+    """Exception raised when a charm configuration is found to be invalid.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the CharmConfigInvalidError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
 
 
 class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
@@ -70,19 +86,20 @@ class CharmState:
     Attrs:
         server_name: server_name config.
         report_stats: report_stats config.
+        datasource: datasource information.
     """
 
     def __init__(
-        self,
-        *,
-        synapse_config: SynapseConfig,
+        self, *, synapse_config: SynapseConfig, datasource: typing.Optional[DatasourcePostgreSQL]
     ) -> None:
         """Construct.
 
         Args:
             synapse_config: The value of the synapse_config charm configuration.
+            datasource: Datasource information.
         """
         self._synapse_config = synapse_config
+        self._datasource = datasource
 
     @property
     def server_name(self) -> typing.Optional[str]:
@@ -101,6 +118,15 @@ class CharmState:
             str: report_stats config as yes or no.
         """
         return self._synapse_config.report_stats
+
+    @property
+    def datasource(self) -> typing.Union[DatasourcePostgreSQL, None]:
+        """Return datasource.
+
+        Returns:
+            datasource or None.
+        """
+        return self._datasource
 
     @classmethod
     def from_charm(cls, charm: "SynapseCharm") -> "CharmState":
@@ -124,4 +150,7 @@ class CharmState:
             )
             error_field_str = " ".join(f"{f}" for f in error_fields)
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
-        return cls(synapse_config=valid_synapse_config)
+        return cls(
+            synapse_config=valid_synapse_config,
+            datasource=charm.database.get_relation_as_datasource(),
+        )

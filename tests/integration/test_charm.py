@@ -6,6 +6,7 @@
 import logging
 import typing
 
+import pytest
 import requests
 from juju.action import Action
 from juju.application import Application
@@ -39,11 +40,11 @@ async def test_synapse_is_up(
         assert "Welcome to the Matrix" in response.text
 
 
+@pytest.mark.usefixtures("traefik_app")
 async def test_with_ingress(
     ops_test: OpsTest,
     model: Model,
     synapse_app: Application,
-    traefik_app,  # pylint: disable=unused-argument
     traefik_app_name: str,
     external_hostname: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
@@ -66,11 +67,10 @@ async def test_with_ingress(
     assert "Welcome to the Matrix" in response.text
 
 
+@pytest.mark.usefixtures("synapse_app", "nginx_integrator_app")
 async def test_with_nginx_route(
     model: Model,
     synapse_app_name: str,
-    synapse_app: Application,  # pylint: disable=unused-argument
-    nginx_integrator_app,  # pylint: disable=unused-argument
     nginx_integrator_app_name: str,
 ):
     """

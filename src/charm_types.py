@@ -8,15 +8,19 @@
 import typing
 
 
-class ExecResult(typing.NamedTuple):
-    """A named tuple representing the result of executing a command.
+class DatasourcePostgreSQL(typing.TypedDict):
+    """A named tuple representing a Datasource PostgreSQL.
 
     Attributes:
-        exit_code: The exit status of the command (0 for success, non-zero for failure).
-        stdout: The standard output of the command as a string.
-        stderr: The standard error output of the command as a string.
+        user: User.
+        password: Password.
+        host: Host (IP or DNS without port or protocol).
+        port: Port.
+        db: Database name.
     """
 
-    exit_code: int
-    stdout: str
-    stderr: str
+    user: str
+    password: str
+    host: str
+    port: str
+    db: str
