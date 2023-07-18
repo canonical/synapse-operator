@@ -6,6 +6,7 @@
 CHECK_READY_NAME = "synapse-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
 COMMAND_REGISTER_NEW_MATRIX_USER = "register_new_matrix_user"
+SYNAPSE_OPERATOR_USER = "operator"
 SYNAPSE_CONFIG_DIR = "/data"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_COMMAND_PATH = "/start.py"
