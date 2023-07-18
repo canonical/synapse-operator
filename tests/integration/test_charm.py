@@ -5,6 +5,7 @@
 """Integration tests for Synapse charm."""
 import logging
 import typing
+from secrets import token_hex
 
 import pytest
 import requests
@@ -126,3 +127,19 @@ async def test_reset_instance_action(
     config = await model.applications[another_synapse_app.name].get_config()
     current_server_name = config.get("server_name", {}).get("value")
     assert current_server_name == another_server_name
+
+
+async def test_register_user_action(model: Model, synapse_app: Application) -> None:
+    """
+    arrange: a deployed Synapse charm.
+    act: call the register user action.
+    assert: the user is registered.
+    """
+    unit = model.applications[synapse_app.name].units[0]
+    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "register-user", username="operator", password=token_hex(8), admin="yes"
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    assert action_register_user.results["register-user"]
+    assert unit.workload_status == "active"
