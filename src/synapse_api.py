@@ -36,7 +36,7 @@ class SynapseAPI:
     def _get_operator_password(self) -> str:
         """Get operator password from peer data.
 
-        If doesn't exist, create operator user and return password.
+        If doesn't exist, register operator user and return password.
 
         Returns:
             operator password.
@@ -48,7 +48,7 @@ class SynapseAPI:
         if peer_password:
             return peer_password
         password = self._get_random_password()
-        self._create_operator_user(password=password)
+        self._register_operator_user(password=password)
         peer_relation.data[self._charm.app].update({peer_key: password})
         return password
 
@@ -62,22 +62,47 @@ class SynapseAPI:
         password = "".join([secrets.choice(choices) for i in range(16)])
         return password
 
-    def _create_operator_user(self, password: str) -> None:
+    def _register_operator_user(self, password: str) -> None:
         """Create operator admin user.
 
         Args:
             password: operator password.
+
+        Raises:
+            CommandRegisterNewMatrixUserError: if registering user fails.
         """
         container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        self._charm.model.unit.status = ops.MaintenanceStatus("Creating Synapse operator user")
         try:
             self._synapse.execute_register_new_matrix_user(
                 container, username=SYNAPSE_OPERATOR_USER, password=password, admin=True
             )
         except CommandRegisterNewMatrixUserError as exc:
-            self._charm.model.unit.status = ops.BlockedStatus(str(exc))
-            return
-        self._charm.model.unit.status = ops.ActiveStatus()
+            logger.error("Failed to create operator user: %s", str(exc))
+            raise
+
+    def _get_access_token(self) -> str:
+        """Get access token.
+
+        Returns:
+            access token to be used in the requests.
+        """
+        password = self._get_operator_password()
+        # do login with operator user and get the access token
+        return password
+
+    def register_user(self, username: str, password: str, admin: bool) -> None:
+        """Register user.
+
+        Args:
+            username: name to be registered.
+            password: user's password.
+            admin: if the user is admin or not.
+        """
+        # get registration_shared_secret from config file
+        # get nonce
+        # generate mac
+        # access_token = self._get_access_token()
+        # finally register user

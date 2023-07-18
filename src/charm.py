@@ -21,6 +21,7 @@ from database_client import DatabaseClient
 from database_observer import DatabaseObserver
 from pebble import PebbleService
 from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
+from synapse_api import SynapseAPI
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ class SynapseCharm(ops.CharmBase):
             return
         self._synapse = Synapse(charm_state=self._charm_state)
         self.pebble_service = PebbleService(synapse=self._synapse)
+        self._synapse_api = SynapseAPI(charm=self, synapse=self._synapse)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -64,6 +66,7 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
+        self.framework.observe(self.on.register_user_action, self._on_register_user_action)
 
     def change_config(self, _: ops.HookEvent) -> None:
         """Change configuration."""
@@ -137,6 +140,27 @@ class SynapseCharm(ops.CharmBase):
         # results is a dict and set_results expects _SerializedData
         event.set_results(results)  # type: ignore[arg-type]
         self.model.unit.status = ops.ActiveStatus()
+
+    def _on_register_user_action(self, event: ActionEvent) -> None:
+        """Reset instance and report action result.
+
+        Args:
+            event: Event triggering the reset instance action.
+        """
+        results = {
+            "register-user": False,
+        }
+        username = event.params["username"]
+        password = event.params["password"]
+        admin = bool(event.params["admin"] == "yes")
+        try:
+            self._synapse_api.register_user(username=username, password=password, admin=admin)
+            results["reset-instance"] = True
+        except CommandMigrateConfigError as exc:
+            event.fail(str(exc))
+            return
+        # results is a dict and set_results expects _SerializedData
+        event.set_results(results)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":  # pragma: nocover
