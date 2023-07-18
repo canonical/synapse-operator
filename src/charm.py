@@ -21,7 +21,7 @@ from database_client import DatabaseClient
 from database_observer import DatabaseObserver
 from pebble import PebbleService
 from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
-from synapse_api import SynapseAPI
+from synapse_api import NetworkError, RegisterUserError, SynapseAPI
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,9 @@ class SynapseCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
-        self._synapse = Synapse(charm_state=self._charm_state)
-        self.pebble_service = PebbleService(synapse=self._synapse)
-        self._synapse_api = SynapseAPI(charm=self, synapse=self._synapse)
+        self.synapse = Synapse(charm_state=self._charm_state)
+        self.pebble_service = PebbleService(synapse=self.synapse)
+        self._synapse_api = SynapseAPI(charm=self)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -129,7 +129,7 @@ class SynapseCharm(ops.CharmBase):
                 # Otherwise PostgreSQL will prevent it if there are open connections.
                 db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
                 db_client.erase()
-            self._synapse.execute_migrate_config(container)
+            self.synapse.execute_migrate_config(container)
             logger.info("Start Synapse database")
             self.pebble_service.replan(container)
             results["reset-instance"] = True
@@ -155,8 +155,8 @@ class SynapseCharm(ops.CharmBase):
         admin = bool(event.params["admin"] == "yes")
         try:
             self._synapse_api.register_user(username=username, password=password, admin=admin)
-            results["reset-instance"] = True
-        except CommandMigrateConfigError as exc:
+            results["register-user"] = True
+        except (RegisterUserError, NetworkError) as exc:
             event.fail(str(exc))
             return
         # results is a dict and set_results expects _SerializedData

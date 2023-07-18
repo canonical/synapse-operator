@@ -16,7 +16,6 @@ from charm_state import CharmState
 from constants import (
     CHECK_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
-    COMMAND_REGISTER_NEW_MATRIX_USER,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
     SYNAPSE_CONFIG_PATH,
@@ -35,22 +34,6 @@ class CommandMigrateConfigError(Exception):
 
     def __init__(self, msg: str):
         """Initialize a new instance of the CommandMigrateConfigError exception.
-
-        Args:
-            msg (str): Explanation of the error.
-        """
-        self.msg = msg
-
-
-class CommandRegisterNewMatrixUserError(Exception):
-    """Exception raised when registering user fails.
-
-    Attrs:
-        msg (str): Explanation of the error.
-    """
-
-    def __init__(self, msg: str):
-        """Initialize a new instance of the CommandRegisterNewMatrixUserError exception.
 
         Args:
             msg (str): Explanation of the error.
@@ -163,6 +146,41 @@ class Synapse:
                 "Migrate config failed, please review your charm configuration"
             )
 
+    def get_configuration_field(
+        self, container: ops.Container, fieldname: str
+    ) -> typing.Optional[str]:
+        """Get configuration field.
+
+        Args:
+            container: Container of the charm.
+            fieldname: field to get.
+
+        Raises:
+            PathError: if somethings goes wrong while reading the configuration file.
+
+        Returns:
+            configuration field value.
+        """
+        try:
+            configuration_content = str(
+                container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read()
+            )
+            value = yaml.safe_load(configuration_content)[fieldname]
+            return value
+        except PathError as path_error:
+            if path_error.kind == "not-found":
+                logger.debug(
+                    "configuration file %s not found, will be created by config-changed",
+                    SYNAPSE_CONFIG_PATH,
+                )
+                return None
+            logger.error(
+                "exception while reading configuration file %s: %s",
+                SYNAPSE_CONFIG_PATH,
+                path_error,
+            )
+            raise
+
     def check_server_name(self, container: ops.Container) -> None:
         """Check server_name.
 
@@ -172,42 +190,26 @@ class Synapse:
             container: Container of the charm.
 
         Raises:
-            PathError: if somethings goes wrong while reading the configuration file.
             ServerNameModifiedError: if server_name from state is different than the one in the
                 configuration file.
         """
-        try:
-            configuration_content = str(
-                container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read()
+        configured_server_name = self.get_configuration_field(
+            container=container, fieldname="server_name"
+        )
+        if (
+            configured_server_name is not None
+            and configured_server_name != self._charm_state.server_name
+        ):
+            msg = (
+                f"server_name {self._charm_state.server_name} is different from the existing "
+                f"one {configured_server_name}. Please revert the config or run the action "
+                "reset-instance if you want to erase the existing instance and start a new "
+                "one."
             )
-            configured_server_name = yaml.safe_load(configuration_content)["server_name"]
-            if (
-                configured_server_name is not None
-                and configured_server_name != self._charm_state.server_name
-            ):
-                msg = (
-                    f"server_name {self._charm_state.server_name} is different from the existing "
-                    f"one {configured_server_name}. Please revert the config or run the action "
-                    "reset-instance if you want to erase the existing instance and start a new "
-                    "one."
-                )
-                logger.error(msg)
-                raise ServerNameModifiedError(
-                    "The server_name modification is not allowed, please check the logs"
-                )
-        except PathError as path_error:
-            if path_error.kind == "not-found":
-                logger.debug(
-                    "configuration file %s not found, will be created by config-changed",
-                    SYNAPSE_CONFIG_PATH,
-                )
-            else:
-                logger.error(
-                    "exception while reading configuration file %s: %s",
-                    SYNAPSE_CONFIG_PATH,
-                    path_error,
-                )
-                raise
+            logger.error(msg)
+            raise ServerNameModifiedError(
+                "The server_name modification is not allowed, please check the logs"
+            )
 
     def reset_instance(self, container: ops.Container) -> None:
         """Erase data and config server_name.
@@ -233,48 +235,6 @@ class Synapse:
                     "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
                 )
                 raise
-
-    def execute_register_new_matrix_user(
-        self, container: ops.Container, username: str, password: str, admin: bool
-    ) -> None:
-        """Run the Synapse command register_new_matrix_user.
-
-        Args:
-            container: Container of the charm.
-            username: name to be registered.
-            password: user's password.
-            admin: if the user is admin or not.
-
-        Raises:
-            CommandRegisterNewMatrixUserError: something went wrong running
-                register_new_matrix_user.
-        """
-        admin_switch = "--admin" if admin else "--no-admin"
-        register_user_command = [
-            COMMAND_REGISTER_NEW_MATRIX_USER,
-            "-u",
-            username,
-            "-p",
-            password,
-            admin_switch,
-            "-c",
-            SYNAPSE_CONFIG_PATH,
-        ]
-
-        register_user_result = self._exec(
-            container,
-            register_user_command,
-            environment=self.synapse_environment(),
-        )
-        if register_user_result.exit_code:
-            logger.error(
-                "register new matrix user failed, stdout: %s, stderr: %s",
-                register_user_result.stdout,
-                register_user_result.stderr,
-            )
-            raise CommandRegisterNewMatrixUserError(
-                "Register new matrix user failed, please review your parameters"
-            )
 
     def _exec(
         self,

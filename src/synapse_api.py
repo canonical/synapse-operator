@@ -5,93 +5,124 @@
 
 """Helper module used to manage interactions with Synapse API."""
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, too-many-arguments
 
+import hashlib
+import hmac
 import logging
-import secrets
-import string
+import typing
 
 import ops
+import requests
 from ops.charm import CharmBase
 
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_OPERATOR_USER
-from synapse import CommandRegisterNewMatrixUserError, Synapse
+from constants import SYNAPSE_CONTAINER_NAME
 
 logger = logging.getLogger(__name__)
+
+SYNAPSE_URL = "http://localhost:8008"
+URL_REGISTER = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
+
+
+class RegisterUserError(Exception):
+    """Exception raised when registering user via API fails.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the RegisterUserError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
+
+
+class NetworkError(Exception):
+    """Exception raised when requesting API fails due network issues.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the NetworkError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
 
 
 class SynapseAPI:
     """The Synapse API handler."""
 
-    def __init__(self, charm: CharmBase, synapse: Synapse):
+    def __init__(self, charm: CharmBase):
         """Initialize the handler.
 
         Args:
             charm: The parent charm to attach the observer to.
-            synapse: Synapse instance to interact with commands.
         """
         self._charm = charm
-        self._synapse = synapse
 
-    def _get_operator_password(self) -> str:
-        """Get operator password from peer data.
-
-        If doesn't exist, register operator user and return password.
+    def _get_nonce(self) -> str:
+        """Get nonce.
 
         Returns:
-            operator password.
-        """
-        peer_relation = self._charm.model.get_relation("synapse-peers")
-        assert peer_relation is not None  # nosec
-        peer_key = "operator-password"
-        peer_password = peer_relation.data[self._charm.app].get(peer_key)
-        if peer_password:
-            return peer_password
-        password = self._get_random_password()
-        self._register_operator_user(password=password)
-        peer_relation.data[self._charm.app].update({peer_key: password})
-        return password
-
-    def _get_random_password(self) -> str:
-        """Get random password. Extracted from postgresql-k8s charm.
-
-        Returns:
-            random password.
-        """
-        choices = string.ascii_letters + string.digits
-        password = "".join([secrets.choice(choices) for i in range(16)])
-        return password
-
-    def _register_operator_user(self, password: str) -> None:
-        """Create operator admin user.
-
-        Args:
-            password: operator password.
+            The nonce returned by Synapse API.
 
         Raises:
-            CommandRegisterNewMatrixUserError: if registering user fails.
+            NetworkError: if there was an error fetching the nonce.
         """
-        container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
-            return
         try:
-            self._synapse.execute_register_new_matrix_user(
-                container, username=SYNAPSE_OPERATOR_USER, password=password, admin=True
-            )
-        except CommandRegisterNewMatrixUserError as exc:
-            logger.error("Failed to create operator user: %s", str(exc))
-            raise
+            res = requests.get(URL_REGISTER, timeout=5)
+            res.raise_for_status()
+            return res.json()["nonce"]
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.HTTPError,
+        ) as exc:
+            logger.error("Failed to request %s : %s", URL_REGISTER, exc)
+            raise NetworkError(f"Failed to request {URL_REGISTER}.") from exc
 
-    def _get_access_token(self) -> str:
-        """Get access token.
+    def _generate_mac(
+        self,
+        shared_secret: str,
+        nonce: str,
+        user: str,
+        password: str,
+        admin: bool = False,
+        user_type: typing.Optional[str] = None,
+    ) -> str:
+        """Generate mac to register user.
+
+        Args:
+            shared_secret: registration_shared_secret from configuration file.
+            nonce: nonce generated.
+            user: username.
+            password: password.
+            admin: if is admin. Default False.
+            user_type: user type. Defaults to None.
 
         Returns:
-            access token to be used in the requests.
+            _type_: _description_
         """
-        password = self._get_operator_password()
-        # do login with operator user and get the access token
-        return password
+        mac = hmac.new(key=shared_secret.encode("utf8"), digestmod=hashlib.sha1)
+        mac.update(nonce.encode("utf8"))
+        mac.update(b"\x00")
+        mac.update(user.encode("utf8"))
+        mac.update(b"\x00")
+        mac.update(password.encode("utf8"))
+        mac.update(b"\x00")
+        mac.update(b"admin" if admin else b"notadmin")
+        if user_type:
+            mac.update(b"\x00")
+            mac.update(user_type.encode("utf8"))
+
+        return mac.hexdigest()
 
     def register_user(self, username: str, password: str, admin: bool) -> None:
         """Register user.
@@ -100,9 +131,48 @@ class SynapseAPI:
             username: name to be registered.
             password: user's password.
             admin: if the user is admin or not.
+
+        Raises:
+            RegisterUserError: when registering user via API fails.
+            NetworkError: if there was an error registering the user.
         """
         # get registration_shared_secret from config file
+        container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        # Synapse is defined in the charm
+        synapse = self._charm.synapse  # type: ignore[attr-defined]
+        registration_shared_secret = synapse.get_configuration_field(
+            container=container, fieldname="registration_shared_secret"
+        )
+        if registration_shared_secret is None:
+            raise RegisterUserError("registration_shared_secret was not found")
         # get nonce
+        nonce = self._get_nonce()
         # generate mac
-        # access_token = self._get_access_token()
+        hex_mac = self._generate_mac(
+            shared_secret=registration_shared_secret,
+            nonce=nonce,
+            user=username,
+            password=password,
+            admin=admin,
+        )
+        data = {
+            "nonce": nonce,
+            "username": username,
+            "password": password,
+            "mac": hex_mac,
+            "admin": admin,
+        }
         # finally register user
+        try:
+            res = requests.post(URL_REGISTER, json=data, timeout=5)
+            res.raise_for_status()
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.HTTPError,
+        ) as exc:
+            logger.error("Failed to request %s : %s", URL_REGISTER, exc)
+            raise NetworkError(f"Failed to request {URL_REGISTER}.") from exc
