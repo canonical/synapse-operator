@@ -190,7 +190,7 @@ def test_relation_as_datasource(
     )
     assert expected == harness.charm.database.get_relation_as_datasource()
     assert harness.charm.app.name == harness.charm.database.get_database_name()
-    synapse_env = harness.charm.synapse.synapse_environment()
+    synapse_env = harness.charm._synapse.synapse_environment()
     assert synapse_env["POSTGRES_DB"] == expected["db"]
     assert synapse_env["POSTGRES_HOST"] == expected["host"]
     assert synapse_env["POSTGRES_PORT"] == expected["port"]

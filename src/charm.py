@@ -17,13 +17,13 @@ from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
 
+import synapse_api
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
 from database_client import DatabaseClient
 from database_observer import DatabaseObserver
 from pebble import PebbleService
 from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
-from synapse_api import NetworkError, RegisterUserError, SynapseAPI
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -45,9 +45,8 @@ class SynapseCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
-        self.synapse = Synapse(charm_state=self._charm_state)
-        self.pebble_service = PebbleService(synapse=self.synapse)
-        self._synapse_api = SynapseAPI(charm=self)
+        self._synapse = Synapse(charm_state=self._charm_state)
+        self.pebble_service = PebbleService(synapse=self._synapse)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -132,7 +131,7 @@ class SynapseCharm(ops.CharmBase):
                 # Otherwise PostgreSQL will prevent it if there are open connections.
                 db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
                 db_client.erase()
-            self.synapse.execute_migrate_config(container)
+            self._synapse.execute_migrate_config(container)
             logger.info("Start Synapse database")
             self.pebble_service.replan(container)
             results["reset-instance"] = True
@@ -161,6 +160,16 @@ class SynapseCharm(ops.CharmBase):
             event: Event triggering the reset instance action.
         """
         results = {"register-user": False, "user-password": ""}
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        registration_shared_secret = self._synapse.get_configuration_field(
+            container=container, fieldname="registration_shared_secret"
+        )
+        if registration_shared_secret is None:
+            event.fail("registration_shared_secret was not found")
+            return
         user_data = {
             "username": event.params["username"],
             "admin": event.params["admin"],
@@ -168,10 +177,12 @@ class SynapseCharm(ops.CharmBase):
         }
         user = User(**user_data)
         try:
-            self._synapse_api.register_user(user)
+            synapse_api.register_user(
+                registration_shared_secret=registration_shared_secret, user=user
+            )
             results["register-user"] = True
             results["user-password"] = user.password
-        except (RegisterUserError, NetworkError) as exc:
+        except synapse_api.SynapseAPIError as exc:
             event.fail(str(exc))
             return
         # results is a dict and set_results expects _SerializedData
