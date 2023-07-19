@@ -22,6 +22,9 @@ markers = [
     "requires_secrets: mark tests that require external secrets"
 ]
 
+[tool.pylint.'MESSAGES CONTROL']
+extension-pkg-whitelist = "pydantic"
+
 # Formatting tools configuration
 [tool.black]
 line-length = 99

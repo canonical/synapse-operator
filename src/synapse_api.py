@@ -17,6 +17,7 @@ import requests
 from ops.charm import CharmBase
 
 from constants import SYNAPSE_CONTAINER_NAME
+from user import User
 
 logger = logging.getLogger(__name__)
 
@@ -124,13 +125,11 @@ class SynapseAPI:
 
         return mac.hexdigest()
 
-    def register_user(self, username: str, password: str, admin: bool) -> None:
+    def register_user(self, user: User) -> None:
         """Register user.
 
         Args:
-            username: name to be registered.
-            password: user's password.
-            admin: if the user is admin or not.
+            user: user to be registered.
 
         Raises:
             RegisterUserError: when registering user via API fails.
@@ -150,20 +149,21 @@ class SynapseAPI:
             raise RegisterUserError("registration_shared_secret was not found")
         # get nonce
         nonce = self._get_nonce()
+
         # generate mac
         hex_mac = self._generate_mac(
             shared_secret=registration_shared_secret,
             nonce=nonce,
-            user=username,
-            password=password,
-            admin=admin,
+            user=user.username,
+            password=user.password,
+            admin=user.admin,
         )
         data = {
             "nonce": nonce,
-            "username": username,
-            "password": password,
+            "username": user.username,
+            "password": user.password,
             "mac": hex_mac,
-            "admin": admin,
+            "admin": user.admin,
         }
         # finally register user
         try:

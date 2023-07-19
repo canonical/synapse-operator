@@ -24,6 +24,7 @@ from database_observer import DatabaseObserver
 from pebble import PebbleService
 from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
 from synapse_api import NetworkError, RegisterUserError, SynapseAPI
+from user import User
 
 logger = logging.getLogger(__name__)
 
@@ -160,13 +161,16 @@ class SynapseCharm(ops.CharmBase):
             event: Event triggering the reset instance action.
         """
         results = {"register-user": False, "user-password": ""}
-        username = event.params["username"]
-        password = self._get_random_password()
-        admin = bool(event.params["admin"] == "yes")
+        user_data = {
+            "username": event.params["username"],
+            "admin": event.params["admin"],
+            "password": self._get_random_password(),
+        }
+        user = User(**user_data)
         try:
-            self._synapse_api.register_user(username=username, password=password, admin=admin)
+            self._synapse_api.register_user(user)
             results["register-user"] = True
-            results["user-password"] = password
+            results["user-password"] = user.password
         except (RegisterUserError, NetworkError) as exc:
             event.fail(str(exc))
             return
