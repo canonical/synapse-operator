@@ -22,11 +22,11 @@ from user import User
 logger = logging.getLogger(__name__)
 
 SYNAPSE_URL = "http://localhost:8008"
-URL_REGISTER = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
+REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 
 
-class RegisterUserError(Exception):
-    """Exception raised when registering user via API fails.
+class SynapseAPIError(Exception):
+    """Exception raised when something fails while calling the API.
 
     Attrs:
         msg (str): Explanation of the error.
@@ -41,20 +41,12 @@ class RegisterUserError(Exception):
         self.msg = msg
 
 
-class NetworkError(Exception):
-    """Exception raised when requesting API fails due network issues.
+class RegisterUserError(SynapseAPIError):
+    """Exception raised when registering user via API fails."""
 
-    Attrs:
-        msg (str): Explanation of the error.
-    """
 
-    def __init__(self, msg: str):
-        """Initialize a new instance of the NetworkError exception.
-
-        Args:
-            msg (str): Explanation of the error.
-        """
-        self.msg = msg
+class NetworkError(SynapseAPIError):
+    """Exception raised when requesting API fails due network issues."""
 
 
 class SynapseAPI:
@@ -78,7 +70,7 @@ class SynapseAPI:
             NetworkError: if there was an error fetching the nonce.
         """
         try:
-            res = requests.get(URL_REGISTER, timeout=5)
+            res = requests.get(REGISTER_URL, timeout=5)
             res.raise_for_status()
             return res.json()["nonce"]
         except (
@@ -86,8 +78,8 @@ class SynapseAPI:
             requests.exceptions.Timeout,
             requests.exceptions.HTTPError,
         ) as exc:
-            logger.error("Failed to request %s : %s", URL_REGISTER, exc)
-            raise NetworkError(f"Failed to request {URL_REGISTER}.") from exc
+            logger.error("Failed to request %s : %s", REGISTER_URL, exc)
+            raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
 
     def _generate_mac(
         self,
@@ -167,12 +159,12 @@ class SynapseAPI:
         }
         # finally register user
         try:
-            res = requests.post(URL_REGISTER, json=data, timeout=5)
+            res = requests.post(REGISTER_URL, json=data, timeout=5)
             res.raise_for_status()
         except (
             requests.exceptions.ConnectionError,
             requests.exceptions.Timeout,
             requests.exceptions.HTTPError,
         ) as exc:
-            logger.error("Failed to request %s : %s", URL_REGISTER, exc)
-            raise NetworkError(f"Failed to request {URL_REGISTER}.") from exc
+            logger.error("Failed to request %s : %s", REGISTER_URL, exc)
+            raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
