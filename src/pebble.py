@@ -10,13 +10,14 @@ import typing
 
 import ops
 
+import synapse
+from charm_state import CharmState
 from constants import (
     CHECK_READY_NAME,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_SERVICE_NAME,
 )
-from synapse import Synapse
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,13 @@ logger = logging.getLogger(__name__)
 class PebbleService:
     """The charm pebble service manager."""
 
-    def __init__(self, synapse: Synapse):
+    def __init__(self, charm_state: CharmState):
         """Initialize the pebble service.
 
         Args:
-            synapse: Instance to interact with Synapse.
+            charm_state: Instance of CharmState.
         """
-        self._synapse = synapse
+        self._charm_state = charm_state
 
     def replan(self, container: ops.model.Container) -> None:
         """Replan the pebble service.
@@ -47,7 +48,7 @@ class PebbleService:
         Args:
             container: Charm container.
         """
-        self._synapse.execute_migrate_config(container)
+        synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
         self.replan(container)
 
     def reset_instance(self, container: ops.model.Container) -> None:
@@ -66,7 +67,7 @@ class PebbleService:
         logger.info("Stop Synapse instance")
         container.stop(SYNAPSE_SERVICE_NAME)
         logger.info("Erase Synapse data")
-        self._synapse.reset_instance(container)
+        synapse.reset_instance(container)
 
     @property
     def _pebble_layer(self) -> ops.pebble.LayerDict:
@@ -80,11 +81,11 @@ class PebbleService:
                     "summary": "Synapse application service",
                     "startup": "enabled",
                     "command": SYNAPSE_COMMAND_PATH,
-                    "environment": self._synapse.synapse_environment(),
+                    "environment": synapse.get_environment(self._charm_state),
                 }
             },
             "checks": {
-                CHECK_READY_NAME: self._synapse.check_ready(),
+                CHECK_READY_NAME: synapse.check_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

@@ -18,13 +18,12 @@ from ops.main import main
 # pydantic is causing this no-name-in-module problem
 from pydantic import ValidationError  # pylint: disable=no-name-in-module,import-error
 
-import synapse_api
+import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
 from database_client import DatabaseClient
 from database_observer import DatabaseObserver
 from pebble import PebbleService
-from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -46,8 +45,7 @@ class SynapseCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
-        self._synapse = Synapse(charm_state=self._charm_state)
-        self.pebble_service = PebbleService(synapse=self._synapse)
+        self.pebble_service = PebbleService(charm_state=self._charm_state)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -82,9 +80,9 @@ class SynapseCharm(ops.CharmBase):
             self.pebble_service.change_config(container)
         except (
             CharmConfigInvalidError,
-            CommandMigrateConfigError,
+            synapse.CommandMigrateConfigError,
             ops.pebble.PathError,
-            ServerNameModifiedError,
+            synapse.ServerNameModifiedError,
         ) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
@@ -132,11 +130,11 @@ class SynapseCharm(ops.CharmBase):
                 # Otherwise PostgreSQL will prevent it if there are open connections.
                 db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
                 db_client.erase()
-            self._synapse.execute_migrate_config(container)
+            synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
             logger.info("Start Synapse database")
             self.pebble_service.replan(container)
             results["reset-instance"] = True
-        except (psycopg2.Error, ops.pebble.PathError, CommandMigrateConfigError) as exc:
+        except (psycopg2.Error, ops.pebble.PathError, synapse.CommandMigrateConfigError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return
@@ -154,9 +152,7 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        registration_shared_secret = self._synapse.get_registration_shared_secret(
-            container=container
-        )
+        registration_shared_secret = synapse.get_registration_shared_secret(container=container)
         if registration_shared_secret is None:
             event.fail("registration_shared_secret was not found, please check the logs")
             return
@@ -166,10 +162,8 @@ class SynapseCharm(ops.CharmBase):
         }
         try:
             user = User(**user_data)
-            synapse_api.register_user(
-                registration_shared_secret=registration_shared_secret, user=user
-            )
-        except (ValidationError, synapse_api.SynapseAPIError) as exc:
+            synapse.register_user(registration_shared_secret=registration_shared_secret, user=user)
+        except (ValidationError, synapse.SynapseAPIError) as exc:
             event.fail(str(exc))
             return
         results = {"register-user": True, "user-password": user.password}
