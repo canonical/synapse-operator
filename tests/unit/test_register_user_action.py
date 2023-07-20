@@ -5,8 +5,8 @@
 
 # pylint: disable=protected-access
 
-import unittest.mock
 import typing
+import unittest.mock
 
 import ops
 import pytest
@@ -15,6 +15,7 @@ from ops.testing import Harness
 
 import synapse
 from user import User
+
 
 @pytest.mark.parametrize("harness", [0], indirect=True)
 def test_register_user_action(
@@ -121,18 +122,30 @@ def test_register_user_action_api_error(
     assert fail_message in event.fail_message
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
+
 def test_username_empty():
+    """
+    arrange: create a user.
+    act: set username as empty.
+    assert: ValueError is raised.
+    """
     user_data: dict[str, typing.Any] = {
         "username": "",
         "admin": "yes",
     }
-    with pytest.raises(ValueError):
-        user = User(**user_data)
+    with pytest.raises(ValueError, match="Username must not be empty"):
+        _ = User(**user_data)
+
 
 def test_invalid_admin():
+    """
+    arrange: create a user.
+    act: set admin as invalid value.
+    assert: ValueError is raised.
+    """
     user_data: dict[str, typing.Any] = {
         "username": "username",
         "admin": "anything",
     }
     with pytest.raises(ValueError, match="Admin should be set as yes or no."):
-        user = User(**user_data)
+        _ = User(**user_data)

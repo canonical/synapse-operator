@@ -55,7 +55,8 @@ class User(BaseModel):
     @validator("admin")
     #  pylint don't quite understand that this is a classmethod using Pydantic
     def admin_value_must_be_true_for_yes(  # pylint: disable=no-self-argument,  invalid-name
-        cls: "User", v: str) -> bool:
+        cls: "User", v: str
+    ) -> bool:
         """Check admin value.
 
         Args:

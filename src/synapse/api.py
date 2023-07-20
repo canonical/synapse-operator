@@ -92,7 +92,7 @@ def _generate_mac(
     nonce: str,
     user: str,
     password: str,
-    admin: bool = False,
+    admin: str | bool = False,
     user_type: typing.Optional[str] = None,
 ) -> str:
     """Generate mac to register user.
