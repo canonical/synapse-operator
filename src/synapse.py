@@ -146,7 +146,20 @@ class Synapse:
                 "Migrate config failed, please review your charm configuration"
             )
 
-    def get_configuration_field(
+    def get_registration_shared_secret(self, container: ops.Container) -> typing.Optional[str]:
+        """Get registration_shared_secret from configuration file.
+
+        Args:
+            container: Container of the charm.
+
+        Returns:
+            registration_shared_secret value.
+        """
+        return self._get_configuration_field(
+            container=container, fieldname="registration_shared_secret"
+        )
+
+    def _get_configuration_field(
         self, container: ops.Container, fieldname: str
     ) -> typing.Optional[str]:
         """Get configuration field.
@@ -193,7 +206,7 @@ class Synapse:
             ServerNameModifiedError: if server_name from state is different than the one in the
                 configuration file.
         """
-        configured_server_name = self.get_configuration_field(
+        configured_server_name = self._get_configuration_field(
             container=container, fieldname="server_name"
         )
         if (

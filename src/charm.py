@@ -163,8 +163,8 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        registration_shared_secret = self._synapse.get_configuration_field(
-            container=container, fieldname="registration_shared_secret"
+        registration_shared_secret = self._synapse.get_registration_shared_secret(
+            container=container
         )
         if registration_shared_secret is None:
             event.fail("registration_shared_secret was not found")
