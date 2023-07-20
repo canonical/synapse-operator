@@ -89,7 +89,8 @@ def test_generate_mac():
     )
     assert mac == "56a99737dfe3739ed3e49a962f9cb178c81d6d12"
 
-@mock.patch('synapse.api.requests')
+
+@mock.patch("synapse.api.requests")
 def test_get_nonce_success(mock_requests):
     """
     arrange: set User parameters.
@@ -99,10 +100,11 @@ def test_get_nonce_success(mock_requests):
     nonce_value = "nonce_value"
     mock_response = mock.MagicMock()
     mock_response.json.return_value = {
-        'nonce': nonce_value,
+        "nonce": nonce_value,
     }
     mock_requests.get.return_value = mock_response
     assert synapse.api._get_nonce() == nonce_value
+
 
 def test_get_nonce_error(monkeypatch: pytest.MonkeyPatch):
     """

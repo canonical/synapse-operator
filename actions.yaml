@@ -18,7 +18,7 @@ register-user:
       type: string
     admin:
       description: Whether to create an admin user ("yes" or "no")
-      type: boolean
+      type: string
   required:
     - username
     - admin
