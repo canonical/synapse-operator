@@ -159,7 +159,6 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering the reset instance action.
         """
-        results = {"register-user": False, "user-password": ""}
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
@@ -180,11 +179,10 @@ class SynapseCharm(ops.CharmBase):
             synapse_api.register_user(
                 registration_shared_secret=registration_shared_secret, user=user
             )
-            results["register-user"] = True
-            results["user-password"] = user.password
         except synapse_api.SynapseAPIError as exc:
             event.fail(str(exc))
             return
+        results = {"register-user": True, "user-password": user.password}
         # results is a dict and set_results expects _SerializedData
         event.set_results(results)  # type: ignore[arg-type]
 
