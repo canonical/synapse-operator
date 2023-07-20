@@ -20,8 +20,8 @@ class User(BaseModel):
     """
 
     username: str
-    admin: bool
-    password: str = Field(None)
+    admin: str | bool
+    password: str = Field(False)
 
     def __init__(self, **data: dict[str, typing.Any]) -> None:
         """Initialize a new User instance.
@@ -55,13 +55,11 @@ class User(BaseModel):
     @validator("admin")
     #  pylint don't quite understand that this is a classmethod using Pydantic
     def admin_value_must_be_true_for_yes(  # pylint: disable=no-self-argument,  invalid-name
-        cls: "User", v: bool, values: dict
-    ) -> bool:
+        cls: "User", v: str) -> bool:
         """Check admin value.
 
         Args:
             v: value received.
-            values: value keys of the model.
 
         Raises:
             ValueError: if was set with something different than yes or no.
@@ -69,10 +67,11 @@ class User(BaseModel):
         Returns:
             if is admin or not.
         """
-        admin = values.get("admin")
-        if admin is not None and admin.lower() == "yes" and v is not True:
+        if str(v).lower() != "yes" and str(v).lower() != "no":
             raise ValueError("Admin should be set as yes or no.")
-        return v
+        if v == "yes":
+            return True
+        return False
 
     def _set_password(self) -> None:
         """Set password to user. Extracted from postgresql-k8s charm."""
