@@ -7,7 +7,7 @@ import secrets
 import string
 import typing
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 
 
 class User(BaseModel):
@@ -21,7 +21,7 @@ class User(BaseModel):
 
     username: str
     admin: bool
-    password: str
+    password: str = Field(None)
 
     def __init__(self, **data: dict[str, typing.Any]) -> None:
         """Initialize a new User instance.
