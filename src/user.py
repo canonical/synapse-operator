@@ -3,6 +3,10 @@
 
 """The module for checking time ranges."""
 
+import secrets
+import string
+import typing
+
 from pydantic import BaseModel, validator
 
 
@@ -18,6 +22,15 @@ class User(BaseModel):
     username: str
     admin: bool
     password: str
+
+    def __init__(self, **data: dict[str, typing.Any]) -> None:
+        """Initialize a new User instance.
+
+        Parameters:
+            data: A dictionary containing the user data.
+        """
+        super().__init__(**data)
+        self._set_password()
 
     @validator("username")
     #  pylint don't quite understand that this is a classmethod using Pydantic
@@ -60,3 +73,9 @@ class User(BaseModel):
         if admin is not None and admin.lower() == "yes" and v is not True:
             raise ValueError("Admin should be set as yes or no.")
         return v
+
+    def _set_password(self) -> None:
+        """Set password to user. Extracted from postgresql-k8s charm."""
+        choices = string.ascii_letters + string.digits
+        password = "".join([secrets.choice(choices) for i in range(16)])
+        self.password = password

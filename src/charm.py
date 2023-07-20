@@ -6,8 +6,6 @@
 """Charm for Synapse on kubernetes."""
 
 import logging
-import secrets
-import string
 import typing
 
 import ops
@@ -143,16 +141,6 @@ class SynapseCharm(ops.CharmBase):
         event.set_results(results)  # type: ignore[arg-type]
         self.model.unit.status = ops.ActiveStatus()
 
-    def _get_random_password(self) -> str:
-        """Get random password. Extracted from postgresql-k8s charm.
-
-        Returns:
-            random password.
-        """
-        choices = string.ascii_letters + string.digits
-        password = "".join([secrets.choice(choices) for i in range(16)])
-        return password
-
     def _on_register_user_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.
 
@@ -172,7 +160,6 @@ class SynapseCharm(ops.CharmBase):
         user_data = {
             "username": event.params["username"],
             "admin": event.params["admin"],
-            "password": self._get_random_password(),
         }
         user = User(**user_data)
         try:
