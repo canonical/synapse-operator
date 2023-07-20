@@ -15,6 +15,9 @@ from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
 
+# pydantic is causing this no-name-in-module problem
+from pydantic import ValidationError  # pylint: disable=no-name-in-module,import-error
+
 import synapse_api
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
@@ -155,18 +158,18 @@ class SynapseCharm(ops.CharmBase):
             container=container
         )
         if registration_shared_secret is None:
-            event.fail("registration_shared_secret was not found")
+            event.fail("registration_shared_secret was not found, please check the logs")
             return
         user_data = {
             "username": event.params["username"],
             "admin": event.params["admin"],
         }
-        user = User(**user_data)
         try:
+            user = User(**user_data)
             synapse_api.register_user(
                 registration_shared_secret=registration_shared_secret, user=user
             )
-        except synapse_api.SynapseAPIError as exc:
+        except (ValidationError, synapse_api.SynapseAPIError) as exc:
             event.fail(str(exc))
             return
         results = {"register-user": True, "user-password": user.password}
