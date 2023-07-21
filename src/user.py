@@ -15,6 +15,17 @@ from pydantic import BaseModel, Field, validator  # pylint: disable=no-name-in-m
 logger = logging.getLogger(__name__)
 
 
+def _generate_password() -> str:
+    """Set password to user. Extracted from postgresql-k8s charm.
+
+    Returns:
+        random password.
+    """
+    choices = string.ascii_letters + string.digits
+    password = "".join([secrets.choice(choices) for i in range(16)])
+    return password
+
+
 class User(BaseModel):
     """Synapse user.
 
@@ -37,7 +48,7 @@ class User(BaseModel):
         """
         data = {"username": username, "admin": admin}
         super().__init__(**data)
-        self._set_password()
+        self.password = _generate_password()
 
     @validator("username")
     #  pylint don't quite understand that this is a classmethod using Pydantic
@@ -58,9 +69,3 @@ class User(BaseModel):
         if not v.strip():
             raise ValueError("Username must not be empty.")
         return v
-
-    def _set_password(self) -> None:
-        """Set password to user. Extracted from postgresql-k8s charm."""
-        choices = string.ascii_letters + string.digits
-        password = "".join([secrets.choice(choices) for i in range(16)])
-        self.password = password
