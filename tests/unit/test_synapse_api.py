@@ -25,7 +25,7 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
     username = "any-user"
     user_data: dict[str, typing.Any] = {
         "username": username,
-        "admin": "yes",
+        "admin": True,
     }
     user = User(**user_data)
     get_nonce_return = "nonce"
@@ -57,7 +57,7 @@ def test_register_user_error(monkeypatch: pytest.MonkeyPatch):
     username = "any-user"
     user_data: dict[str, typing.Any] = {
         "username": username,
-        "admin": "yes",
+        "admin": True,
     }
     user = User(**user_data)
     get_nonce_return = "nonce"

@@ -20,8 +20,8 @@ class User(BaseModel):
     """
 
     username: str
-    admin: str | bool
-    password: str = Field(False)
+    admin: bool = Field(False)
+    password: str = Field("")
 
     def __init__(self, **data: dict[str, typing.Any]) -> None:
         """Initialize a new User instance.
@@ -51,28 +51,6 @@ class User(BaseModel):
         if not v.strip():
             raise ValueError("Username must not be empty.")
         return v
-
-    @validator("admin")
-    #  pylint don't quite understand that this is a classmethod using Pydantic
-    def admin_value_must_be_true_for_yes(  # pylint: disable=no-self-argument,  invalid-name
-        cls: "User", v: str
-    ) -> bool:
-        """Check admin value.
-
-        Args:
-            v: value received.
-
-        Raises:
-            ValueError: if was set with something different than yes or no.
-
-        Returns:
-            if is admin or not.
-        """
-        if str(v).lower() != "yes" and str(v).lower() != "no":
-            raise ValueError("Admin should be set as yes or no.")
-        if v == "yes":
-            return True
-        return False
 
     def _set_password(self) -> None:
         """Set password to user. Extracted from postgresql-k8s charm."""

@@ -17,8 +17,8 @@ register-user:
         for the creation of a matrix account.
       type: string
     admin:
-      description: Whether to create an admin user ("yes" or "no")
-      type: string
+      description: Whether to create an admin user.
+      type: boolean
+      default: false
   required:
     - username
-    - admin

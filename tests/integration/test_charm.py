@@ -136,7 +136,7 @@ async def test_register_user_action(model: Model, synapse_app: Application) -> N
     """
     unit = model.applications[synapse_app.name].units[0]
     action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "register-user", username="operator", admin="yes"
+        "register-user", username="operator", admin=True
     )
     await action_register_user.wait()
     assert action_register_user.status == "completed"

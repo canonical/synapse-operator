@@ -131,21 +131,7 @@ def test_username_empty():
     """
     user_data: dict[str, typing.Any] = {
         "username": "",
-        "admin": "yes",
+        "admin": True,
     }
     with pytest.raises(ValueError, match="Username must not be empty"):
-        _ = User(**user_data)
-
-
-def test_invalid_admin():
-    """
-    arrange: create a user.
-    act: set admin as invalid value.
-    assert: ValueError is raised.
-    """
-    user_data: dict[str, typing.Any] = {
-        "username": "username",
-        "admin": "anything",
-    }
-    with pytest.raises(ValueError, match="Admin should be set as yes or no."):
         _ = User(**user_data)
