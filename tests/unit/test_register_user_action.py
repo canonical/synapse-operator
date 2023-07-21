@@ -5,7 +5,6 @@
 
 # pylint: disable=protected-access
 
-import typing
 import unittest.mock
 
 import ops
@@ -129,9 +128,5 @@ def test_username_empty():
     act: set username as empty.
     assert: ValueError is raised.
     """
-    user_data: dict[str, typing.Any] = {
-        "username": "",
-        "admin": True,
-    }
     with pytest.raises(ValueError, match="Username must not be empty"):
-        _ = User(**user_data)
+        _ = User(username="", admin=True)

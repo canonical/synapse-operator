@@ -5,7 +5,6 @@
 
 # pylint: disable=protected-access
 
-import typing
 from secrets import token_hex
 from unittest import mock
 
@@ -23,11 +22,7 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
     assert: parameters are passed correctly.
     """
     username = "any-user"
-    user_data: dict[str, typing.Any] = {
-        "username": username,
-        "admin": True,
-    }
-    user = User(**user_data)
+    user = User(username=username, admin=True)
     get_nonce_return = "nonce"
     get_nonce_mock = mock.MagicMock(return_value=get_nonce_return)
     monkeypatch.setattr("synapse.api._get_nonce", get_nonce_mock)
@@ -55,11 +50,7 @@ def test_register_user_error(monkeypatch: pytest.MonkeyPatch):
     assert: NetworkError is raised.
     """
     username = "any-user"
-    user_data: dict[str, typing.Any] = {
-        "username": username,
-        "admin": True,
-    }
-    user = User(**user_data)
+    user = User(username=username, admin=True)
     get_nonce_return = "nonce"
     get_nonce_mock = mock.MagicMock(return_value=get_nonce_return)
     monkeypatch.setattr("synapse.api._get_nonce", get_nonce_mock)

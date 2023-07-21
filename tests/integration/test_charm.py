@@ -134,6 +134,7 @@ async def test_register_user_action(model: Model, synapse_app: Application) -> N
     act: call the register user action.
     assert: the user is registered.
     """
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     unit = model.applications[synapse_app.name].units[0]
     action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
         "register-user", username="operator", admin=True

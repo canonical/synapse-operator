@@ -9,22 +9,16 @@ import logging
 import typing
 
 import ops
-import psycopg2
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
 
-# pydantic is causing this no-name-in-module problem
-from pydantic import ValidationError  # pylint: disable=no-name-in-module,import-error
-
-import synapse
+import actions
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
-from database_client import DatabaseClient
 from database_observer import DatabaseObserver
-from pebble import PebbleService
-from user import User
+from pebble import PebbleService, PebbleServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -78,12 +72,7 @@ class SynapseCharm(ops.CharmBase):
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
             self.pebble_service.change_config(container)
-        except (
-            CharmConfigInvalidError,
-            synapse.CommandMigrateConfigError,
-            ops.pebble.PathError,
-            synapse.ServerNameModifiedError,
-        ) as exc:
+        except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
         self.model.unit.status = ops.ActiveStatus()
@@ -124,17 +113,13 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
             self.pebble_service.reset_instance(container)
             datasource = self.database.get_relation_as_datasource()
-            if datasource is not None:
-                logger.info("Erase Synapse database")
-                # Connecting to template1 to make it possible to erase the database.
-                # Otherwise PostgreSQL will prevent it if there are open connections.
-                db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
-                db_client.erase()
-            synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
-            logger.info("Start Synapse database")
+            actions.reset_instance(
+                container=container, charm_state=self._charm_state, datasource=datasource
+            )
+            logger.info("Start Synapse")
             self.pebble_service.replan(container)
             results["reset-instance"] = True
-        except (psycopg2.Error, ops.pebble.PathError, synapse.CommandMigrateConfigError) as exc:
+        except (PebbleServiceError, actions.ResetInstanceError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return
@@ -152,21 +137,14 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        registration_shared_secret = synapse.get_registration_shared_secret(container=container)
-        if registration_shared_secret is None:
-            event.fail("registration_shared_secret was not found, please check the logs")
-            return
-        user_data = {
-            "username": event.params["username"],
-            "admin": event.params["admin"],
-        }
         try:
-            user = User(**user_data)
-            synapse.register_user(registration_shared_secret=registration_shared_secret, user=user)
-        except (ValidationError, synapse.SynapseAPIError) as exc:
+            password = actions.register_user(
+                container=container, username=event.params["username"], admin=event.params["admin"]
+            )
+        except actions.RegisterUserError as exc:
             event.fail(str(exc))
             return
-        results = {"register-user": True, "user-password": user.password}
+        results = {"register-user": True, "user-password": password}
         # results is a dict and set_results expects _SerializedData
         event.set_results(results)  # type: ignore[arg-type]
 

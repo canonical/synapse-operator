@@ -1,13 +1,18 @@
+#!/usr/bin/env python3
+
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""The module for checking time ranges."""
+"""User class."""
 
+import logging
 import secrets
 import string
-import typing
 
-from pydantic import BaseModel, Field, validator
+# pydantic is causing this no-name-in-module problem
+from pydantic import BaseModel, Field, validator  # pylint: disable=no-name-in-module,import-error
+
+logger = logging.getLogger(__name__)
 
 
 class User(BaseModel):
@@ -23,12 +28,14 @@ class User(BaseModel):
     admin: bool = Field(False)
     password: str = Field("")
 
-    def __init__(self, **data: dict[str, typing.Any]) -> None:
-        """Initialize a new User instance.
+    def __init__(self, username: str, admin: bool) -> None:
+        """Initialize the User.
 
-        Parameters:
-            data: A dictionary containing the user data.
+        Args:
+            username: username to be registered.
+            admin: if is admin.
         """
+        data = {"username": username, "admin": admin}
         super().__init__(**data)
         self._set_password()
 
