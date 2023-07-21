@@ -57,5 +57,5 @@ def reset_instance(
             db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
             db_client.erase()
         synapse.execute_migrate_config(container=container, charm_state=charm_state)
-    except (psycopg2.Error, synapse.CommandMigrateConfigError) as exc:
+    except (psycopg2.Error, synapse.WorkloadError) as exc:
         raise ResetInstanceError(str(exc)) from exc

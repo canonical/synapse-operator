@@ -22,7 +22,7 @@ SYNAPSE_URL = "http://localhost:8008"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 
 
-class SynapseAPIError(Exception):
+class APIError(Exception):
     """Exception raised when something fails while calling the API.
 
     Attrs:
@@ -38,11 +38,11 @@ class SynapseAPIError(Exception):
         self.msg = msg
 
 
-class RegisterUserError(SynapseAPIError):
+class RegisterUserError(APIError):
     """Exception raised when registering user via API fails."""
 
 
-class NetworkError(SynapseAPIError):
+class NetworkError(APIError):
     """Exception raised when requesting API fails due network issues."""
 
 

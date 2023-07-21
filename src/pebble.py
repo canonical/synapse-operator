@@ -11,7 +11,7 @@ import typing
 import ops
 
 import synapse
-from charm_state import CharmConfigInvalidError, CharmState
+from charm_state import CharmState
 from constants import (
     CHECK_READY_NAME,
     SYNAPSE_COMMAND_PATH,
@@ -70,12 +70,7 @@ class PebbleService:
         try:
             synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
             self.replan(container)
-        except (
-            CharmConfigInvalidError,
-            synapse.CommandMigrateConfigError,
-            ops.pebble.PathError,
-            synapse.ServerNameModifiedError,
-        ) as exc:
+        except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
 
     def reset_instance(self, container: ops.model.Container) -> None:

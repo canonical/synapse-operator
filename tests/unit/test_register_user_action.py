@@ -97,7 +97,7 @@ def test_register_user_action_api_error(
     get_registration_mock = unittest.mock.Mock(return_value="shared_secret")
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     fail_message = "Some fail message"
-    synapse_api_error = synapse.SynapseAPIError(fail_message)
+    synapse_api_error = synapse.APIError(fail_message)
     register_user_mock = unittest.mock.MagicMock(side_effect=synapse_api_error)
     monkeypatch.setattr("synapse.register_user", register_user_mock)
     user = "username"

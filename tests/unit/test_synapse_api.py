@@ -60,7 +60,7 @@ def test_register_user_error(monkeypatch: pytest.MonkeyPatch):
     mock_response = mock.Mock(side_effect=mock_response_error)
     monkeypatch.setattr("synapse.api.requests.post", mock_response)
     shared_secret = token_hex(16)
-    with pytest.raises(synapse.NetworkError, match="Failed to request"):
+    with pytest.raises(synapse.APIError, match="Failed to request"):
         synapse.register_user(shared_secret, user)
 
 
@@ -106,5 +106,5 @@ def test_get_nonce_error(monkeypatch: pytest.MonkeyPatch):
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
     mock_response = mock.Mock(side_effect=mock_response_error)
     monkeypatch.setattr("synapse.api.requests.get", mock_response)
-    with pytest.raises(synapse.NetworkError, match="Failed to request"):
+    with pytest.raises(synapse.APIError, match="Failed to request"):
         synapse.api._get_nonce()

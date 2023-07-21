@@ -57,5 +57,5 @@ def register_user(container: ops.Container, username: str, admin: bool) -> str:
         user = User(username=username, admin=admin)
         synapse.register_user(registration_shared_secret=registration_shared_secret, user=user)
         return user.password
-    except (ValidationError, synapse.SynapseAPIError) as exc:
+    except (ValidationError, synapse.APIError) as exc:
         raise RegisterUserError(str(exc)) from exc

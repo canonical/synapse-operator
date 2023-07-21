@@ -25,15 +25,15 @@ from constants import (
 logger = logging.getLogger(__name__)
 
 
-class CommandMigrateConfigError(Exception):
-    """Exception raised when a charm configuration is invalid.
+class WorkloadError(Exception):
+    """Exception raised when something fails while interacting with workload.
 
     Attrs:
         msg (str): Explanation of the error.
     """
 
     def __init__(self, msg: str):
-        """Initialize a new instance of the CommandMigrateConfigError exception.
+        """Initialize a new instance of the SynapseWorkloadError exception.
 
         Args:
             msg (str): Explanation of the error.
@@ -41,22 +41,12 @@ class CommandMigrateConfigError(Exception):
         self.msg = msg
 
 
-class ServerNameModifiedError(Exception):
-    """Exception raised while checking configuration file.
+class CommandMigrateConfigError(WorkloadError):
+    """Exception raised when a charm configuration is invalid."""
 
-    Raised if server_name from state is different than the one in the configuration file.
 
-    Attrs:
-        msg (str): Explanation of the error.
-    """
-
-    def __init__(self, msg: str):
-        """Initialize a new instance of the ServerNameModifiedError exception.
-
-        Args:
-            msg (str): Explanation of the error.
-        """
-        self.msg = msg
+class ServerNameModifiedError(WorkloadError):
+    """Exception raised while checking configuration file."""
 
 
 class ExecResult(typing.NamedTuple):
