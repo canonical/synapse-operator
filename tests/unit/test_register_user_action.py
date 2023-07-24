@@ -124,4 +124,4 @@ def test_username_empty():
     assert: ValueError is raised.
     """
     with pytest.raises(ValueError, match="Username must not be empty"):
-        _ = User(username="", admin=True)
+        User(username="", admin=True)

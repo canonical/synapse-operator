@@ -21,8 +21,10 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
     act: register the user.
     assert: parameters are passed correctly.
     """
+    # Set user parameters
     username = "any-user"
     user = User(username=username, admin=True)
+    # Prepare mock to register the user
     get_nonce_return = "nonce"
     get_nonce_mock = mock.MagicMock(return_value=get_nonce_return)
     monkeypatch.setattr("synapse.api._get_nonce", get_nonce_mock)
@@ -33,6 +35,7 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("synapse.api.requests.post", mock_response)
     shared_secret = token_hex(16)
     synapse.register_user(shared_secret, user)
+    # Check if parameters are correct.
     get_nonce_mock.assert_called_once()
     generate_mac_mock.assert_called_once_with(
         shared_secret=shared_secret,
