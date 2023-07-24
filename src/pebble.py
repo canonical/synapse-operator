@@ -69,6 +69,7 @@ class PebbleService:
         """
         try:
             synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
+            # synapse.enable_metrics(container=container)
             self.replan(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc

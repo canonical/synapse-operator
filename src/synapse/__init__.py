@@ -9,6 +9,7 @@ from .workload import (  # noqa: F401
     ExecResult,
     WorkloadError,
     check_ready,
+    enable_metrics,
     execute_migrate_config,
     get_environment,
     get_registration_shared_secret,
