@@ -98,8 +98,8 @@ def _generate_mac(
     """Generate mac to register user.
 
     "The MAC is the hex digest output of the HMAC-SHA1 algorithm, with the key being the shared
-    secret and the content being the nonce, user, password, either the string "admin" or "notadmin"
-    , and optionally the user_type each separated by NULs.".
+    secret and the content being the nonce, user, password, either the string "admin" or
+    "notadmin", and optionally the user_type each separated by NULs.".
     Extracted from: https://matrix-org.github.io/synapse/latest/admin_api/register_api.html
 
     Args:
