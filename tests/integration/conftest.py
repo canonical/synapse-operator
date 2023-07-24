@@ -37,9 +37,10 @@ async def model_fixture(ops_test: OpsTest) -> Model:
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_charm")
-async def synapse_charm_fixture(ops_test) -> str:
-    """Build the charm"""
-    charm = await ops_test.build_charm(".")
+async def synapse_charm_fixture(pytestconfig: Config):
+    """Get value from parameter charm-file."""
+    charm = pytestconfig.getoption("--charm-file")
+    assert charm, "--charm-file must be set"
     return charm
 
 
@@ -73,7 +74,7 @@ async def synapse_app_fixture(
         "synapse-image": synapse_image,
     }
     app = await model.deploy(
-        synapse_charm,
+        f"./{synapse_charm}",
         resources=resources,
         application_name=synapse_app_name,
         series="jammy",

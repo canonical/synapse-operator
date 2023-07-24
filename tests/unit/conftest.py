@@ -14,6 +14,7 @@ import pytest
 from ops.pebble import ExecError
 from ops.testing import Harness
 
+import synapse
 from charm import SynapseCharm
 from constants import (
     COMMAND_MIGRATE_CONFIG,
@@ -22,7 +23,6 @@ from constants import (
     SYNAPSE_CONTAINER_NAME,
     TEST_SERVER_NAME,
 )
-from synapse import ExecResult
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
@@ -125,7 +125,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     if hasattr(request, "param"):
         exit_code = request.param
 
-    def start_cmd_handler(argv: list[str]) -> ExecResult:
+    def start_cmd_handler(argv: list[str]) -> synapse.ExecResult:
         """Handle the python command execution inside the Synapse container.
 
         Args:
@@ -140,7 +140,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         nonlocal command_path, command_migrate_config, exit_code
         match argv:
             case [command_path, command_migrate_config]:  # pylint: disable=unused-variable
-                return ExecResult(exit_code, "", "")
+                return synapse.ExecResult(exit_code, "", "")
             case _:
                 raise RuntimeError(f"unknown command: {argv}")
 
@@ -163,6 +163,7 @@ def harness_server_name_configured_fixture(harness: Harness) -> Harness:
     container.push(SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
+    harness.set_leader(True)
     return harness
 
 

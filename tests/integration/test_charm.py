@@ -126,3 +126,34 @@ async def test_reset_instance_action(
     config = await model.applications[another_synapse_app.name].get_config()
     current_server_name = config.get("server_name", {}).get("value")
     assert current_server_name == another_server_name
+
+
+async def test_register_user_action(
+    model: Model,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: a deployed Synapse charm.
+    act: call the register user action.
+    assert: the user is registered and the login is successful.
+    """
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    username = "operator"
+    unit = model.applications[synapse_app.name].units[0]
+    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "register-user", username=username, admin=True
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    assert action_register_user.results["register-user"]
+    password = action_register_user.results["user-password"]
+    assert password
+    assert unit.workload_status == "active"
+    data = {"type": "m.login.password", "user": username, "password": password}
+    for unit_ip in await get_unit_ips(synapse_app.name):
+        response = requests.post(
+            f"http://{unit_ip}:{SYNAPSE_PORT}/_matrix/client/r0/login", json=data, timeout=5
+        )
+        assert response.status_code == 200
+        assert response.json()["access_token"]

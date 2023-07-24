@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+"""Helper module used to manage interactions with Synapse."""
+
+import logging
+import typing
+
+import ops
+import yaml
+from ops.pebble import Check, ExecError, PathError
+
+from charm_state import CharmState
+from constants import (
+    CHECK_READY_NAME,
+    COMMAND_MIGRATE_CONFIG,
+    SYNAPSE_COMMAND_PATH,
+    SYNAPSE_CONFIG_DIR,
+    SYNAPSE_CONFIG_PATH,
+    SYNAPSE_PORT,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class WorkloadError(Exception):
+    """Exception raised when something fails while interacting with workload.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the SynapseWorkloadError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
+
+
+class CommandMigrateConfigError(WorkloadError):
+    """Exception raised when a charm configuration is invalid."""
+
+
+class ServerNameModifiedError(WorkloadError):
+    """Exception raised while checking configuration file."""
+
+
+class ExecResult(typing.NamedTuple):
+    """A named tuple representing the result of executing a command.
+
+    Attributes:
+        exit_code: The exit status of the command (0 for success, non-zero for failure).
+        stdout: The standard output of the command as a string.
+        stderr: The standard error output of the command as a string.
+    """
+
+    exit_code: int
+    stdout: str
+    stderr: str
+
+
+def check_ready() -> typing.Dict:
+    """Return the Synapse container check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.tcp = {"port": SYNAPSE_PORT}
+    # _CheckDict cannot be imported
+    return check.to_dict()  # type: ignore
+
+
+def execute_migrate_config(container: ops.Container, charm_state: CharmState) -> None:
+    """Run the Synapse command migrate_config.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        CommandMigrateConfigError: something went wrong running migrate_config.
+    """
+    _check_server_name(container=container, charm_state=charm_state)
+    # TODO validate if is possible to use SDK instead of command  # pylint: disable=fixme
+    migrate_config_command = [SYNAPSE_COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
+    migrate_config_result = _exec(
+        container,
+        migrate_config_command,
+        environment=get_environment(charm_state),
+    )
+    if migrate_config_result.exit_code:
+        logger.error(
+            "migrate config failed, stdout: %s, stderr: %s",
+            migrate_config_result.stdout,
+            migrate_config_result.stderr,
+        )
+        raise CommandMigrateConfigError(
+            "Migrate config failed, please review your charm configuration"
+        )
+
+
+def get_registration_shared_secret(container: ops.Container) -> typing.Optional[str]:
+    """Get registration_shared_secret from configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Returns:
+        registration_shared_secret value.
+    """
+    return _get_configuration_field(container=container, fieldname="registration_shared_secret")
+
+
+def reset_instance(container: ops.Container) -> None:
+    """Erase data and config server_name.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        PathError: if somethings goes wrong while erasing the Synapse directory.
+    """
+    logging.debug("Erasing directory %s", SYNAPSE_CONFIG_DIR)
+    try:
+        container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
+    except PathError as path_error:
+        # The error "unlinkat //data: device or resource busy" is expected
+        # when removing the entire directory because it's a volume mount.
+        # The files will be removed but SYNAPSE_CONFIG_DIR directory will
+        # remain.
+        if "device or resource busy" in str(path_error):
+            pass
+        else:
+            logger.error(
+                "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
+            )
+            raise
+
+
+def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
+    """Generate a environment dictionary from the charm configurations.
+
+    Args:
+        charm_state: Instance of CharmState.
+
+    Returns:
+        A dictionary representing the Synapse environment variables.
+    """
+    environment = {
+        "SYNAPSE_SERVER_NAME": f"{charm_state.server_name}",
+        "SYNAPSE_REPORT_STATS": f"{charm_state.report_stats}",
+        # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
+        # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
+        "SYNAPSE_NO_TLS": str(True),
+    }
+    datasource = charm_state.datasource
+    if datasource is not None:
+        environment["POSTGRES_DB"] = datasource["db"]
+        environment["POSTGRES_HOST"] = datasource["host"]
+        environment["POSTGRES_PORT"] = datasource["port"]
+        environment["POSTGRES_USER"] = datasource["user"]
+        environment["POSTGRES_PASSWORD"] = datasource["password"]
+    return environment
+
+
+def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:
+    """Check server_name.
+
+    Check if server_name of the state has been modified in relation to the configuration file.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        ServerNameModifiedError: if server_name from state is different than the one in the
+            configuration file.
+    """
+    configured_server_name = _get_configuration_field(container=container, fieldname="server_name")
+    if configured_server_name is not None and configured_server_name != charm_state.server_name:
+        msg = (
+            f"server_name {charm_state.server_name} is different from the existing "
+            f"one {configured_server_name}. Please revert the config or run the action "
+            "reset-instance if you want to erase the existing instance and start a new "
+            "one."
+        )
+        logger.error(msg)
+        raise ServerNameModifiedError(
+            "The server_name modification is not allowed, please check the logs"
+        )
+
+
+def _exec(
+    container: ops.Container,
+    command: list[str],
+    environment: dict[str, str] | None = None,
+) -> ExecResult:
+    """Execute a command inside the Synapse workload container.
+
+    Args:
+        container: Container of the charm.
+        command: A list of strings representing the command to be executed.
+        environment: Environment variables for the command to be executed.
+
+    Returns:
+        ExecResult: An `ExecResult` object representing the result of the command execution.
+    """
+    exec_process = container.exec(command, environment=environment)
+    try:
+        stdout, stderr = exec_process.wait_output()
+        return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
+    except ExecError as exc:
+        return ExecResult(
+            exc.exit_code, typing.cast(str, exc.stdout), typing.cast(str, exc.stderr)
+        )
+
+
+def _get_configuration_field(container: ops.Container, fieldname: str) -> typing.Optional[str]:
+    """Get configuration field.
+
+    Args:
+        container: Container of the charm.
+        fieldname: field to get.
+
+    Raises:
+        PathError: if somethings goes wrong while reading the configuration file.
+
+    Returns:
+        configuration field value.
+    """
+    try:
+        configuration_content = str(container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read())
+        value = yaml.safe_load(configuration_content)[fieldname]
+        return value
+    except PathError as path_error:
+        if path_error.kind == "not-found":
+            logger.debug(
+                "configuration file %s not found, will be created by config-changed",
+                SYNAPSE_CONFIG_PATH,
+            )
+            return None
+        logger.error(
+            "exception while reading configuration file %s: %s",
+            SYNAPSE_CONFIG_PATH,
+            path_error,
+        )
+        raise

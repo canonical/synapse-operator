@@ -9,18 +9,16 @@ import logging
 import typing
 
 import ops
-import psycopg2
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
 
+import actions
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
-from database_client import DatabaseClient
 from database_observer import DatabaseObserver
-from pebble import PebbleService
-from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
+from pebble import PebbleService, PebbleServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +39,7 @@ class SynapseCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
-        self._synapse = Synapse(charm_state=self._charm_state)
-        self.pebble_service = PebbleService(synapse=self._synapse)
+        self.pebble_service = PebbleService(charm_state=self._charm_state)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -64,6 +61,7 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
+        self.framework.observe(self.on.register_user_action, self._on_register_user_action)
 
     def change_config(self, _: ops.HookEvent) -> None:
         """Change configuration."""
@@ -74,12 +72,7 @@ class SynapseCharm(ops.CharmBase):
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
             self.pebble_service.change_config(container)
-        except (
-            CharmConfigInvalidError,
-            CommandMigrateConfigError,
-            ops.pebble.PathError,
-            ServerNameModifiedError,
-        ) as exc:
+        except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
         self.model.unit.status = ops.ActiveStatus()
@@ -120,23 +113,38 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
             self.pebble_service.reset_instance(container)
             datasource = self.database.get_relation_as_datasource()
-            if datasource is not None:
-                logger.info("Erase Synapse database")
-                # Connecting to template1 to make it possible to erase the database.
-                # Otherwise PostgreSQL will prevent it if there are open connections.
-                db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
-                db_client.erase()
-            self._synapse.execute_migrate_config(container)
-            logger.info("Start Synapse database")
+            actions.reset_instance(
+                container=container, charm_state=self._charm_state, datasource=datasource
+            )
+            logger.info("Start Synapse")
             self.pebble_service.replan(container)
             results["reset-instance"] = True
-        except (psycopg2.Error, ops.pebble.PathError, CommandMigrateConfigError) as exc:
+        except (PebbleServiceError, actions.ResetInstanceError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return
-        # results is a dict and set_results expects _SerializedData
-        event.set_results(results)  # type: ignore[arg-type]
+        event.set_results(results)
         self.model.unit.status = ops.ActiveStatus()
+
+    def _on_register_user_action(self, event: ActionEvent) -> None:
+        """Reset instance and report action result.
+
+        Args:
+            event: Event triggering the reset instance action.
+        """
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        try:
+            user = actions.register_user(
+                container=container, username=event.params["username"], admin=event.params["admin"]
+            )
+        except actions.RegisterUserError as exc:
+            event.fail(str(exc))
+            return
+        results = {"register-user": True, "user-password": user.password}
+        event.set_results(results)
 
 
 if __name__ == "__main__":  # pragma: nocover
