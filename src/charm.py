@@ -123,8 +123,7 @@ class SynapseCharm(ops.CharmBase):
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return
-        # results is a dict and set_results expects _SerializedData
-        event.set_results(results)  # type: ignore[arg-type]
+        event.set_results(results)
         self.model.unit.status = ops.ActiveStatus()
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
@@ -145,8 +144,7 @@ class SynapseCharm(ops.CharmBase):
             event.fail(str(exc))
             return
         results = {"register-user": True, "user-password": user.password}
-        # results is a dict and set_results expects _SerializedData
-        event.set_results(results)  # type: ignore[arg-type]
+        event.set_results(results)
 
 
 if __name__ == "__main__":  # pragma: nocover
