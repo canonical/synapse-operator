@@ -3,6 +3,7 @@
 
 """Register user action unit tests."""
 
+# Disabled to access _on_register_user_action
 # pylint: disable=protected-access
 
 import unittest.mock
@@ -26,7 +27,6 @@ def test_register_user_action(
     assert: Synapse charm should reset the instance.
     """
     harness = harness_server_name_configured
-    harness.set_leader(True)
     get_registration_mock = unittest.mock.Mock(return_value="shared_secret")
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     register_user_mock = unittest.mock.MagicMock()
@@ -56,7 +56,6 @@ def test_register_user_registration_none(
     assert: event fails if registration shared secret is not found.
     """
     harness = harness_server_name_configured
-    harness.set_leader(True)
     get_registration_mock = unittest.mock.Mock(return_value=None)
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     register_user_mock = unittest.mock.MagicMock()
@@ -93,7 +92,6 @@ def test_register_user_action_api_error(
     assert: Synapse API fails.
     """
     harness = harness_server_name_configured
-    harness.set_leader(True)
     get_registration_mock = unittest.mock.Mock(return_value="shared_secret")
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     fail_message = "Some fail message"

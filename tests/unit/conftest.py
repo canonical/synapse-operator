@@ -163,6 +163,7 @@ def harness_server_name_configured_fixture(harness: Harness) -> Harness:
     container.push(SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
+    harness.set_leader(True)
     return harness
 
 
