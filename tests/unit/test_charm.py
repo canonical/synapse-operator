@@ -20,7 +20,6 @@ from constants import (
 )
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_synapse_pebble_layer(harness_server_name_configured: Harness) -> None:
     """
     arrange: none
@@ -45,7 +44,13 @@ def test_synapse_pebble_layer(harness_server_name_configured: Harness) -> None:
     }
 
 
-@pytest.mark.parametrize("harness", [1], indirect=True)
+@pytest.mark.parametrize(
+    "harness",
+    [
+        pytest.param(1, id="harness_exit_code"),
+    ],
+    indirect=True,
+)
 def test_synapse_migrate_config_error(harness_server_name_configured: Harness) -> None:
     """
     arrange: none
@@ -111,7 +116,6 @@ def test_traefik_integration(harness_server_name_configured: Harness) -> None:
     }
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_server_name_change(harness_server_name_changed: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.

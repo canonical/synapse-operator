@@ -17,7 +17,6 @@ import synapse
 from user import User
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_register_user_action(
     harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -46,7 +45,6 @@ def test_register_user_action(
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_register_user_registration_none(
     harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -82,7 +80,6 @@ def test_register_user_registration_none(
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_register_user_action_api_error(
     harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
