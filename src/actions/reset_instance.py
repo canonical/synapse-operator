@@ -3,7 +3,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Class to interact with Reset Instance action."""
+"""Module to interact with Reset Instance action."""
 
 import logging
 import typing

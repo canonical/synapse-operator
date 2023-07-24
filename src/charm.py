@@ -138,13 +138,13 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         try:
-            password = actions.register_user(
+            user = actions.register_user(
                 container=container, username=event.params["username"], admin=event.params["admin"]
             )
         except actions.RegisterUserError as exc:
             event.fail(str(exc))
             return
-        results = {"register-user": True, "user-password": password}
+        results = {"register-user": True, "user-password": user.password}
         # results is a dict and set_results expects _SerializedData
         event.set_results(results)  # type: ignore[arg-type]
 
