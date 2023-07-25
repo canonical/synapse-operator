@@ -40,8 +40,30 @@ async def test_synapse_is_up(
         assert "Welcome to the Matrix" in response.text
 
 
+@pytest.mark.usefixtures("synapse_app")
+async def test_prometheus_integration(
+    model: Model,
+    prometheus_app_name: str,
+    synapse_app_name: str,
+    prometheus_app,  # pylint: disable=unused-argument
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: after Synapse charm has been deployed.
+    act: establish relations established with prometheus charm.
+    assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
+        targets.
+    """
+    await model.add_relation(prometheus_app_name, synapse_app_name)
+    await model.wait_for_idle(apps=[synapse_app_name, prometheus_app_name], status="active")
+
+    for unit_ip in await get_unit_ips(prometheus_app_name):
+        query_targets = requests.get(f"http://{unit_ip}:9090/api/v1/targets", timeout=10).json()
+        assert len(query_targets["data"]["activeTargets"])
+
+
 @pytest.mark.usefixtures("traefik_app")
-async def test_with_ingress(
+async def test_traefik_integration(
     ops_test: OpsTest,
     model: Model,
     synapse_app: Application,
@@ -68,7 +90,7 @@ async def test_with_ingress(
 
 
 @pytest.mark.usefixtures("synapse_app", "nginx_integrator_app")
-async def test_with_nginx_route(
+async def test_nginx_route_integration(
     model: Model,
     synapse_app_name: str,
     nginx_integrator_app_name: str,
