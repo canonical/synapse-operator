@@ -33,6 +33,10 @@ storage:
     type: filesystem
     location: /data
 
+provides:
+  metrics-endpoint:
+    interface: prometheus_scrape
+
 requires:
     ingress:
         interface: ingress
