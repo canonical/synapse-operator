@@ -200,3 +200,26 @@ async def postgresql_app_fixture(
     async with ops_test.fast_forward():
         await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
         await model.wait_for_idle()
+
+
+@pytest.fixture(scope="module", name="grafana_app_name")
+def grafana_app_name_fixture() -> str:
+    """Return the name of the grafana application deployed for tests."""
+    return "grafana-k8s"
+
+
+@pytest_asyncio.fixture(scope="module", name="grafana_app")
+async def grafana_app_fixture(
+    model: Model,
+    grafana_app_name: str,
+):
+    """Deploy grafana."""
+    app = await model.deploy(
+        "grafana-k8s",
+        application_name=grafana_app_name,
+        channel="latest/edge",
+        trust=True,
+    )
+    await model.wait_for_idle(raise_on_blocked=True)
+
+    return app
