@@ -33,6 +33,10 @@ storage:
     type: filesystem
     location: /data
 
+provides:
+  grafana-dashboard:
+    interface: grafana_dashboard
+
 requires:
     ingress:
         interface: ingress
