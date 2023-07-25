@@ -124,11 +124,11 @@ def enable_metrics(container: ops.Container) -> None:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
         metric_listener = {
-            "port": PROMETHEUS_TARGET_PORT,
+            "port": int(PROMETHEUS_TARGET_PORT),
             "type": "metrics",
             "bind_addresses": ["::1", "127.0.0.1"],
         }
-        current_yaml["listeners"] += metric_listener
+        current_yaml["listeners"].extend([metric_listener])
         current_yaml["enable_metrics"] = True
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
