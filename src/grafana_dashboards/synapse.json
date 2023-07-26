@@ -93,10 +93,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${prometheusds}"
-      },
+      "datasource": "${prometheusds}",
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -141,15 +138,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "rate(process_cpu_seconds_total{instance=\"$instance\",job=~\"$job\",index=~\"$index\"}[$bucket_size])",
+          "datasource": "${prometheusds}",
+          "expr": "rate(process_cpu_seconds_total{juju_unit=\"$juju_unit\"}[5m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{job}}-{{index}} ",
+          "legendFormat": "{{juju_unit}} ",
           "refId": "A"
         }
       ],
@@ -202,10 +196,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${prometheusds}"
-      },
+      "datasource": "${prometheusds}",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -301,22 +292,16 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "histogram_quantile(0.99, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size])) by (le))",
+          "datasource": "${prometheusds}",
+          "expr": "histogram_quantile(0.99, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m])) by (le))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "99%",
           "refId": "D"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "histogram_quantile(0.9, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size])) by (le))",
+          "datasource": "${prometheusds}",
+          "expr": "histogram_quantile(0.9, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m])) by (le))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -324,60 +309,42 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "histogram_quantile(0.75, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size])) by (le))",
+          "datasource": "${prometheusds}",
+          "expr": "histogram_quantile(0.75, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m])) by (le))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "75%",
           "refId": "C"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "histogram_quantile(0.5, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size])) by (le))",
+          "datasource": "${prometheusds}",
+          "expr": "histogram_quantile(0.5, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m])) by (le))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "50%",
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "histogram_quantile(0.25, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size])) by (le))",
+          "datasource": "${prometheusds}",
+          "expr": "histogram_quantile(0.25, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m])) by (le))",
           "legendFormat": "25%",
           "refId": "F"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "histogram_quantile(0.05, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size])) by (le))",
+          "datasource": "${prometheusds}",
+          "expr": "histogram_quantile(0.05, sum(rate(synapse_http_server_response_time_seconds_bucket{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m])) by (le))",
           "legendFormat": "5%",
           "refId": "G"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "sum(rate(synapse_http_server_response_time_seconds_sum{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size])) / sum(rate(synapse_http_server_response_time_seconds_count{servlet='RoomSendEventRestServlet',index=~\"$index\",instance=\"$instance\",code=~\"2..\"}[$bucket_size]))",
+          "datasource": "${prometheusds}",
+          "expr": "sum(rate(synapse_http_server_response_time_seconds_sum{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m])) / sum(rate(synapse_http_server_response_time_seconds_count{servlet='RoomSendEventRestServlet',juju_unit=\"$juju_unit\",code=~\"2..\"}[5m]))",
           "legendFormat": "Average",
           "refId": "H"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "sum(rate(synapse_storage_events_persisted_events_total{instance=\"$instance\"}[$bucket_size]))",
+          "datasource": "${prometheusds}",
+          "expr": "sum(rate(synapse_storage_events_persisted_events_total{juju_unit=\"$juju_unit\"}[5m]))",
           "hide": false,
           "instant": false,
           "legendFormat": "Events",
@@ -444,10 +411,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${prometheusds}"
-      },
+      "datasource": "${prometheusds}",
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -500,30 +464,24 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "process_open_fds{instance=\"$instance\",job=~\"$job\",index=~\"$index\"}",
+          "datasource": "${prometheusds}",
+          "expr": "process_open_fds{juju_unit=\"$juju_unit\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{job}}-{{index}}",
+          "legendFormat": "{{juju_unit}}",
           "refId": "A",
           "step": 20
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "process_max_fds{instance=\"$instance\",job=~\"$job\",index=~\"$index\"}",
+          "datasource": "${prometheusds}",
+          "expr": "process_max_fds{juju_unit=\"$juju_unit\"}",
           "format": "time_series",
           "hide": true,
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{job}}-{{index}} max",
+          "legendFormat": "{{juju_unit}} max",
           "refId": "B",
           "step": 20
         }
@@ -566,10 +524,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${prometheusds}"
-      },
+      "datasource": "${prometheusds}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -617,25 +572,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "process_resident_memory_bytes{instance=\"$instance\",job=~\"$job\",index=~\"$index\"}",
+          "datasource": "${prometheusds}",
+          "expr": "process_resident_memory_bytes{juju_unit=\"$juju_unit\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{job}} {{index}}",
+          "legendFormat": "{{juju_unit}}",
           "refId": "A",
           "step": 20,
           "target": ""
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheusds}"
-          },
-          "expr": "sum(process_resident_memory_bytes{instance=\"$instance\",job=~\"$job\",index=~\"$index\"})",
+          "datasource": "${prometheusds}",
+          "expr": "sum(process_resident_memory_bytes{juju_unit=\"$juju_unit\"})",
           "hide": true,
           "interval": "",
           "legendFormat": "total",
@@ -686,168 +635,24 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "juju_ctr2-4_bfa549aa-de5c-4cc9-842c-b8c2d387f5bb_prometheus-k8s_0",
-          "value": "juju_ctr2-4_bfa549aa-de5c-4cc9-842c-b8c2d387f5bb_prometheus-k8s_0"
-        },
+        "current": {},
+        "datasource": "${prometheusds}",
+        "definition": "label_values(gunicorn_workers{}, app)",
         "hide": 0,
         "includeAll": false,
+        "label": "Application Name",
         "multi": false,
-        "name": "datasource",
+        "name": "app_name",
         "options": [],
-        "query": "prometheus",
-        "queryValue": "",
+        "query": {
+          "query": "label_values(gunicorn_workers{}, app)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "type": "datasource"
-      },
-      {
-        "allFormat": "glob",
-        "auto": true,
-        "auto_count": 100,
-        "auto_min": "30s",
-        "current": {
-          "selected": false,
-          "text": "auto",
-          "value": "$__auto_interval_bucket_size"
-        },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Bucket Size",
-        "multi": false,
-        "multiFormat": "glob",
-        "name": "bucket_size",
-        "options": [
-          {
-            "selected": true,
-            "text": "auto",
-            "value": "$__auto_interval_bucket_size"
-          },
-          {
-            "selected": false,
-            "text": "30s",
-            "value": "30s"
-          },
-          {
-            "selected": false,
-            "text": "1m",
-            "value": "1m"
-          },
-          {
-            "selected": false,
-            "text": "2m",
-            "value": "2m"
-          },
-          {
-            "selected": false,
-            "text": "5m",
-            "value": "5m"
-          },
-          {
-            "selected": false,
-            "text": "10m",
-            "value": "10m"
-          },
-          {
-            "selected": false,
-            "text": "15m",
-            "value": "15m"
-          }
-        ],
-        "query": "30s,1m,2m,5m,10m,15m",
-        "queryValue": "",
-        "refresh": 2,
-        "skipUrlSync": false,
-        "type": "interval"
-      },
-      {
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${prometheusds}"
-        },
-        "definition": "",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "instance",
-        "options": [],
-        "query": {
-          "query": "label_values(synapse_util_metrics_block_ru_utime_seconds_total, instance)",
-          "refId": "Prometheus-instance-Variable-Query"
-        },
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allFormat": "regex wildcard",
-        "allValue": "",
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${prometheusds}"
-        },
-        "definition": "",
-        "hide": 0,
-        "hideLabel": false,
-        "includeAll": true,
-        "label": "Job",
-        "multi": true,
-        "multiFormat": "regex values",
-        "name": "job",
-        "options": [],
-        "query": {
-          "query": "label_values(synapse_util_metrics_block_ru_utime_seconds_total, job)",
-          "refId": "Prometheus-job-Variable-Query"
-        },
-        "refresh": 2,
-        "refresh_on_load": false,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allFormat": "regex wildcard",
-        "allValue": ".*",
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${prometheusds}"
-        },
-        "definition": "",
-        "hide": 0,
-        "hideLabel": false,
-        "includeAll": true,
-        "label": "",
-        "multi": true,
-        "multiFormat": "regex values",
-        "name": "index",
-        "options": [],
-        "query": {
-          "query": "label_values(synapse_util_metrics_block_ru_utime_seconds_total, index)",
-          "refId": "Prometheus-index-Variable-Query"
-        },
-        "refresh": 2,
-        "refresh_on_load": false,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 3,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
+        "sort": 0,
+        "type": "query"
       }
     ]
   },
