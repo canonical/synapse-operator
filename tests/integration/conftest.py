@@ -223,3 +223,26 @@ async def grafana_app_fixture(
     await model.wait_for_idle(raise_on_blocked=True)
 
     return app
+
+
+@pytest.fixture(scope="module", name="prometheus_app_name")
+def prometheus_app_name_fixture() -> str:
+    """Return the name of the prometheus application deployed for tests."""
+    return "prometheus-k8s"
+
+
+@pytest_asyncio.fixture(scope="module", name="prometheus_app")
+async def deploy_prometheus_fixture(
+    model: Model,
+    prometheus_app_name: str,
+):
+    """Deploy prometheus."""
+    app = await model.deploy(
+        "prometheus-k8s",
+        application_name=prometheus_app_name,
+        channel="latest/edge",
+        trust=True,
+    )
+    await model.wait_for_idle(raise_on_blocked=True)
+
+    return app

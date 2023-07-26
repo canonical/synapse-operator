@@ -11,6 +11,7 @@ from secrets import token_hex
 
 import ops
 import pytest
+import yaml
 from ops.pebble import ExecError
 from ops.testing import Harness
 
@@ -117,7 +118,6 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
     synapse_container.make_dir("/data", make_parents=True)
-
     # unused-variable disabled to pass constants values to inner function
     command_path = SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
     command_migrate_config = COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
@@ -137,9 +137,18 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         Raises:
             RuntimeError: command unknown.
         """
-        nonlocal command_path, command_migrate_config, exit_code
+        nonlocal command_path, command_migrate_config, exit_code, synapse_container
         match argv:
             case [command_path, command_migrate_config]:  # pylint: disable=unused-variable
+                config_content = {
+                    "listeners": [
+                        {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+                    ],
+                    "server_name": TEST_SERVER_NAME,
+                }
+                synapse_container.push(
+                    SYNAPSE_CONFIG_PATH, yaml.safe_dump(config_content), make_dirs=True
+                )
                 return synapse.ExecResult(exit_code, "", "")
             case _:
                 raise RuntimeError(f"unknown command: {argv}")

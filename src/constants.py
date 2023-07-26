@@ -5,6 +5,7 @@
 
 CHECK_READY_NAME = "synapse-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
+PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_CONFIG_DIR = "/data"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_COMMAND_PATH = "/start.py"

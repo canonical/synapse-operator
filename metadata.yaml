@@ -36,6 +36,8 @@ storage:
 provides:
   grafana-dashboard:
     interface: grafana_dashboard
+  metrics-endpoint:
+    interface: prometheus_scrape
 
 requires:
     ingress:

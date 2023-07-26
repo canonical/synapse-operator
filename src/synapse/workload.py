@@ -16,6 +16,7 @@ from charm_state import CharmState
 from constants import (
     CHECK_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
+    PROMETHEUS_TARGET_PORT,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
     SYNAPSE_CONFIG_PATH,
@@ -47,6 +48,10 @@ class CommandMigrateConfigError(WorkloadError):
 
 class ServerNameModifiedError(WorkloadError):
     """Exception raised while checking configuration file."""
+
+
+class EnableMetricsError(WorkloadError):
+    """Exception raised when something goes wrong while enabling metrics."""
 
 
 class ExecResult(typing.NamedTuple):
@@ -104,6 +109,30 @@ def execute_migrate_config(container: ops.Container, charm_state: CharmState) ->
         raise CommandMigrateConfigError(
             "Migrate config failed, please review your charm configuration"
         )
+
+
+def enable_metrics(container: ops.Container) -> None:
+    """Change the Synapse configuration to enable metrics.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        EnableMetricsError: something went wrong enabling metrics.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        metric_listener = {
+            "port": int(PROMETHEUS_TARGET_PORT),
+            "type": "metrics",
+            "bind_addresses": ["::1", "127.0.0.1"],
+        }
+        current_yaml["listeners"].extend([metric_listener])
+        current_yaml["enable_metrics"] = True
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise EnableMetricsError(str(exc)) from exc
 
 
 def get_registration_shared_secret(container: ops.Container) -> typing.Optional[str]:
