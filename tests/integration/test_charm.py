@@ -62,6 +62,55 @@ async def test_prometheus_integration(
         assert len(query_targets["data"]["activeTargets"])
 
 
+@pytest.mark.usefixtures("synapse_app")
+async def test_grafana_integration(
+    model: Model,
+    synapse_app_name: str,
+    prometheus_app_name: str,
+    prometheus_app,  # pylint: disable=unused-argument
+    grafana_app_name: str,
+    grafana_app,  # pylint: disable=unused-argument
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: after Synapse charm has been deployed.
+    act: establish relations established with grafana charm.
+    assert: grafana Synapse dashboard can be found.
+    """
+    await model.relate(
+        f"{prometheus_app_name}:grafana-source", f"{grafana_app_name}:grafana-source"
+    )
+    await model.relate(synapse_app_name, grafana_app_name)
+
+    await model.wait_for_idle(
+        apps=[synapse_app_name, prometheus_app_name, grafana_app_name],
+        status="active",
+        idle_period=60,
+    )
+
+    action = await model.applications[grafana_app_name].units[0].run_action("get-admin-password")
+    await action.wait()
+    password = action.results["admin-password"]
+    grafana_ip = (await get_unit_ips(grafana_app_name))[0]
+    sess = requests.session()
+    sess.post(
+        f"http://{grafana_ip}:3000/login",
+        json={
+            "user": "admin",
+            "password": password,
+        },
+    ).raise_for_status()
+    datasources = sess.get(f"http://{grafana_ip}:3000/api/datasources", timeout=10).json()
+    datasource_types = set(datasource["type"] for datasource in datasources)
+    assert "prometheus" in datasource_types
+    dashboards = sess.get(
+        f"http://{grafana_ip}:3000/api/search",
+        timeout=10,
+        params={"query": "Synapse Operator"},
+    ).json()
+    assert len(dashboards)
+
+
 @pytest.mark.usefixtures("traefik_app")
 async def test_traefik_integration(
     ops_test: OpsTest,
