@@ -13309,9 +13309,9 @@
         "30d"
       ]
     },
-    "timezone": "",
+    "timezone": "utc",
     "title": "Synapse Operator",
-    "uid": "000000012",
-    "version": 160,
+    "uid": null,
+    "version": 1,
     "weekStart": ""
   }
