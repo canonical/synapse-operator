@@ -55,7 +55,9 @@ async def test_prometheus_integration(
         targets.
     """
     await model.add_relation(prometheus_app_name, synapse_app_name)
-    await model.wait_for_idle(apps=[synapse_app_name, prometheus_app_name], status="active")
+    await model.wait_for_idle(
+        apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME
+    )
 
     for unit_ip in await get_unit_ips(prometheus_app_name):
         query_targets = requests.get(f"http://{unit_ip}:9090/api/v1/targets", timeout=10).json()
@@ -84,7 +86,7 @@ async def test_grafana_integration(
 
     await model.wait_for_idle(
         apps=[synapse_app_name, prometheus_app_name, grafana_app_name],
-        status="active",
+        status=ACTIVE_STATUS_NAME,
         idle_period=60,
     )
 
