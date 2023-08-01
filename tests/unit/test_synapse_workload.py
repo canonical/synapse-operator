@@ -41,7 +41,7 @@ def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            {"port": 9000, "type": "metrics", "bind_addresses": ["::1", "127.0.0.1"]},
+            {"port": 9000, "type": "metrics", "bind_addresses": ["::"]},
         ],
         "enable_metrics": True,
     }

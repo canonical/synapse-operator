@@ -126,7 +126,7 @@ def enable_metrics(container: ops.Container) -> None:
         metric_listener = {
             "port": int(PROMETHEUS_TARGET_PORT),
             "type": "metrics",
-            "bind_addresses": ["::1", "127.0.0.1"],
+            "bind_addresses": ["::"],
         }
         current_yaml["listeners"].extend([metric_listener])
         current_yaml["enable_metrics"] = True

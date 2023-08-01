@@ -5,16 +5,21 @@
 
 
 import json
+import typing
 
 import pytest
 import pytest_asyncio
 from juju.application import Application
 from juju.model import Model
+from ops.model import ActiveStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
 # caused by pytest fixtures, mark does not work in fixtures
 # pylint: disable=too-many-arguments, unused-argument
+
+# mypy has trouble to inferred types for variables that are initialized in subclasses.
+ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 
 
 @pytest_asyncio.fixture(scope="module", name="server_name")
@@ -81,9 +86,9 @@ async def synapse_app_fixture(
         config={"server_name": server_name},
     )
     async with ops_test.fast_forward():
-        await model.wait_for_idle(raise_on_blocked=True)
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
         await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
-        await model.wait_for_idle(wait_for_active=True)
+        await model.wait_for_idle(wait_for_active=True, status=ACTIVE_STATUS_NAME)
     return app
 
 
@@ -125,22 +130,24 @@ def traefik_app_name_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="traefik_app")
 async def traefik_app_fixture(
+    ops_test: OpsTest,
     model: Model,
     synapse_app,
     traefik_app_name: str,
     external_hostname: str,
 ):
     """Deploy traefik."""
-    app = await model.deploy(
-        "traefik-k8s",
-        application_name=traefik_app_name,
-        trust=True,
-        config={
-            "external_hostname": external_hostname,
-            "routing_mode": "subdomain",
-        },
-    )
-    await model.wait_for_idle(raise_on_blocked=True)
+    async with ops_test.fast_forward():
+        app = await model.deploy(
+            "traefik-k8s",
+            application_name=traefik_app_name,
+            trust=True,
+            config={
+                "external_hostname": external_hostname,
+                "routing_mode": "subdomain",
+            },
+        )
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
     return app
 
 
@@ -152,17 +159,19 @@ def nginx_integrator_app_name_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="nginx_integrator_app")
 async def nginx_integrator_app_fixture(
+    ops_test: OpsTest,
     model: Model,
     synapse_app,
     nginx_integrator_app_name: str,
 ):
     """Deploy nginx-ingress-integrator."""
-    app = await model.deploy(
-        "nginx-ingress-integrator",
-        application_name=nginx_integrator_app_name,
-        trust=True,
-    )
-    await model.wait_for_idle(raise_on_blocked=True)
+    async with ops_test.fast_forward():
+        app = await model.deploy(
+            "nginx-ingress-integrator",
+            application_name=nginx_integrator_app_name,
+            trust=True,
+        )
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
     return app
 
 
@@ -199,7 +208,32 @@ async def postgresql_app_fixture(
     """Deploy postgresql."""
     async with ops_test.fast_forward():
         await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
-        await model.wait_for_idle()
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+
+
+@pytest.fixture(scope="module", name="grafana_app_name")
+def grafana_app_name_fixture() -> str:
+    """Return the name of the grafana application deployed for tests."""
+    return "grafana-k8s"
+
+
+@pytest_asyncio.fixture(scope="module", name="grafana_app")
+async def grafana_app_fixture(
+    ops_test: OpsTest,
+    model: Model,
+    grafana_app_name: str,
+):
+    """Deploy grafana."""
+    async with ops_test.fast_forward():
+        app = await model.deploy(
+            "grafana-k8s",
+            application_name=grafana_app_name,
+            channel="latest/edge",
+            trust=True,
+        )
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+
+    return app
 
 
 @pytest.fixture(scope="module", name="prometheus_app_name")
@@ -210,16 +244,18 @@ def prometheus_app_name_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="prometheus_app")
 async def deploy_prometheus_fixture(
+    ops_test: OpsTest,
     model: Model,
     prometheus_app_name: str,
 ):
     """Deploy prometheus."""
-    app = await model.deploy(
-        "prometheus-k8s",
-        application_name=prometheus_app_name,
-        channel="latest/edge",
-        trust=True,
-    )
-    await model.wait_for_idle(raise_on_blocked=True)
+    async with ops_test.fast_forward():
+        app = await model.deploy(
+            "prometheus-k8s",
+            application_name=prometheus_app_name,
+            channel="latest/edge",
+            trust=True,
+        )
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
 
     return app
