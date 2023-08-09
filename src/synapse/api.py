@@ -10,6 +10,7 @@
 import hashlib
 import hmac
 import logging
+import re
 import typing
 
 import requests
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 SYNAPSE_URL = "http://localhost:8008"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
+VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
 
 
 class APIError(Exception):
@@ -149,3 +151,35 @@ def _get_nonce() -> str:
     ) as exc:
         logger.error("Failed to request %s : %s", REGISTER_URL, exc)
         raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
+
+
+def get_version() -> str:
+    """Get version.
+
+    Expected API output:
+    {
+        "server_version": "0.99.2rc1 (b=develop, abcdef123)",
+        "python_version": "3.7.8"
+    }
+
+    Returns:
+        The version returned by Synapse API.
+
+    Raises:
+        NetworkError: if there was an error fetching the version.
+    """
+    try:
+        res = requests.get(VERSION_URL, timeout=5)
+        res.raise_for_status()
+        server_version = res.json()["server_version"]
+        version_match = re.search(r"^([^\s(]+)", server_version)
+        if version_match:
+            return version_match.group(1)
+        return server_version
+    except (
+        requests.exceptions.ConnectionError,
+        requests.exceptions.Timeout,
+        requests.exceptions.HTTPError,
+    ) as exc:
+        logger.error("Failed to request %s : %s", VERSION_URL, exc)
+        raise NetworkError(f"Failed to request {VERSION_URL}.") from exc

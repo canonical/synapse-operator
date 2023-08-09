@@ -77,7 +77,7 @@ def check_ready() -> typing.Dict:
     check = Check(CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.tcp = {"port": SYNAPSE_PORT}
+    check.http = {"url": f"http://localhost:{SYNAPSE_PORT}/_synapse/admin/v1/server_version"}
     # _CheckDict cannot be imported
     return check.to_dict()  # type: ignore
 

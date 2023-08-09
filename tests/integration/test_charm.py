@@ -3,7 +3,9 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm."""
+import json
 import logging
+import re
 import typing
 
 import pytest
@@ -230,3 +232,28 @@ async def test_register_user_action(
         )
         assert response.status_code == 200
         assert response.json()["access_token"]
+
+
+async def test_workload_version(
+    ops_test: OpsTest,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: a deployed Synapse charm.
+    act: get status from Juju.
+    assert: the workload version is set and match the one given by Synapse API request.
+    """
+    _, status, _ = await ops_test.juju("status", "--format", "json")
+    status = json.loads(status)
+    juju_workload_version = status["applications"][synapse_app.name]["version"]
+    assert juju_workload_version
+    print(synapse_app.data)
+    for unit_ip in await get_unit_ips(synapse_app.get_statusname):
+        res = requests.get(
+            f"http://{unit_ip}:{SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
+        )
+        server_version = res.json()["server_version"]
+        version_match = re.search(r"^([^\s(]+)", server_version)
+        assert version_match
+        assert version_match.group(1) == juju_workload_version

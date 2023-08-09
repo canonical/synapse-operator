@@ -15,6 +15,7 @@ from ops.charm import ActionEvent
 from ops.main import main
 
 import actions
+import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
 from database_observer import DatabaseObserver
@@ -93,6 +94,11 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering after pebble is ready.
         """
+        try:
+            synapse_version = synapse.get_version()
+            self.unit.set_workload_version(synapse_version)
+        except synapse.APIError as exc:
+            logger.debug("Cannot set workload version at this time: %s", exc)
         self.change_config(event)
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
