@@ -15,7 +15,6 @@ from ops.testing import Harness
 from constants import SYNAPSE_CONTAINER_NAME
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action(harness_server_name_changed: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -32,7 +31,6 @@ def test_reset_instance_action(harness_server_name_changed: Harness) -> None:
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action_container_down(harness_server_name_changed: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -49,7 +47,13 @@ def test_reset_instance_action_container_down(harness_server_name_changed: Harne
     assert event.fail.call_count == 1
 
 
-@pytest.mark.parametrize("harness", [1], indirect=True)
+@pytest.mark.parametrize(
+    "harness",
+    [
+        pytest.param(1, id="harness_exit_code"),
+    ],
+    indirect=True,
+)
 def test_reset_instance_action_failed(harness_server_name_changed: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -66,7 +70,6 @@ def test_reset_instance_action_failed(harness_server_name_changed: Harness) -> N
     assert "Migrate config failed" in str(harness.model.unit.status)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action_path_error_blocked(
     container_with_path_error_blocked: unittest.mock.MagicMock,
     harness_server_name_changed: Harness,
@@ -89,7 +92,6 @@ def test_reset_instance_action_path_error_blocked(
     assert "Error erasing" in str(harness.model.unit.status)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action_path_error_pass(
     container_with_path_error_pass: unittest.mock.MagicMock,
     harness_server_name_changed: Harness,
@@ -118,7 +120,6 @@ def test_reset_instance_action_path_error_pass(
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_reset_instance_action_no_leader(
     harness_server_name_changed: Harness,
 ) -> None:

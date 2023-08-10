@@ -14,13 +14,13 @@ from ops.testing import Harness
 from psycopg2 import sql
 
 import database_observer
+import synapse
 from charm_types import DatasourcePostgreSQL
 from constants import SYNAPSE_CONTAINER_NAME
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_erase_database(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -52,7 +52,6 @@ def test_erase_database(harness_with_postgresql: Harness, monkeypatch: pytest.Mo
     cursor_mock.execute.assert_has_calls(calls)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_erase_database_error(
     harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -74,7 +73,6 @@ def test_erase_database_error(
         db_client.erase()
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_connect(
     harness_with_postgresql: Harness,
     monkeypatch: pytest.MonkeyPatch,
@@ -100,7 +98,6 @@ def test_connect(
     connect_mock.assert_called_once_with(query)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_connect_error(
     harness_with_postgresql: Harness,
     monkeypatch: pytest.MonkeyPatch,
@@ -120,7 +117,6 @@ def test_connect_error(
         db_client._connect()
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_prepare_database(
     harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -149,7 +145,6 @@ def test_prepare_database(
     )
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_prepare_database_error(
     harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -171,7 +166,6 @@ def test_prepare_database_error(
         db_client.prepare()
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_relation_as_datasource(
     harness_with_postgresql: Harness, datasource_postgresql_password: str
 ) -> None:
@@ -190,7 +184,7 @@ def test_relation_as_datasource(
     )
     assert expected == harness.charm.database.get_relation_as_datasource()
     assert harness.charm.app.name == harness.charm.database.get_database_name()
-    synapse_env = harness.charm._synapse.synapse_environment()
+    synapse_env = synapse.get_environment(harness.charm._charm_state)
     assert synapse_env["POSTGRES_DB"] == expected["db"]
     assert synapse_env["POSTGRES_HOST"] == expected["host"]
     assert synapse_env["POSTGRES_PORT"] == expected["port"]
@@ -198,7 +192,6 @@ def test_relation_as_datasource(
     assert synapse_env["POSTGRES_PASSWORD"] == expected["password"]
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_relation_as_datasource_error(
     harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
 ):
@@ -216,7 +209,6 @@ def test_relation_as_datasource_error(
         harness.charm.database.get_database_name()
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_change_config(
     harness_with_postgresql: Harness,
 ):
@@ -230,7 +222,6 @@ def test_change_config(
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_change_config_error(
     harness_with_postgresql: Harness,
 ):
@@ -245,7 +236,6 @@ def test_change_config_error(
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 
 
-@pytest.mark.parametrize("harness", [0], indirect=True)
 def test_on_database_created(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.

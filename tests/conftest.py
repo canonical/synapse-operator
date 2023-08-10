@@ -13,3 +13,4 @@ def pytest_addoption(parser: Parser) -> None:
         parser: Pytest parser.
     """
     parser.addoption("--synapse-image", action="store", help="Synapse image to be deployed")
+    parser.addoption("--charm-file", action="store", help="Charm file to be deployed")
