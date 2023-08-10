@@ -80,6 +80,18 @@ class SynapseCharm(ops.CharmBase):
             return
         self.model.unit.status = ops.ActiveStatus()
 
+    def _set_workload_version(self) -> None:
+        """Set workload version with Synapse version."""
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        try:
+            synapse_version = synapse.get_version()
+            self.unit.set_workload_version(synapse_version)
+        except synapse.APIError as exc:
+            logger.debug("Cannot set workload version at this time: %s", exc)
+
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.
 
@@ -87,6 +99,8 @@ class SynapseCharm(ops.CharmBase):
             event: Event triggering after config is changed.
         """
         self.change_config(event)
+        logger.debug("Setting workload in config-changed event")
+        self._set_workload_version()
 
     def _on_pebble_ready(self, event: ops.HookEvent) -> None:
         """Handle pebble ready event.
@@ -94,11 +108,6 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering after pebble is ready.
         """
-        try:
-            synapse_version = synapse.get_version()
-            self.unit.set_workload_version(synapse_version)
-        except synapse.APIError as exc:
-            logger.debug("Cannot set workload version at this time: %s", exc)
         self.change_config(event)
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:

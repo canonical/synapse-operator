@@ -113,31 +113,34 @@ def test_get_nonce_error(monkeypatch: pytest.MonkeyPatch):
         synapse.api._get_nonce()
 
 
-@mock.patch("synapse.api.requests")
-def test_get_version_success(mock_requests):
+@mock.patch("synapse.api.Session")
+def test_get_version_success(mock_session):
     """
     arrange: none.
     act: get version.
     assert: get_version return the correct value.
     """
     extracted_version = "0.99.2rc1"
-    mock_response = mock.MagicMock()
+    mock_session_instance = mock_session.return_value
+    mock_response = mock.Mock()
     mock_response.json.return_value = {
-        "server_version": f"{extracted_version} (b=develop, abcdef123)",
-        "python_version": "3.7.8",
+        "server_version": f"{extracted_version} (b=develop, abcdef123)"
     }
-    mock_requests.get.return_value = mock_response
+    mock_session_instance.get.return_value = mock_response
     assert synapse.api.get_version() == extracted_version
 
 
-def test_get_version_error(monkeypatch: pytest.MonkeyPatch):
+@mock.patch("synapse.api.Session")
+def test_get_version_error(mock_session):
     """
     arrange: none.
     act: get version.
     assert: NetworkError is raised.
     """
+    mock_session_instance = mock_session.return_value
+    mock_response = mock.Mock()
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
-    mock_response = mock.Mock(side_effect=mock_response_error)
-    monkeypatch.setattr("synapse.api.requests.get", mock_response)
+    mock_response.json.side_effect = mock_response_error
+    mock_session_instance.get.return_value = mock_response
     with pytest.raises(synapse.APIError, match="Failed to request"):
         synapse.api.get_version()

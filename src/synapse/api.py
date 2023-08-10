@@ -14,6 +14,9 @@ import re
 import typing
 
 import requests
+from requests import Session
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from user import User
 
@@ -85,7 +88,7 @@ def register_user(registration_shared_secret: str, user: User) -> None:
         requests.exceptions.Timeout,
         requests.exceptions.HTTPError,
     ) as exc:
-        logger.error("Failed to request %s : %s", REGISTER_URL, exc)
+        logger.exception("Failed to request %s : %r", REGISTER_URL, exc)
         raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
 
 
@@ -149,7 +152,7 @@ def _get_nonce() -> str:
         requests.exceptions.Timeout,
         requests.exceptions.HTTPError,
     ) as exc:
-        logger.error("Failed to request %s : %s", REGISTER_URL, exc)
+        logger.exception("Failed to request %s : %r", REGISTER_URL, exc)
         raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
 
 
@@ -162,6 +165,8 @@ def get_version() -> str:
         "python_version": "3.7.8"
     }
 
+    We're using retry here because after the config change, Synapse is restarted.
+
     Returns:
         The version returned by Synapse API.
 
@@ -169,7 +174,13 @@ def get_version() -> str:
         NetworkError: if there was an error fetching the version.
     """
     try:
-        res = requests.get(VERSION_URL, timeout=5)
+        session = Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=3,
+        )
+        session.mount("http://", HTTPAdapter(max_retries=retries))
+        res = session.get(VERSION_URL, timeout=10)
         res.raise_for_status()
         server_version = res.json()["server_version"]
         version_match = re.search(r"^([^\s(]+)", server_version)
@@ -181,5 +192,5 @@ def get_version() -> str:
         requests.exceptions.Timeout,
         requests.exceptions.HTTPError,
     ) as exc:
-        logger.error("Failed to request %s : %s", VERSION_URL, exc)
+        logger.exception("Failed to request %s : %r", VERSION_URL, exc)
         raise NetworkError(f"Failed to request {VERSION_URL}.") from exc

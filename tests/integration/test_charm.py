@@ -246,10 +246,9 @@ async def test_workload_version(
     """
     _, status, _ = await ops_test.juju("status", "--format", "json")
     status = json.loads(status)
-    juju_workload_version = status["applications"][synapse_app.name]["version"]
+    juju_workload_version = status["applications"][synapse_app.name].get("version", "")
     assert juju_workload_version
-    print(synapse_app.data)
-    for unit_ip in await get_unit_ips(synapse_app.get_statusname):
+    for unit_ip in await get_unit_ips(synapse_app.name):
         res = requests.get(
             f"http://{unit_ip}:{SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
         )

@@ -13,6 +13,7 @@ import ops
 import synapse
 from charm_state import CharmState
 from constants import (
+    CHECK_ALIVE_NAME,
     CHECK_READY_NAME,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONTAINER_NAME,
@@ -115,6 +116,7 @@ class PebbleService:
             },
             "checks": {
                 CHECK_READY_NAME: synapse.check_ready(),
+                CHECK_ALIVE_NAME: synapse.check_alive(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

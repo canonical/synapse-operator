@@ -69,7 +69,7 @@ class ExecResult(typing.NamedTuple):
 
 
 def check_ready() -> typing.Dict:
-    """Return the Synapse container check.
+    """Return the Synapse container ready check.
 
     Returns:
         Dict: check object converted to its dict representation.
@@ -78,6 +78,20 @@ def check_ready() -> typing.Dict:
     check.override = "replace"
     check.level = "ready"
     check.http = {"url": f"http://localhost:{SYNAPSE_PORT}/_synapse/admin/v1/server_version"}
+    # _CheckDict cannot be imported
+    return check.to_dict()  # type: ignore
+
+
+def check_alive() -> typing.Dict:
+    """Return the Synapse container alive check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_READY_NAME)
+    check.override = "replace"
+    check.level = "alive"
+    check.tcp = {"port": SYNAPSE_PORT}
     # _CheckDict cannot be imported
     return check.to_dict()  # type: ignore
 
@@ -167,8 +181,8 @@ def reset_instance(container: ops.Container) -> None:
         if "device or resource busy" in str(path_error):
             pass
         else:
-            logger.error(
-                "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
+            logger.exception(
+                "exception while erasing directory %s: %r", SYNAPSE_CONFIG_DIR, path_error
             )
             raise
 
@@ -275,8 +289,8 @@ def _get_configuration_field(container: ops.Container, fieldname: str) -> typing
                 SYNAPSE_CONFIG_PATH,
             )
             return None
-        logger.error(
-            "exception while reading configuration file %s: %s",
+        logger.exception(
+            "exception while reading configuration file %s: %r",
             SYNAPSE_CONFIG_PATH,
             path_error,
         )

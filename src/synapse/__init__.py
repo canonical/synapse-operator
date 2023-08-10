@@ -8,6 +8,7 @@ from .api import APIError, get_version, register_user  # noqa: F401
 from .workload import (  # noqa: F401
     ExecResult,
     WorkloadError,
+    check_alive,
     check_ready,
     enable_metrics,
     execute_migrate_config,
