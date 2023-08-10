@@ -12,6 +12,7 @@ issues: https://github.com/canonical/synapse-operator/issues
 maintainers:
   - launchpad.net/~canonical-is-devops
 source: https://github.com/canonical/synapse-operator
+docs: "https://discourse.charmhub.io/t/synapse-documentation-overview/11358"
 assumes:
   - k8s-api
 
