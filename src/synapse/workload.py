@@ -54,6 +54,10 @@ class EnableMetricsError(WorkloadError):
     """Exception raised when something goes wrong while enabling metrics."""
 
 
+class EnableSAMLError(WorkloadError):
+    """Exception raised when something goes wrong while enabling SAML."""
+
+
 class ExecResult(typing.NamedTuple):
     """A named tuple representing the result of executing a command.
 
@@ -133,6 +137,70 @@ def enable_metrics(container: ops.Container) -> None:
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise EnableMetricsError(str(exc)) from exc
+
+
+def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
+    """Create config as expected by pysaml2.
+
+    Args:
+        charm_state: Instance of CharmState.
+
+    Returns:
+        Pysaml2 configuration.
+
+    Raises:
+        EnableSAMLError: if SAML configuration is not found.
+    """
+    if charm_state.saml_config is None:
+        raise EnableSAMLError(
+            "SAML Configuration not found. "
+            "Please verify the integration between SAML Integrator and Synapse."
+        )
+
+    saml_config = charm_state.saml_config
+    sp_config = {
+        "metadata": {
+            "remote": [
+                {
+                    "url": saml_config["metadata_url"],
+                },
+            ],
+        },
+        "service": {
+            "sp": {
+                "allow_unsolicited": True,
+            },
+        },
+        "name": [saml_config["entity_id"], "en"],
+    }
+    return sp_config
+
+
+def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable SAML.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        EnableSAMLError: something went wrong enabling SAML.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["saml2_config"] = {}
+        current_yaml["saml2_config"]["sp_config"] = _create_pysaml2_config(charm_state)
+        user_mapping_provider_config = {
+            "config": {
+                "mxid_source_attribute": "username",
+                "mxid_mapping": "dotreplace",
+            },
+        }
+        current_yaml["saml2_config"]["user_mapping_provider"] = user_mapping_provider_config
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise EnableSAMLError(str(exc)) from exc
 
 
 def get_registration_shared_secret(container: ops.Container) -> typing.Optional[str]:

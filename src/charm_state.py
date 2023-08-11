@@ -16,7 +16,7 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
     validator,
 )
 
-from charm_types import DatasourcePostgreSQL
+from charm_types import DatasourcePostgreSQL, SAMLConfiguration
 
 if typing.TYPE_CHECKING:
     from charm import SynapseCharm
@@ -87,19 +87,26 @@ class CharmState:
         server_name: server_name config.
         report_stats: report_stats config.
         datasource: datasource information.
+        saml_config: saml configuration.
     """
 
     def __init__(
-        self, *, synapse_config: SynapseConfig, datasource: typing.Optional[DatasourcePostgreSQL]
+        self,
+        *,
+        synapse_config: SynapseConfig,
+        datasource: typing.Optional[DatasourcePostgreSQL],
+        saml_config: typing.Optional[SAMLConfiguration],
     ) -> None:
         """Construct.
 
         Args:
             synapse_config: The value of the synapse_config charm configuration.
             datasource: Datasource information.
+            saml_config: SAML configuration.
         """
         self._synapse_config = synapse_config
         self._datasource = datasource
+        self._saml_config = saml_config
 
     @property
     def server_name(self) -> typing.Optional[str]:
@@ -128,6 +135,15 @@ class CharmState:
         """
         return self._datasource
 
+    @property
+    def saml_config(self) -> typing.Union[SAMLConfiguration, None]:
+        """Return SAML configuration.
+
+        Returns:
+            SAMLConfiguration or None.
+        """
+        return self._saml_config
+
     @classmethod
     def from_charm(cls, charm: "SynapseCharm") -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
@@ -153,4 +169,5 @@ class CharmState:
         return cls(
             synapse_config=valid_synapse_config,
             datasource=charm.database.get_relation_as_datasource(),
+            saml_config=charm.saml.get_relation_as_saml_conf(),
         )

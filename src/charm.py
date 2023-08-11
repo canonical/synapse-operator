@@ -20,6 +20,7 @@ from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
 from database_observer import DatabaseObserver
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
+from saml_observer import SAMLObserver
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class SynapseCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.database = DatabaseObserver(self)
+        self.saml = SAMLObserver(self)
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
@@ -59,7 +61,7 @@ class SynapseCharm(ops.CharmBase):
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
-        self._observability = Observability(charm=self)
+        self._observability = Observability(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)

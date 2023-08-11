@@ -74,6 +74,21 @@ class PebbleService:
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
 
+    def enable_saml(self, container: ops.model.Container) -> None:
+        """Enable SAML.
+
+        Args:
+            container: Charm container.
+
+        Raises:
+            PebbleServiceError: if something goes wrong while interacting with Pebble.
+        """
+        try:
+            synapse.enable_saml(container=container, charm_state=self._charm_state)
+            self.replan(container)
+        except (synapse.WorkloadError, ops.pebble.PathError) as exc:
+            raise PebbleServiceError(str(exc)) from exc
+
     def reset_instance(self, container: ops.model.Container) -> None:
         """Reset instance.
 

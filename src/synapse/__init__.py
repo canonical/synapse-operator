@@ -10,6 +10,7 @@ from .workload import (  # noqa: F401
     WorkloadError,
     check_ready,
     enable_metrics,
+    enable_saml,
     execute_migrate_config,
     get_environment,
     get_registration_shared_secret,
