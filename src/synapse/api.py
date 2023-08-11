@@ -35,7 +35,7 @@ class APIError(Exception):
     """
 
     def __init__(self, msg: str):
-        """Initialize a new instance of the RegisterUserError exception.
+        """Initialize a new instance of the APIError exception.
 
         Args:
             msg (str): Explanation of the error.
@@ -43,12 +43,20 @@ class APIError(Exception):
         self.msg = msg
 
 
-class RegisterUserError(APIError):
-    """Exception raised when registering user via API fails."""
-
-
 class NetworkError(APIError):
     """Exception raised when requesting API fails due network issues."""
+
+
+class GetVersionError(APIError):
+    """Exception raised when getting version via API fails."""
+
+
+class VersionNotFoundError(GetVersionError):
+    """Exception raised when version is not found."""
+
+
+class VersionUnexpectedContentError(GetVersionError):
+    """Exception raised when output of getting version is unexpected."""
 
 
 def register_user(registration_shared_secret: str, user: User) -> None:
@@ -172,6 +180,7 @@ def get_version() -> str:
 
     Raises:
         NetworkError: if there was an error fetching the version.
+        GetVersionError: if there was an error while reading version.
     """
     try:
         session = Session()
@@ -182,15 +191,23 @@ def get_version() -> str:
         session.mount("http://", HTTPAdapter(max_retries=retries))
         res = session.get(VERSION_URL, timeout=10)
         res.raise_for_status()
-        server_version = res.json()["server_version"]
+        server_version = res.json().get("server_version", None)
+        if server_version is None:
+            # Exception not in docstring because is captured.
+            raise VersionNotFoundError("There is no server_version in JSON output")  # noqa: DCO053
         version_match = re.search(r"^([^\s(]+)", server_version)
-        if version_match:
-            return version_match.group(1)
-        return server_version
-    except (
-        requests.exceptions.ConnectionError,
-        requests.exceptions.Timeout,
-        requests.exceptions.HTTPError,
-    ) as exc:
-        logger.exception("Failed to request %s : %r", VERSION_URL, exc)
-        raise NetworkError(f"Failed to request {VERSION_URL}.") from exc
+        if not version_match:
+            # Exception not in docstring because is captured.
+            raise VersionUnexpectedContentError(  # noqa: DCO053
+                "server_version has unexpected content"
+            )
+        return version_match.group(1)
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", VERSION_URL, exc)
+        raise NetworkError(f"Failed to connect to {VERSION_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", VERSION_URL, exc)
+        raise NetworkError(f"HTTP error from {VERSION_URL}.") from exc
+    except GetVersionError as exc:
+        logger.exception("Failed to get version: %r", exc)
+        raise GetVersionError(str(exc)) from exc

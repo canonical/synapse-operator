@@ -142,5 +142,5 @@ def test_get_version_error(mock_session):
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
     mock_response.json.side_effect = mock_response_error
     mock_session_instance.get.return_value = mock_response
-    with pytest.raises(synapse.APIError, match="Failed to request"):
+    with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.api.get_version()
