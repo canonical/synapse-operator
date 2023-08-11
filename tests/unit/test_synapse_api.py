@@ -131,7 +131,7 @@ def test_get_version_success(mock_session):
 
 
 @mock.patch("synapse.api.Session")
-def test_get_version_error(mock_session):
+def test_get_version_connection_error(mock_session):
     """
     arrange: mock request to get version returning error.
     act: get version.
@@ -143,4 +143,19 @@ def test_get_version_error(mock_session):
     mock_response.json.side_effect = mock_response_error
     mock_session_instance.get.return_value = mock_response
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
+        synapse.api.get_version()
+
+
+@mock.patch("synapse.api.Session")
+def test_get_version_regex_error(mock_session):
+    """
+    arrange: mock request to get version returning invalid content.
+    act: get version.
+    assert: get_version return the correct value.
+    """
+    mock_session_instance = mock_session.return_value
+    mock_response = mock.Mock()
+    mock_response.json.return_value = {"server_version": "foo"}
+    mock_session_instance.get.return_value = mock_response
+    with pytest.raises(synapse.APIError, match="server_version has unexpected content"):
         synapse.api.get_version()

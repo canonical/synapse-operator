@@ -195,7 +195,7 @@ def get_version() -> str:
         if server_version is None:
             # Exception not in docstring because is captured.
             raise VersionNotFoundError("There is no server_version in JSON output")  # noqa: DCO053
-        version_match = re.search(r"^([^\s(]+)", server_version)
+        version_match = re.search(r"^(?=[^()]*\()([^\s(]+)", server_version)
         if not version_match:
             # Exception not in docstring because is captured.
             raise VersionUnexpectedContentError(  # noqa: DCO053
