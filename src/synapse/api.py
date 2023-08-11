@@ -191,15 +191,18 @@ def get_version() -> str:
         session.mount("http://", HTTPAdapter(max_retries=retries))
         res = session.get(VERSION_URL, timeout=10)
         res.raise_for_status()
-        server_version = res.json().get("server_version", None)
+        res_json = res.json()
+        server_version = res_json.get("server_version", None)
         if server_version is None:
             # Exception not in docstring because is captured.
-            raise VersionNotFoundError("There is no server_version in JSON output")  # noqa: DCO053
+            raise VersionNotFoundError(  # noqa: DCO053
+                f"There is no server_version in JSON output: {res_json}"
+            )
         version_match = re.search(r"^(?=[^()]*\()([^\s(]+)", server_version)
         if not version_match:
             # Exception not in docstring because is captured.
             raise VersionUnexpectedContentError(  # noqa: DCO053
-                "server_version has unexpected content"
+                f"server_version has unexpected content: {server_version}"
             )
         return version_match.group(1)
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
