@@ -87,7 +87,7 @@ def test_generate_mac():
 @mock.patch("synapse.api.requests")
 def test_get_nonce_success(mock_requests):
     """
-    arrange: none.
+    arrange: mock request to get nonce returning value.
     act: get nonce.
     assert: _get_nonce return the correct value.
     """
@@ -102,7 +102,7 @@ def test_get_nonce_success(mock_requests):
 
 def test_get_nonce_error(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: none.
+    arrange: mock request to get nonce returning error.
     act: get nonce.
     assert: NetworkError is raised.
     """
@@ -116,7 +116,7 @@ def test_get_nonce_error(monkeypatch: pytest.MonkeyPatch):
 @mock.patch("synapse.api.Session")
 def test_get_version_success(mock_session):
     """
-    arrange: none.
+    arrange: mock request to get version returning value.
     act: get version.
     assert: get_version return the correct value.
     """
@@ -133,7 +133,7 @@ def test_get_version_success(mock_session):
 @mock.patch("synapse.api.Session")
 def test_get_version_error(mock_session):
     """
-    arrange: none.
+    arrange: mock request to get version returning error.
     act: get version.
     assert: NetworkError is raised.
     """
