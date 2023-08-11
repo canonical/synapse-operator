@@ -192,13 +192,14 @@ def get_version() -> str:
         res = session.get(VERSION_URL, timeout=10)
         res.raise_for_status()
         res_json = res.json()
+        logger.error("res_json: %s", res_json)
         server_version = res_json.get("server_version", None)
         if server_version is None:
             # Exception not in docstring because is captured.
             raise VersionNotFoundError(  # noqa: DCO053
                 f"There is no server_version in JSON output: {res_json}"
             )
-        version_match = re.search(r"^(?=[^()]*\()([^\s(]+)", server_version)
+        version_match = re.search(r"(\d+\.\d+\.\d+(?:\w+)?)\s", server_version)
         if not version_match:
             # Exception not in docstring because is captured.
             raise VersionUnexpectedContentError(  # noqa: DCO053
