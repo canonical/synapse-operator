@@ -23,6 +23,8 @@ from constants import (
     SYNAPSE_PORT,
 )
 
+from .api import VERSION_URL
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +79,7 @@ def check_ready() -> typing.Dict:
     check = Check(CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": f"http://localhost:{SYNAPSE_PORT}/_synapse/admin/v1/server_version"}
+    check.http = {"url": VERSION_URL}
     # _CheckDict cannot be imported
     return check.to_dict()  # type: ignore
 
