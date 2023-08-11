@@ -17,6 +17,7 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 from constants import SYNAPSE_PORT
+from synapse.api import SYNAPSE_VERSION_REGEX
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -253,6 +254,6 @@ async def test_workload_version(
             f"http://{unit_ip}:{SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
         )
         server_version = res.json()["server_version"]
-        version_match = re.search(r"^([^\s(]+)", server_version)
+        version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
         assert version_match
         assert version_match.group(1) == juju_workload_version

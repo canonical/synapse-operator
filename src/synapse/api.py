@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 SYNAPSE_URL = "http://localhost:8008"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
+SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 
 
 class APIError(Exception):
@@ -192,14 +193,13 @@ def get_version() -> str:
         res = session.get(VERSION_URL, timeout=10)
         res.raise_for_status()
         res_json = res.json()
-        logger.error("res_json: %s", res_json)
         server_version = res_json.get("server_version", None)
         if server_version is None:
             # Exception not in docstring because is captured.
             raise VersionNotFoundError(  # noqa: DCO053
                 f"There is no server_version in JSON output: {res_json}"
             )
-        version_match = re.search(r"(\d+\.\d+\.\d+(?:\w+)?)\s?", server_version)
+        version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
         if not version_match:
             # Exception not in docstring because is captured.
             raise VersionUnexpectedContentError(  # noqa: DCO053
