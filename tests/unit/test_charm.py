@@ -6,6 +6,7 @@
 # pylint: disable=protected-access
 
 import json
+from unittest.mock import MagicMock
 
 import ops
 import pytest
@@ -125,3 +126,40 @@ def test_server_name_change(harness_server_name_changed: Harness) -> None:
     harness = harness_server_name_changed
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)
+
+
+def test_enable_saml_container_down(harness_with_saml: Harness) -> None:
+    """
+    arrange: none
+    act: start the Synapse charm, set server_name, set Synapse container to be down
+        and then try to change report_stats.
+    assert: Synapse charm should submit the correct status.
+    """
+    harness = harness_with_saml
+    harness.set_leader(True)
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
+    relation = harness.charm.framework.model.get_relation("saml", 0)
+    harness.charm.saml.saml.on.saml_data_available.emit(relation)
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+    assert "Waiting for" in str(harness.model.unit.status)
+
+
+def test_enable_saml_pebble_error(
+    harness_with_saml: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: none
+    act: start the Synapse charm, set server_name, set Synapse container to be down
+        and then try to change report_stats.
+    assert: Synapse charm should submit the correct status.
+    """
+    harness = harness_with_saml
+    harness.set_leader(True)
+    relation = harness.charm.framework.model.get_relation("saml", 0)
+    error_message = "Error pulling file"
+    path_error = ops.pebble.PathError(kind="fake", message=error_message)
+    enable_saml_mock = MagicMock(side_effect=path_error)
+    monkeypatch.setattr(harness.charm.saml._pebble_service, "enable_saml", enable_saml_mock)
+    harness.charm.saml.saml.on.saml_data_available.emit(relation)
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "SAML integration failed" in str(harness.model.unit.status)
