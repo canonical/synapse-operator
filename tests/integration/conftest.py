@@ -243,7 +243,7 @@ def prometheus_app_name_fixture() -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="prometheus_app")
-async def deploy_prometheus_fixture(
+async def prometheus_app_fixture(
     ops_test: OpsTest,
     model: Model,
     prometheus_app_name: str,
@@ -258,4 +258,36 @@ async def deploy_prometheus_fixture(
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
 
+    return app
+
+
+@pytest.fixture(scope="module", name="saml_integrator_app_name")
+def saml_integrator_app_name_fixture() -> str:
+    """Return the name of the SAML integrator application deployed for tests."""
+    return "saml-integrator"
+
+
+@pytest_asyncio.fixture(scope="module", name="saml_integrator_app")
+async def saml_integrator_app_fixture(
+    ops_test: OpsTest,
+    model: Model,
+    saml_integrator_app_name: str,
+):
+    """Deploy SAML integrator."""
+    async with ops_test.fast_forward():
+        app = await model.deploy(
+            saml_integrator_app_name,
+            application_name=saml_integrator_app_name,
+            channel="latest/edge",
+            trust=True,
+        )
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+    entity_id = "https://login.staging.ubuntu.com"
+    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
+    await app.set_config(  # type: ignore[attr-defined]
+        {
+            "entity_id": entity_id,
+            "metadata_url": metadata_url,
+        }
+    )
     return app

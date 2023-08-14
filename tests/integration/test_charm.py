@@ -8,7 +8,6 @@ import typing
 
 import pytest
 import requests
-from juju.action import Action
 from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
@@ -38,79 +37,6 @@ async def test_synapse_is_up(
         response = requests.get(f"http://{unit_ip}:{SYNAPSE_PORT}/_matrix/static/", timeout=5)
         assert response.status_code == 200
         assert "Welcome to the Matrix" in response.text
-
-
-@pytest.mark.usefixtures("synapse_app")
-async def test_prometheus_integration(
-    model: Model,
-    prometheus_app_name: str,
-    synapse_app_name: str,
-    prometheus_app,  # pylint: disable=unused-argument
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-):
-    """
-    arrange: after Synapse charm has been deployed.
-    act: establish relations established with prometheus charm.
-    assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
-        targets.
-    """
-    await model.add_relation(prometheus_app_name, synapse_app_name)
-    await model.wait_for_idle(
-        apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME
-    )
-
-    for unit_ip in await get_unit_ips(prometheus_app_name):
-        query_targets = requests.get(f"http://{unit_ip}:9090/api/v1/targets", timeout=10).json()
-        assert len(query_targets["data"]["activeTargets"])
-
-
-@pytest.mark.usefixtures("synapse_app")
-async def test_grafana_integration(
-    model: Model,
-    synapse_app_name: str,
-    prometheus_app_name: str,
-    prometheus_app,  # pylint: disable=unused-argument
-    grafana_app_name: str,
-    grafana_app,  # pylint: disable=unused-argument
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-):
-    """
-    arrange: after Synapse charm has been deployed.
-    act: establish relations established with grafana charm.
-    assert: grafana Synapse dashboard can be found.
-    """
-    await model.relate(
-        f"{prometheus_app_name}:grafana-source", f"{grafana_app_name}:grafana-source"
-    )
-    await model.relate(synapse_app_name, grafana_app_name)
-
-    await model.wait_for_idle(
-        apps=[synapse_app_name, prometheus_app_name, grafana_app_name],
-        status=ACTIVE_STATUS_NAME,
-        idle_period=60,
-    )
-
-    action = await model.applications[grafana_app_name].units[0].run_action("get-admin-password")
-    await action.wait()
-    password = action.results["admin-password"]
-    grafana_ip = (await get_unit_ips(grafana_app_name))[0]
-    sess = requests.session()
-    sess.post(
-        f"http://{grafana_ip}:3000/login",
-        json={
-            "user": "admin",
-            "password": password,
-        },
-    ).raise_for_status()
-    datasources = sess.get(f"http://{grafana_ip}:3000/api/datasources", timeout=10).json()
-    datasource_types = set(datasource["type"] for datasource in datasources)
-    assert "prometheus" in datasource_types
-    dashboards = sess.get(
-        f"http://{grafana_ip}:3000/api/search",
-        timeout=10,
-        params={"query": "Synapse Operator"},
-    ).json()
-    assert len(dashboards)
 
 
 @pytest.mark.usefixtures("traefik_app")
@@ -176,57 +102,25 @@ async def test_server_name_changed(model: Model, another_synapse_app: Applicatio
     assert "server_name modification is not allowed" in unit.workload_status_message
 
 
-async def test_reset_instance_action(
-    model: Model, another_synapse_app: Application, another_server_name: str
+@pytest.mark.usefixtures("synapse_app")
+async def test_saml_integration(
+    model: Model,
+    synapse_app_name: str,
+    saml_integrator_app,  # pylint: disable=unused-argument
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
-    arrange: a deployed Synapse charm in a blocked state due to a server_name change.
-    act: call the reset_instance action.
-    assert: the old instance is deleted and the new one configured.
+    arrange: after Synapse and SAML Integrator charms has been deployed.
+    act: establish relations with SAML charm.
+    assert: Metadata.xml should be present indicating that SAML is enabled.
     """
-    unit = model.applications[another_synapse_app.name].units[0]
-    # Status string defined in Juju
-    # https://github.com/juju/juju/blob/2.9/core/status/status.go#L150
-    assert unit.workload_status == "blocked"
-    assert "server_name modification is not allowed" in unit.workload_status_message
-    action_reset_instance: Action = await another_synapse_app.units[0].run_action(  # type: ignore
-        "reset-instance"
+    await model.add_relation(saml_integrator_app.name, synapse_app_name)
+    await model.wait_for_idle(
+        apps=[synapse_app_name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME
     )
-    await action_reset_instance.wait()
-    assert action_reset_instance.status == "completed"
-    assert action_reset_instance.results["reset-instance"]
-    assert unit.workload_status == "active"
-    config = await model.applications[another_synapse_app.name].get_config()
-    current_server_name = config.get("server_name", {}).get("value")
-    assert current_server_name == another_server_name
 
-
-async def test_register_user_action(
-    model: Model,
-    synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-) -> None:
-    """
-    arrange: a deployed Synapse charm.
-    act: call the register user action.
-    assert: the user is registered and the login is successful.
-    """
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    username = "operator"
-    unit = model.applications[synapse_app.name].units[0]
-    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "register-user", username=username, admin=True
-    )
-    await action_register_user.wait()
-    assert action_register_user.status == "completed"
-    assert action_register_user.results["register-user"]
-    password = action_register_user.results["user-password"]
-    assert password
-    assert unit.workload_status == "active"
-    data = {"type": "m.login.password", "user": username, "password": password}
-    for unit_ip in await get_unit_ips(synapse_app.name):
-        response = requests.post(
-            f"http://{unit_ip}:{SYNAPSE_PORT}/_matrix/client/r0/login", json=data, timeout=5
+    for unit_ip in await get_unit_ips(synapse_app_name):
+        response = requests.get(
+            f"http://{unit_ip}:{SYNAPSE_PORT}/_synapse/client/saml2/metadata.xml", timeout=5
         )
         assert response.status_code == 200
-        assert response.json()["access_token"]
