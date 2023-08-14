@@ -70,7 +70,7 @@ class ExecResult(typing.NamedTuple):
     stderr: str
 
 
-def check_ready() -> typing.Dict:
+def check_ready() -> ops.pebble.CheckDict:
     """Return the Synapse container ready check.
 
     Returns:
@@ -80,11 +80,10 @@ def check_ready() -> typing.Dict:
     check.override = "replace"
     check.level = "ready"
     check.http = {"url": VERSION_URL}
-    # _CheckDict cannot be imported
-    return check.to_dict()  # type: ignore
+    return check.to_dict()
 
 
-def check_alive() -> typing.Dict:
+def check_alive() -> ops.pebble.CheckDict:
     """Return the Synapse container alive check.
 
     Returns:
@@ -94,8 +93,7 @@ def check_alive() -> typing.Dict:
     check.override = "replace"
     check.level = "alive"
     check.tcp = {"port": SYNAPSE_PORT}
-    # _CheckDict cannot be imported
-    return check.to_dict()  # type: ignore
+    return check.to_dict()
 
 
 def execute_migrate_config(container: ops.Container, charm_state: CharmState) -> None:
