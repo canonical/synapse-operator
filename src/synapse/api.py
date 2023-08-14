@@ -48,6 +48,14 @@ class NetworkError(APIError):
     """Exception raised when requesting API fails due network issues."""
 
 
+class GetNonceError(APIError):
+    """Exception raised when getting nonce via API fails."""
+
+
+class NonceNotFoundError(GetNonceError):
+    """Exception raised when nonce is not found."""
+
+
 class GetVersionError(APIError):
     """Exception raised when getting version via API fails."""
 
@@ -69,36 +77,39 @@ def register_user(registration_shared_secret: str, user: User) -> None:
 
     Raises:
         NetworkError: if there was an error registering the user.
+        GetNonceError: if there was an error while getting nonce.
     """
-    # get nonce
-    nonce = _get_nonce()
-
-    # generate mac
-    hex_mac = _generate_mac(
-        shared_secret=registration_shared_secret,
-        nonce=nonce,
-        user=user.username,
-        password=user.password,
-        admin=user.admin,
-    )
-    data = {
-        "nonce": nonce,
-        "username": user.username,
-        "password": user.password,
-        "mac": hex_mac,
-        "admin": user.admin,
-    }
-    # finally register user
     try:
+        # get nonce
+        nonce = _get_nonce()
+
+        # generate mac
+        hex_mac = _generate_mac(
+            shared_secret=registration_shared_secret,
+            nonce=nonce,
+            user=user.username,
+            password=user.password,
+            admin=user.admin,
+        )
+        data = {
+            "nonce": nonce,
+            "username": user.username,
+            "password": user.password,
+            "mac": hex_mac,
+            "admin": user.admin,
+        }
+        # finally register user
         res = requests.post(REGISTER_URL, json=data, timeout=5)
         res.raise_for_status()
-    except (
-        requests.exceptions.ConnectionError,
-        requests.exceptions.Timeout,
-        requests.exceptions.HTTPError,
-    ) as exc:
-        logger.exception("Failed to request %s : %r", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
+    except GetNonceError as exc:
+        logger.exception("Failed to get nonce: %r", exc)
+        raise GetNonceError(str(exc)) from exc
 
 
 def _generate_mac(
@@ -151,18 +162,31 @@ def _get_nonce() -> str:
 
     Raises:
         NetworkError: if there was an error fetching the nonce.
+        GetNonceError: if there was an error while getting nonce.
     """
     try:
         res = requests.get(REGISTER_URL, timeout=5)
         res.raise_for_status()
-        return res.json()["nonce"]
-    except (
-        requests.exceptions.ConnectionError,
-        requests.exceptions.Timeout,
-        requests.exceptions.HTTPError,
-    ) as exc:
-        logger.exception("Failed to request %s : %r", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
+        res_json = res.json()
+        if not isinstance(res_json, dict):
+            # Exception not in docstring because is captured.
+            raise GetNonceError(f"Response has unexpected encode: {res_json}")  # noqa: DCO053
+        nonce = res_json.get("nonce", None)
+        if nonce is None:
+            # Exception not in docstring because is captured.
+            raise NonceNotFoundError(  # noqa: DCO053
+                f"There is no nonce in JSON output: {res_json}"
+            )
+        return nonce
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
+    except (GetNonceError, requests.exceptions.JSONDecodeError) as exc:
+        logger.exception("Failed to get nonce: %r", exc)
+        raise GetNonceError(str(exc)) from exc
 
 
 def get_version() -> str:
@@ -193,6 +217,11 @@ def get_version() -> str:
         res = session.get(VERSION_URL, timeout=10)
         res.raise_for_status()
         res_json = res.json()
+        if not isinstance(res_json, dict):
+            # Exception not in docstring because is captured.
+            raise VersionUnexpectedContentError(  # noqa: DCO053
+                f"Response has unexpected encode: {res_json}"
+            )
         server_version = res_json.get("server_version", None)
         if server_version is None:
             # Exception not in docstring because is captured.
@@ -212,6 +241,6 @@ def get_version() -> str:
     except requests.exceptions.HTTPError as exc:
         logger.exception("HTTP error from %s: %r", VERSION_URL, exc)
         raise NetworkError(f"HTTP error from {VERSION_URL}.") from exc
-    except GetVersionError as exc:
+    except (GetVersionError, requests.exceptions.JSONDecodeError) as exc:
         logger.exception("Failed to get version: %r", exc)
         raise GetVersionError(str(exc)) from exc

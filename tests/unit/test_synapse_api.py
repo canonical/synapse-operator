@@ -48,7 +48,7 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
 
 def test_register_user_error(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: set User parameters.
+    arrange: set User parameters and mock post to return connection and http errors.
     act: register the user.
     assert: NetworkError is raised.
     """
@@ -63,7 +63,29 @@ def test_register_user_error(monkeypatch: pytest.MonkeyPatch):
     mock_response = mock.Mock(side_effect=mock_response_error)
     monkeypatch.setattr("synapse.api.requests.post", mock_response)
     shared_secret = token_hex(16)
-    with pytest.raises(synapse.APIError, match="Failed to request"):
+    with pytest.raises(synapse.APIError, match="Failed to connect to"):
+        synapse.register_user(shared_secret, user)
+    mock_response_http_error = requests.exceptions.HTTPError
+    mock_response = mock.Mock(side_effect=mock_response_http_error)
+    monkeypatch.setattr("synapse.api.requests.post", mock_response)
+    with pytest.raises(synapse.APIError, match="HTTP error from"):
+        synapse.register_user(shared_secret, user)
+
+
+def test_register_user_nonce_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User parameters and mock once to return error.
+    act: register the user.
+    assert: NetworkError is raised.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    msg = "Wrong nonce"
+    mock_nonce_error = synapse.api.GetNonceError(msg)
+    get_nonce_mock = mock.MagicMock(side_effect=mock_nonce_error)
+    monkeypatch.setattr("synapse.api._get_nonce", get_nonce_mock)
+    shared_secret = token_hex(16)
+    with pytest.raises(synapse.APIError, match=msg):
         synapse.register_user(shared_secret, user)
 
 
@@ -100,16 +122,26 @@ def test_get_nonce_success(mock_requests):
     assert synapse.api._get_nonce() == nonce_value
 
 
-def test_get_nonce_error(monkeypatch: pytest.MonkeyPatch):
+def test_get_nonce_requests_error(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: mock request to get nonce returning error.
+    arrange: mock request to get nonce returning connection and http errors.
     act: get nonce.
     assert: NetworkError is raised.
     """
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
     mock_response = mock.Mock(side_effect=mock_response_error)
     monkeypatch.setattr("synapse.api.requests.get", mock_response)
-    with pytest.raises(synapse.APIError, match="Failed to request"):
+    with pytest.raises(synapse.APIError, match="Failed to connect to"):
+        synapse.api._get_nonce()
+    mock_response_http_error = requests.exceptions.HTTPError
+    mock_response = mock.Mock(side_effect=mock_response_http_error)
+    monkeypatch.setattr("synapse.api.requests.get", mock_response)
+    with pytest.raises(synapse.APIError, match="HTTP error from"):
+        synapse.api._get_nonce()
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = None
+    monkeypatch.setattr("synapse.api.requests.get", mock_response)
+    with pytest.raises(synapse.APIError, match="Response has unexpected encode"):
         synapse.api._get_nonce()
 
 
@@ -143,6 +175,22 @@ def test_get_version_connection_error(mock_session):
     mock_response.json.side_effect = mock_response_error
     mock_session_instance.get.return_value = mock_response
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
+        synapse.api.get_version()
+
+
+@mock.patch("synapse.api.Session")
+def test_get_version_http_error(mock_session):
+    """
+    arrange: mock request to get version returning error.
+    act: get version.
+    assert: NetworkError is raised.
+    """
+    mock_session_instance = mock_session.return_value
+    mock_response = mock.Mock()
+    mock_response_error = requests.exceptions.HTTPError
+    mock_response.json.side_effect = mock_response_error
+    mock_session_instance.get.return_value = mock_response
+    with pytest.raises(synapse.APIError, match="HTTP error from"):
         synapse.api.get_version()
 
 
