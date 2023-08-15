@@ -106,8 +106,8 @@ def test_generate_mac():
     assert mac == "56a99737dfe3739ed3e49a962f9cb178c81d6d12"
 
 
-@mock.patch("synapse.api.requests")
-def test_get_nonce_success(mock_requests):
+@mock.patch("synapse.api.requests.Session")
+def test_get_nonce_success(mock_session):
     """
     arrange: mock request to get nonce returning value.
     act: get nonce.
@@ -118,34 +118,41 @@ def test_get_nonce_success(mock_requests):
     mock_response.json.return_value = {
         "nonce": nonce_value,
     }
+    mock_requests = mock.MagicMock()
     mock_requests.get.return_value = mock_response
+    mock_session.return_value = mock_requests
     assert synapse.api._get_nonce() == nonce_value
 
 
-def test_get_nonce_requests_error(monkeypatch: pytest.MonkeyPatch):
+@mock.patch("synapse.api.requests.Session")
+def test_get_nonce_requests_error(mock_session):
     """
     arrange: mock request to get nonce returning connection and http errors.
     act: get nonce.
     assert: NetworkError is raised.
     """
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
-    mock_response = mock.Mock(side_effect=mock_response_error)
-    monkeypatch.setattr("synapse.api.requests.get", mock_response)
+    mock_requests = mock.MagicMock()
+    mock_requests.get.side_effect = mock_response_error
+    mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.api._get_nonce()
     mock_response_http_error = requests.exceptions.HTTPError
-    mock_response = mock.Mock(side_effect=mock_response_http_error)
-    monkeypatch.setattr("synapse.api.requests.get", mock_response)
+    mock_requests = mock.MagicMock()
+    mock_requests.get.side_effect = mock_response_http_error
+    mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="HTTP error from"):
         synapse.api._get_nonce()
     mock_response = mock.MagicMock()
     mock_response.json.return_value = None
-    monkeypatch.setattr("synapse.api.requests.get", mock_response)
-    with pytest.raises(synapse.APIError, match="Response has unexpected encode"):
+    mock_requests = mock.MagicMock()
+    mock_requests.get.return_value = mock_response
+    mock_session.return_value = mock_requests
+    with pytest.raises(synapse.APIError, match="object is not subscriptable"):
         synapse.api._get_nonce()
 
 
-@mock.patch("synapse.api.Session")
+@mock.patch("synapse.api.requests.Session")
 def test_get_version_success(mock_session):
     """
     arrange: mock request to get version returning value.
@@ -162,39 +169,35 @@ def test_get_version_success(mock_session):
     assert synapse.api.get_version() == extracted_version
 
 
-@mock.patch("synapse.api.Session")
-def test_get_version_connection_error(mock_session):
+@mock.patch("synapse.api.requests.Session")
+def test_get_version_requests_error(mock_session):
     """
     arrange: mock request to get version returning error.
     act: get version.
     assert: NetworkError is raised.
     """
-    mock_session_instance = mock_session.return_value
-    mock_response = mock.Mock()
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
-    mock_response.json.side_effect = mock_response_error
-    mock_session_instance.get.return_value = mock_response
+    mock_requests = mock.MagicMock()
+    mock_requests.get.side_effect = mock_response_error
+    mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.api.get_version()
-
-
-@mock.patch("synapse.api.Session")
-def test_get_version_http_error(mock_session):
-    """
-    arrange: mock request to get version returning error.
-    act: get version.
-    assert: NetworkError is raised.
-    """
-    mock_session_instance = mock_session.return_value
-    mock_response = mock.Mock()
-    mock_response_error = requests.exceptions.HTTPError
-    mock_response.json.side_effect = mock_response_error
-    mock_session_instance.get.return_value = mock_response
+    mock_response_http_error = requests.exceptions.HTTPError
+    mock_requests = mock.MagicMock()
+    mock_requests.get.side_effect = mock_response_http_error
+    mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="HTTP error from"):
+        synapse.api.get_version()
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = None
+    mock_requests = mock.MagicMock()
+    mock_requests.get.return_value = mock_response
+    mock_session.return_value = mock_requests
+    with pytest.raises(synapse.APIError, match="object is not subscriptable"):
         synapse.api.get_version()
 
 
-@mock.patch("synapse.api.Session")
+@mock.patch("synapse.api.requests.Session")
 def test_get_version_regex_error(mock_session):
     """
     arrange: mock request to get version returning invalid content.

@@ -14,7 +14,6 @@ import re
 import typing
 
 import requests
-from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
@@ -52,16 +51,8 @@ class GetNonceError(APIError):
     """Exception raised when getting nonce via API fails."""
 
 
-class NonceNotFoundError(GetNonceError):
-    """Exception raised when nonce is not found."""
-
-
 class GetVersionError(APIError):
     """Exception raised when getting version via API fails."""
-
-
-class VersionNotFoundError(GetVersionError):
-    """Exception raised when version is not found."""
 
 
 class VersionUnexpectedContentError(GetVersionError):
@@ -77,28 +68,27 @@ def register_user(registration_shared_secret: str, user: User) -> None:
 
     Raises:
         NetworkError: if there was an error registering the user.
-        GetNonceError: if there was an error while getting nonce.
     """
+    # get nonce
+    nonce = _get_nonce()
+    # generate mac
+    hex_mac = _generate_mac(
+        shared_secret=registration_shared_secret,
+        nonce=nonce,
+        user=user.username,
+        password=user.password,
+        admin=user.admin,
+    )
+    # build data
+    data = {
+        "nonce": nonce,
+        "username": user.username,
+        "password": user.password,
+        "mac": hex_mac,
+        "admin": user.admin,
+    }
+    # finally register user
     try:
-        # get nonce
-        nonce = _get_nonce()
-
-        # generate mac
-        hex_mac = _generate_mac(
-            shared_secret=registration_shared_secret,
-            nonce=nonce,
-            user=user.username,
-            password=user.password,
-            admin=user.admin,
-        )
-        data = {
-            "nonce": nonce,
-            "username": user.username,
-            "password": user.password,
-            "mac": hex_mac,
-            "admin": user.admin,
-        }
-        # finally register user
         res = requests.post(REGISTER_URL, json=data, timeout=5)
         res.raise_for_status()
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
@@ -107,9 +97,6 @@ def register_user(registration_shared_secret: str, user: User) -> None:
     except requests.exceptions.HTTPError as exc:
         logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
         raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
-    except GetNonceError as exc:
-        logger.exception("Failed to get nonce: %r", exc)
-        raise GetNonceError(str(exc)) from exc
 
 
 def _generate_mac(
@@ -154,6 +141,39 @@ def _generate_mac(
     return mac.hexdigest()
 
 
+def _send_get_request(api_url: str, retry: bool = False) -> requests.Response:
+    """Call Synapse API using requests.get with retry and timeout.
+
+    Args:
+        api_url: URL to be requested.
+        retry: call URL with a retry. Default is False.
+
+    Raises:
+        NetworkError: if there was an error fetching the api_url.
+
+    Returns:
+        Response from calling the URL.
+    """
+    try:
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=3,
+        )
+        if retry:
+            session.mount("http://", HTTPAdapter(max_retries=retries))
+        res = session.get(api_url, timeout=10)
+        res.raise_for_status()
+        session.close()
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
+    return res
+
+
 def _get_nonce() -> str:
     """Get nonce.
 
@@ -161,32 +181,16 @@ def _get_nonce() -> str:
         The nonce returned by Synapse API.
 
     Raises:
-        NetworkError: if there was an error fetching the nonce.
-        GetNonceError: if there was an error while getting nonce.
+        GetNonceError: if there was an error while reading nonce.
     """
+    res = _send_get_request(REGISTER_URL)
     try:
-        res = requests.get(REGISTER_URL, timeout=5)
-        res.raise_for_status()
-        res_json = res.json()
-        if not isinstance(res_json, dict):
-            # Exception not in docstring because is captured.
-            raise GetNonceError(f"Response has unexpected encode: {res_json}")  # noqa: DCO053
-        nonce = res_json.get("nonce", None)
-        if nonce is None:
-            # Exception not in docstring because is captured.
-            raise NonceNotFoundError(  # noqa: DCO053
-                f"There is no nonce in JSON output: {res_json}"
-            )
-        return nonce
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
-    except (GetNonceError, requests.exceptions.JSONDecodeError) as exc:
-        logger.exception("Failed to get nonce: %r", exc)
+        nonce = res.json()["nonce"]
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode nonce: %r. Received: %s", exc, res.text)
         raise GetNonceError(str(exc)) from exc
+
+    return nonce
 
 
 def get_version() -> str:
@@ -204,43 +208,18 @@ def get_version() -> str:
         The version returned by Synapse API.
 
     Raises:
-        NetworkError: if there was an error fetching the version.
         GetVersionError: if there was an error while reading version.
     """
+    res = _send_get_request(VERSION_URL, retry=True)
     try:
-        session = Session()
-        retries = Retry(
-            total=3,
-            backoff_factor=3,
-        )
-        session.mount("http://", HTTPAdapter(max_retries=retries))
-        res = session.get(VERSION_URL, timeout=10)
-        res.raise_for_status()
-        res_json = res.json()
-        if not isinstance(res_json, dict):
-            # Exception not in docstring because is captured.
-            raise VersionUnexpectedContentError(  # noqa: DCO053
-                f"Response has unexpected encode: {res_json}"
-            )
-        server_version = res_json.get("server_version", None)
-        if server_version is None:
-            # Exception not in docstring because is captured.
-            raise VersionNotFoundError(  # noqa: DCO053
-                f"There is no server_version in JSON output: {res_json}"
-            )
-        version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
-        if not version_match:
-            # Exception not in docstring because is captured.
-            raise VersionUnexpectedContentError(  # noqa: DCO053
-                f"server_version has unexpected content: {server_version}"
-            )
-        return version_match.group(1)
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", VERSION_URL, exc)
-        raise NetworkError(f"Failed to connect to {VERSION_URL}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", VERSION_URL, exc)
-        raise NetworkError(f"HTTP error from {VERSION_URL}.") from exc
-    except (GetVersionError, requests.exceptions.JSONDecodeError) as exc:
-        logger.exception("Failed to get version: %r", exc)
+        server_version = res.json()["server_version"]
+    except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
+        logger.exception("Failed to decode version: %r. Received: %s", exc, res.text)
         raise GetVersionError(str(exc)) from exc
+    version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
+    if not version_match:
+        # Exception not in docstring because is captured.
+        raise VersionUnexpectedContentError(  # noqa: DCO053
+            f"server_version has unexpected content: {server_version}"
+        )
+    return version_match.group(1)
