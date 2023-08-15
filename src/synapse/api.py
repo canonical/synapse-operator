@@ -166,11 +166,11 @@ def _send_get_request(api_url: str, retry: bool = False) -> requests.Response:
         res.raise_for_status()
         session.close()
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
+        logger.exception("Failed to connect to %s: %r", api_url, exc)
+        raise NetworkError(f"Failed to connect to {api_url}.") from exc
     except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
+        logger.exception("HTTP error from %s: %r", api_url, exc)
+        raise NetworkError(f"HTTP error from {api_url}.") from exc
     return res
 
 
