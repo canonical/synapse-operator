@@ -66,11 +66,11 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 2
 
 # pylint: disable=wrong-import-position
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import ops
 from pydantic import AnyHttpUrl, BaseModel, Field
@@ -94,13 +94,13 @@ class SamlEndpoint(BaseModel):
     binding: str = Field(..., min_length=1)
     response_url: Optional[AnyHttpUrl]
 
-    def to_relation_data(self) -> Dict[str, str]:
+    def to_relation_data(self) -> dict[str, str]:
         """Convert an instance of SamlEndpoint to the relation representation.
 
         Returns:
             Dict containing the representation.
         """
-        result: Dict[str, str] = {}
+        result: dict[str, str] = {}
         # Get the HTTP method from the SAML binding
         http_method = self.binding.split(":")[-1].split("-")[-1].lower()
         # Transform name into snakecase
@@ -113,7 +113,7 @@ class SamlEndpoint(BaseModel):
         return result
 
     @classmethod
-    def from_relation_data(cls, relation_data: Dict[str, str]) -> "SamlEndpoint":
+    def from_relation_data(cls, relation_data: dict[str, str]) -> "SamlEndpoint":
         """Initialize a new instance of the SamlEndpoint class from the relation data.
 
         Args:
@@ -155,10 +155,10 @@ class SamlRelationData(BaseModel):
 
     entity_id: str = Field(..., min_length=1)
     metadata_url: AnyHttpUrl
-    certificates: List[str]
-    endpoints: List[SamlEndpoint]
+    certificates: list[str]
+    endpoints: list[SamlEndpoint]
 
-    def to_relation_data(self) -> Dict[str, str]:
+    def to_relation_data(self) -> dict[str, str]:
         """Convert an instance of SamlDataAvailableEvent to the relation representation.
 
         Returns:
@@ -197,13 +197,13 @@ class SamlDataAvailableEvent(ops.RelationEvent):
         return parse_obj_as(AnyHttpUrl, self.relation.data[self.relation.app].get("metadata_url"))
 
     @property
-    def certificates(self) -> Tuple[str, ...]:
+    def certificates(self) -> tuple[str, ...]:
         """Fetch the SAML certificates from the relation."""
         assert self.relation.app
         return tuple(self.relation.data[self.relation.app].get("x509certs").split(","))
 
     @property
-    def endpoints(self) -> Tuple[SamlEndpoint, ...]:
+    def endpoints(self) -> tuple[SamlEndpoint, ...]:
         """Fetch the SAML endpoints from the relation."""
         assert self.relation.app
         relation_data = self.relation.data[self.relation.app]
@@ -263,7 +263,9 @@ class SamlRequires(ops.Object):
         """
         if not self.charm.unit.is_leader():
             return
-        self.on.saml_data_available.emit(event.relation, app=event.app, unit=event.unit)
+        assert event.relation.app
+        if event.relation.data[event.relation.app]:
+            self.on.saml_data_available.emit(event.relation, app=event.app, unit=event.unit)
 
 
 class SamlProvides(ops.Object):
@@ -285,7 +287,7 @@ class SamlProvides(ops.Object):
         self.relation_name = relation_name
 
     @property
-    def relations(self) -> List[ops.Relation]:
+    def relations(self) -> list[ops.Relation]:
         """The list of Relation instances associated with this relation_name.
 
         Returns:
