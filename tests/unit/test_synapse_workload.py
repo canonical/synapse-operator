@@ -95,6 +95,7 @@ def test_enable_saml_success(harness_with_saml: Harness, monkeypatch: pytest.Mon
     metadata_url = saml_relation_data.get("metadata_url")
     expected_config_content = {
         "listeners": [{"type": "http", "port": 8080, "bind_addresses": ["::"]}],
+        "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
                 "metadata": {"remote": [{"url": metadata_url}]},
