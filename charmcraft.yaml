@@ -16,5 +16,5 @@ parts:
   charm:
     charm-binary-python-packages:
     - cargo
-    - psycopg2-binary==2.9.6
+    - psycopg2-binary==2.9.7
     - rustc
