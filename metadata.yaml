@@ -8,7 +8,7 @@ description: |
   A charm for the matrix synapse chat server.
   Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
   This charm is useful if you want to spin up your own chat instance.
-docs: ""
+docs: https://discourse.charmhub.io/t/synapse-documentation-overview/11579
 issues: https://github.com/canonical/synapse-operator/issues
 maintainers:
   - launchpad.net/~canonical-is-devops
