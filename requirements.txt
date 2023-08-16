@@ -2,5 +2,5 @@ jsonschema == 4.17.3
 ops >= 2.4.1
 pydantic ==1.10.12
 ops-lib-pgsql >= 1.4
-psycopg2-binary == 2.9.6
+psycopg2-binary ==2.9.7
 requests>=2,<3
