@@ -66,7 +66,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 2
+LIBPATCH = 3
 
 # pylint: disable=wrong-import-position
 import re
@@ -106,10 +106,10 @@ class SamlEndpoint(BaseModel):
         # Transform name into snakecase
         lowercase_name = re.sub(r"(?<!^)(?=[A-Z])", "_", self.name).lower()
         prefix = f"{lowercase_name}_{http_method}_"
-        result[f"{prefix}url"] = self.url
+        result[f"{prefix}url"] = str(self.url)
         result[f"{prefix}binding"] = self.binding
         if self.response_url:
-            result[f"{prefix}response_url"] = self.response_url
+            result[f"{prefix}response_url"] = str(self.response_url)
         return result
 
     @classmethod
@@ -166,7 +166,7 @@ class SamlRelationData(BaseModel):
         """
         result = {
             "entity_id": self.entity_id,
-            "metadata_url": self.metadata_url,
+            "metadata_url": str(self.metadata_url),
             "x509certs": ",".join(self.certificates),
         }
         for endpoint in self.endpoints:
@@ -261,8 +261,6 @@ class SamlRequires(ops.Object):
         Args:
             event: event triggering this handler.
         """
-        if not self.charm.unit.is_leader():
-            return
         assert event.relation.app
         if event.relation.data[event.relation.app]:
             self.on.saml_data_available.emit(event.relation, app=event.app, unit=event.unit)
