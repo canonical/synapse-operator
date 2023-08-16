@@ -65,16 +65,14 @@ def synapse_app_name_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
-    ops_test: OpsTest,
     synapse_app_name: str,
     synapse_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
-    postgresql_app: Application,
     postgresql_app_name: str,
 ):
-    """Build and deploy the Synapse charm."""
+    """Build and deploy the Synapse and PostgreSQL charms."""
     resources = {
         "synapse-image": synapse_image,
     }
@@ -84,12 +82,13 @@ async def synapse_app_fixture(
         application_name=synapse_app_name,
         series="jammy",
         config={"server_name": server_name},
+        trust=True,
     )
-    async with ops_test.fast_forward():
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
-        await model.wait_for_idle(wait_for_active=True, status=ACTIVE_STATUS_NAME)
-    return app
+    await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
+    await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+    await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
+    await model.wait_for_idle(wait_for_active=True, status=ACTIVE_STATUS_NAME)
+    yield app
 
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ips")
@@ -132,7 +131,6 @@ def traefik_app_name_fixture() -> str:
 async def traefik_app_fixture(
     ops_test: OpsTest,
     model: Model,
-    synapse_app,
     traefik_app_name: str,
     external_hostname: str,
 ):
@@ -148,7 +146,7 @@ async def traefik_app_fixture(
             },
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-    return app
+    yield app
 
 
 @pytest.fixture(scope="module", name="nginx_integrator_app_name")
@@ -161,7 +159,6 @@ def nginx_integrator_app_name_fixture() -> str:
 async def nginx_integrator_app_fixture(
     ops_test: OpsTest,
     model: Model,
-    synapse_app,
     nginx_integrator_app_name: str,
 ):
     """Deploy nginx-ingress-integrator."""
@@ -172,10 +169,10 @@ async def nginx_integrator_app_fixture(
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-    return app
+    yield app
 
 
-@pytest_asyncio.fixture(scope="function", name="another_synapse_app")
+@pytest.fixture(scope="module", name="another_synapse_app")
 async def another_synapse_app_fixture(
     model: Model, synapse_app: Application, server_name: str, another_server_name: str
 ):
@@ -197,18 +194,6 @@ async def another_synapse_app_fixture(
 def postgresql_app_name_app_name_fixture() -> str:
     """Return the name of the postgresql application deployed for tests."""
     return "postgresql-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="postgresql_app")
-async def postgresql_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    postgresql_app_name: str,
-):
-    """Deploy postgresql."""
-    async with ops_test.fast_forward():
-        await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
 
 @pytest.fixture(scope="module", name="grafana_app_name")
@@ -233,7 +218,7 @@ async def grafana_app_fixture(
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
 
-    return app
+    yield app
 
 
 @pytest.fixture(scope="module", name="prometheus_app_name")
@@ -258,7 +243,7 @@ async def prometheus_app_fixture(
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
 
-    return app
+    yield app
 
 
 @pytest.fixture(scope="module", name="saml_integrator_app_name")
@@ -290,4 +275,4 @@ async def saml_integrator_app_fixture(
             "metadata_url": metadata_url,
         }
     )
-    return app
+    yield app
