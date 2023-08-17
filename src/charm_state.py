@@ -25,6 +25,7 @@ if typing.TYPE_CHECKING:
 KNOWN_CHARM_CONFIG = (
     "server_name",
     "report_stats",
+    "public_baseurl",
 )
 
 
@@ -50,10 +51,12 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     Attrs:
         server_name: server_name config.
         report_stats: report_stats config.
+        public_baseurl: public_baseurl config.
     """
 
     server_name: str | None = Field(..., min_length=2)
     report_stats: str | None = Field(None)
+    public_baseurl: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -86,6 +89,7 @@ class CharmState:
     Attrs:
         server_name: server_name config.
         report_stats: report_stats config.
+        public_baseurl: public_baseurl config.
         datasource: datasource information.
         saml_config: saml configuration.
     """
@@ -125,6 +129,15 @@ class CharmState:
             str: report_stats config as yes or no.
         """
         return self._synapse_config.report_stats
+
+    @property
+    def public_baseurl(self) -> typing.Optional[str]:
+        """Return public_baseurl config.
+
+        Returns:
+            str: public_baseurl config.
+        """
+        return self._synapse_config.public_baseurl
 
     @property
     def datasource(self) -> typing.Union[DatasourcePostgreSQL, None]:

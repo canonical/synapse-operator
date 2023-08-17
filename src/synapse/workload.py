@@ -189,6 +189,8 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
     try:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
+        if charm_state.public_baseurl is not None:
+            current_yaml["public_baseurl"] = charm_state.public_baseurl
         current_yaml["saml2_enabled"] = True
         current_yaml["saml2_config"] = {}
         current_yaml["saml2_config"]["sp_config"] = _create_pysaml2_config(charm_state)

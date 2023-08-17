@@ -13,3 +13,9 @@ options:
       Configures whether to report statistics.
     default: false
     type: boolean
+  public_baseurl:
+    type: string
+    description: |
+      The public-facing base URL that clients use to access this Homeserver.
+      Defaults to https://<server_name>/. Only used if there is integration with
+      SAML integrator charm.
