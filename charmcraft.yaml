@@ -14,5 +14,8 @@ bases:
       channel: "22.04"
 parts:
   charm:
+    build-packages:
+    - cargo
+    - rustc
     charm-binary-python-packages:
-      - psycopg2-binary==2.9.7
+    - psycopg2-binary==2.9.7
