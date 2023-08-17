@@ -209,6 +209,7 @@ def get_version() -> str:
 
     Raises:
         GetVersionError: if there was an error while reading version.
+        VersionUnexpectedContentError: if the version has unexpected content.
     """
     res = _send_get_request(VERSION_URL, retry=True)
     try:
@@ -218,8 +219,7 @@ def get_version() -> str:
         raise GetVersionError(str(exc)) from exc
     version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
     if not version_match:
-        # Exception not in docstring because is captured.
-        raise VersionUnexpectedContentError(  # noqa: DCO053
+        raise VersionUnexpectedContentError(
             f"server_version has unexpected content: {server_version}"
         )
     return version_match.group(1)
