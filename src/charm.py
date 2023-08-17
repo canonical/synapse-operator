@@ -76,8 +76,6 @@ class SynapseCharm(ops.CharmBase):
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
             self.pebble_service.change_config(container)
-            if self._charm_state.saml_config is not None:
-                self.pebble_service.enable_saml(container)
         except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return

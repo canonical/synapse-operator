@@ -65,6 +65,7 @@ class SAMLObserver(Object):
     def _on_saml_data_available(self, _: SamlDataAvailableEvent) -> None:
         """Handle SAML data available."""
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SAML integration")
+        logger.debug("_on_saml_data_available: Enabling SAML")
         self._enable_saml()
 
     def get_relation_as_saml_conf(self) -> typing.Optional[SAMLConfiguration]:

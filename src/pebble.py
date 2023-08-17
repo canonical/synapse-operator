@@ -49,14 +49,20 @@ class PebbleService:
         """
         self._charm_state = charm_state
 
-    def replan(self, container: ops.model.Container) -> None:
+    def replan(self, container: ops.model.Container, restart: bool = False) -> None:
         """Replan the pebble service.
 
         Args:
             container: Charm container.
+            restart: Force restart of the container. Default: False.
         """
+        logger.debug("Replaning the container")
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
+        logger.debug("Replaned")
+        if restart:
+            container.restart(SYNAPSE_SERVICE_NAME)
+            logger.debug("Restarted")
 
     def change_config(self, container: ops.model.Container) -> None:
         """Change the configuration.
@@ -70,6 +76,9 @@ class PebbleService:
         try:
             synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
             synapse.enable_metrics(container=container)
+            if self._charm_state.saml_config is not None:
+                logger.debug("pebble.change_config: Enabling SAML")
+                synapse.enable_saml(container=container, charm_state=self._charm_state)
             self.replan(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
@@ -84,8 +93,10 @@ class PebbleService:
             PebbleServiceError: if something goes wrong while interacting with Pebble.
         """
         try:
+            logger.debug("pebble.enable_saml: Enabling SAML")
             synapse.enable_saml(container=container, charm_state=self._charm_state)
-            self.replan(container)
+            # replan does nothing if there is no change in the plan so we force restart
+            self.replan(container, restart=True)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
 
