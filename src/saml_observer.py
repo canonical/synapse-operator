@@ -16,6 +16,7 @@ from ops.framework import Object
 
 from charm_types import SAMLConfiguration
 from constants import SYNAPSE_CONTAINER_NAME
+from pebble import PebbleServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class SAMLObserver(Object):
             return
         try:
             self._pebble_service.enable_saml(container)
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except PebbleServiceError as exc:
             self._charm.model.unit.status = ops.BlockedStatus(f"SAML integration failed: {exc}")
             return
         self._charm.unit.status = ops.ActiveStatus()

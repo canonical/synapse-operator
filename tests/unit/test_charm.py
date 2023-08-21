@@ -20,6 +20,7 @@ from constants import (
     SYNAPSE_SERVICE_NAME,
     TEST_SERVER_NAME,
 )
+from pebble import PebbleServiceError
 
 
 def test_synapse_pebble_layer(harness_server_name_configured: Harness) -> None:
@@ -175,9 +176,7 @@ def test_saml_integration_pebble_error(
     harness = harness_with_saml
     harness.set_leader(True)
     relation = harness.charm.framework.model.get_relation("saml", 0)
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    enable_saml_mock = MagicMock(side_effect=path_error)
+    enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
     monkeypatch.setattr(harness.charm.saml._pebble_service, "enable_saml", enable_saml_mock)
     harness.charm.saml.saml.on.saml_data_available.emit(relation)
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
