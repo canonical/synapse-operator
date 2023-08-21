@@ -294,7 +294,7 @@ async def saml_integrator_app_fixture(
         await model.wait_for_idle()
     entity_id = "https://login.staging.ubuntu.com"
     metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    await app.set_config(  # type: ignore[attr-defined]
+    await app.set_config(
         {
             "entity_id": entity_id,
             "metadata_url": metadata_url,
