@@ -20,6 +20,7 @@ from constants import (
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
     SYNAPSE_CONFIG_PATH,
+    SYNAPSE_NGINX_PORT,
     SYNAPSE_PORT,
 )
 
@@ -82,6 +83,20 @@ def check_ready() -> typing.Dict:
     check.override = "replace"
     check.level = "ready"
     check.tcp = {"port": SYNAPSE_PORT}
+    # _CheckDict cannot be imported
+    return check.to_dict()  # type: ignore
+
+
+def check_nginx_ready() -> typing.Dict:
+    """Return the Synapse NGINX container check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.tcp = {"port": SYNAPSE_NGINX_PORT}
     # _CheckDict cannot be imported
     return check.to_dict()  # type: ignore
 
@@ -191,6 +206,18 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         current_yaml = yaml.safe_load(config)
         if charm_state.public_baseurl is not None:
             current_yaml["public_baseurl"] = charm_state.public_baseurl
+        # enable x_forwarded to pass expected headers
+        current_listeners = current_yaml["listeners"]
+        updated_listeners = [
+            {
+                **item,
+                "x_forwarded": True
+                if "x_forwarded" in item and not item["x_forwarded"]
+                else item.get("x_forwarded", False),
+            }
+            for item in current_listeners
+        ]
+        current_yaml["listeners"] = updated_listeners
         current_yaml["saml2_enabled"] = True
         current_yaml["saml2_config"] = {}
         current_yaml["saml2_config"]["sp_config"] = _create_pysaml2_config(charm_state)

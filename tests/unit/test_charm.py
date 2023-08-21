@@ -15,7 +15,8 @@ from ops.testing import Harness
 from constants import (
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONTAINER_NAME,
-    SYNAPSE_PORT,
+    SYNAPSE_NGINX_CONTAINER_NAME,
+    SYNAPSE_NGINX_PORT,
     SYNAPSE_SERVICE_NAME,
     TEST_SERVER_NAME,
 )
@@ -76,6 +77,19 @@ def test_container_down(harness_server_name_configured: Harness) -> None:
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
 
+def test_replan_nginx_container_down(harness_server_name_configured: Harness) -> None:
+    """
+    arrange: Mock container as down.
+    act: start the Synapse charm, set server_name, set NGINX Synapse container to be down
+        and then try to change report_stats.
+    assert: Synapse charm should submit the correct status.
+    """
+    harness = harness_server_name_configured
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_NGINX_CONTAINER_NAME], False)
+    harness.update_config({"report_stats": True})
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+    assert "Waiting for" in str(harness.model.unit.status)
+
 
 def test_server_name_empty(harness: Harness) -> None:
     """
@@ -112,7 +126,7 @@ def test_traefik_integration(harness_server_name_configured: Harness) -> None:
         "host": f"{app_name}-endpoints.{model_name}.svc.cluster.local",
         "model": model_name,
         "name": app_name,
-        "port": str(SYNAPSE_PORT),
+        "port": str(SYNAPSE_NGINX_PORT),
         "strip-prefix": "true",
     }
 

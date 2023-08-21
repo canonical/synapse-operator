@@ -14,7 +14,7 @@ from juju.model import Model
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
-from constants import SYNAPSE_PORT
+from constants import SYNAPSE_NGINX_PORT
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -35,7 +35,9 @@ async def test_synapse_is_up(
     assert: the Synapse application should return a correct response.
     """
     for unit_ip in await get_unit_ips(synapse_app.name):
-        response = requests.get(f"http://{unit_ip}:{SYNAPSE_PORT}/_matrix/static/", timeout=5)
+        response = requests.get(
+            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+        )
         assert response.status_code == 200
         assert "Welcome to the Matrix" in response.text
 
@@ -226,7 +228,7 @@ async def test_register_user_action(
     data = {"type": "m.login.password", "user": username, "password": password}
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = requests.post(
-            f"http://{unit_ip}:{SYNAPSE_PORT}/_matrix/client/r0/login", json=data, timeout=5
+            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_matrix/client/r0/login", json=data, timeout=5
         )
         assert response.status_code == 200
         assert response.json()["access_token"]
@@ -251,6 +253,6 @@ async def test_saml_integration(
 
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = requests.get(
-            f"http://{unit_ip}:{SYNAPSE_PORT}/_synapse/client/saml2/metadata.xml", timeout=5
+            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml", timeout=5
         )
         assert response.status_code == 200

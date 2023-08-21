@@ -16,7 +16,7 @@ from ops.main import main
 
 import actions
 from charm_state import CharmConfigInvalidError, CharmState
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
+from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_NGINX_CONTAINER_NAME, SYNAPSE_NGINX_PORT
 from database_observer import DatabaseObserver
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
@@ -50,11 +50,11 @@ class SynapseCharm(ops.CharmBase):
             charm=self,
             service_hostname=self.app.name,
             service_name=self.app.name,
-            service_port=SYNAPSE_PORT,
+            service_port=SYNAPSE_NGINX_PORT,
         )
         self._ingress = IngressPerAppRequirer(
             self,
-            port=SYNAPSE_PORT,
+            port=SYNAPSE_NGINX_PORT,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
@@ -66,6 +66,20 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+
+    def replan_nginx(self) -> None:
+        """Replan NGINX."""
+        container = self.unit.get_container(SYNAPSE_NGINX_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse NGINX")
+        try:
+            self.pebble_service.replan_nginx(container)
+        except PebbleServiceError as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            return
+        self.model.unit.status = ops.ActiveStatus()
 
     def change_config(self, _: ops.HookEvent) -> None:
         """Change configuration."""
@@ -79,7 +93,7 @@ class SynapseCharm(ops.CharmBase):
         except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
-        self.model.unit.status = ops.ActiveStatus()
+        self.replan_nginx()
 
     def _on_config_changed(self, event: ops.HookEvent) -> None:
         """Handle changed configuration.

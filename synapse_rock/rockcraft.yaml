@@ -5,7 +5,7 @@ name: synapse
 summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
 version: "1.0"
-base: bare
+base: ubuntu:22.04
 build-base: ubuntu:22.04
 license: Apache-2.0
 platforms:

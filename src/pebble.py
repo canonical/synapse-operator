@@ -59,10 +59,18 @@ class PebbleService:
         logger.debug("Replaning the container")
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
-        logger.debug("Replaned")
         if restart:
             container.restart(SYNAPSE_SERVICE_NAME)
             logger.debug("Restarted")
+
+    def replan_nginx(self, container: ops.model.Container) -> None:
+        """Replan Synapse NGINX service.
+
+        Args:
+            container: Charm container.
+        """
+        container.add_layer("synapse-nginx", self._nginx_pebble_layer, combine=True)
+        container.replan()
 
     def change_config(self, container: ops.model.Container) -> None:
         """Change the configuration.
@@ -154,3 +162,27 @@ class PebbleService:
         ignore = {CHECK_READY_NAME: "ignore"}
         new_layer["services"][SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
         return new_layer
+
+    @property
+    def _nginx_pebble_layer(self) -> ops.pebble.LayerDict:
+        """Generate pebble config for the synapse-nginx container.
+
+        Returns:
+            The pebble configuration for the NGINX container.
+        """
+        layer = {
+            "summary": "Synapse nginx layer",
+            "description": "Synapse nginx layer",
+            "services": {
+                "synapse-nginx": {
+                    "override": "replace",
+                    "summary": "Nginx service",
+                    "command": "/usr/sbin/nginx",
+                    "startup": "enabled",
+                },
+            },
+            "checks": {
+                "nginx-ready": synapse.check_nginx_ready(),
+            },
+        }
+        return typing.cast(ops.pebble.LayerDict, layer)

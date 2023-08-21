@@ -22,6 +22,7 @@ from constants import (
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
+    SYNAPSE_NGINX_CONTAINER_NAME,
     TEST_SERVER_NAME,
 )
 
@@ -117,6 +118,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_NGINX_CONTAINER_NAME], True)
     synapse_container.make_dir("/data", make_parents=True)
     # unused-variable disabled to pass constants values to inner function
     command_path = SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable

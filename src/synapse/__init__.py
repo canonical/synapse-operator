@@ -8,6 +8,7 @@ from .api import APIError, register_user  # noqa: F401
 from .workload import (  # noqa: F401
     ExecResult,
     WorkloadError,
+    check_nginx_ready,
     check_ready,
     enable_metrics,
     enable_saml,

@@ -57,6 +57,14 @@ def synapse_image_fixture(pytestconfig: Config):
     return synapse_image
 
 
+@pytest_asyncio.fixture(scope="module", name="synapse_nginx_image")
+def synapse_nginx_image_fixture(pytestconfig: Config):
+    """Get value from parameter synapse-nginx-image."""
+    synapse_nginx_image = pytestconfig.getoption("--synapse-nginx-image")
+    assert synapse_nginx_image, "--synapse-image must be set"
+    return synapse_nginx_image
+
+
 @pytest_asyncio.fixture(scope="module", name="synapse_app_name")
 def synapse_app_name_fixture() -> str:
     """Get Synapse application name."""
@@ -68,6 +76,7 @@ async def synapse_app_fixture(
     ops_test: OpsTest,
     synapse_app_name: str,
     synapse_image: str,
+    synapse_nginx_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
@@ -77,6 +86,7 @@ async def synapse_app_fixture(
     """Build and deploy the Synapse charm."""
     resources = {
         "synapse-image": synapse_image,
+        "synapse-nginx-image": synapse_nginx_image,
     }
     app = await model.deploy(
         f"./{synapse_charm}",
