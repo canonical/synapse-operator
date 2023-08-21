@@ -4,6 +4,7 @@
 """This module defines constants used throughout the Synapse application."""
 
 CHECK_READY_NAME = "synapse-ready"
+CHECK_ALIVE_NAME = "synapse-alive"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
 PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_CONFIG_DIR = "/data"

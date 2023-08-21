@@ -85,7 +85,7 @@ class DatabaseClient:
                     ).format(sql.Literal(self._database_name))
                 )
         except psycopg2.Error as exc:
-            logger.error("Failed to prepare database: %s", str(exc))
+            logger.exception("Failed to prepare database: %r", exc)
             raise
         finally:
             self._close()
@@ -111,7 +111,7 @@ class DatabaseClient:
                     ).format(sql.Identifier(self._database_name))
                 )
         except psycopg2.Error as exc:
-            logger.error("Failed to erase database: %s", str(exc))
+            logger.exception("Failed to erase database: %r", exc)
             raise
         finally:
             self._close()

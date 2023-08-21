@@ -3,7 +3,9 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm."""
+import json
 import logging
+import re
 import typing
 
 import pytest
@@ -14,7 +16,8 @@ from juju.model import Model
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
-from constants import SYNAPSE_NGINX_PORT
+from constants import SYNAPSE_NGINX_PORT, SYNAPSE_PORT
+from synapse.api import SYNAPSE_VERSION_REGEX
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -256,3 +259,28 @@ async def test_saml_integration(
             f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml", timeout=5
         )
         assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_workload_version(
+    ops_test: OpsTest,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: a deployed Synapse charm.
+    act: get status from Juju.
+    assert: the workload version is set and match the one given by Synapse API request.
+    """
+    _, status, _ = await ops_test.juju("status", "--format", "json")
+    status = json.loads(status)
+    juju_workload_version = status["applications"][synapse_app.name].get("version", "")
+    assert juju_workload_version
+    for unit_ip in await get_unit_ips(synapse_app.name):
+        res = requests.get(
+            f"http://{unit_ip}:{SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
+        )
+        server_version = res.json()["server_version"]
+        version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
+        assert version_match
+        assert version_match.group(1) == juju_workload_version

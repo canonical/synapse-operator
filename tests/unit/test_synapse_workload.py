@@ -95,7 +95,9 @@ def test_enable_saml_success(harness_with_saml: Harness, monkeypatch: pytest.Mon
     entity_id = saml_relation_data.get("entity_id")
     metadata_url = saml_relation_data.get("metadata_url")
     expected_config_content = {
-        "listeners": [{"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}],
+        "listeners": [
+            {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
+        ],
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {

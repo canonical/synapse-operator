@@ -24,6 +24,8 @@ from constants import (
     SYNAPSE_PORT,
 )
 
+from .api import VERSION_URL
+
 logger = logging.getLogger(__name__)
 
 
@@ -73,8 +75,8 @@ class ExecResult(typing.NamedTuple):
     stderr: str
 
 
-def check_ready() -> typing.Dict:
-    """Return the Synapse container check.
+def check_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse container ready check.
 
     Returns:
         Dict: check object converted to its dict representation.
@@ -82,9 +84,21 @@ def check_ready() -> typing.Dict:
     check = Check(CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
+    check.http = {"url": VERSION_URL}
+    return check.to_dict()
+
+
+def check_alive() -> ops.pebble.CheckDict:
+    """Return the Synapse container alive check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_READY_NAME)
+    check.override = "replace"
+    check.level = "alive"
     check.tcp = {"port": SYNAPSE_PORT}
-    # _CheckDict cannot be imported
-    return check.to_dict()  # type: ignore
+    return check.to_dict()
 
 
 def check_nginx_ready() -> typing.Dict:
@@ -265,8 +279,8 @@ def reset_instance(container: ops.Container) -> None:
         if "device or resource busy" in str(path_error):
             pass
         else:
-            logger.error(
-                "exception while erasing directory %s: %s", SYNAPSE_CONFIG_DIR, path_error
+            logger.exception(
+                "exception while erasing directory %s: %r", SYNAPSE_CONFIG_DIR, path_error
             )
             raise
 
@@ -373,8 +387,8 @@ def _get_configuration_field(container: ops.Container, fieldname: str) -> typing
                 SYNAPSE_CONFIG_PATH,
             )
             return None
-        logger.error(
-            "exception while reading configuration file %s: %s",
+        logger.exception(
+            "exception while reading configuration file %s: %r",
             SYNAPSE_CONFIG_PATH,
             path_error,
         )

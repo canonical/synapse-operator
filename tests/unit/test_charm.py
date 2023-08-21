@@ -24,7 +24,7 @@ from constants import (
 
 def test_synapse_pebble_layer(harness_server_name_configured: Harness) -> None:
     """
-    arrange: none
+    arrange: charm deployed.
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should submit the correct Synapse pebble layer to pebble.
     """
@@ -55,7 +55,7 @@ def test_synapse_pebble_layer(harness_server_name_configured: Harness) -> None:
 )
 def test_synapse_migrate_config_error(harness_server_name_configured: Harness) -> None:
     """
-    arrange: none
+    arrange: charm deployed.
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
@@ -66,7 +66,7 @@ def test_synapse_migrate_config_error(harness_server_name_configured: Harness) -
 
 def test_container_down(harness_server_name_configured: Harness) -> None:
     """
-    arrange: none
+    arrange: charm deployed.
     act: start the Synapse charm, set server_name, set Synapse container to be down
         and then try to change report_stats.
     assert: Synapse charm should submit the correct status.
@@ -76,6 +76,7 @@ def test_container_down(harness_server_name_configured: Harness) -> None:
     harness.update_config({"report_stats": True})
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
+
 
 def test_replan_nginx_container_down(harness_server_name_configured: Harness) -> None:
     """
@@ -93,7 +94,7 @@ def test_replan_nginx_container_down(harness_server_name_configured: Harness) ->
 
 def test_server_name_empty(harness: Harness) -> None:
     """
-    arrange: none
+    arrange: charm deployed.
     act: start the Synapse charm and set Synapse container to be ready.
     assert: Synapse charm waits for server_name to be set.
     """

@@ -10,9 +10,12 @@
 import hashlib
 import hmac
 import logging
+import re
 import typing
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from user import User
 
@@ -20,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 SYNAPSE_URL = "http://localhost:8008"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
+VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
+SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 
 
 class APIError(Exception):
@@ -30,7 +35,7 @@ class APIError(Exception):
     """
 
     def __init__(self, msg: str):
-        """Initialize a new instance of the RegisterUserError exception.
+        """Initialize a new instance of the APIError exception.
 
         Args:
             msg (str): Explanation of the error.
@@ -38,12 +43,20 @@ class APIError(Exception):
         self.msg = msg
 
 
-class RegisterUserError(APIError):
-    """Exception raised when registering user via API fails."""
-
-
 class NetworkError(APIError):
     """Exception raised when requesting API fails due network issues."""
+
+
+class GetNonceError(APIError):
+    """Exception raised when getting nonce via API fails."""
+
+
+class GetVersionError(APIError):
+    """Exception raised when getting version via API fails."""
+
+
+class VersionUnexpectedContentError(GetVersionError):
+    """Exception raised when output of getting version is unexpected."""
 
 
 def register_user(registration_shared_secret: str, user: User) -> None:
@@ -58,7 +71,6 @@ def register_user(registration_shared_secret: str, user: User) -> None:
     """
     # get nonce
     nonce = _get_nonce()
-
     # generate mac
     hex_mac = _generate_mac(
         shared_secret=registration_shared_secret,
@@ -67,6 +79,7 @@ def register_user(registration_shared_secret: str, user: User) -> None:
         password=user.password,
         admin=user.admin,
     )
+    # build data
     data = {
         "nonce": nonce,
         "username": user.username,
@@ -78,13 +91,12 @@ def register_user(registration_shared_secret: str, user: User) -> None:
     try:
         res = requests.post(REGISTER_URL, json=data, timeout=5)
         res.raise_for_status()
-    except (
-        requests.exceptions.ConnectionError,
-        requests.exceptions.Timeout,
-        requests.exceptions.HTTPError,
-    ) as exc:
-        logger.error("Failed to request %s : %s", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
+        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
 
 
 def _generate_mac(
@@ -129,6 +141,39 @@ def _generate_mac(
     return mac.hexdigest()
 
 
+def _send_get_request(api_url: str, retry: bool = False) -> requests.Response:
+    """Call Synapse API using requests.get with retry and timeout.
+
+    Args:
+        api_url: URL to be requested.
+        retry: call URL with a retry. Default is False.
+
+    Raises:
+        NetworkError: if there was an error fetching the api_url.
+
+    Returns:
+        Response from calling the URL.
+    """
+    try:
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=3,
+        )
+        if retry:
+            session.mount("http://", HTTPAdapter(max_retries=retries))
+        res = session.get(api_url, timeout=10)
+        res.raise_for_status()
+        session.close()
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", api_url, exc)
+        raise NetworkError(f"Failed to connect to {api_url}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", api_url, exc)
+        raise NetworkError(f"HTTP error from {api_url}.") from exc
+    return res
+
+
 def _get_nonce() -> str:
     """Get nonce.
 
@@ -136,16 +181,45 @@ def _get_nonce() -> str:
         The nonce returned by Synapse API.
 
     Raises:
-        NetworkError: if there was an error fetching the nonce.
+        GetNonceError: if there was an error while reading nonce.
     """
+    res = _send_get_request(REGISTER_URL)
     try:
-        res = requests.get(REGISTER_URL, timeout=5)
-        res.raise_for_status()
-        return res.json()["nonce"]
-    except (
-        requests.exceptions.ConnectionError,
-        requests.exceptions.Timeout,
-        requests.exceptions.HTTPError,
-    ) as exc:
-        logger.error("Failed to request %s : %s", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to request {REGISTER_URL}.") from exc
+        nonce = res.json()["nonce"]
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode nonce: %r. Received: %s", exc, res.text)
+        raise GetNonceError(str(exc)) from exc
+
+    return nonce
+
+
+def get_version() -> str:
+    """Get version.
+
+    Expected API output:
+    {
+        "server_version": "0.99.2rc1 (b=develop, abcdef123)",
+        "python_version": "3.7.8"
+    }
+
+    We're using retry here because after the config change, Synapse is restarted.
+
+    Returns:
+        The version returned by Synapse API.
+
+    Raises:
+        GetVersionError: if there was an error while reading version.
+        VersionUnexpectedContentError: if the version has unexpected content.
+    """
+    res = _send_get_request(VERSION_URL, retry=True)
+    try:
+        server_version = res.json()["server_version"]
+    except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
+        logger.exception("Failed to decode version: %r. Received: %s", exc, res.text)
+        raise GetVersionError(str(exc)) from exc
+    version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
+    if not version_match:
+        raise VersionUnexpectedContentError(
+            f"server_version has unexpected content: {server_version}"
+        )
+    return version_match.group(1)

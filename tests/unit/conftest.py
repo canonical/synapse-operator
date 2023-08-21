@@ -164,8 +164,9 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
 
 
 @pytest.fixture(name="harness_server_name_configured")
-def harness_server_name_configured_fixture(harness: Harness) -> Harness:
+def harness_server_name_configured_fixture(harness: Harness, monkeypatch) -> Harness:
     """Ops testing framework harness fixture with server_name already configured."""
+    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     harness.disable_hooks()
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.enable_hooks()
