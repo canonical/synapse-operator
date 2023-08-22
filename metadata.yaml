@@ -31,7 +31,7 @@ resources:
     description: OCI image for Synapse
   synapse-nginx-image:
     type: oci-image
-    description: Docker image for nginx Synapse
+    description: OCI image for Synapse NGINX
     auto-fetch: true
 
 storage:

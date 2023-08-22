@@ -1,3 +1,6 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 name: synapse-nginx
 summary: synapse nginx rock
 description: Nginx OCI image for the synapse charm

@@ -101,7 +101,7 @@ def check_alive() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def check_nginx_ready() -> typing.Dict:
+def check_nginx_ready() -> ops.pebble.CheckDict:
     """Return the Synapse NGINX container check.
 
     Returns:
@@ -111,8 +111,7 @@ def check_nginx_ready() -> typing.Dict:
     check.override = "replace"
     check.level = "ready"
     check.tcp = {"port": SYNAPSE_NGINX_PORT}
-    # _CheckDict cannot be imported
-    return check.to_dict()  # type: ignore
+    return check.to_dict()
 
 
 def execute_migrate_config(container: ops.Container, charm_state: CharmState) -> None:
