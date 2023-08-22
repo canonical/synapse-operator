@@ -36,7 +36,9 @@ def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
     monkeypatch.setattr(container_mock, "push", push_mock)
+
     synapse.enable_metrics(container_mock)
+
     assert pull_mock.call_args[0][0] == SYNAPSE_CONFIG_PATH
     assert push_mock.call_args[0][0] == SYNAPSE_CONFIG_PATH
     expected_config_content = {
@@ -60,6 +62,7 @@ def test_enable_metrics_error(monkeypatch: pytest.MonkeyPatch):
     pull_mock = MagicMock(side_effect=path_error)
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
+
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_metrics(container_mock)
 
@@ -85,7 +88,9 @@ def test_enable_saml_success(harness_with_saml: Harness, monkeypatch: pytest.Mon
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
     monkeypatch.setattr(container_mock, "push", push_mock)
+
     synapse.enable_saml(container_mock, harness.charm._charm_state)
+
     assert pull_mock.call_args[0][0] == SYNAPSE_CONFIG_PATH
     assert push_mock.call_args[0][0] == SYNAPSE_CONFIG_PATH
     saml_relation = harness.model.get_relation("saml")
@@ -125,5 +130,6 @@ def test_enable_saml_error(harness_with_saml: Harness, monkeypatch: pytest.Monke
     pull_mock = MagicMock(side_effect=path_error)
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
+
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_saml(container_mock, harness.charm._charm_state)

@@ -115,6 +115,7 @@ def test_traefik_integration(harness_server_name_configured: Harness) -> None:
     harness.container_pebble_ready(SYNAPSE_CONTAINER_NAME)
     relation_id = harness.add_relation("ingress", "traefik")
     harness.add_relation_unit(relation_id, "traefik/0")
+
     app_name = harness.charm.app.name
     model_name = harness.model.name
     url = f"http://ingress:80/{model_name}-{app_name}"
@@ -123,6 +124,7 @@ def test_traefik_integration(harness_server_name_configured: Harness) -> None:
         "traefik",
         {"ingress": json.dumps({"url": url})},
     )
+
     app_data = harness.get_relation_data(relation_id, app_name)
     assert app_data == {
         "host": f"{app_name}-endpoints.{model_name}.svc.cluster.local",
@@ -146,7 +148,9 @@ def test_saml_integration_container_restart(
     container = MagicMock()
     container_restart = MagicMock()
     monkeypatch.setattr(container, "restart", container_restart)
+
     harness.charm.pebble_service.enable_saml(container)
+
     container_restart.assert_called_once()
 
 
@@ -160,7 +164,9 @@ def test_saml_integration_container_down(harness_with_saml: Harness) -> None:
     harness.set_leader(True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     relation = harness.charm.framework.model.get_relation("saml", 0)
+
     harness.charm.saml.saml.on.saml_data_available.emit(relation)
+
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
 
@@ -178,7 +184,9 @@ def test_saml_integration_pebble_error(
     relation = harness.charm.framework.model.get_relation("saml", 0)
     enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
     monkeypatch.setattr(harness.charm.saml._pebble_service, "enable_saml", enable_saml_mock)
+
     harness.charm.saml.saml.on.saml_data_available.emit(relation)
+
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "SAML integration failed" in str(harness.model.unit.status)
 
@@ -190,5 +198,6 @@ def test_server_name_change(harness_server_name_changed: Harness) -> None:
     assert: Synapse charm should prevent the change with a BlockStatus.
     """
     harness = harness_server_name_changed
+
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)

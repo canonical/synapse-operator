@@ -24,8 +24,10 @@ def test_reset_instance_action(harness_server_name_changed: Harness) -> None:
     harness = harness_server_name_changed
     harness.set_leader(True)
     event = unittest.mock.Mock()
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
+
     assert event.set_results.call_count == 1
     event.set_results.assert_called_with({"reset-instance": True})
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
@@ -41,8 +43,10 @@ def test_reset_instance_action_container_down(harness_server_name_changed: Harne
     harness.set_leader(True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     event = unittest.mock.Mock()
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
+
     assert event.set_results.call_count == 0
     assert event.fail.call_count == 1
 
@@ -63,8 +67,10 @@ def test_reset_instance_action_failed(harness_server_name_changed: Harness) -> N
     harness = harness_server_name_changed
     harness.set_leader(True)
     event = unittest.mock.Mock()
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
+
     assert event.set_results.call_count == 0
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "Migrate config failed" in str(harness.model.unit.status)
@@ -85,8 +91,10 @@ def test_reset_instance_action_path_error_blocked(
         return_value=container_with_path_error_blocked
     )
     event = unittest.mock.MagicMock()
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
+
     assert container_with_path_error_blocked.remove_path.call_count == 1
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "Error erasing" in str(harness.model.unit.status)
@@ -114,8 +122,10 @@ def test_reset_instance_action_path_error_pass(
         return_value=container_with_path_error_pass
     )
     event = unittest.mock.MagicMock()
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
+
     assert container_with_path_error_pass.remove_path.call_count == 1
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 

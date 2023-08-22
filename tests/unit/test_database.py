@@ -35,7 +35,9 @@ def test_erase_database(harness_with_postgresql: Harness, monkeypatch: pytest.Mo
     cursor_mock.execute.side_effect = None
     monkeypatch.setattr(db_client, "_connect", unittest.mock.MagicMock())
     db_client._conn = conn_mock
+
     db_client.erase()
+
     conn_mock.cursor.assert_called()
     calls = [
         unittest.mock.call(sql.Composed([sql.SQL("DROP DATABASE "), sql.Identifier("synapse")])),
@@ -69,6 +71,7 @@ def test_erase_database_error(
     cursor_mock.execute.side_effect = psycopg2.Error(error_msg)
     monkeypatch.setattr(db_client, "_connect", unittest.mock.MagicMock())
     db_client._conn = conn_mock
+
     with pytest.raises(psycopg2.Error):
         db_client.erase()
 
@@ -90,7 +93,9 @@ def test_connect(
     mock_connection.autocommit = True
     connect_mock = unittest.mock.MagicMock(return_value=mock_connection)
     monkeypatch.setattr("psycopg2.connect", connect_mock)
+
     db_client._connect()
+
     query = (
         "dbname='synapse' user='user' host='myhost' "
         f"password='{datasource_postgresql_password}' connect_timeout=5"
