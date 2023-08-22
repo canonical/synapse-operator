@@ -107,7 +107,7 @@ def test_enable_saml_success(harness_with_saml: Harness, monkeypatch: pytest.Mon
         "saml2_config": {
             "sp_config": {
                 "metadata": {"remote": [{"url": metadata_url}]},
-                "service": {"sp": {"allow_unsolicited": True}},
+                "service": {"sp": {"entityId": "https://server-name-configured.synapse.com"}},
                 "name": [entity_id, "en"],
             },
             "user_mapping_provider": {

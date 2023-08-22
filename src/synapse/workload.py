@@ -196,7 +196,7 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
         },
         "service": {
             "sp": {
-                "allow_unsolicited": True,
+                "entityId": f"https://{charm_state.server_name}",
             },
         },
         "name": [saml_config["entity_id"], "en"],

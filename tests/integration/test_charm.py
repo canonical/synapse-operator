@@ -6,10 +6,13 @@
 import json
 import logging
 import re
+import socket
 import typing
+from unittest.mock import patch
 
 import pytest
 import requests
+import urllib3.exceptions
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -235,30 +238,6 @@ async def test_register_user_action(
 
 
 @pytest.mark.asyncio
-async def test_saml_integration(
-    model: Model,
-    synapse_app: Application,
-    saml_integrator_app,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-):
-    """
-    arrange: after Synapse and SAML Integrator charms has been deployed.
-    act: establish relations with SAML charm.
-    assert: Metadata.xml should be present indicating that SAML is enabled.
-    """
-    await model.add_relation(saml_integrator_app.name, synapse_app.name)
-    await model.wait_for_idle(
-        apps=[synapse_app.name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME
-    )
-
-    for unit_ip in await get_unit_ips(synapse_app.name):
-        response = requests.get(
-            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml", timeout=5
-        )
-        assert response.status_code == 200
-
-
-@pytest.mark.asyncio
 async def test_workload_version(
     ops_test: OpsTest,
     synapse_app: Application,
@@ -281,3 +260,86 @@ async def test_workload_version(
         version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
         assert version_match
         assert version_match.group(1) == juju_workload_version
+
+
+@pytest.mark.asyncio
+@pytest.mark.requires_secrets
+async def test_saml_auth(  # pylint: disable=too-many-locals
+    model: Model,
+    synapse_app: Application,
+    saml_integrator_app,
+    saml_email: str,
+    saml_password: str,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: after Synapse and SAML Integrator charms has been deployed and related.
+    act: configure public_baseurl, a SAML target url and fire SAML authentication.
+    assert: The SAML authentication process is executed successfully.
+    """
+    await model.add_relation(saml_integrator_app.name, synapse_app.name)
+    await model.wait_for_idle(
+        apps=[synapse_app.name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME
+    )
+    for unit_ip in await get_unit_ips(synapse_app.name):
+        response = requests.get(
+            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml", timeout=5
+        )
+        assert response.status_code == 200
+    public_baseurl = "https://chat.staging.canonical.com"
+    # The linter does not recognize set_config as a method, so this errors must be ignored.
+    await synapse_app.set_config(  # type: ignore[attr-defined] # pylint: disable=W0106
+        {
+            "public_baseurl": public_baseurl,
+        }
+    )
+    await model.wait_for_idle(status="active")
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    original_getaddrinfo = socket.getaddrinfo
+
+    def patched_getaddrinfo(*args):
+        """Get address info forcing localhost as the IP.
+
+        Args:
+            args: Arguments from the getaddrinfo original method.
+
+        Returns:
+            Address information with localhost as the patched IP.
+        """
+        if args[0] == public_baseurl:
+            return original_getaddrinfo("127.0.0.1", *args[1:])
+        return original_getaddrinfo(*args)
+
+    requests_timeout = 10
+    with patch.multiple(socket, getaddrinfo=patched_getaddrinfo), requests.session() as session:
+        redirect_path = "_matrix/client/r0/login/sso/redirect/saml?redirectUrl="
+        login_page = session.get(
+            f"https://{public_baseurl}/{redirect_path}http%3A%2F%2F{public_baseurl}%2F",
+            verify=False,
+            timeout=requests_timeout,
+            allow_redirects=True,
+        )
+        csrf_token_matches = re.findall(
+            "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", login_page.text
+        )
+        assert csrf_token_matches, login_page.text
+        saml_callback = session.post(
+            "https://login.staging.ubuntu.com/+login",
+            data={
+                "csrfmiddlewaretoken": csrf_token_matches[0],
+                "email": saml_email,
+                "user-intentions": "login",
+                "password": saml_password,
+                "next": "/saml/process",
+                "continue": "",
+                "openid.usernamesecret": "",
+                "RelayState": public_baseurl,
+            },
+            headers={"Referer": login_page.url},
+            timeout=requests_timeout,
+        )
+        saml_response_matches = re.findall(
+            '<input type="hidden" name="SAMLResponse" value="([^"]+)" />', saml_callback.text
+        )
+        assert len(saml_response_matches), saml_callback.text
+        # WIP
