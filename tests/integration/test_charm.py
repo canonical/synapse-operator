@@ -45,12 +45,11 @@ async def test_synapse_is_up(
         assert "Welcome to the Matrix" in response.text
 
 
-@pytest.mark.usefixtures("synapse_app")
+@pytest.mark.usefixtures("synapse_app", "prometheus_app")
 async def test_prometheus_integration(
     model: Model,
     prometheus_app_name: str,
     synapse_app_name: str,
-    prometheus_app,  # pylint: disable=unused-argument
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -69,14 +68,12 @@ async def test_prometheus_integration(
         assert len(query_targets["data"]["activeTargets"])
 
 
-@pytest.mark.usefixtures("synapse_app")
+@pytest.mark.usefixtures("synapse_app", "prometheus_app", "grafana_app")
 async def test_grafana_integration(
     model: Model,
     synapse_app_name: str,
     prometheus_app_name: str,
-    prometheus_app,  # pylint: disable=unused-argument
     grafana_app_name: str,
-    grafana_app,  # pylint: disable=unused-argument
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -241,7 +238,7 @@ async def test_register_user_action(
 async def test_saml_integration(
     model: Model,
     synapse_app: Application,
-    saml_integrator_app,  # pylint: disable=unused-argument
+    saml_integrator_app,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
