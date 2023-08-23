@@ -150,7 +150,7 @@ class SynapseCharm(ops.CharmBase):
                 container=container, charm_state=self._charm_state, datasource=datasource
             )
             logger.info("Start Synapse")
-            self.pebble_service.replan(container)
+            self.pebble_service.restart_synapse(container)
             results["reset-instance"] = True
         except (PebbleServiceError, actions.ResetInstanceError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))

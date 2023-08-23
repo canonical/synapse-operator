@@ -50,19 +50,17 @@ class PebbleService:
         """
         self._charm_state = charm_state
 
-    def replan(self, container: ops.model.Container, restart: bool = False) -> None:
-        """Replan the pebble service.
+    def restart_synapse(self, container: ops.model.Container) -> None:
+        """Restart Synapse service.
+
+        This will force a restart even if its plan hasn't changed.
 
         Args:
-            container: Charm container.
-            restart: Force restart of the container. Default: False.
+            container: Synapse container.
         """
-        logger.debug("Replaning the container")
+        logger.debug("Restarting the Synapse container")
         container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
-        container.replan()
-        if restart:
-            container.restart(SYNAPSE_SERVICE_NAME)
-            logger.debug("Restarted")
+        container.restart(SYNAPSE_SERVICE_NAME)
 
     def replan_nginx(self, container: ops.model.Container) -> None:
         """Replan Synapse NGINX service.
@@ -88,8 +86,7 @@ class PebbleService:
             if self._charm_state.saml_config is not None:
                 logger.debug("pebble.change_config: Enabling SAML")
                 synapse.enable_saml(container=container, charm_state=self._charm_state)
-            # replan will restart the charm because there is change in the plan
-            self.replan(container)
+            self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
 
@@ -105,8 +102,7 @@ class PebbleService:
         try:
             logger.debug("pebble.enable_saml: Enabling SAML")
             synapse.enable_saml(container=container, charm_state=self._charm_state)
-            # replan does nothing if there is no change in the plan so we force restart
-            self.replan(container, restart=True)
+            self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
 
