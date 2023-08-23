@@ -352,7 +352,7 @@ def _exec(
     Returns:
         ExecResult: An `ExecResult` object representing the result of the command execution.
     """
-    exec_process = container.exec(command, environment=environment)
+    exec_process = container.exec(command, environment=environment, working_dir=SYNAPSE_CONFIG_DIR)
     try:
         stdout, stderr = exec_process.wait_output()
         return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
