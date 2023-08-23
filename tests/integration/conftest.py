@@ -15,6 +15,8 @@ from ops.model import ActiveStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
+from tests.conftest import SYNAPSE_IMAGE_PARAM, SYNAPSE_NGINX_IMAGE_PARAM
+
 # caused by pytest fixtures, mark does not work in fixtures
 # pylint: disable=too-many-arguments, unused-argument
 
@@ -52,16 +54,16 @@ async def synapse_charm_fixture(pytestconfig: Config):
 @pytest_asyncio.fixture(scope="module", name="synapse_image")
 def synapse_image_fixture(pytestconfig: Config):
     """Get value from parameter synapse-image."""
-    synapse_image = pytestconfig.getoption("--synapse-image")
-    assert synapse_image, "--synapse-image must be set"
+    synapse_image = pytestconfig.getoption(SYNAPSE_IMAGE_PARAM)
+    assert synapse_image, f"{SYNAPSE_IMAGE_PARAM} must be set"
     return synapse_image
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_nginx_image")
 def synapse_nginx_image_fixture(pytestconfig: Config):
     """Get value from parameter synapse-nginx-image."""
-    synapse_nginx_image = pytestconfig.getoption("--synapse-nginx-image")
-    assert synapse_nginx_image, "--synapse-image must be set"
+    synapse_nginx_image = pytestconfig.getoption(SYNAPSE_NGINX_IMAGE_PARAM)
+    assert synapse_nginx_image, f"{SYNAPSE_NGINX_IMAGE_PARAM} must be set"
     return synapse_nginx_image
 
 
