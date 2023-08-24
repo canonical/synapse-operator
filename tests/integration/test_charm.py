@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm."""
+import html
 import json
 import logging
 import re
@@ -263,30 +264,52 @@ async def test_workload_version(
 
 
 @pytest.mark.asyncio
-@pytest.mark.requires_secrets
+@pytest.mark.usefixtures("nginx_integrator_app")
 async def test_saml_auth(  # pylint: disable=too-many-locals
     model: Model,
     synapse_app: Application,
     saml_integrator_app,
-    saml_email: str,
-    saml_password: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    nginx_integrator_app_name: str,
+    synapse_app_name: str,
 ):
     """
-    arrange: after Synapse and SAML Integrator charms has been deployed and related.
-    act: configure public_baseurl, a SAML target url and fire SAML authentication.
+    arrange: integrate Synapse with SAML and NGINX charms, upload metadata to samltest.id
+        and configure public_baseurl.
+    act: simulate a user authenticating via SAML.
     assert: The SAML authentication process is executed successfully.
     """
+    requests_timeout = 10
+    await model.add_relation(
+        f"{synapse_app.name}:nginx-route", f"{nginx_integrator_app_name}:nginx-route"
+    )
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+
+    response = requests.get(
+        "http://127.0.0.1/_matrix/static/",
+        headers={"Host": synapse_app_name},
+        timeout=requests_timeout,
+    )
+    assert response.status_code == 200
     await model.add_relation(saml_integrator_app.name, synapse_app.name)
     await model.wait_for_idle(
         apps=[synapse_app.name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME
     )
+    saml_test_url = "https://samltest.id"
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = requests.get(
-            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml", timeout=5
+            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml",
+            timeout=requests_timeout,
         )
         assert response.status_code == 200
-    public_baseurl = "https://chat.staging.canonical.com"
+        samltest_upload_url = f"{saml_test_url}/upload.php"
+        files = {"samlfile": ("metadata.xml", response.content)}
+        headers = {"Content-type": "multipart/form-data; boundary=FILEUPLOAD"}
+        upload_response = requests.post(
+            samltest_upload_url, files=files, headers=headers, timeout=requests_timeout
+        )
+        assert upload_response.status_code == 200
+    public_baseurl = f"http://{synapse_app_name}"
     # The linter does not recognize set_config as a method, so this errors must be ignored.
     await synapse_app.set_config(  # type: ignore[attr-defined] # pylint: disable=W0106
         {
@@ -294,6 +317,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         }
     )
     await model.wait_for_idle(status="active")
+
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     original_getaddrinfo = socket.getaddrinfo
 
@@ -310,36 +334,65 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
             return original_getaddrinfo("127.0.0.1", *args[1:])
         return original_getaddrinfo(*args)
 
-    requests_timeout = 10
     with patch.multiple(socket, getaddrinfo=patched_getaddrinfo), requests.session() as session:
-        redirect_path = "_matrix/client/r0/login/sso/redirect/saml?redirectUrl="
-        login_page = session.get(
-            f"https://{public_baseurl}/{redirect_path}http%3A%2F%2F{public_baseurl}%2F",
+        session = requests.Session()
+        login_page = session.get(f"{public_baseurl}/_matrix/client/r0/login")
+        assert login_page.status_code == 200
+        saml_page_path = "_matrix/client/r0/login/sso/redirect/saml"
+        saml_page_params = "redirectUrl=http%3A%2F%2Flocalhost%2F&org.matrix.msc3824.action=login"
+        saml_page = session.get(
+            f"{public_baseurl}/{saml_page_path}?{saml_page_params}",
             verify=False,
             timeout=requests_timeout,
             allow_redirects=True,
         )
-        csrf_token_matches = re.findall(
-            "<input type='hidden' name='csrfmiddlewaretoken' value='([^']+)' />", login_page.text
-        )
-        assert csrf_token_matches, login_page.text
-        saml_callback = session.post(
-            "https://login.staging.ubuntu.com/+login",
-            data={
-                "csrfmiddlewaretoken": csrf_token_matches[0],
-                "email": saml_email,
-                "user-intentions": "login",
-                "password": saml_password,
-                "next": "/saml/process",
-                "continue": "",
-                "openid.usernamesecret": "",
-                "RelayState": public_baseurl,
-            },
-            headers={"Referer": login_page.url},
+        assert saml_page.status_code == 302
+        payload_e1s1 = {"j_username": "rick", "j_password": "psych", "_eventId_proceed": ""}
+        header_user = {
+            "User-Agent": "Mozilla/5.0 (X11; "
+            "Ubuntu; Linux x86_64; rv:73.0) Gecko/20100101 Firefox/73.0"
+        }
+        sso_execution_e1s1 = session.post(
+            f"{saml_test_url}/idp/profile/SAML2/Redirect/SSO?execution=e1s1",
+            headers=header_user,
+            verify=False,
             timeout=requests_timeout,
+            allow_redirects=True,
+            data=payload_e1s1,
         )
-        saml_response_matches = re.findall(
-            '<input type="hidden" name="SAMLResponse" value="([^"]+)" />', saml_callback.text
+        assert sso_execution_e1s1.status_code == 200
+        payload_e1s2 = {
+            "j_username": "rick",
+            "j_password": "psych",
+            "_eventId_proceed": "Accept",
+            "_shib_idp_consentOptions": "_shib_idp_globalConsent",
+        }
+        sso_execution_e1s2 = session.post(
+            f"{saml_test_url}/idp/profile/SAML2/Redirect/SSO?execution=e1s2",
+            headers=header_user,
+            verify=False,
+            timeout=requests_timeout,
+            allow_redirects=True,
+            data=payload_e1s2,
         )
-        assert len(saml_response_matches), saml_callback.text
-        # WIP
+        assert sso_execution_e1s2.status_code == 200
+        action_re = re.compile(r'<form action="([^"]*)" method="post">')
+        relay_state_re = re.compile('<input type="hidden" name="RelayState" value="([^"]*)"/>')
+        saml_response_re = re.compile('<input type="hidden" name="SAMLResponse" value="([^"]*)"/>')
+        # Match[str] is indexable.
+        relay_state = relay_state_re.search(sso_execution_e1s2.text)[1]  # type: ignore[index]
+        saml_response = saml_response_re.search(sso_execution_e1s2.text)[1]  # type: ignore[index]
+        logged_user = session.post(
+            html.unescape(action_re.search(sso_execution_e1s2.text)[1]),  # type: ignore[index]
+            headers=header_user,
+            verify=False,
+            timeout=requests_timeout,
+            allow_redirects=True,
+            data={
+                "RelayState": html.unescape(relay_state),
+                "SAMLResponse": html.unescape(saml_response),
+            },
+        )
+
+        assert logged_user.status_code == 200
+        assert "Continue to your account" in logged_user.text
