@@ -120,11 +120,10 @@ listeners:
                 "metadata": {
                     "remote": [{"url": "https://login.staging.ubuntu.com/saml/metadata"}]
                 },
-                "service": {"sp": {"entityId": "https://server-name-configured.synapse.com"}},
-                "name": ["https://login.staging.ubuntu.com", "en"],
+                "service": {"sp": {"entityId": "https://login.staging.ubuntu.com"}},
             },
             "user_mapping_provider": {
-                "config": {"mxid_source_attribute": "username", "mxid_mapping": "dotreplace"}
+                "config": {"mxid_source_attribute": "uid", "mxid_mapping": "dotreplace"}
             },
         },
     }

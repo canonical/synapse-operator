@@ -196,10 +196,9 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
         },
         "service": {
             "sp": {
-                "entityId": f"https://{charm_state.server_name}",
+                "entityId": saml_config["entity_id"],
             },
         },
-        "name": [saml_config["entity_id"], "en"],
     }
     return sp_config
 
@@ -236,7 +235,7 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         current_yaml["saml2_config"]["sp_config"] = _create_pysaml2_config(charm_state)
         user_mapping_provider_config = {
             "config": {
-                "mxid_source_attribute": "username",
+                "mxid_source_attribute": "uid",
                 "mxid_mapping": "dotreplace",
             },
         }
