@@ -335,7 +335,6 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         return original_getaddrinfo(*args)
 
     with patch.multiple(socket, getaddrinfo=patched_getaddrinfo), requests.session() as session:
-        session = requests.Session()
         login_page = session.get(f"{public_baseurl}/_matrix/client/r0/login")
         assert login_page.status_code == 200
         saml_page_path = "_matrix/client/r0/login/sso/redirect/saml"
