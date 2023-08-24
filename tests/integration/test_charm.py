@@ -157,9 +157,7 @@ async def test_nginx_route_integration(
     act: relate the nginx-integrator charm with the Synapse charm.
     assert: requesting the charm through nginx-integrator should return a correct response.
     """
-    await model.add_relation(
-        f"{synapse_app_name}:nginx-route", f"{nginx_integrator_app_name}:nginx-route"
-    )
+    await model.add_relation(f"{synapse_app_name}", f"{nginx_integrator_app_name}")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
     response = requests.get(
@@ -280,9 +278,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
     assert: The SAML authentication process is executed successfully.
     """
     requests_timeout = 10
-    await model.add_relation(
-        f"{synapse_app.name}:nginx-route", f"{nginx_integrator_app_name}:nginx-route"
-    )
+    await model.add_relation(f"{synapse_app.name}", f"{nginx_integrator_app_name}")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
     response = requests.get(
