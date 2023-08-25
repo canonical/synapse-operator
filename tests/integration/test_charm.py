@@ -280,7 +280,6 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
     requests_timeout = 10
     await model.add_relation(f"{synapse_app.name}", f"{nginx_integrator_app_name}")
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-
     response = requests.get(
         "http://127.0.0.1/_matrix/static/",
         headers={"Host": synapse_app_name},

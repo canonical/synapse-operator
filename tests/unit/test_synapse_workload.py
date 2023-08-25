@@ -120,10 +120,20 @@ listeners:
                 "metadata": {
                     "remote": [{"url": "https://login.staging.ubuntu.com/saml/metadata"}]
                 },
-                "service": {"sp": {"entityId": "https://login.staging.ubuntu.com"}},
+                "service": {
+                    "sp": {
+                        "entityId": "https://login.staging.ubuntu.com",
+                        "allow_unsolicited": True,
+                    }
+                },
+                "allow_unknown_attributes": True,
             },
             "user_mapping_provider": {
-                "config": {"mxid_source_attribute": "uid", "mxid_mapping": "dotreplace"}
+                "config": {
+                    "grandfathered_mxid_source_attribute": "uid",
+                    "mxid_source_attribute": "uid",
+                    "mxid_mapping": "dotreplace",
+                }
             },
         },
     }

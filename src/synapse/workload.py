@@ -194,12 +194,20 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
                 },
             ],
         },
+        "allow_unknown_attributes": True,
         "service": {
             "sp": {
                 "entityId": saml_config["entity_id"],
+                "allow_unsolicited": True,
             },
         },
     }
+    # login.staging.canonical.com and login.canonical.com
+    # dont send uid in SAMLResponse so this will map
+    # fullname to uid
+    if "canonical.com" in saml_config["metadata_url"]:
+        sp_config["attribute_map_dir"] = "/data/attributemaps"
+
     return sp_config
 
 
@@ -236,6 +244,7 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         user_mapping_provider_config = {
             "config": {
                 "mxid_source_attribute": "uid",
+                "grandfathered_mxid_source_attribute": "uid",
                 "mxid_mapping": "dotreplace",
             },
         }
