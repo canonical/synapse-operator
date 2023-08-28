@@ -182,6 +182,7 @@ async def nginx_integrator_app_fixture(
             "nginx-ingress-integrator",
             application_name=nginx_integrator_app_name,
             trust=True,
+            channel="latest/edge",
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
     return app
@@ -240,7 +241,7 @@ async def grafana_app_fixture(
         app = await model.deploy(
             "grafana-k8s",
             application_name=grafana_app_name,
-            channel="latest/stable",
+            channel="1.0/edge",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
@@ -265,7 +266,7 @@ async def deploy_prometheus_fixture(
         app = await model.deploy(
             "prometheus-k8s",
             application_name=prometheus_app_name,
-            channel="latest/stable",
+            channel="1.0/edge",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
