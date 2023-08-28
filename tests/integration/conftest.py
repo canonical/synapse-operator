@@ -141,35 +141,6 @@ def external_hostname_fixture() -> str:
     return "juju.test"
 
 
-@pytest.fixture(scope="module", name="traefik_app_name")
-def traefik_app_name_fixture() -> str:
-    """Return the name of the traefix application deployed for tests."""
-    return "traefik-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="traefik_app")
-async def traefik_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    synapse_app,
-    traefik_app_name: str,
-    external_hostname: str,
-):
-    """Deploy traefik."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            "traefik-k8s",
-            application_name=traefik_app_name,
-            trust=True,
-            config={
-                "external_hostname": external_hostname,
-                "routing_mode": "subdomain",
-            },
-        )
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-    return app
-
-
 @pytest.fixture(scope="module", name="nginx_integrator_app_name")
 def nginx_integrator_app_name_fixture() -> str:
     """Return the name of the nginx integrator application deployed for tests."""
