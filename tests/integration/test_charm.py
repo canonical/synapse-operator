@@ -282,6 +282,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
     saml_integrator_app: Application = await model.deploy(
         "saml-integrator",
         channel="latest/edge",
+        series="jammy",
         trust=True,
     )
     await model.wait_for_idle()
