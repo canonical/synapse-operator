@@ -320,13 +320,13 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         )
         assert redirect_response.status_code == 302
         redirect_url = redirect_response.headers["Location"]
-        next_request = saml_helper.sso_login(redirect_url)
-        assert f"https://{server_name}" in next_request.url
-        next_request.url = next_request.url.replace(
+        saml_response = saml_helper.redirect_sso_login(redirect_url)
+        assert f"https://{server_name}" in saml_response.url
+        
+        url = saml_response.url.replace(
             f"https://{server_name}", f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}"
         )
-        next_request.headers["Host"] = server_name
-        logged_user = session.send(next_request.prepare())
+        logged_in_page = session.post(url, data=saml_response.data, headers={"Host": server_name})
 
-        assert logged_user.status_code == 200
-        assert "Continue to your account" in logged_user.text
+        assert logged_in_page.status_code == 200
+        assert "Continue to your account" in logged_in_page.text
