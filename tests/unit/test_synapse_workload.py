@@ -78,7 +78,7 @@ def test_enable_saml_success():
     # https://github.com/canonical/synapse-operator/pull/19#discussion_r1302486670
     # Arrange: set up harness and container filesystem
     harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     relation_id = harness.add_relation("saml", "saml-integrator")
     harness.add_relation_unit(relation_id, "saml-integrator/0")
     harness.update_relation_data(
@@ -114,6 +114,7 @@ listeners:
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
         ],
+        "public_baseurl": TEST_SERVER_NAME,
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
