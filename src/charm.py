@@ -78,7 +78,8 @@ class SynapseCharm(ops.CharmBase):
         try:
             self.pebble_service.replan_nginx(container)
         except PebbleServiceError as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
+            logger.error("Error replanning nginx, %s", exc)
+            self.model.unit.status = ops.BlockedStatus("Failed to replan NGINX")
             return
         self.model.unit.status = ops.ActiveStatus()
 
@@ -115,7 +116,6 @@ class SynapseCharm(ops.CharmBase):
             event: Event triggering after config is changed.
         """
         self.change_config(event)
-        logger.debug("Setting workload in config-changed event")
         self._set_workload_version()
 
     def _on_pebble_ready(self, event: ops.HookEvent) -> None:
