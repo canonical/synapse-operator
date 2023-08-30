@@ -11,39 +11,32 @@ license: Apache-2.0
 platforms:
   amd64:
 parts:
-    install-node:
-        plugin: nil
-        source: .
-        build-environment:
-            - NODE_VERSION: "16.20.2"
-            - ARCH: "x64"
-        overlay-script: |
-            node_uri="https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.gz"
-            curl -Ls $node_uri | tar xzf - -C $CRAFT_OVERLAY/ --skip-old-files --no-same-owner --strip-components=1
-    install-yarn:
-        plugin: nil
-        after:
-            - install-node
-        source: .
-        build-environment:
-            - YARN_VERSION: "1.22.19"
-            - ARCH: "x64"
-        overlay-script: |
-            yarn_uri="https://github.com/yarnpkg/yarn/releases/download/v${YARN_VERSION}/yarn-v${YARN_VERSION}.tar.gz"
-            curl -Ls $yarn_uri | tar xzf - -C $CRAFT_OVERLAY/ --skip-old-files --no-same-owner --strip-components=1
-    mjolnir:
+    node:
         plugin: dump
-        after:
-            - install-yarn
+        source: https://nodejs.org/dist/v16.20.2/node-v16.20.2-linux-x64.tar.xz
+        stage:
+            - bin
+            - include
+            - lib
+    install-mjolnir:
+        after: [node]
+        plugin: nil
         source: https://github.com/matrix-org/mjolnir.git
-        source-depth: 1
         source-tag: v1.6.4
         source-type: git
         build-environment:
-            - ENV NODE_ENV: "production"
-            - ENV NODE_CONFIG_DIR: "/data/config"
+            - NODE_VERSION: "16.20.2"
+            - YARN_VERSION: "1.22.19"
+            - ARCH: "x64"
         override-build: |
-            snap install typescript --edge --classic
+            #yarn_uri="https://github.com/yarnpkg/yarn/releases/download/v${YARN_VERSION}/yarn-v${YARN_VERSION}.tar.gz"
+            #curl -Ls $yarn_uri | tar xzf - -C $CRAFT_PART_BUILD/ --skip-old-files --no-same-owner --strip-components=1
+            npm config set unsafe-perm true
+            npm install -g yarn
             yarn install
             yarn build
+        organize:
+            "lib": mjolnir/lib
+            "node_modules": node_modules
+            "mjolnir-entrypoint.sh": mjolnir-entrypoint.sh
 
