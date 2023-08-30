@@ -128,7 +128,7 @@ listeners:
                     }
                 },
                 "allow_unknown_attributes": True,
-                "attribute_map_dir": "/data/attributemaps",
+                "attribute_map_dir": "/usr/local/attributemaps",
             },
             "user_mapping_provider": {
                 "config": {
