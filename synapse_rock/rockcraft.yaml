@@ -5,7 +5,7 @@ name: synapse
 summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
 version: "1.0"
-base: bare
+base: ubuntu:22.04
 build-base: ubuntu:22.04
 license: Apache-2.0
 platforms:
@@ -72,3 +72,10 @@ parts:
             cp -r docker/conf $CRAFT_PART_INSTALL/
             cp -r /usr/local $CRAFT_PART_INSTALL/usr/
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
+            mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
+            chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
+    synapse-conf:
+        plugin: dump
+        source: attributemaps
+        organize:
+            u1staging.py: /usr/local/attributemaps/u1staging.py

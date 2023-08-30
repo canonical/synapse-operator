@@ -1,0 +1,8 @@
+ignore_files:
+  - lib/charms/nginx_ingress_integrator/v0/nginx_route.py
+  - pyproject.toml
+  - src/grafana_dashboards/synapse.json
+  - tests/unit/test_synapse_workload.py
+rules:
+  # Ignore "grandfathered" used by SAML configuration.
+  - name: grandfathered

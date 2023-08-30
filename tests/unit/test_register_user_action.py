@@ -36,8 +36,10 @@ def test_register_user_action(
         "username": user,
         "admin": "no",
     }
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_register_user_action(event)
+
     assert event.set_results.call_count == 1
     event.set_results.assert_called_with(
         {"register-user": True, "user-password": unittest.mock.ANY}
@@ -74,8 +76,10 @@ def test_register_user_registration_none(
         "username": user,
         "admin": "no",
     }
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_register_user_action(event)
+
     assert "registration_shared_secret was not found" in event.fail_message
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
@@ -111,8 +115,10 @@ def test_register_user_action_api_error(
         "username": user,
         "admin": "no",
     }
+
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_register_user_action(event)
+
     assert fail_message in event.fail_message
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 

@@ -24,3 +24,15 @@ class DatasourcePostgreSQL(typing.TypedDict):
     host: str
     port: str
     db: str
+
+
+class SAMLConfiguration(typing.TypedDict):
+    """A named tuple representing a SAML configuration.
+
+    Attributes:
+        entity_id: SAML entity ID.
+        metadata_url: URL to the metadata.
+    """
+
+    entity_id: str
+    metadata_url: str

@@ -22,6 +22,7 @@ from constants import (
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
+    SYNAPSE_NGINX_CONTAINER_NAME,
     TEST_SERVER_NAME,
 )
 
@@ -117,6 +118,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_NGINX_CONTAINER_NAME], True)
     synapse_container.make_dir("/data", make_parents=True)
     # unused-variable disabled to pass constants values to inner function
     command_path = SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
@@ -217,6 +219,39 @@ def harness_with_postgresql_fixture(
             "endpoints": "myhost:5432",
             "username": "user",
             "password": datasource_postgresql_password,
+        },
+    )
+    harness._framework = ops.framework.Framework(
+        harness._storage, harness._charm_dir, harness._meta, harness._model
+    )
+    harness._charm = None
+    harness.enable_hooks()
+    harness.begin()
+    harness.set_leader(True)
+    return harness
+
+
+@pytest.fixture(name="harness_with_saml")
+def harness_with_saml_fixture(
+    harness_server_name_configured: Harness,
+) -> Harness:
+    """Ops testing framework harness fixture with SAML integrator relation.
+
+    This is a workaround for the fact that Harness doesn't reinitialize the charm as expected.
+    Reference: https://github.com/canonical/operator/issues/736
+    """
+    harness = harness_server_name_configured
+    harness.disable_hooks()
+    relation_id = harness.add_relation("saml", "saml-integrator")
+    harness.add_relation_unit(relation_id, "saml-integrator/0")
+    entity_id = "https://login.staging.ubuntu.com"
+    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
+    harness.update_relation_data(
+        relation_id,
+        "saml-integrator",
+        {
+            "entity_id": entity_id,
+            "metadata_url": metadata_url,
         },
     )
     harness._framework = ops.framework.Framework(

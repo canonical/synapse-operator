@@ -20,6 +20,7 @@ from constants import (
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
     SYNAPSE_CONFIG_PATH,
+    SYNAPSE_NGINX_PORT,
     SYNAPSE_PORT,
 )
 
@@ -54,6 +55,10 @@ class ServerNameModifiedError(WorkloadError):
 
 class EnableMetricsError(WorkloadError):
     """Exception raised when something goes wrong while enabling metrics."""
+
+
+class EnableSAMLError(WorkloadError):
+    """Exception raised when something goes wrong while enabling SAML."""
 
 
 class ExecResult(typing.NamedTuple):
@@ -93,6 +98,19 @@ def check_alive() -> ops.pebble.CheckDict:
     check.override = "replace"
     check.level = "alive"
     check.tcp = {"port": SYNAPSE_PORT}
+    return check.to_dict()
+
+
+def check_nginx_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse NGINX container check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.tcp = {"port": SYNAPSE_NGINX_PORT}
     return check.to_dict()
 
 
@@ -147,6 +165,93 @@ def enable_metrics(container: ops.Container) -> None:
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise EnableMetricsError(str(exc)) from exc
+
+
+def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
+    """Create config as expected by pysaml2.
+
+    Args:
+        charm_state: Instance of CharmState.
+
+    Returns:
+        Pysaml2 configuration.
+
+    Raises:
+        EnableSAMLError: if SAML configuration is not found.
+    """
+    if charm_state.saml_config is None:
+        raise EnableSAMLError(
+            "SAML Configuration not found. "
+            "Please verify the integration between SAML Integrator and Synapse."
+        )
+
+    saml_config = charm_state.saml_config
+    sp_config = {
+        "metadata": {
+            "remote": [
+                {
+                    "url": saml_config["metadata_url"],
+                },
+            ],
+        },
+        "allow_unknown_attributes": True,
+        "service": {
+            "sp": {
+                "entityId": saml_config["entity_id"],
+                "allow_unsolicited": True,
+            },
+        },
+    }
+    # login.staging.canonical.com and login.canonical.com
+    # dont send uid in SAMLResponse so this will map
+    # fullname to uid
+    if "ubuntu.com" in saml_config["metadata_url"]:
+        sp_config["attribute_map_dir"] = "/data/attributemaps"
+
+    return sp_config
+
+
+def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable SAML.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        EnableSAMLError: something went wrong enabling SAML.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        if charm_state.public_baseurl is not None:
+            current_yaml["public_baseurl"] = charm_state.public_baseurl
+        # enable x_forwarded to pass expected headers
+        current_listeners = current_yaml["listeners"]
+        updated_listeners = [
+            {
+                **item,
+                "x_forwarded": True
+                if "x_forwarded" in item and not item["x_forwarded"]
+                else item.get("x_forwarded", False),
+            }
+            for item in current_listeners
+        ]
+        current_yaml["listeners"] = updated_listeners
+        current_yaml["saml2_enabled"] = True
+        current_yaml["saml2_config"] = {}
+        current_yaml["saml2_config"]["sp_config"] = _create_pysaml2_config(charm_state)
+        user_mapping_provider_config = {
+            "config": {
+                "mxid_source_attribute": "uid",
+                "grandfathered_mxid_source_attribute": "uid",
+                "mxid_mapping": "dotreplace",
+            },
+        }
+        current_yaml["saml2_config"]["user_mapping_provider"] = user_mapping_provider_config
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise EnableSAMLError(str(exc)) from exc
 
 
 def get_registration_shared_secret(container: ops.Container) -> typing.Optional[str]:
@@ -255,7 +360,7 @@ def _exec(
     Returns:
         ExecResult: An `ExecResult` object representing the result of the command execution.
     """
-    exec_process = container.exec(command, environment=environment)
+    exec_process = container.exec(command, environment=environment, working_dir=SYNAPSE_CONFIG_DIR)
     try:
         stdout, stderr = exec_process.wait_output()
         return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
