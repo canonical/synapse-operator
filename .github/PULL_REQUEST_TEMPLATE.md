@@ -11,7 +11,7 @@ Please, provide some information about your PR before proceeding.
 
 <!-- The reason the change is needed -->
 
-## Juju Events Changes
+### Juju Events Changes
 
 <!-- Any changes to the juju events being observed (newly added, significantly modified or deleted) -->
 
