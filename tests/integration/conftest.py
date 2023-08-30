@@ -15,6 +15,8 @@ from ops.model import ActiveStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
+from tests.conftest import SYNAPSE_IMAGE_PARAM, SYNAPSE_NGINX_IMAGE_PARAM
+
 # caused by pytest fixtures, mark does not work in fixtures
 # pylint: disable=too-many-arguments, unused-argument
 
@@ -41,6 +43,13 @@ async def model_fixture(ops_test: OpsTest) -> Model:
     return ops_test.model
 
 
+@pytest_asyncio.fixture(scope="module", name="model_name")
+async def model_name_fixture(ops_test: OpsTest) -> str:
+    """Return the current testing juju model name."""
+    assert ops_test.model_name
+    return ops_test.model_name
+
+
 @pytest_asyncio.fixture(scope="module", name="synapse_charm")
 async def synapse_charm_fixture(pytestconfig: Config):
     """Get value from parameter charm-file."""
@@ -52,9 +61,17 @@ async def synapse_charm_fixture(pytestconfig: Config):
 @pytest_asyncio.fixture(scope="module", name="synapse_image")
 def synapse_image_fixture(pytestconfig: Config):
     """Get value from parameter synapse-image."""
-    synapse_image = pytestconfig.getoption("--synapse-image")
-    assert synapse_image, "--synapse-image must be set"
+    synapse_image = pytestconfig.getoption(SYNAPSE_IMAGE_PARAM)
+    assert synapse_image, f"{SYNAPSE_IMAGE_PARAM} must be set"
     return synapse_image
+
+
+@pytest_asyncio.fixture(scope="module", name="synapse_nginx_image")
+def synapse_nginx_image_fixture(pytestconfig: Config):
+    """Get value from parameter synapse-nginx-image."""
+    synapse_nginx_image = pytestconfig.getoption(SYNAPSE_NGINX_IMAGE_PARAM)
+    assert synapse_nginx_image, f"{SYNAPSE_NGINX_IMAGE_PARAM} must be set"
+    return synapse_nginx_image
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_app_name")
@@ -68,6 +85,7 @@ async def synapse_app_fixture(
     ops_test: OpsTest,
     synapse_app_name: str,
     synapse_image: str,
+    synapse_nginx_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
@@ -77,6 +95,7 @@ async def synapse_app_fixture(
     """Build and deploy the Synapse charm."""
     resources = {
         "synapse-image": synapse_image,
+        "synapse-nginx-image": synapse_nginx_image,
     }
     app = await model.deploy(
         f"./{synapse_charm}",
@@ -122,35 +141,6 @@ def external_hostname_fixture() -> str:
     return "juju.test"
 
 
-@pytest.fixture(scope="module", name="traefik_app_name")
-def traefik_app_name_fixture() -> str:
-    """Return the name of the traefix application deployed for tests."""
-    return "traefik-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="traefik_app")
-async def traefik_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    synapse_app,
-    traefik_app_name: str,
-    external_hostname: str,
-):
-    """Deploy traefik."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            "traefik-k8s",
-            application_name=traefik_app_name,
-            trust=True,
-            config={
-                "external_hostname": external_hostname,
-                "routing_mode": "subdomain",
-            },
-        )
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-    return app
-
-
 @pytest.fixture(scope="module", name="nginx_integrator_app_name")
 def nginx_integrator_app_name_fixture() -> str:
     """Return the name of the nginx integrator application deployed for tests."""
@@ -170,6 +160,7 @@ async def nginx_integrator_app_fixture(
             "nginx-ingress-integrator",
             application_name=nginx_integrator_app_name,
             trust=True,
+            channel="latest/edge",
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
     return app
@@ -228,7 +219,7 @@ async def grafana_app_fixture(
         app = await model.deploy(
             "grafana-k8s",
             application_name=grafana_app_name,
-            channel="latest/edge",
+            channel="1.0/edge",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
@@ -253,7 +244,7 @@ async def deploy_prometheus_fixture(
         app = await model.deploy(
             "prometheus-k8s",
             application_name=prometheus_app_name,
-            channel="latest/edge",
+            channel="1.0/edge",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)

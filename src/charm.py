@@ -17,10 +17,11 @@ from ops.main import main
 import actions
 import synapse
 from charm_state import CharmConfigInvalidError, CharmState
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
+from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_NGINX_CONTAINER_NAME, SYNAPSE_NGINX_PORT
 from database_observer import DatabaseObserver
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
+from saml_observer import SAMLObserver
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class SynapseCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.database = DatabaseObserver(self)
+        self.saml = SAMLObserver(self)
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
@@ -49,22 +51,37 @@ class SynapseCharm(ops.CharmBase):
             charm=self,
             service_hostname=self.app.name,
             service_name=self.app.name,
-            service_port=SYNAPSE_PORT,
+            service_port=SYNAPSE_NGINX_PORT,
         )
         self._ingress = IngressPerAppRequirer(
             self,
-            port=SYNAPSE_PORT,
+            port=SYNAPSE_NGINX_PORT,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
-        self._observability = Observability(charm=self)
+        self._observability = Observability(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+
+    def replan_nginx(self) -> None:
+        """Replan NGINX."""
+        container = self.unit.get_container(SYNAPSE_NGINX_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse NGINX")
+        try:
+            self.pebble_service.replan_nginx(container)
+        except PebbleServiceError as exc:
+            logger.error("Error replanning nginx, %s", exc)
+            self.model.unit.status = ops.BlockedStatus("Failed to replan NGINX")
+            return
+        self.model.unit.status = ops.ActiveStatus()
 
     def change_config(self, _: ops.HookEvent) -> None:
         """Change configuration."""
@@ -78,7 +95,7 @@ class SynapseCharm(ops.CharmBase):
         except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
-        self.model.unit.status = ops.ActiveStatus()
+        self.replan_nginx()
 
     def _set_workload_version(self) -> None:
         """Set workload version with Synapse version."""
@@ -99,7 +116,6 @@ class SynapseCharm(ops.CharmBase):
             event: Event triggering after config is changed.
         """
         self.change_config(event)
-        logger.debug("Setting workload in config-changed event")
         self._set_workload_version()
 
     def _on_pebble_ready(self, event: ops.HookEvent) -> None:
@@ -134,7 +150,7 @@ class SynapseCharm(ops.CharmBase):
                 container=container, charm_state=self._charm_state, datasource=datasource
             )
             logger.info("Start Synapse")
-            self.pebble_service.replan(container)
+            self.pebble_service.restart_synapse(container)
             results["reset-instance"] = True
         except (PebbleServiceError, actions.ResetInstanceError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))

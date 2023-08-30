@@ -58,7 +58,7 @@ class DatabaseObserver(Object):
         """
         return getattr(self._charm, "pebble_service", None)
 
-    def _change_config(self, _: ops.HookEvent) -> None:
+    def _change_config(self) -> None:
         """Change the configuration."""
         container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
@@ -72,12 +72,8 @@ class DatabaseObserver(Object):
             return
         self._charm.unit.status = ops.ActiveStatus()
 
-    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
-        """Handle database created.
-
-        Args:
-            event: Event triggering the database created handler.
-        """
+    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
+        """Handle database created."""
         self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         # In case of psycopg2.Error, Juju will set ErrorStatus
         # See discussion here:
@@ -85,15 +81,11 @@ class DatabaseObserver(Object):
         datasource = self.get_relation_as_datasource()
         db_client = DatabaseClient(datasource=datasource)
         db_client.prepare()
-        self._change_config(event)
+        self._change_config()
 
-    def _on_endpoints_changed(self, event: DatabaseEndpointsChangedEvent) -> None:
-        """Handle endpoints change.
-
-        Args:
-            event: Event triggering the endpoints changed handler.
-        """
-        self._change_config(event)
+    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
+        """Handle endpoints change."""
+        self._change_config()
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
         """Get database data from relation.
