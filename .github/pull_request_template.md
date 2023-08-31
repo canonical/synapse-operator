@@ -3,6 +3,8 @@ Thank you for your interest in and contributing to Synapse Operator!
 Please, provide some information about your PR before proceeding.
 -->
 
+<!-- Applicable spec: <link> -->
+
 ### Overview
 
 <!-- A high level overview of the change -->
@@ -27,6 +29,9 @@ Please, provide some information about your PR before proceeding.
 
 - [ ] The [charm style guide](https://juju.is/docs/sdk/styleguide) was applied
 - [ ] The [contributing guide](https://github.com/canonical/is-charms-contributing-guide) was applied
-- [ ] The changes are compliant with [ISD014 - Managing Charm Complexity](https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619)
+- [ ] The changes are compliant with [ISD054 - Manging Charm Complexity](https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619)
+- [ ] The documentation is generated using `src-docs`
+- [ ] The documentation for charmhub is updated.
+- [ ] The PR is tagged with appropriate label (`urgent`, `trivial`, `complex`)
 
 <!-- Explanation for any unchecked items above -->
