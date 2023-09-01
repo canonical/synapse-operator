@@ -32,6 +32,9 @@ resources:
   synapse-nginx-image:
     type: oci-image
     description: OCI image for Synapse NGINX
+  synapse-mjolnir-image:
+    type: oci-image
+    description: OCI image for Synapse Mjolnir
 
 storage:
   data:
