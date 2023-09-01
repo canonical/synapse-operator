@@ -19,3 +19,8 @@ options:
       The public-facing base URL that clients use to access this Homeserver.
       Defaults to https://<server_name>/. Only used if there is integration with
       SAML integrator charm.
+  enable_mjolnir:
+    type: boolean
+    default: false
+    description: |
+      Configures whether to enable Mjolnir - moderation tool for Matrix.
