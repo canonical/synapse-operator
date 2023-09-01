@@ -74,6 +74,15 @@ class PebbleService:
         container.add_layer("synapse-nginx", self._nginx_pebble_layer, combine=True)
         container.replan()
 
+    def replan_mjolnir(self, container: ops.model.Container) -> None:
+        """Replan Synapse Mjolnir service.
+
+        Args:
+            container: Charm container.
+        """
+        container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
+        container.replan()
+
     def change_config(self, container: ops.model.Container) -> None:
         """Change the configuration.
 
@@ -89,10 +98,6 @@ class PebbleService:
             if self._charm_state.saml_config is not None:
                 logger.debug("pebble.change_config: Enabling SAML")
                 synapse.enable_saml(container=container, charm_state=self._charm_state)
-            if self._charm_state.enable_mjolnir:
-                logger.debug("pebble.change_config: Enabling Mjolnir")
-                synapse.enable_mjolnir(container=container)
-                container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer)
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc

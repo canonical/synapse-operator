@@ -12,11 +12,12 @@ from .workload import (  # noqa: F401
     check_mjolnir_ready,
     check_nginx_ready,
     check_ready,
+    create_mjolnir_config,
     enable_metrics,
-    enable_mjolnir,
     enable_saml,
     execute_migrate_config,
     get_environment,
     get_registration_shared_secret,
+    install_mjolnir,
     reset_instance,
 )

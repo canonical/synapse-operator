@@ -17,7 +17,12 @@ from ops.main import main
 import actions
 import synapse
 from charm_state import CharmConfigInvalidError, CharmState
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_NGINX_CONTAINER_NAME, SYNAPSE_NGINX_PORT
+from constants import (
+    MJOLNIR_USER,
+    SYNAPSE_CONTAINER_NAME,
+    SYNAPSE_NGINX_CONTAINER_NAME,
+    SYNAPSE_NGINX_PORT,
+)
 from database_observer import DatabaseObserver
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
@@ -117,6 +122,31 @@ class SynapseCharm(ops.CharmBase):
         """
         self.change_config(event)
         self._set_workload_version()
+        if self._charm_state.enable_mjolnir:
+            self._enable_mjolnir()
+
+    def _enable_mjolnir(self) -> None:
+        """Enable mjolnir service."""
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
+        try:
+            # Install mjolnir snap
+            synapse.install_mjolnir(container=container, charm_state=self._charm_state)
+            # Create bot user
+            user = actions.register_user(container, MJOLNIR_USER, True)
+            # Create (or get) the management room
+            # Add the bot to the management room if we are creating it
+            # Create configuration file
+            synapse.create_mjolnir_config(
+                container=container, charm_state=self._charm_state, user=user, room="management"
+            )
+            self.pebble_service.replan_mjolnir(container)
+        except (synapse.WorkloadError, actions.RegisterUserError) as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            return
 
     def _on_pebble_ready(self, event: ops.HookEvent) -> None:
         """Handle pebble ready event.

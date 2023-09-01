@@ -19,6 +19,7 @@ from constants import (
     CHECK_NGINX_READY_NAME,
     CHECK_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
+    MJOLNIR_CONFIG_PATH,
     PROMETHEUS_TARGET_PORT,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
@@ -26,6 +27,7 @@ from constants import (
     SYNAPSE_NGINX_PORT,
     SYNAPSE_PORT,
 )
+from user import User
 
 from .api import VERSION_URL
 
@@ -62,6 +64,10 @@ class EnableMetricsError(WorkloadError):
 
 class EnableMjolnirError(WorkloadError):
     """Exception raised when something goes wrong while enabling mjolnir."""
+
+
+class CreateMjolnirConfigError(WorkloadError):
+    """Exception raised when something goes wrong while creating mjolnir config."""
 
 
 class EnableSAMLError(WorkloadError):
@@ -187,34 +193,54 @@ def enable_metrics(container: ops.Container) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
-def enable_mjolnir(container: ops.Container) -> None:
+def install_mjolnir(container: ops.Container, charm_state: CharmState) -> None:
     """Change the Synapse container to enable mjolnir.
 
     Args:
         container: Container of the charm.
+        charm_state: Instance of CharmState.
 
     Raises:
         EnableMjolnirError: something went wrong enabling mjolnir.
     """
+    # Install mjolnir snap
+    install_mjolnir_result = _exec(
+        container,
+        ["snap", "install", "mjolnir", "--edge"],
+        environment=get_environment(charm_state),
+    )
+    if install_mjolnir_result.exit_code:
+        logger.error(
+            "mjolnir installation failed, stdout: %s, stderr: %s",
+            install_mjolnir_result.stdout,
+            install_mjolnir_result.stderr,
+        )
+        raise EnableMjolnirError("Mjolnir installation failed, please check the logs")
+
+
+def create_mjolnir_config(
+    container: ops.Container, charm_state: CharmState, user: User, room: str
+) -> None:
+    """Create mjolnir configuration.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+        user: user to be used by the Mjolnir.
+        room: management room monitored by the Mjolnir.
+
+    Raises:
+        CreateMjolnirConfigError: something went wrong creating mjolnir config.
+    """
     try:
-        # Install mjolnir snap
-        # Create bot user
-        # Create (or get) the management room
-        # Add the bot to the management room if we are creating it
-        # Create configuration file
-        # Add a pebble layer
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        metric_listener = {
-            "port": int(PROMETHEUS_TARGET_PORT),
-            "type": "metrics",
-            "bind_addresses": ["::"],
-        }
-        current_yaml["listeners"].extend([metric_listener])
-        current_yaml["enable_metrics"] = True
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+        # create the file
+        current_yaml = {}
+        current_yaml["server"] = charm_state.public_baseurl
+        current_yaml["user"] = user.username
+        current_yaml["room"] = room
+        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
-        raise EnableMjolnirError(str(exc)) from exc
+        raise CreateMjolnirConfigError(str(exc)) from exc
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
