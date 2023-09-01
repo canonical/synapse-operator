@@ -206,7 +206,7 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     # dont send uid in SAMLResponse so this will map
     # fullname to uid
     if "ubuntu.com" in saml_config["metadata_url"]:
-        sp_config["attribute_map_dir"] = "/data/attributemaps"
+        sp_config["attribute_map_dir"] = "/usr/local/attributemaps"
 
     return sp_config
 
