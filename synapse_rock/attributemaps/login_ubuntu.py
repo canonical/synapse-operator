@@ -4,6 +4,8 @@
 MAP = {
     "identifier": "urn:oasis:names:tc:SAML:2.0:attrname-format:unspecified",
     "fro": {
-        'fullname': 'uid',
+        'username': 'uid',
+        'fullname': 'displayName',
+        'email': 'email',
     }
 }
