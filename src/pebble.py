@@ -14,7 +14,10 @@ import synapse
 from charm_state import CharmState
 from constants import (
     CHECK_ALIVE_NAME,
+    CHECK_MJOLNIR_READY_NAME,
+    CHECK_NGINX_READY_NAME,
     CHECK_READY_NAME,
+    MJOLNIR_CONFIG_PATH,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_SERVICE_NAME,
@@ -86,6 +89,10 @@ class PebbleService:
             if self._charm_state.saml_config is not None:
                 logger.debug("pebble.change_config: Enabling SAML")
                 synapse.enable_saml(container=container, charm_state=self._charm_state)
+            if self._charm_state.enable_mjolnir:
+                logger.debug("pebble.change_config: Enabling Mjolnir")
+                synapse.enable_mjolnir(container=container)
+                container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer)
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
@@ -181,7 +188,31 @@ class PebbleService:
                 },
             },
             "checks": {
-                "nginx-ready": synapse.check_nginx_ready(),
+                CHECK_NGINX_READY_NAME: synapse.check_nginx_ready(),
+            },
+        }
+        return typing.cast(ops.pebble.LayerDict, layer)
+
+    @property
+    def _mjolnir_pebble_layer(self) -> ops.pebble.LayerDict:
+        """Generate pebble config for the mjolnir service.
+
+        Returns:
+            The pebble configuration for the mjolnir service.
+        """
+        layer = {
+            "summary": "Synapse mjolnir layer",
+            "description": "Synapse mjolnir layer",
+            "services": {
+                "mjolnir": {
+                    "override": "replace",
+                    "summary": "Mjolnir service",
+                    "command": f"mjolnir --mjolnir-config {MJOLNIR_CONFIG_PATH}",
+                    "startup": "enabled",
+                },
+            },
+            "checks": {
+                CHECK_MJOLNIR_READY_NAME: synapse.check_mjolnir_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

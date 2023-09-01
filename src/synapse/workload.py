@@ -14,6 +14,9 @@ from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
 from constants import (
+    CHECK_ALIVE_NAME,
+    CHECK_MJOLNIR_READY_NAME,
+    CHECK_NGINX_READY_NAME,
     CHECK_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
     PROMETHEUS_TARGET_PORT,
@@ -57,6 +60,10 @@ class EnableMetricsError(WorkloadError):
     """Exception raised when something goes wrong while enabling metrics."""
 
 
+class EnableMjolnirError(WorkloadError):
+    """Exception raised when something goes wrong while enabling mjolnir."""
+
+
 class EnableSAMLError(WorkloadError):
     """Exception raised when something goes wrong while enabling SAML."""
 
@@ -94,7 +101,7 @@ def check_alive() -> ops.pebble.CheckDict:
     Returns:
         Dict: check object converted to its dict representation.
     """
-    check = Check(CHECK_READY_NAME)
+    check = Check(CHECK_ALIVE_NAME)
     check.override = "replace"
     check.level = "alive"
     check.tcp = {"port": SYNAPSE_PORT}
@@ -107,10 +114,23 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     Returns:
         Dict: check object converted to its dict representation.
     """
-    check = Check(CHECK_READY_NAME)
+    check = Check(CHECK_NGINX_READY_NAME)
     check.override = "replace"
     check.level = "ready"
     check.tcp = {"port": SYNAPSE_NGINX_PORT}
+    return check.to_dict()
+
+
+def check_mjolnir_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse Mjolnir service check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_MJOLNIR_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.exec = {"command": "ps aux | grep -v grep | grep -q -c mjolnir"}
     return check.to_dict()
 
 
@@ -167,6 +187,36 @@ def enable_metrics(container: ops.Container) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
+def enable_mjolnir(container: ops.Container) -> None:
+    """Change the Synapse container to enable mjolnir.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        EnableMjolnirError: something went wrong enabling mjolnir.
+    """
+    try:
+        # Install mjolnir snap
+        # Create bot user
+        # Create (or get) the management room
+        # Add the bot to the management room if we are creating it
+        # Create configuration file
+        # Add a pebble layer
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        metric_listener = {
+            "port": int(PROMETHEUS_TARGET_PORT),
+            "type": "metrics",
+            "bind_addresses": ["::"],
+        }
+        current_yaml["listeners"].extend([metric_listener])
+        current_yaml["enable_metrics"] = True
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise EnableMjolnirError(str(exc)) from exc
+
+
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     """Create config as expected by pysaml2.
 
@@ -204,7 +254,7 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     }
     # login.staging.canonical.com and login.canonical.com
     # dont send uid in SAMLResponse so this will map
-    # fullname to uid
+    # as expected
     if "ubuntu.com" in saml_config["metadata_url"]:
         sp_config["attribute_map_dir"] = "/usr/local/attributemaps"
 
