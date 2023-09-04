@@ -144,7 +144,9 @@ class SynapseCharm(ops.CharmBase):
             synapse.create_mjolnir_config(
                 container=container, access_token=access_token, room="management"
             )
-            synapse.override_rate_limit(user, access_token)
+            synapse.override_rate_limit(
+                user=user, access_token=access_token, charm_state=self._charm_state
+            )
             self.pebble_service.replan_mjolnir(container)
         except (synapse.WorkloadError, actions.RegisterUserError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))

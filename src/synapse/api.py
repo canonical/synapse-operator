@@ -17,6 +17,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
+from charm_state import CharmState
 from constants import SYNAPSE_URL
 from user import User
 
@@ -264,13 +265,30 @@ def get_access_token(user: User) -> str:
     return access_token
 
 
-def override_rate_limit(user: User, access_token: str) -> None:
+def override_rate_limit(user: User, access_token: str, charm_state: CharmState) -> None:
     """Override user's rate limit.
 
     Args:
-        user: user to override the rate limit.
+        user: user to be used for requesting access token.
         access_token: access token to be used.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        NetworkError: if there was an error fetching the api_url.
     """
-    print(user, access_token)
-    # curl --header "Authorization: Bearer <access_token>" -X DELETE
-    # https://matrix.example.com/_synapse/admin/v1/users/@example:example.com/override_ratelimit
+    server_name = charm_state.server_name
+    rate_limit_url = (
+        f"{SYNAPSE_URL}/_synapse/admin/v1/users/"
+        f"@{user.username}:{server_name}/override_ratelimit"
+    )
+    try:
+        authorization_token = f"Bearer {access_token}"
+        headers = {"Authorization": authorization_token}
+        res = requests.delete(LOGIN_URL, headers=headers, timeout=5)
+        res.raise_for_status()
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", rate_limit_url, exc)
+        raise NetworkError(f"Failed to connect to {rate_limit_url}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", rate_limit_url, exc)
+        raise NetworkError(f"HTTP error from {rate_limit_url}.") from exc
