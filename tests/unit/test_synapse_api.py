@@ -30,7 +30,7 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("synapse.api._get_nonce", get_nonce_mock)
     generate_mac_mock = mock.MagicMock(return_value="mac")
     monkeypatch.setattr("synapse.api._generate_mac", generate_mac_mock)
-    mock_response = mock.Mock()
+    mock_response = mock.MagicMock()
     mock_response.raise_for_status.return_value = None
     monkeypatch.setattr("synapse.api.requests.post", mock_response)
     shared_secret = token_hex(16)

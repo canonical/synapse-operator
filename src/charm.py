@@ -7,6 +7,7 @@
 
 import logging
 import typing
+from secrets import token_hex
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
@@ -133,23 +134,34 @@ class SynapseCharm(ops.CharmBase):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         try:
-            logger.debug("Creating Mjolnir user")
-            # TODO check if user exists
-            user = actions.register_user(container, MJOLNIR_USER, True)
+            admin_username = token_hex(16)
+            admin_user = actions.register_user(container, admin_username, True)
+            admin_access_token = admin_user.access_token
+            mjolnir_user = actions.register_user(container, MJOLNIR_USER, True, admin_access_token)
             # Create (or get) the management room
             # Add the bot to the management room if we are creating it
-            access_token = synapse.get_access_token(user)
-            room_id = synapse.get_room_id(room_name="management", access_token=access_token)
-            logger.debug("Creating Mjolnir configuration file")
+            mjolnir_access_token = synapse.get_access_token(
+                user=mjolnir_user, access_token=admin_access_token
+            )
+            room_id = synapse.get_room_id(room_name="management", access_token=admin_access_token)
             synapse.create_mjolnir_config(
-                container=container, access_token=access_token, room_id=room_id
+                container=container, access_token=mjolnir_access_token, room_id=room_id
             )
-            logger.debug("Overriding Mjolnir user rate limit")
             synapse.override_rate_limit(
-                user=user, access_token=access_token, charm_state=self._charm_state
+                user=mjolnir_user, access_token=admin_access_token, charm_state=self._charm_state
             )
+            synapse.deactivate_user(user=admin_user, access_token=admin_access_token)
             self.pebble_service.replan_mjolnir(container)
-        except (synapse.WorkloadError, synapse.APIError, actions.RegisterUserError) as exc:
+        except synapse.WorkloadError as exc:
+            logger.exception("Failed to interact with Synapse workload: %r", exc)
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            return
+        except synapse.APIError as exc:
+            logger.exception("Failed to interact with Synapse API: %r", exc)
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            return
+        except actions.RegisterUserError as exc:
+            logger.exception("Failed to register Mjolnir user: %r", exc)
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
 

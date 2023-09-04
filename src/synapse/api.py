@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
-LOGIN_URL = f"{SYNAPSE_URL}/_matrix/client/r0/login"
+LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
+LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
+DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 
 
@@ -62,6 +64,14 @@ class GetRoomIDError(APIError):
     """Exception raised when getting room id via API fails."""
 
 
+class GetUserIDError(APIError):
+    """Exception raised when getting user id via API fails."""
+
+
+class UserExistsError(APIError):
+    """Exception raised when checking if user exists via API fails."""
+
+
 class GetAccessTokenError(APIError):
     """Exception raised when getting access token via API fails."""
 
@@ -70,15 +80,19 @@ class VersionUnexpectedContentError(GetVersionError):
     """Exception raised when output of getting version is unexpected."""
 
 
-def register_user(registration_shared_secret: str, user: User) -> None:
+def register_user(registration_shared_secret: str, user: User, access_token: str = "") -> str:
     """Register user.
 
     Args:
         registration_shared_secret: secret to be used to register the user.
         user: user to be registered.
+        access_token: access token to get user's access token if it exists.
 
     Raises:
         NetworkError: if there was an error registering the user.
+
+    Returns:
+        Access token to be used by the user.
     """
     # get nonce
     nonce = _get_nonce()
@@ -101,7 +115,13 @@ def register_user(registration_shared_secret: str, user: User) -> None:
     # finally register user
     try:
         res = requests.post(REGISTER_URL, json=data, timeout=5)
+        if "already taken" in res.text:
+            logger.warning(
+                "User %s already exists, no action was taken. Content: %s", user.username, res.text
+            )
+            return get_access_token(user=user, access_token=access_token)
         res.raise_for_status()
+        return res.json()["access_token"]
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
         logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
         raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
@@ -240,11 +260,12 @@ def get_version() -> str:
     return version_match.group(1)
 
 
-def get_access_token(user: User) -> str:
-    """Get access token.
+def get_access_token(user: User, access_token: str) -> str:
+    """Get access token from a user.
 
     Args:
-        user: user to be used for requesting access token.
+        user: user to get access token from.
+        access_token: access token to be used for the request.
 
     Returns:
         Access token.
@@ -253,13 +274,9 @@ def get_access_token(user: User) -> str:
         GetAccessTokenError: if there was an error while getting access token.
         NetworkError: if there was an error fetching the api_url.
     """
-    data = {
-        "identifier": {"type": "m.id.user", "user": user.username},
-        "password": user.password,
-        "type": "m.login.password",
-    }
     try:
-        res = requests.post(LOGIN_URL, json=data, timeout=5)
+        userid = get_user_id(username=user.username, access_token=access_token)
+        res = requests.post(f"{LOGIN_URL}/{userid}/login", timeout=5)
         res.raise_for_status()
         access_token = res.json()["access_token"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
@@ -332,3 +349,66 @@ def get_room_id(
         raise GetRoomIDError(str(exc)) from exc
 
     raise GetRoomIDError(f"Room {room_name} not found.")
+
+
+def get_user_id(
+    username: str,
+    access_token: str,
+) -> str:
+    """Get version.
+
+    Args:
+        username: user name.
+        access_token: access token to be used.
+
+    Returns:
+        The user id.
+
+    Raises:
+        GetUserIDError: if there was an error while getting user id.
+    """
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    res = _send_get_request(f"{LIST_USERS_URL}{username}", headers=headers)
+    try:
+        users = res.json()["users"]
+        for user in users:
+            if user["name"].upper() == username.upper():
+                return user["user_id"]
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode users: %r. Received: %s", exc, res.text)
+        raise GetUserIDError(str(exc)) from exc
+
+    raise GetUserIDError(f"User {username} not found.")
+
+
+def deactivate_user(
+    user: User,
+    access_token: str,
+) -> None:
+    """Deactivate user.
+
+    Args:
+        user: user to be deactivated.
+        access_token: access token to be used.
+
+    Raises:
+        NetworkError: if there was an error registering the user.
+    """
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    data = {
+        "erase": True,
+    }
+    try:
+        user_id = get_user_id(username=user.username, access_token=access_token)
+        res = requests.post(
+            f"{DEACTIVATE_ACCOUNT_URL}/{user_id}", headers=headers, json=data, timeout=5
+        )
+        res.raise_for_status()
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", DEACTIVATE_ACCOUNT_URL, exc)
+        raise NetworkError(f"Failed to connect to {DEACTIVATE_ACCOUNT_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", DEACTIVATE_ACCOUNT_URL, exc)
+        raise NetworkError(f"HTTP error from {DEACTIVATE_ACCOUNT_URL}.") from exc

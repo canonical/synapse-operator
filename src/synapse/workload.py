@@ -250,7 +250,7 @@ def create_mjolnir_config(container: ops.Container, access_token: str, room_id: 
     """
     try:
         config = _get_mjolnir_config(access_token, room_id)
-        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config))
+        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
     except ops.pebble.PathError as exc:
         raise CreateMjolnirConfigError(str(exc)) from exc
 
