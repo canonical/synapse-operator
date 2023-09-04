@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
+LOGIN_URL = f"{SYNAPSE_URL}/_matrix/client/r0/login"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 
 
@@ -53,6 +54,10 @@ class GetNonceError(APIError):
 
 class GetVersionError(APIError):
     """Exception raised when getting version via API fails."""
+
+
+class GetAccessTokenError(APIError):
+    """Exception raised when getting access token via API fails."""
 
 
 class VersionUnexpectedContentError(GetVersionError):
@@ -233,8 +238,30 @@ def get_access_token(user: User) -> str:
 
     Returns:
         Access token.
+
+    Raises:
+        GetAccessTokenError: if there was an error while getting access token.
+        NetworkError: if there was an error fetching the api_url.
     """
-    return user.password
+    data = {
+        "identifier": {"type": "m.id.user", "user": user.username},
+        "password": user.password,
+        "type": "m.login.password",
+    }
+    try:
+        res = requests.post(LOGIN_URL, json=data, timeout=5)
+        res.raise_for_status()
+        access_token = res.json()["access_token"]
+    except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
+        logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
+        raise GetAccessTokenError(str(exc)) from exc
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", LOGIN_URL, exc)
+        raise NetworkError(f"Failed to connect to {LOGIN_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", LOGIN_URL, exc)
+        raise NetworkError(f"HTTP error from {LOGIN_URL}.") from exc
+    return access_token
 
 
 def override_rate_limit(user: User, access_token: str) -> None:
