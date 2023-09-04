@@ -34,6 +34,8 @@ from .api import VERSION_URL, get_access_token
 
 logger = logging.getLogger(__name__)
 
+MJOLNIR_HEALTH_PORT = 7777
+
 
 class WorkloadError(Exception):
     """Exception raised when something fails while interacting with workload.
@@ -137,7 +139,7 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     check = Check(CHECK_MJOLNIR_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.exec = {"command": "ps aux | grep -v grep | grep -q -c mjolnir"}
+    check.http = {"url": f"http://localhost:{MJOLNIR_HEALTH_PORT}/healthz"}
     return check.to_dict()
 
 
@@ -229,7 +231,7 @@ def _get_mjolnir_config(access_token: str, room: str) -> typing.Dict:
     Returns:
         Mjolnir configuration
     """
-    default_content = """
+    default_content = f"""
         dataPath: "/data/storage"
         verboseLogging: false
         logLevel: "INFO"
@@ -245,7 +247,7 @@ def _get_mjolnir_config(access_token: str, room: str) -> typing.Dict:
         health:
         healthz:
             enabled: false
-            port: 7777
+            port: {MJOLNIR_HEALTH_PORT}
             address: "0.0.0.0"
             endpoint: "/healthz"
             healthyStatus: 200
