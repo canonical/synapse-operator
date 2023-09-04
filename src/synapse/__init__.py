@@ -7,6 +7,7 @@
 from .api import (  # noqa: F401
     APIError,
     get_access_token,
+    get_room_id,
     get_version,
     override_rate_limit,
     register_user,

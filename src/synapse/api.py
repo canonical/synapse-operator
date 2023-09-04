@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
 LOGIN_URL = f"{SYNAPSE_URL}/_matrix/client/r0/login"
+LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 
 
@@ -55,6 +56,10 @@ class GetNonceError(APIError):
 
 class GetVersionError(APIError):
     """Exception raised when getting version via API fails."""
+
+
+class GetRoomIDError(APIError):
+    """Exception raised when getting room id via API fails."""
 
 
 class GetAccessTokenError(APIError):
@@ -147,12 +152,15 @@ def _generate_mac(
     return mac.hexdigest()
 
 
-def _send_get_request(api_url: str, retry: bool = False) -> requests.Response:
+def _send_get_request(
+    api_url: str, retry: bool = False, headers: typing.Optional[typing.Dict] = None
+) -> requests.Response:
     """Call Synapse API using requests.get with retry and timeout.
 
     Args:
         api_url: URL to be requested.
         retry: call URL with a retry. Default is False.
+        headers: Header to be used in the request. Default is None.
 
     Raises:
         NetworkError: if there was an error fetching the api_url.
@@ -168,7 +176,8 @@ def _send_get_request(api_url: str, retry: bool = False) -> requests.Response:
         )
         if retry:
             session.mount("http://", HTTPAdapter(max_retries=retries))
-        res = session.get(api_url, timeout=10)
+        # headers = None will keep using default headers
+        res = session.get(api_url, timeout=10, headers=headers)
         res.raise_for_status()
         session.close()
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
@@ -292,3 +301,34 @@ def override_rate_limit(user: User, access_token: str, charm_state: CharmState) 
     except requests.exceptions.HTTPError as exc:
         logger.exception("HTTP error from %s: %r", rate_limit_url, exc)
         raise NetworkError(f"HTTP error from {rate_limit_url}.") from exc
+
+
+def get_room_id(
+    room_name: str,
+    access_token: str,
+) -> str:
+    """Get version.
+
+    Args:
+        room_name: room name.
+        access_token: access token to be used.
+
+    Returns:
+        The room id.
+
+    Raises:
+        GetRoomIDError: if there was an error while getting room id.
+    """
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    res = _send_get_request(LIST_ROOMS_URL, headers=headers)
+    try:
+        rooms = res.json()["rooms"]
+        for room in rooms:
+            if room["name"].upper() == room_name.upper():
+                return room["room_id"]
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode rooms: %r. Received: %s", exc, res.text)
+        raise GetRoomIDError(str(exc)) from exc
+
+    raise GetRoomIDError(f"Room {room_name} not found.")

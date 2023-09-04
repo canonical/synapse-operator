@@ -133,22 +133,24 @@ class SynapseCharm(ops.CharmBase):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         try:
-            # Install mjolnir snap
+            logger.debug("Installing Mjolnir snap")
             synapse.install_mjolnir(container=container, charm_state=self._charm_state)
-            # Create bot user
+            logger.debug("Creating Mjolnir user")
             user = actions.register_user(container, MJOLNIR_USER, True)
             # Create (or get) the management room
             # Add the bot to the management room if we are creating it
-            # Create configuration file
             access_token = synapse.get_access_token(user)
+            room_id = synapse.get_room_id(room_name="management", access_token=access_token)
+            logger.debug("Creating Mjolnir configuration file")
             synapse.create_mjolnir_config(
-                container=container, access_token=access_token, room="management"
+                container=container, access_token=access_token, room_id=room_id
             )
+            logger.debug("Overriding Mjolnir user rate limit")
             synapse.override_rate_limit(
                 user=user, access_token=access_token, charm_state=self._charm_state
             )
             self.pebble_service.replan_mjolnir(container)
-        except (synapse.WorkloadError, actions.RegisterUserError) as exc:
+        except (synapse.WorkloadError, synapse.APIError, actions.RegisterUserError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
 

@@ -220,12 +220,12 @@ def install_mjolnir(container: ops.Container, charm_state: CharmState) -> None:
         raise EnableMjolnirError("Mjolnir installation failed, please check the logs")
 
 
-def _get_mjolnir_config(access_token: str, room: str) -> typing.Dict:
+def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     """Create config as expected by mjolnir.
 
     Args:
         access_token: access token to be used by the mjolnir bot.
-        room: management room monitored by the Mjolnir.
+        room_id: management room id monitored by the Mjolnir.
 
     Returns:
         Mjolnir configuration
@@ -258,23 +258,23 @@ def _get_mjolnir_config(access_token: str, room: str) -> typing.Dict:
     config["homeserverUrl"] = SYNAPSE_URL
     config["rawHomeserverUrl"] = SYNAPSE_URL
     config["accessToken"] = access_token
-    config["managementRoom"] = room
+    config["managementRoom"] = room_id
     return config
 
 
-def create_mjolnir_config(container: ops.Container, access_token: str, room: str) -> None:
+def create_mjolnir_config(container: ops.Container, access_token: str, room_id: str) -> None:
     """Create mjolnir configuration.
 
     Args:
         container: Container of the charm.
         access_token: access token to be used by the Mjolnir.
-        room: management room monitored by the Mjolnir.
+        room_id: management room id monitored by the Mjolnir.
 
     Raises:
         CreateMjolnirConfigError: something went wrong creating mjolnir config.
     """
     try:
-        config = _get_mjolnir_config(access_token, room)
+        config = _get_mjolnir_config(access_token, room_id)
         container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config))
     except ops.pebble.PathError as exc:
         raise CreateMjolnirConfigError(str(exc)) from exc
