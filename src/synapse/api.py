@@ -17,11 +17,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
+from constants import SYNAPSE_URL
 from user import User
 
 logger = logging.getLogger(__name__)
 
-SYNAPSE_URL = "http://localhost:8008"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
@@ -223,3 +223,15 @@ def get_version() -> str:
             f"server_version has unexpected content: {server_version}"
         )
     return version_match.group(1)
+
+
+def get_access_token(user: User) -> str:
+    """Get access token.
+
+    Args:
+        user: user to be used for requesting access token.
+
+    Returns:
+        Access token.
+    """
+    return user.password

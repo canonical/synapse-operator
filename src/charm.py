@@ -140,9 +140,7 @@ class SynapseCharm(ops.CharmBase):
             # Create (or get) the management room
             # Add the bot to the management room if we are creating it
             # Create configuration file
-            synapse.create_mjolnir_config(
-                container=container, charm_state=self._charm_state, user=user, room="management"
-            )
+            synapse.create_mjolnir_config(container=container, user=user, room="management")
             self.pebble_service.replan_mjolnir(container)
         except (synapse.WorkloadError, actions.RegisterUserError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))

@@ -26,10 +26,11 @@ from constants import (
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_NGINX_PORT,
     SYNAPSE_PORT,
+    SYNAPSE_URL,
 )
 from user import User
 
-from .api import VERSION_URL
+from .api import VERSION_URL, get_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -218,14 +219,53 @@ def install_mjolnir(container: ops.Container, charm_state: CharmState) -> None:
         raise EnableMjolnirError("Mjolnir installation failed, please check the logs")
 
 
-def create_mjolnir_config(
-    container: ops.Container, charm_state: CharmState, user: User, room: str
-) -> None:
+def _get_mjolnir_config(access_token: str, room: str) -> typing.Dict:
+    """Create config as expected by mjolnir.
+
+    Args:
+        access_token: access token to be used by the mjolnir bot.
+        room: management room monitored by the Mjolnir.
+
+    Returns:
+        Mjolnir configuration
+    """
+    default_content = """
+        dataPath: "/data/storage"
+        verboseLogging: false
+        logLevel: "INFO"
+        syncOnStartup: true
+        verifyPermissionsOnStartup: true
+        noop: false
+        fasterMembershipChecks: false
+        automaticallyRedactForReasons:
+        - "spam"
+        - "advertising"
+        protectAllJoinedRooms: false
+        backgroundDelayMS: 500
+        health:
+        healthz:
+            enabled: false
+            port: 7777
+            address: "0.0.0.0"
+            endpoint: "/healthz"
+            healthyStatus: 200
+            unhealthyStatus: 418
+        pollReports: false
+        displayReports: false
+        """
+    config = yaml.safe_load(default_content)
+    config["homeserverUrl"] = SYNAPSE_URL
+    config["rawHomeserverUrl"] = SYNAPSE_URL
+    config["accessToken"] = access_token
+    config["managementRoom"] = room
+    return config
+
+
+def create_mjolnir_config(container: ops.Container, user: User, room: str) -> None:
     """Create mjolnir configuration.
 
     Args:
         container: Container of the charm.
-        charm_state: Instance of CharmState.
         user: user to be used by the Mjolnir.
         room: management room monitored by the Mjolnir.
 
@@ -233,12 +273,9 @@ def create_mjolnir_config(
         CreateMjolnirConfigError: something went wrong creating mjolnir config.
     """
     try:
-        # create the file
-        current_yaml = {}
-        current_yaml["server"] = charm_state.public_baseurl
-        current_yaml["user"] = user.username
-        current_yaml["room"] = room
-        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(current_yaml))
+        access_token = get_access_token(user)
+        config = _get_mjolnir_config(access_token, room)
+        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config))
     except ops.pebble.PathError as exc:
         raise CreateMjolnirConfigError(str(exc)) from exc
 
