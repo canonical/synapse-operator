@@ -80,12 +80,15 @@ class VersionUnexpectedContentError(GetVersionError):
     """Exception raised when output of getting version is unexpected."""
 
 
-def register_user(registration_shared_secret: str, user: User, access_token: str = "") -> str:
+def register_user(
+    registration_shared_secret: str, user: User, server: str = "", access_token: str = ""
+) -> str:
     """Register user.
 
     Args:
         registration_shared_secret: secret to be used to register the user.
         user: user to be registered.
+        server: to be used to create the user id.
         access_token: access token to get user's access token if it exists.
 
     Raises:
@@ -119,7 +122,7 @@ def register_user(registration_shared_secret: str, user: User, access_token: str
             logger.warning(
                 "User %s already exists, no action was taken. Content: %s", user.username, res.text
             )
-            return get_access_token(user=user, access_token=access_token)
+            return get_access_token(user=user, server=server, access_token=access_token)
         res.raise_for_status()
         return res.json()["access_token"]
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
@@ -260,11 +263,12 @@ def get_version() -> str:
     return version_match.group(1)
 
 
-def get_access_token(user: User, access_token: str) -> str:
+def get_access_token(user: User, server: str, access_token: str) -> str:
     """Get access token from a user.
 
     Args:
         user: user to get access token from.
+        server: to be used to create the user id.
         access_token: access token to be used for the request.
 
     Returns:
@@ -275,8 +279,11 @@ def get_access_token(user: User, access_token: str) -> str:
         NetworkError: if there was an error fetching the api_url.
     """
     try:
-        userid = get_user_id(username=user.username, access_token=access_token)
-        res = requests.post(f"{LOGIN_URL}/{userid}/login", timeout=5)
+        authorization_token = f"Bearer {access_token}"
+        headers = {"Authorization": authorization_token}
+        # @user:server.com
+        user_id = f"@{user.username}:{server}"
+        res = requests.post(f"{LOGIN_URL}/{user_id}/login", headers=headers, timeout=5)
         res.raise_for_status()
         access_token = res.json()["access_token"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
@@ -310,7 +317,7 @@ def override_rate_limit(user: User, access_token: str, charm_state: CharmState) 
     try:
         authorization_token = f"Bearer {access_token}"
         headers = {"Authorization": authorization_token}
-        res = requests.delete(LOGIN_URL, headers=headers, timeout=5)
+        res = requests.delete(rate_limit_url, headers=headers, timeout=5)
         res.raise_for_status()
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
         logger.exception("Failed to connect to %s: %r", rate_limit_url, exc)
@@ -351,45 +358,16 @@ def get_room_id(
     raise GetRoomIDError(f"Room {room_name} not found.")
 
 
-def get_user_id(
-    username: str,
-    access_token: str,
-) -> str:
-    """Get version.
-
-    Args:
-        username: user name.
-        access_token: access token to be used.
-
-    Returns:
-        The user id.
-
-    Raises:
-        GetUserIDError: if there was an error while getting user id.
-    """
-    authorization_token = f"Bearer {access_token}"
-    headers = {"Authorization": authorization_token}
-    res = _send_get_request(f"{LIST_USERS_URL}{username}", headers=headers)
-    try:
-        users = res.json()["users"]
-        for user in users:
-            if user["name"].upper() == username.upper():
-                return user["user_id"]
-    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
-        logger.exception("Failed to decode users: %r. Received: %s", exc, res.text)
-        raise GetUserIDError(str(exc)) from exc
-
-    raise GetUserIDError(f"User {username} not found.")
-
-
 def deactivate_user(
     user: User,
+    server: str,
     access_token: str,
 ) -> None:
     """Deactivate user.
 
     Args:
         user: user to be deactivated.
+        server: to be used to create the user id.
         access_token: access token to be used.
 
     Raises:
@@ -401,7 +379,8 @@ def deactivate_user(
         "erase": True,
     }
     try:
-        user_id = get_user_id(username=user.username, access_token=access_token)
+        # @user:server.com
+        user_id = f"@{user.username}:{server}"
         res = requests.post(
             f"{DEACTIVATE_ACCOUNT_URL}/{user_id}", headers=headers, json=data, timeout=5
         )
