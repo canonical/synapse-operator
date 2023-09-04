@@ -4,7 +4,13 @@
 """Synapse package is used to interact with Synapse instance."""
 
 # Exporting methods to be used for another modules
-from .api import APIError, get_version, register_user  # noqa: F401
+from .api import (  # noqa: F401
+    APIError,
+    get_access_token,
+    get_version,
+    override_rate_limit,
+    register_user,
+)
 from .workload import (  # noqa: F401
     ExecResult,
     WorkloadError,

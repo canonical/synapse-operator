@@ -28,9 +28,8 @@ from constants import (
     SYNAPSE_PORT,
     SYNAPSE_URL,
 )
-from user import User
 
-from .api import VERSION_URL, get_access_token
+from .api import VERSION_URL
 
 logger = logging.getLogger(__name__)
 
@@ -263,19 +262,18 @@ def _get_mjolnir_config(access_token: str, room: str) -> typing.Dict:
     return config
 
 
-def create_mjolnir_config(container: ops.Container, user: User, room: str) -> None:
+def create_mjolnir_config(container: ops.Container, access_token: str, room: str) -> None:
     """Create mjolnir configuration.
 
     Args:
         container: Container of the charm.
-        user: user to be used by the Mjolnir.
+        access_token: access token to be used by the Mjolnir.
         room: management room monitored by the Mjolnir.
 
     Raises:
         CreateMjolnirConfigError: something went wrong creating mjolnir config.
     """
     try:
-        access_token = get_access_token(user)
         config = _get_mjolnir_config(access_token, room)
         container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config))
     except ops.pebble.PathError as exc:

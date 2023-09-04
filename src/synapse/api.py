@@ -235,3 +235,15 @@ def get_access_token(user: User) -> str:
         Access token.
     """
     return user.password
+
+
+def override_rate_limit(user: User, access_token: str) -> None:
+    """Override user's rate limit.
+
+    Args:
+        user: user to override the rate limit.
+        access_token: access token to be used.
+    """
+    print(user, access_token)
+    # curl --header "Authorization: Bearer <access_token>" -X DELETE
+    # https://matrix.example.com/_synapse/admin/v1/users/@example:example.com/override_ratelimit
