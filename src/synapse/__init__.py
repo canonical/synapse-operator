@@ -25,6 +25,5 @@ from .workload import (  # noqa: F401
     execute_migrate_config,
     get_environment,
     get_registration_shared_secret,
-    install_mjolnir,
     reset_instance,
 )

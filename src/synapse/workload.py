@@ -195,31 +195,6 @@ def enable_metrics(container: ops.Container) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
-def install_mjolnir(container: ops.Container, charm_state: CharmState) -> None:
-    """Change the Synapse container to enable mjolnir.
-
-    Args:
-        container: Container of the charm.
-        charm_state: Instance of CharmState.
-
-    Raises:
-        EnableMjolnirError: something went wrong enabling mjolnir.
-    """
-    # Install mjolnir snap
-    install_mjolnir_result = _exec(
-        container,
-        ["snap", "install", "mjolnir", "--edge"],
-        environment=get_environment(charm_state),
-    )
-    if install_mjolnir_result.exit_code:
-        logger.error(
-            "mjolnir installation failed, stdout: %s, stderr: %s",
-            install_mjolnir_result.stdout,
-            install_mjolnir_result.stderr,
-        )
-        raise EnableMjolnirError("Mjolnir installation failed, please check the logs")
-
-
 def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     """Create config as expected by mjolnir.
 

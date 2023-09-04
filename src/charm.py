@@ -133,9 +133,8 @@ class SynapseCharm(ops.CharmBase):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         try:
-            logger.debug("Installing Mjolnir snap")
-            synapse.install_mjolnir(container=container, charm_state=self._charm_state)
             logger.debug("Creating Mjolnir user")
+            # TODO check if user exists
             user = actions.register_user(container, MJOLNIR_USER, True)
             # Create (or get) the management room
             # Add the bot to the management room if we are creating it
