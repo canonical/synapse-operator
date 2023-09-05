@@ -10,6 +10,7 @@ from .api import (  # noqa: F401
     get_access_token,
     get_room_id,
     get_version,
+    make_room_admin,
     override_rate_limit,
     register_user,
 )

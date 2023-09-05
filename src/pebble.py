@@ -205,6 +205,7 @@ class PebbleService:
         Returns:
             The pebble configuration for the mjolnir service.
         """
+        command_params = f"bot --mjolnir-config {MJOLNIR_CONFIG_PATH}"
         layer = {
             "summary": "Synapse mjolnir layer",
             "description": "Synapse mjolnir layer",
@@ -212,7 +213,7 @@ class PebbleService:
                 "mjolnir": {
                     "override": "replace",
                     "summary": "Mjolnir service",
-                    "command": f"mjolnir --mjolnir-config {MJOLNIR_CONFIG_PATH}",
+                    "command": f"/mjolnir-entrypoint.sh {command_params}",
                     "startup": "enabled",
                 },
             },

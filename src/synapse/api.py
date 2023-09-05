@@ -29,6 +29,7 @@ LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
 LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
 DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
+ADD_USER_ROOM_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/join"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 
 
@@ -285,7 +286,7 @@ def get_access_token(user: User, server: str, access_token: str) -> str:
         user_id = f"@{user.username}:{server}"
         res = requests.post(f"{LOGIN_URL}/{user_id}/login", headers=headers, timeout=5)
         res.raise_for_status()
-        access_token = res.json()["access_token"]
+        res_access_token = res.json()["access_token"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
         logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
         raise GetAccessTokenError(str(exc)) from exc
@@ -295,7 +296,7 @@ def get_access_token(user: User, server: str, access_token: str) -> str:
     except requests.exceptions.HTTPError as exc:
         logger.exception("HTTP error from %s: %r", LOGIN_URL, exc)
         raise NetworkError(f"HTTP error from {LOGIN_URL}.") from exc
-    return access_token
+    return res_access_token
 
 
 def override_rate_limit(user: User, access_token: str, charm_state: CharmState) -> None:
@@ -391,3 +392,35 @@ def deactivate_user(
     except requests.exceptions.HTTPError as exc:
         logger.exception("HTTP error from %s: %r", DEACTIVATE_ACCOUNT_URL, exc)
         raise NetworkError(f"HTTP error from {DEACTIVATE_ACCOUNT_URL}.") from exc
+
+
+def make_room_admin(user: User, server: str, access_token: str, room_id: str) -> None:
+    """Make user a room's admin.
+
+    Args:
+        user: user to add to the room as admin.
+        server: to be used to create the user id.
+        access_token: access token to be used for the request.
+        room_id: room id to add the user.
+
+    Raises:
+        NetworkError: if there was an error fetching the api_url.
+    """
+    try:
+        authorization_token = f"Bearer {access_token}"
+        headers = {"Authorization": authorization_token}
+        user_id = f"@{user.username}:{server}"
+        data = {"user_id": user_id}
+        res = requests.post(
+            f"{SYNAPSE_URL}/_synapse/admin/v1/rooms/{room_id}/make_room_admin",
+            json=data,
+            headers=headers,
+            timeout=5,
+        )
+        res.raise_for_status()
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", ADD_USER_ROOM_URL, exc)
+        raise NetworkError(f"Failed to connect to {ADD_USER_ROOM_URL}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", ADD_USER_ROOM_URL, exc)
+        raise NetworkError(f"HTTP error from {ADD_USER_ROOM_URL}.") from exc

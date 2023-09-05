@@ -19,6 +19,7 @@ import actions
 import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import (
+    MJOLNIR_MANAGEMENT_ROOM,
     MJOLNIR_USER,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
@@ -126,6 +127,19 @@ class SynapseCharm(ops.CharmBase):
         if self._charm_state.enable_mjolnir:
             self._enable_mjolnir()
 
+    def _get_admin_access_token(self, container: ops.Container) -> str:
+        """Get admin access token.
+
+        Args:
+            container: Container of the charm.
+
+        Returns:
+            admin access token.
+        """
+        admin_username = token_hex(16)
+        admin_user = actions.register_user(container, admin_username, True)
+        return admin_user.access_token
+
     def _enable_mjolnir(self) -> None:
         """Enable mjolnir service."""
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
@@ -134,9 +148,7 @@ class SynapseCharm(ops.CharmBase):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         try:
-            admin_username = token_hex(16)
-            admin_user = actions.register_user(container, admin_username, True)
-            admin_access_token = admin_user.access_token
+            admin_access_token = self._get_admin_access_token(container)
             mjolnir_user = actions.register_user(
                 container,
                 MJOLNIR_USER,
@@ -144,22 +156,26 @@ class SynapseCharm(ops.CharmBase):
                 str(self._charm_state.server_name),
                 admin_access_token,
             )
-            # Create (or get) the management room
-            # Add the bot to the management room if we are creating it
             mjolnir_access_token = mjolnir_user.access_token
-            room_id = synapse.get_room_id(room_name="management", access_token=admin_access_token)
+            room_id = synapse.get_room_id(
+                room_name=MJOLNIR_MANAGEMENT_ROOM, access_token=admin_access_token
+            )
+            # Considering that it exists: Create (or get) the management room
+            # Add the bot to the management room if we are creating it
+            synapse.make_room_admin(
+                user=mjolnir_user,
+                server=str(self._charm_state.server_name),
+                access_token=admin_access_token,
+                room_id=room_id,
+            )
             synapse.create_mjolnir_config(
                 container=container, access_token=mjolnir_access_token, room_id=room_id
             )
             synapse.override_rate_limit(
                 user=mjolnir_user, access_token=admin_access_token, charm_state=self._charm_state
             )
-            synapse.deactivate_user(
-                user=admin_user,
-                server=str(self._charm_state.server_name),
-                access_token=admin_access_token,
-            )
             self.pebble_service.replan_mjolnir(container)
+            self.model.unit.status = ops.ActiveStatus()
         except synapse.WorkloadError as exc:
             logger.exception("Failed to interact with Synapse workload: %r", exc)
             self.model.unit.status = ops.BlockedStatus(str(exc))

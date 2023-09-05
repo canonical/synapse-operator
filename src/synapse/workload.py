@@ -219,13 +219,14 @@ def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
         protectAllJoinedRooms: false
         backgroundDelayMS: 500
         health:
-        healthz:
-            enabled: false
-            port: {MJOLNIR_HEALTH_PORT}
-            address: "0.0.0.0"
-            endpoint: "/healthz"
-            healthyStatus: 200
-            unhealthyStatus: 418
+            healthz:
+                enabled: false
+                port: {MJOLNIR_HEALTH_PORT}
+                address: "0.0.0.0"
+                endpoint: "/healthz"
+                healthyStatus: 200
+                unhealthyStatus: 418
+            sentry:
         pollReports: false
         displayReports: false
         """
