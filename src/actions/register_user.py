@@ -33,9 +33,14 @@ class RegisterUserError(Exception):
         """
         self.msg = msg
 
+
 # access_token is not a password
 def register_user(
-    container: ops.Container, username: str, admin: bool, server: str = "", access_token: str = ""  # nosec
+    container: ops.Container,
+    username: str,
+    admin: bool,
+    server: str = "",
+    access_token: str = "",  # nosec
 ) -> User:
     """Run register user action.
 

@@ -80,6 +80,7 @@ class GetAccessTokenError(APIError):
 class VersionUnexpectedContentError(GetVersionError):
     """Exception raised when output of getting version is unexpected."""
 
+
 # access_token is not a password
 def register_user(
     registration_shared_secret: str, user: User, server: str = "", access_token: str = ""  # nosec

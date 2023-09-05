@@ -10,7 +10,7 @@ license: Apache-2.0
 confinement: strict
 apps:
   mjolnir:
-    command: 'bin/node $SNAP/mjolnir/index.js'
+    command: "bin/node $SNAP/mjolnir/index.js"
     plugs:
       - network
 parts:
