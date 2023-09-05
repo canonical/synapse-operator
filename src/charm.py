@@ -141,7 +141,17 @@ class SynapseCharm(ops.CharmBase):
         return admin_user.access_token
 
     def _enable_mjolnir(self) -> None:
-        """Enable mjolnir service."""
+        """Enable mjolnir service.
+
+        The required steps to enable Mjolnir are:
+         - Get an admin access token.
+         - Create Mjolnir user or get its access token if already exists.
+         - Get the room ID for the management room defined in MJOLNIR_MANAGEMENT_ROOM.
+         - Make the Mjolnir user admin of this room.
+         - Create the Mjolnir configuration file.
+         - Override Mjolnir user rate limit.
+         - Finally, add Mjolnir pebble layer.
+        """
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
