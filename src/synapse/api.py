@@ -54,15 +54,19 @@ class NetworkError(APIError):
 
 
 class GetNonceError(APIError):
-    """Exception raised when getting nonce via API fails."""
+    """Exception raised when getting nonce fails."""
 
 
 class GetVersionError(APIError):
-    """Exception raised when getting version via API fails."""
+    """Exception raised when getting version fails."""
+
+
+class VersionUnexpectedContentError(GetVersionError):
+    """Exception raised when output of getting version is unexpected."""
 
 
 class GetRoomIDError(APIError):
-    """Exception raised when getting room id via API fails."""
+    """Exception raised when getting room id fails."""
 
 
 class RoomNotFoundError(APIError):
@@ -70,19 +74,19 @@ class RoomNotFoundError(APIError):
 
 
 class GetUserIDError(APIError):
-    """Exception raised when getting user id via API fails."""
+    """Exception raised when getting user id fails."""
 
 
 class UserExistsError(APIError):
-    """Exception raised when checking if user exists via API fails."""
+    """Exception raised when checking if user exists fails."""
 
 
 class GetAccessTokenError(APIError):
-    """Exception raised when getting access token via API fails."""
+    """Exception raised when getting access token fails."""
 
 
-class VersionUnexpectedContentError(GetVersionError):
-    """Exception raised when output of getting version is unexpected."""
+class RegisterUserError(APIError):
+    """Exception raised when registering user fails."""
 
 
 # access_token is not a password
@@ -98,7 +102,7 @@ def register_user(
         access_token: access token to get user's access token if it exists.
 
     Raises:
-        NetworkError: if there was an error registering the user.
+        RegisterUserError: if there was an error registering the user.
 
     Returns:
         Access token to be used by the user.
@@ -122,21 +126,17 @@ def register_user(
         "admin": user.admin,
     }
     # finally register user
+    res = _do_request("POST", REGISTER_URL, json=data)
+    if "already taken" in res.text:
+        logger.warning(
+            "User %s already exists, no action was taken. Content: %s", user.username, res.text
+        )
+        return get_access_token(user=user, server=server, access_token=access_token)
     try:
-        res = requests.post(REGISTER_URL, json=data, timeout=5)
-        if "already taken" in res.text:
-            logger.warning(
-                "User %s already exists, no action was taken. Content: %s", user.username, res.text
-            )
-            return get_access_token(user=user, server=server, access_token=access_token)
-        res.raise_for_status()
         return res.json()["access_token"]
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
+        raise RegisterUserError(str(exc)) from exc
 
 
 def _generate_mac(
@@ -181,43 +181,6 @@ def _generate_mac(
     return mac.hexdigest()
 
 
-def _send_get_request(
-    api_url: str, retry: bool = False, headers: typing.Optional[typing.Dict] = None
-) -> requests.Response:
-    """Call Synapse API using requests.get with retry and timeout.
-
-    Args:
-        api_url: URL to be requested.
-        retry: call URL with a retry. Default is False.
-        headers: Header to be used in the request. Default is None.
-
-    Raises:
-        NetworkError: if there was an error fetching the api_url.
-
-    Returns:
-        Response from calling the URL.
-    """
-    try:
-        session = requests.Session()
-        retries = Retry(
-            total=3,
-            backoff_factor=3,
-        )
-        if retry:
-            session.mount("http://", HTTPAdapter(max_retries=retries))
-        # headers = None will keep using default headers
-        res = session.get(api_url, timeout=10, headers=headers)
-        res.raise_for_status()
-        session.close()
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", api_url, exc)
-        raise NetworkError(f"Failed to connect to {api_url}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", api_url, exc)
-        raise NetworkError(f"HTTP error from {api_url}.") from exc
-    return res
-
-
 def _get_nonce() -> str:
     """Get nonce.
 
@@ -227,7 +190,7 @@ def _get_nonce() -> str:
     Raises:
         GetNonceError: if there was an error while reading nonce.
     """
-    res = _send_get_request(REGISTER_URL)
+    res = _do_request("GET", REGISTER_URL)
     try:
         nonce = res.json()["nonce"]
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
@@ -255,7 +218,7 @@ def get_version() -> str:
         GetVersionError: if there was an error while reading version.
         VersionUnexpectedContentError: if the version has unexpected content.
     """
-    res = _send_get_request(VERSION_URL, retry=True)
+    res = _do_request("GET", VERSION_URL, retry=True)
     try:
         server_version = res.json()["server_version"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
@@ -282,25 +245,17 @@ def get_access_token(user: User, server: str, access_token: str) -> str:
 
     Raises:
         GetAccessTokenError: if there was an error while getting access token.
-        NetworkError: if there was an error fetching the api_url.
     """
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    # @user:server.com
+    user_id = f"@{user.username}:{server}"
+    res = _do_request("POST", f"{LOGIN_URL}/{user_id}/login", headers=headers)
     try:
-        authorization_token = f"Bearer {access_token}"
-        headers = {"Authorization": authorization_token}
-        # @user:server.com
-        user_id = f"@{user.username}:{server}"
-        res = requests.post(f"{LOGIN_URL}/{user_id}/login", headers=headers, timeout=5)
-        res.raise_for_status()
         res_access_token = res.json()["access_token"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
         logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
         raise GetAccessTokenError(str(exc)) from exc
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", LOGIN_URL, exc)
-        raise NetworkError(f"Failed to connect to {LOGIN_URL}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", LOGIN_URL, exc)
-        raise NetworkError(f"HTTP error from {LOGIN_URL}.") from exc
     return res_access_token
 
 
@@ -311,33 +266,22 @@ def override_rate_limit(user: User, access_token: str, charm_state: CharmState) 
         user: user to be used for requesting access token.
         access_token: access token to be used.
         charm_state: Instance of CharmState.
-
-    Raises:
-        NetworkError: if there was an error fetching the api_url.
     """
     server_name = charm_state.server_name
     rate_limit_url = (
         f"{SYNAPSE_URL}/_synapse/admin/v1/users/"
         f"@{user.username}:{server_name}/override_ratelimit"
     )
-    try:
-        authorization_token = f"Bearer {access_token}"
-        headers = {"Authorization": authorization_token}
-        res = requests.delete(rate_limit_url, headers=headers, timeout=5)
-        res.raise_for_status()
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", rate_limit_url, exc)
-        raise NetworkError(f"Failed to connect to {rate_limit_url}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", rate_limit_url, exc)
-        raise NetworkError(f"HTTP error from {rate_limit_url}.") from exc
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    _do_request("DELETE", rate_limit_url, headers=headers)
 
 
 def get_room_id(
     room_name: str,
     access_token: str,
 ) -> str:
-    """Get version.
+    """Get room id.
 
     Args:
         room_name: room name.
@@ -352,7 +296,7 @@ def get_room_id(
     """
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
-    res = _send_get_request(LIST_ROOMS_URL, headers=headers)
+    res = _do_request("GET", LIST_ROOMS_URL, headers=headers)
     try:
         rooms = res.json()["rooms"]
         for room in rooms:
@@ -376,28 +320,15 @@ def deactivate_user(
         user: user to be deactivated.
         server: to be used to create the user id.
         access_token: access token to be used.
-
-    Raises:
-        NetworkError: if there was an error registering the user.
     """
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
     data = {
         "erase": True,
     }
-    try:
-        # @user:server.com
-        user_id = f"@{user.username}:{server}"
-        res = requests.post(
-            f"{DEACTIVATE_ACCOUNT_URL}/{user_id}", headers=headers, json=data, timeout=5
-        )
-        res.raise_for_status()
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", DEACTIVATE_ACCOUNT_URL, exc)
-        raise NetworkError(f"Failed to connect to {DEACTIVATE_ACCOUNT_URL}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", DEACTIVATE_ACCOUNT_URL, exc)
-        raise NetworkError(f"HTTP error from {DEACTIVATE_ACCOUNT_URL}.") from exc
+    user_id = f"@{user.username}:{server}"
+    url = f"{DEACTIVATE_ACCOUNT_URL}/{user_id}"
+    _do_request("POST", url, headers=headers, json=data)
 
 
 def make_room_admin(user: User, server: str, access_token: str, room_id: str) -> None:
@@ -408,25 +339,52 @@ def make_room_admin(user: User, server: str, access_token: str, room_id: str) ->
         server: to be used to create the user id.
         access_token: access token to be used for the request.
         room_id: room id to add the user.
+    """
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    user_id = f"@{user.username}:{server}"
+    data = {"user_id": user_id}
+    url = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms/{room_id}/make_room_admin"
+    _do_request("POST", url, headers=headers, json=data)
+
+
+def _do_request(
+    method: str,
+    url: str,
+    headers: typing.Optional[typing.Dict] = None,
+    json: typing.Optional[typing.Dict] = None,
+    retry: bool = False,
+) -> requests.Response:
+    """Offer a generic request.
+
+    Args:
+        method: HTTP method.
+        url: url to request.
+        headers: header to be used in the request. Defaults to None.
+        json: json data to be sent in the request. Defaults to None.
+        retry: if the request should be retried. Defaults to False.
 
     Raises:
         NetworkError: if there was an error fetching the api_url.
+
+    Returns:
+        Response from the request.
     """
     try:
-        authorization_token = f"Bearer {access_token}"
-        headers = {"Authorization": authorization_token}
-        user_id = f"@{user.username}:{server}"
-        data = {"user_id": user_id}
-        res = requests.post(
-            f"{SYNAPSE_URL}/_synapse/admin/v1/rooms/{room_id}/make_room_admin",
-            json=data,
-            headers=headers,
-            timeout=5,
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=3,
         )
-        res.raise_for_status()
+        if retry:
+            session.mount("http://", HTTPAdapter(max_retries=retries))
+        response = session.request(method, url, headers=headers, json=json, timeout=5)
+        response.raise_for_status()
+        session.close()
+        return response
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", ADD_USER_ROOM_URL, exc)
-        raise NetworkError(f"Failed to connect to {ADD_USER_ROOM_URL}.") from exc
+        logger.exception("Failed to connect to %s: %r", url, exc)
+        raise NetworkError(f"Failed to connect to {url}.") from exc
     except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", ADD_USER_ROOM_URL, exc)
-        raise NetworkError(f"HTTP error from {ADD_USER_ROOM_URL}.") from exc
+        logger.exception("HTTP error from %s: %r", url, exc)
+        raise NetworkError(f"HTTP error from {url}.") from exc

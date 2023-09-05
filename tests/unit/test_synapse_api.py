@@ -15,7 +15,8 @@ import synapse
 from user import User
 
 
-def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
+@mock.patch("synapse.api.requests.Session")
+def test_register_user_success(mock_session, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set User parameters.
     act: register the user.
@@ -32,7 +33,9 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("synapse.api._generate_mac", generate_mac_mock)
     mock_response = mock.MagicMock()
     mock_response.raise_for_status.return_value = None
-    monkeypatch.setattr("synapse.api.requests.post", mock_response)
+    mock_requests = mock.MagicMock()
+    mock_requests.post.return_value = mock_response
+    mock_session.return_value = mock_requests
     shared_secret = token_hex(16)
 
     synapse.register_user(shared_secret, user)
@@ -48,7 +51,8 @@ def test_register_user_success(monkeypatch: pytest.MonkeyPatch):
     )
 
 
-def test_register_user_error(monkeypatch: pytest.MonkeyPatch):
+@mock.patch("synapse.api.requests.Session")
+def test_register_user_error(mock_session, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set User parameters and mock post to return connection and http errors.
     act: register the user.
@@ -62,14 +66,17 @@ def test_register_user_error(monkeypatch: pytest.MonkeyPatch):
     generate_mac_mock = mock.MagicMock(return_value="mac")
     monkeypatch.setattr("synapse.api._generate_mac", generate_mac_mock)
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
-    mock_response = mock.Mock(side_effect=mock_response_error)
-    monkeypatch.setattr("synapse.api.requests.post", mock_response)
+    mock_request = mock.Mock()
+    mock_request.request.side_effect = mock_response_error
+    mock_session.return_value = mock_request
     shared_secret = token_hex(16)
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.register_user(shared_secret, user)
+
     mock_response_http_error = requests.exceptions.HTTPError
-    mock_response = mock.Mock(side_effect=mock_response_http_error)
-    monkeypatch.setattr("synapse.api.requests.post", mock_response)
+    mock_request = mock.Mock()
+    mock_request.request.side_effect = mock_response_http_error
+    mock_session.return_value = mock_request
 
     with pytest.raises(synapse.APIError, match="HTTP error from"):
         synapse.register_user(shared_secret, user)
@@ -123,7 +130,7 @@ def test_get_nonce_success(mock_session):
         "nonce": nonce_value,
     }
     mock_requests = mock.MagicMock()
-    mock_requests.get.return_value = mock_response
+    mock_requests.request.return_value = mock_response
     mock_session.return_value = mock_requests
 
     assert synapse.api._get_nonce() == nonce_value
@@ -137,24 +144,24 @@ def test_get_nonce_requests_error(mock_session):
     assert: NetworkError is raised.
     """
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
-    mock_requests = mock.MagicMock()
-    mock_requests.get.side_effect = mock_response_error
-    mock_session.return_value = mock_requests
+    mock_request = mock.Mock()
+    mock_request.request.side_effect = mock_response_error
+    mock_session.return_value = mock_request
 
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.api._get_nonce()
     mock_response_http_error = requests.exceptions.HTTPError
-    mock_requests = mock.MagicMock()
-    mock_requests.get.side_effect = mock_response_http_error
-    mock_session.return_value = mock_requests
+    mock_request = mock.Mock()
+    mock_request.request.side_effect = mock_response_http_error
+    mock_session.return_value = mock_request
 
     with pytest.raises(synapse.APIError, match="HTTP error from"):
         synapse.api._get_nonce()
     mock_response = mock.MagicMock()
     mock_response.json.return_value = None
-    mock_requests = mock.MagicMock()
-    mock_requests.get.return_value = mock_response
-    mock_session.return_value = mock_requests
+    mock_request = mock.MagicMock()
+    mock_request.request.return_value = mock_response
+    mock_session.return_value = mock_request
 
     with pytest.raises(synapse.APIError, match="object is not subscriptable"):
         synapse.api._get_nonce()
@@ -173,7 +180,7 @@ def test_get_version_success(mock_session):
     mock_response.json.return_value = {
         "server_version": f"{extracted_version} (b=develop, abcdef123)"
     }
-    mock_session_instance.get.return_value = mock_response
+    mock_session_instance.request.return_value = mock_response
 
     assert synapse.api.get_version() == extracted_version
 
@@ -187,14 +194,14 @@ def test_get_version_requests_error(mock_session):
     """
     mock_response_error = requests.exceptions.ConnectionError("Connection error")
     mock_requests = mock.MagicMock()
-    mock_requests.get.side_effect = mock_response_error
+    mock_requests.request.side_effect = mock_response_error
     mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.api.get_version()
 
     mock_response_http_error = requests.exceptions.HTTPError
     mock_requests = mock.MagicMock()
-    mock_requests.get.side_effect = mock_response_http_error
+    mock_requests.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="HTTP error from"):
         synapse.api.get_version()
@@ -202,7 +209,7 @@ def test_get_version_requests_error(mock_session):
     mock_response = mock.MagicMock()
     mock_response.json.return_value = None
     mock_requests = mock.MagicMock()
-    mock_requests.get.return_value = mock_response
+    mock_requests.request.return_value = mock_response
     mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="object is not subscriptable"):
         synapse.api.get_version()
@@ -218,7 +225,7 @@ def test_get_version_regex_error(mock_session):
     mock_session_instance = mock_session.return_value
     mock_response = mock.Mock()
     mock_response.json.return_value = {"server_version": "foo"}
-    mock_session_instance.get.return_value = mock_response
+    mock_session_instance.request.return_value = mock_response
 
     with pytest.raises(synapse.APIError, match="server_version has unexpected content"):
         synapse.api.get_version()
