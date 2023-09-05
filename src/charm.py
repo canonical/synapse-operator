@@ -20,6 +20,7 @@ import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import (
     MJOLNIR_MANAGEMENT_ROOM,
+    MJOLNIR_SERVICE_NAME,
     MJOLNIR_USER,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
@@ -82,12 +83,7 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse NGINX")
-        try:
-            self.pebble_service.replan_nginx(container)
-        except PebbleServiceError as exc:
-            logger.error("Error replanning nginx, %s", exc)
-            self.model.unit.status = ops.BlockedStatus("Failed to replan NGINX")
-            return
+        self.pebble_service.replan_nginx(container)
         self.model.unit.status = ops.ActiveStatus()
 
     def change_config(self, _: ops.HookEvent) -> None:
@@ -141,7 +137,7 @@ class SynapseCharm(ops.CharmBase):
         return admin_user.access_token
 
     def _enable_mjolnir(self) -> None:
-        """Enable mjolnir service.
+        """Enable mjolnir service. If pebble service already exists, no action is taken.
 
         The required steps to enable Mjolnir are:
          - Get an admin access token.
@@ -157,7 +153,7 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         plan = container.get_plan()
-        if "mjolnir" in plan.services:
+        if MJOLNIR_SERVICE_NAME in plan.services:
             logging.info("Mjolnir already enabled, skipping")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")

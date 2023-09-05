@@ -18,6 +18,7 @@ from constants import (
     CHECK_NGINX_READY_NAME,
     CHECK_READY_NAME,
     MJOLNIR_CONFIG_PATH,
+    MJOLNIR_SERVICE_NAME,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_SERVICE_NAME,
@@ -210,7 +211,7 @@ class PebbleService:
             "summary": "Synapse mjolnir layer",
             "description": "Synapse mjolnir layer",
             "services": {
-                "mjolnir": {
+                MJOLNIR_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Mjolnir service",
                     "command": f"/mjolnir-entrypoint.sh {command_params}",
