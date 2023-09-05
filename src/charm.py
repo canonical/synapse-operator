@@ -156,6 +156,10 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
+        plan = container.get_plan()
+        if "mjolnir" in plan.services:
+            logging.info("Mjolnir already enabled, skipping")
+            return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         try:
             admin_access_token = self._get_admin_access_token(container)
@@ -170,7 +174,7 @@ class SynapseCharm(ops.CharmBase):
             room_id = synapse.get_room_id(
                 room_name=MJOLNIR_MANAGEMENT_ROOM, access_token=admin_access_token
             )
-            # Considering that it exists: Create (or get) the management room
+            # Considering that the management room exists
             # Add the bot to the management room if we are creating it
             synapse.make_room_admin(
                 user=mjolnir_user,
