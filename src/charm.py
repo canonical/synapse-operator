@@ -161,47 +161,38 @@ class SynapseCharm(ops.CharmBase):
             logging.info("Mjolnir already enabled, skipping")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
+        admin_access_token = self._get_admin_access_token(container)
+        mjolnir_user = actions.register_user(
+            container,
+            MJOLNIR_USER,
+            True,
+            str(self._charm_state.server_name),
+            admin_access_token,
+        )
+        mjolnir_access_token = mjolnir_user.access_token
         try:
-            admin_access_token = self._get_admin_access_token(container)
-            mjolnir_user = actions.register_user(
-                container,
-                MJOLNIR_USER,
-                True,
-                str(self._charm_state.server_name),
-                admin_access_token,
-            )
-            mjolnir_access_token = mjolnir_user.access_token
+            # Considering that the management room exists
             room_id = synapse.get_room_id(
                 room_name=MJOLNIR_MANAGEMENT_ROOM, access_token=admin_access_token
             )
-            # Considering that the management room exists
-            # Add the bot to the management room if we are creating it
-            synapse.make_room_admin(
-                user=mjolnir_user,
-                server=str(self._charm_state.server_name),
-                access_token=admin_access_token,
-                room_id=room_id,
-            )
-            synapse.create_mjolnir_config(
-                container=container, access_token=mjolnir_access_token, room_id=room_id
-            )
-            synapse.override_rate_limit(
-                user=mjolnir_user, access_token=admin_access_token, charm_state=self._charm_state
-            )
-            self.pebble_service.replan_mjolnir(container)
-            self.model.unit.status = ops.ActiveStatus()
-        except synapse.WorkloadError as exc:
-            logger.exception("Failed to interact with Synapse workload: %r", exc)
+        except synapse.RoomNotFoundError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
-        except synapse.APIError as exc:
-            logger.exception("Failed to interact with Synapse API: %r", exc)
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            return
-        except actions.RegisterUserError as exc:
-            logger.exception("Failed to register Mjolnir user: %r", exc)
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            return
+        # Add the bot to the management room if we are creating it
+        synapse.make_room_admin(
+            user=mjolnir_user,
+            server=str(self._charm_state.server_name),
+            access_token=admin_access_token,
+            room_id=room_id,
+        )
+        synapse.create_mjolnir_config(
+            container=container, access_token=mjolnir_access_token, room_id=room_id
+        )
+        synapse.override_rate_limit(
+            user=mjolnir_user, access_token=admin_access_token, charm_state=self._charm_state
+        )
+        self.pebble_service.replan_mjolnir(container)
+        self.model.unit.status = ops.ActiveStatus()
 
     def _on_pebble_ready(self, event: ops.HookEvent) -> None:
         """Handle pebble ready event.

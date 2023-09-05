@@ -6,6 +6,7 @@
 # Exporting methods to be used for another modules
 from .api import (  # noqa: F401
     APIError,
+    RoomNotFoundError,
     deactivate_user,
     get_access_token,
     get_room_id,

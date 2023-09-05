@@ -65,6 +65,10 @@ class GetRoomIDError(APIError):
     """Exception raised when getting room id via API fails."""
 
 
+class RoomNotFoundError(APIError):
+    """Exception raised when room was not found."""
+
+
 class GetUserIDError(APIError):
     """Exception raised when getting user id via API fails."""
 
@@ -344,6 +348,7 @@ def get_room_id(
 
     Raises:
         GetRoomIDError: if there was an error while getting room id.
+        RoomNotFoundError: if the room was not found.
     """
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
@@ -357,7 +362,7 @@ def get_room_id(
         logger.exception("Failed to decode rooms: %r. Received: %s", exc, res.text)
         raise GetRoomIDError(str(exc)) from exc
 
-    raise GetRoomIDError(f"Room {room_name} not found.")
+    raise RoomNotFoundError(f"Room {room_name} not found. Please, verify if the room exists.")
 
 
 def deactivate_user(
