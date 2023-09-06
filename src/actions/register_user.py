@@ -40,7 +40,7 @@ def register_user(
     username: str,
     admin: bool,
     server: str = "",
-    access_token: str = "",  # nosec
+    admin_access_token: str = "",  # nosec
 ) -> User:
     """Run register user action.
 
@@ -49,7 +49,7 @@ def register_user(
         username: username to be registered.
         admin: if user is admin.
         server: to be used to create the user id.
-        access_token: access token to get user's access token if it exists.
+        admin_access_token: server admin access token to get user's access token if it exists.
 
     Raises:
         RegisterUserError: if something goes wrong while registering the user.
@@ -67,7 +67,7 @@ def register_user(
         access_token = synapse.register_user(
             registration_shared_secret=registration_shared_secret,
             user=user,
-            access_token=access_token,
+            admin_access_token=admin_access_token,
             server=server,
         )
         user.access_token = access_token

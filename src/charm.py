@@ -169,7 +169,7 @@ class SynapseCharm(ops.CharmBase):
         try:
             # Considering that the management room exists
             room_id = synapse.get_room_id(
-                room_name=MJOLNIR_MANAGEMENT_ROOM, access_token=admin_access_token
+                room_name=MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
             )
         except synapse.RoomNotFoundError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
@@ -178,14 +178,14 @@ class SynapseCharm(ops.CharmBase):
         synapse.make_room_admin(
             user=mjolnir_user,
             server=str(self._charm_state.server_name),
-            access_token=admin_access_token,
+            admin_access_token=admin_access_token,
             room_id=room_id,
         )
         synapse.create_mjolnir_config(
             container=container, access_token=mjolnir_access_token, room_id=room_id
         )
         synapse.override_rate_limit(
-            user=mjolnir_user, access_token=admin_access_token, charm_state=self._charm_state
+            user=mjolnir_user, admin_access_token=admin_access_token, charm_state=self._charm_state
         )
         self.pebble_service.replan_mjolnir(container)
         self.model.unit.status = ops.ActiveStatus()

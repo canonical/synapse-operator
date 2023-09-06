@@ -89,9 +89,12 @@ class RegisterUserError(APIError):
     """Exception raised when registering user fails."""
 
 
-# access_token is not a password
+# admin_access_token is not a password
 def register_user(
-    registration_shared_secret: str, user: User, server: str = "", access_token: str = ""  # nosec
+    registration_shared_secret: str,
+    user: User,
+    server: str = "",
+    admin_access_token: str = "",  # nosec
 ) -> str:
     """Register user.
 
@@ -99,7 +102,7 @@ def register_user(
         registration_shared_secret: secret to be used to register the user.
         user: user to be registered.
         server: to be used to create the user id.
-        access_token: access token to get user's access token if it exists.
+        admin_access_token: admin access token to get user's access token if it exists.
 
     Raises:
         RegisterUserError: if there was an error registering the user.
@@ -131,7 +134,7 @@ def register_user(
         logger.warning(
             "User %s already exists, no action was taken. Content: %s", user.username, res.text
         )
-        return get_access_token(user=user, server=server, access_token=access_token)
+        return get_access_token(user=user, server=server, admin_access_token=admin_access_token)
     try:
         return res.json()["access_token"]
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
@@ -232,13 +235,15 @@ def get_version() -> str:
     return version_match.group(1)
 
 
-def get_access_token(user: User, server: str, access_token: str) -> str:
-    """Get access token from a user.
+def get_access_token(user: User, server: str, admin_access_token: str) -> str:
+    """Get an access token that can be used to authenticate as that user.
+
+    This is a way to do actions on behalf of a user.
 
     Args:
-        user: user to get access token from.
-        server: to be used to create the user id.
-        access_token: access token to be used for the request.
+        user: the user on behalf of whom you want to request the access token.
+        server: to be used to create the user id. User ID example: @user:server.com.
+        admin_access_token: a server admin access token to be used for the request.
 
     Returns:
         Access token.
@@ -246,7 +251,7 @@ def get_access_token(user: User, server: str, access_token: str) -> str:
     Raises:
         GetAccessTokenError: if there was an error while getting access token.
     """
-    authorization_token = f"Bearer {access_token}"
+    authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
     # @user:server.com
     user_id = f"@{user.username}:{server}"
@@ -259,12 +264,12 @@ def get_access_token(user: User, server: str, access_token: str) -> str:
     return res_access_token
 
 
-def override_rate_limit(user: User, access_token: str, charm_state: CharmState) -> None:
+def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmState) -> None:
     """Override user's rate limit.
 
     Args:
         user: user to be used for requesting access token.
-        access_token: access token to be used.
+        admin_access_token: server admin access token to be used.
         charm_state: Instance of CharmState.
     """
     server_name = charm_state.server_name
@@ -272,20 +277,20 @@ def override_rate_limit(user: User, access_token: str, charm_state: CharmState) 
         f"{SYNAPSE_URL}/_synapse/admin/v1/users/"
         f"@{user.username}:{server_name}/override_ratelimit"
     )
-    authorization_token = f"Bearer {access_token}"
+    authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
     _do_request("DELETE", rate_limit_url, headers=headers)
 
 
 def get_room_id(
     room_name: str,
-    access_token: str,
+    admin_access_token: str,
 ) -> str:
     """Get room id.
 
     Args:
         room_name: room name.
-        access_token: access token to be used.
+        admin_access_token: server admin access token to be used.
 
     Returns:
         The room id.
@@ -294,7 +299,7 @@ def get_room_id(
         GetRoomIDError: if there was an error while getting room id.
         RoomNotFoundError: if the room was not found.
     """
-    authorization_token = f"Bearer {access_token}"
+    authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
     res = _do_request("GET", LIST_ROOMS_URL, headers=headers)
     try:
@@ -312,16 +317,16 @@ def get_room_id(
 def deactivate_user(
     user: User,
     server: str,
-    access_token: str,
+    admin_access_token: str,
 ) -> None:
     """Deactivate user.
 
     Args:
         user: user to be deactivated.
         server: to be used to create the user id.
-        access_token: access token to be used.
+        admin_access_token: server admin access token to be used.
     """
-    authorization_token = f"Bearer {access_token}"
+    authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
     data = {
         "erase": True,
@@ -331,16 +336,16 @@ def deactivate_user(
     _do_request("POST", url, headers=headers, json=data)
 
 
-def make_room_admin(user: User, server: str, access_token: str, room_id: str) -> None:
+def make_room_admin(user: User, server: str, admin_access_token: str, room_id: str) -> None:
     """Make user a room's admin.
 
     Args:
         user: user to add to the room as admin.
         server: to be used to create the user id.
-        access_token: access token to be used for the request.
+        admin_access_token: server admin access token to be used for the request.
         room_id: room id to add the user.
     """
-    authorization_token = f"Bearer {access_token}"
+    authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
     user_id = f"@{user.username}:{server}"
     data = {"user_id": user_id}
