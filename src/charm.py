@@ -20,7 +20,6 @@ import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import (
     MJOLNIR_MANAGEMENT_ROOM,
-    MJOLNIR_SERVICE_NAME,
     MJOLNIR_USER,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
@@ -142,7 +141,8 @@ class SynapseCharm(ops.CharmBase):
         The required steps to enable Mjolnir are:
          - Get an admin access token.
          - Create Mjolnir user or get its access token if already exists.
-         - Get the room ID for the management room defined in MJOLNIR_MANAGEMENT_ROOM.
+         - Create the management room or get its room id if already exists.
+         -- The management room will allow only members of MJOLNIR_MEMBERSHIP_ROOM room to join it.
          - Make the Mjolnir user admin of this room.
          - Create the Mjolnir configuration file.
          - Override Mjolnir user rate limit.
@@ -152,10 +152,8 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        plan = container.get_plan()
-        if MJOLNIR_SERVICE_NAME in plan.services:
-            logging.info("Mjolnir already enabled, skipping")
-            return
+        # Not checking if the pebble service is enabled to skip this
+        # in case there is a charm update that changes Mjolnir configuration
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         admin_access_token = self._get_admin_access_token(container)
         mjolnir_user = actions.register_user(
@@ -174,7 +172,7 @@ class SynapseCharm(ops.CharmBase):
         except synapse.RoomNotFoundError:
             logger.info("Room %s not found, creating", MJOLNIR_MANAGEMENT_ROOM)
             room_id = synapse.create_management_room(admin_access_token=admin_access_token)
-        # Add the bot to the management room
+        # Add the Mjolnir user to the management room
         synapse.make_room_admin(
             user=mjolnir_user,
             server=str(self._charm_state.server_name),

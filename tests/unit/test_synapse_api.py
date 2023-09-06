@@ -73,7 +73,9 @@ def test_register_user_error(mock_session, monkeypatch: pytest.MonkeyPatch):
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.register_user(shared_secret, user)
 
-    mock_response_http_error = requests.exceptions.HTTPError
+    mock_response_exception = mock.MagicMock()
+    mock_response_exception.text = "Fail"
+    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
     mock_request = mock.Mock()
     mock_request.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_request
@@ -150,7 +152,9 @@ def test_get_nonce_requests_error(mock_session):
 
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.api._get_nonce()
-    mock_response_http_error = requests.exceptions.HTTPError
+    mock_response_exception = mock.MagicMock()
+    mock_response_exception.text = "Fail"
+    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
     mock_request = mock.Mock()
     mock_request.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_request
@@ -199,7 +203,9 @@ def test_get_version_requests_error(mock_session):
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
         synapse.api.get_version()
 
-    mock_response_http_error = requests.exceptions.HTTPError
+    mock_response_exception = mock.MagicMock()
+    mock_response_exception.text = "Fail"
+    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
     mock_requests = mock.MagicMock()
     mock_requests.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_requests

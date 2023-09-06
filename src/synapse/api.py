@@ -18,7 +18,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 from charm_state import CharmState
-from constants import MJOLNIR_MANAGEMENT_ROOM, SYNAPSE_URL
+from constants import MJOLNIR_MANAGEMENT_ROOM, MJOLNIR_MEMBERSHIP_ROOM, SYNAPSE_URL
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
 LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
 DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 ADD_USER_ROOM_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/join"
+CREATE_ROOM_URL = f"{SYNAPSE_URL}/_matrix/client/v3/createRoom"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 
 
@@ -131,14 +132,12 @@ def register_user(
         "admin": user.admin,
     }
     # finally register user
-    res = _do_request("POST", REGISTER_URL, json=data)
-    if "already taken" in res.text:
-        logger.warning(
-            "User %s already exists, no action was taken. Content: %s", user.username, res.text
-        )
-        return get_access_token(user=user, server=server, admin_access_token=admin_access_token)
     try:
+        res = _do_request("POST", REGISTER_URL, json=data)
         return res.json()["access_token"]
+    except UserExistsError:
+        logger.warning("User %s already exists, getting the access token.", user.username)
+        return get_access_token(user=user, server=server, admin_access_token=admin_access_token)
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
         logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
         raise RegisterUserError(str(exc)) from exc
@@ -303,11 +302,16 @@ def get_room_id(
     """
     authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
-    res = _do_request("GET", LIST_ROOMS_URL, headers=headers)
+    res = _do_request("GET", f"{LIST_ROOMS_URL}?search_term={room_name}", headers=headers)
     try:
         rooms = res.json()["rooms"]
+        total = len(rooms)
+        if total > 1:
+            logger.warning(
+                "%s rooms named with term %s found, checking for exact name.", total, room_name
+            )
         for room in rooms:
-            if room["name"].upper() == room_name.upper():
+            if str(room["name"]).upper() == room_name.upper():
                 return room["room_id"]
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
         logger.exception("Failed to decode rooms: %r. Received: %s", exc, res.text)
@@ -352,9 +356,39 @@ def create_management_room(admin_access_token: str) -> str:
     """
     authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
-    data = {"room_alias_name": f"{MJOLNIR_MANAGEMENT_ROOM}"}
-    url = f"{SYNAPSE_URL}/_matrix/client/r0/createRoom?access_token={admin_access_token}"
-    res = _do_request("POST", url, headers=headers, json=data)
+    power_level_content_override = {"events_default": 0}
+    moderators_room_id = get_room_id(MJOLNIR_MEMBERSHIP_ROOM, admin_access_token)
+    data = {
+        "name": MJOLNIR_MANAGEMENT_ROOM,
+        "power_level_content_override": power_level_content_override,
+        "room_alias_name": MJOLNIR_MANAGEMENT_ROOM,
+        "visibility": "private",
+        "initial_state": [
+            # Always make history visibility shared
+            {
+                "type": "m.room.history_visibility",
+                "state_key": "",
+                "content": {"history_visibility": "shared"},
+            },
+            {
+                "type": "m.room.guest_access",
+                "state_key": "",
+                "content": {"guest_access": "can_join"},
+            },
+            # Only retain the last 90 days of history
+            {"type": "m.room.retention", "state_key": "", "content": {"max_lifetime": 604800000}},
+            # Only users from MJOLNIR_MEMBERSHIP_ROOM can join
+            {
+                "type": "m.room.join_rules",
+                "state_key": "",
+                "content": {
+                    "join_rule": "restricted",
+                    "allow": [{"room_id": f"{moderators_room_id}", "type": "m.room_membership"}],
+                },
+            },
+        ],
+    }
+    res = _do_request("POST", CREATE_ROOM_URL, headers=headers, json=data)
     try:
         return res.json()["room_id"]
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
@@ -397,6 +431,7 @@ def _do_request(
 
     Raises:
         NetworkError: if there was an error fetching the api_url.
+        UserExistsError: if there is an attempt to register an existing user.
 
     Returns:
         Response from the request.
@@ -418,4 +453,6 @@ def _do_request(
         raise NetworkError(f"Failed to connect to {url}.") from exc
     except requests.exceptions.HTTPError as exc:
         logger.exception("HTTP error from %s: %r", url, exc)
+        if "User ID already taken" in exc.response.text:
+            raise UserExistsError("User exists") from exc
         raise NetworkError(f"HTTP error from {url}.") from exc
