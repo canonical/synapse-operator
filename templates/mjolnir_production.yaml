@@ -1,0 +1,23 @@
+dataPath: "/data/storage"
+verboseLogging: false
+logLevel: "INFO"
+syncOnStartup: true
+verifyPermissionsOnStartup: true
+noop: false
+fasterMembershipChecks: false
+automaticallyRedactForReasons:
+- "spam"
+- "advertising"
+protectAllJoinedRooms: false
+backgroundDelayMS: 500
+health:
+    healthz:
+        enabled: false
+        port: 7777
+        address: "0.0.0.0"
+        endpoint: "/healthz"
+        healthyStatus: 200
+        unhealthyStatus: 418
+    sentry:
+pollReports: false
+displayReports: false

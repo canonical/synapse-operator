@@ -205,37 +205,13 @@ def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     Returns:
         Mjolnir configuration
     """
-    default_content = f"""
-        dataPath: "/data/storage"
-        verboseLogging: false
-        logLevel: "INFO"
-        syncOnStartup: true
-        verifyPermissionsOnStartup: true
-        noop: false
-        fasterMembershipChecks: false
-        automaticallyRedactForReasons:
-        - "spam"
-        - "advertising"
-        protectAllJoinedRooms: false
-        backgroundDelayMS: 500
-        health:
-            healthz:
-                enabled: false
-                port: {MJOLNIR_HEALTH_PORT}
-                address: "0.0.0.0"
-                endpoint: "/healthz"
-                healthyStatus: 200
-                unhealthyStatus: 418
-            sentry:
-        pollReports: false
-        displayReports: false
-        """
-    config = yaml.safe_load(default_content)
-    config["homeserverUrl"] = SYNAPSE_URL
-    config["rawHomeserverUrl"] = SYNAPSE_URL
-    config["accessToken"] = access_token
-    config["managementRoom"] = room_id
-    return config
+    with open("templates/mjolnir_production.yaml", encoding="utf-8") as mjolnir_config_file:
+        config = yaml.safe_load(mjolnir_config_file)
+        config["homeserverUrl"] = SYNAPSE_URL
+        config["rawHomeserverUrl"] = SYNAPSE_URL
+        config["accessToken"] = access_token
+        config["managementRoom"] = room_id
+        return config
 
 
 def create_mjolnir_config(container: ops.Container, access_token: str, room_id: str) -> None:
