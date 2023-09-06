@@ -23,6 +23,8 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
+# The API version that should be used is described in the documentation:
+# https://matrix-org.github.io/synapse/latest/usage/administration/index.html
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
 LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
