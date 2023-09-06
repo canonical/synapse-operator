@@ -20,6 +20,7 @@ import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import (
     MJOLNIR_MANAGEMENT_ROOM,
+    MJOLNIR_MEMBERSHIP_ROOM,
     MJOLNIR_USER,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
@@ -136,10 +137,12 @@ class SynapseCharm(ops.CharmBase):
         return admin_user.access_token
 
     def _enable_mjolnir(self) -> None:
-        """Enable mjolnir service. If pebble service already exists, no action is taken.
+        """Enable mjolnir service.
 
         The required steps to enable Mjolnir are:
          - Get an admin access token.
+         - Check if the MJOLNIR_MEMBERSHIP_ROOM room is created.
+         -- Only users from there will be allowed to join the management room.
          - Create Mjolnir user or get its access token if already exists.
          - Create the management room or get its room id if already exists.
          -- The management room will allow only members of MJOLNIR_MEMBERSHIP_ROOM room to join it.
@@ -156,6 +159,16 @@ class SynapseCharm(ops.CharmBase):
         # in case there is a charm update that changes Mjolnir configuration
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         admin_access_token = self._get_admin_access_token(container)
+        try:
+            synapse.get_room_id(
+                room_name=MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
+            )
+        except synapse.RoomNotFoundError:
+            logger.info("Room %s not found, waiting for user action", MJOLNIR_MEMBERSHIP_ROOM)
+            self.model.unit.status = ops.BlockedStatus(
+                f"{MJOLNIR_MEMBERSHIP_ROOM} not found and "
+                "is required by Mjolnir. Please, create it."
+            )
         mjolnir_user = actions.register_user(
             container,
             MJOLNIR_USER,
