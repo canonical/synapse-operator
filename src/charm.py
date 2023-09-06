@@ -7,12 +7,12 @@
 
 import logging
 import typing
-from secrets import token_hex
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
+from ops.jujuversion import JujuVersion
 from ops.main import main
 
 import actions
@@ -25,6 +25,7 @@ from constants import (
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
     SYNAPSE_NGINX_PORT,
+    SYNAPSE_OPERATOR_USER,
 )
 from database_observer import DatabaseObserver
 from observability import Observability
@@ -32,6 +33,10 @@ from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
 
 logger = logging.getLogger(__name__)
+
+SECRET_KEY = "secret-key"
+SECRET_ID = "secret-id"
+PEER_RELATION_NAME = "synapse-peers"
 
 
 class SynapseCharm(ops.CharmBase):
@@ -123,18 +128,55 @@ class SynapseCharm(ops.CharmBase):
         if self._charm_state.enable_mjolnir:
             self._enable_mjolnir()
 
-    def _get_admin_access_token(self, container: ops.Container) -> str:
-        """Get admin access token.
+    def _has_secrets(self) -> bool:
+        """Check if current Juju version supports secrets.
 
-        Args:
-            container: Container of the charm.
+        Returns:
+            If secrets are supported or not.
+        """
+        juju_version = JujuVersion.from_environ()
+        # Because we're only using secrets in a peer relation we don't need to
+        # check if the other end of a relation also supports secrets.
+        return juju_version.has_secrets
+
+    def _on_leader_elected(self, _: ops.LeaderElectedEvent) -> None:
+        """Handle leader-elected event."""
+        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            return
+        admin_user = actions.register_user(container, SYNAPSE_OPERATOR_USER, True)
+        peer_relation = self.model.get_relation(PEER_RELATION_NAME)
+        if (
+            peer_relation
+            and not self._has_secrets()
+            and not peer_relation.data[self.app].get(SECRET_KEY)
+        ):
+            peer_relation.data[self.app].update({SECRET_KEY: admin_user.access_token})
+        elif (
+            peer_relation
+            and self._has_secrets()
+            and not peer_relation.data[self.app].get(SECRET_ID)
+        ):
+            secret = self.app.add_secret({SECRET_KEY: admin_user.access_token})
+            peer_relation.data[self.app].update({SECRET_ID: secret.id})
+
+    def _get_admin_access_token(self) -> str:
+        """Get admin access token.
 
         Returns:
             admin access token.
         """
-        admin_username = token_hex(16)
-        admin_user = actions.register_user(container, admin_username, True)
-        return admin_user.access_token
+        peer_relation = self.model.get_relation(PEER_RELATION_NAME)
+        assert peer_relation is not None  # nosec
+        if not self._has_secrets():
+            secret_value = peer_relation.data[self.app].get(SECRET_KEY)
+        else:
+            secret_id = peer_relation.data[self.app].get(SECRET_ID)
+            if secret_id:
+                secret = self.model.get_secret(id=secret_id)
+                secret_value = secret.get_content().get(SECRET_KEY)
+        return secret_value
 
     def _enable_mjolnir(self) -> None:
         """Enable mjolnir service.
@@ -158,7 +200,7 @@ class SynapseCharm(ops.CharmBase):
         # Not checking if the pebble service is enabled to skip this
         # in case there is a charm update that changes Mjolnir configuration
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
-        admin_access_token = self._get_admin_access_token(container)
+        admin_access_token = self._get_admin_access_token()
         try:
             synapse.get_room_id(
                 room_name=MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
