@@ -171,10 +171,10 @@ class SynapseCharm(ops.CharmBase):
             room_id = synapse.get_room_id(
                 room_name=MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
             )
-        except synapse.RoomNotFoundError as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            return
-        # Add the bot to the management room if we are creating it
+        except synapse.RoomNotFoundError:
+            logger.info("Room %s not found, creating", MJOLNIR_MANAGEMENT_ROOM)
+            room_id = synapse.create_management_room(admin_access_token=admin_access_token)
+        # Add the bot to the management room
         synapse.make_room_admin(
             user=mjolnir_user,
             server=str(self._charm_state.server_name),

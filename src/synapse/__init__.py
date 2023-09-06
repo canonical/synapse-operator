@@ -7,6 +7,7 @@
 from .api import (  # noqa: F401
     APIError,
     RoomNotFoundError,
+    create_management_room,
     deactivate_user,
     get_access_token,
     get_room_id,

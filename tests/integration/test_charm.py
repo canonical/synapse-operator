@@ -17,7 +17,7 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 from saml_test_helper import SamlK8sTestHelper
 
-from constants import SYNAPSE_NGINX_PORT, SYNAPSE_PORT
+from constants import MJOLNIR_HEALTH_PORT, SYNAPSE_NGINX_PORT, SYNAPSE_PORT
 from synapse.api import SYNAPSE_VERSION_REGEX
 
 # caused by pytest fixtures
@@ -218,6 +218,25 @@ async def test_workload_version(
         version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
         assert version_match
         assert version_match.group(1) == juju_workload_version
+
+
+async def test_synapse_enable_mjolnir(
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: build and deploy the Synapse charm, create an user and the management room.
+    act: enable mjolnir.
+    assert: the Synapse application and Mjolnir health point should return a correct response.
+    """
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    response = requests.get(f"http://{synapse_ip}:{SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5)
+    assert response.status_code == 200
+    assert "Welcome to the Matrix" in response.text
+    synapse_app.set_config({"enable_mjolnir": True})
+    await synapse_app.model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    response = requests.get(f"http://{synapse_ip}:{MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio

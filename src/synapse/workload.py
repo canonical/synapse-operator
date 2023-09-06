@@ -20,6 +20,7 @@ from constants import (
     CHECK_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
     MJOLNIR_CONFIG_PATH,
+    MJOLNIR_HEALTH_PORT,
     PROMETHEUS_TARGET_PORT,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
@@ -32,8 +33,6 @@ from constants import (
 from .api import VERSION_URL
 
 logger = logging.getLogger(__name__)
-
-MJOLNIR_HEALTH_PORT = 7777
 
 
 class WorkloadError(Exception):

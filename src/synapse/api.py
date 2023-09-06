@@ -18,7 +18,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 from charm_state import CharmState
-from constants import SYNAPSE_URL
+from constants import MJOLNIR_MANAGEMENT_ROOM, SYNAPSE_URL
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -336,6 +336,30 @@ def deactivate_user(
     user_id = f"@{user.username}:{server}"
     url = f"{DEACTIVATE_ACCOUNT_URL}/{user_id}"
     _do_request("POST", url, headers=headers, json=data)
+
+
+def create_management_room(admin_access_token: str) -> str:
+    """Create the management room to be used by Mjolnir.
+
+    Args:
+        admin_access_token: server admin access token to be used.
+
+    Raises:
+        GetRoomIDError: if there was an error while getting room id.
+
+    Returns:
+        Room id.
+    """
+    authorization_token = f"Bearer {admin_access_token}"
+    headers = {"Authorization": authorization_token}
+    data = {"room_alias_name": f"{MJOLNIR_MANAGEMENT_ROOM}"}
+    url = f"{SYNAPSE_URL}/_matrix/client/r0/createRoom?access_token={admin_access_token}"
+    res = _do_request("POST", url, headers=headers, json=data)
+    try:
+        return res.json()["room_id"]
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode room_id: %r. Received: %s", exc, res.text)
+        raise GetRoomIDError(str(exc)) from exc
 
 
 def make_room_admin(user: User, server: str, admin_access_token: str, room_id: str) -> None:
