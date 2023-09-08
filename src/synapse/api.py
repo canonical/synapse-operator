@@ -92,8 +92,8 @@ class RegisterUserError(APIError):
 def register_user(
     registration_shared_secret: str,
     user: User,
-    server: str = "",
-    admin_access_token: str = "",  # nosec
+    server: typing.Optional[str] = None,
+    admin_access_token: typing.Optional[str] = None,  # nosec
 ) -> str:
     """Register user.
 
@@ -131,9 +131,15 @@ def register_user(
     try:
         res = _do_request("POST", REGISTER_URL, json=data)
         return res.json()["access_token"]
-    except UserExistsError:
-        logger.warning("User %s already exists, getting the access token.", user.username)
-        return get_access_token(user=user, server=server, admin_access_token=admin_access_token)
+    except UserExistsError as exc:
+        logger.warning("User %s exists, getting the access token.", user.username)
+        if not server or not admin_access_token:
+            raise RegisterUserError(
+                f"User {user.username} exists but there is no server/admin access token set."
+            ) from exc
+        return get_access_token(
+            user=user, server=str(server), admin_access_token=str(admin_access_token)
+        )
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
         logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
         raise RegisterUserError(str(exc)) from exc
