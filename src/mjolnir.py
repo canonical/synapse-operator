@@ -93,6 +93,12 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         Returns:
             User: admin user that was created.
         """
+        # The username is random because ff the user exists, register_user will try to get the
+        # access_token.
+        # But to do that it needs an admin user and we don't have one yet.
+        # So, to be on the safe side, the user name is randomly generated and if for any reason
+        # there is no access token on peer data/secret, another user will be created.
+        #
         # Using 16 to create a random value but to  be secure against brute-force attacks, please
         # check the docs:
         # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
