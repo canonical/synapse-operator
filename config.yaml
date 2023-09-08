@@ -24,3 +24,4 @@ options:
     default: false
     description: |
       Configures whether to enable Mjolnir - moderation tool for Matrix.
+      Reference: https://github.com/matrix-org/mjolnir
