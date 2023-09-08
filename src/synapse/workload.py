@@ -63,10 +63,6 @@ class EnableMetricsError(WorkloadError):
     """Exception raised when something goes wrong while enabling metrics."""
 
 
-class EnableMjolnirError(WorkloadError):
-    """Exception raised when something goes wrong while enabling mjolnir."""
-
-
 class CreateMjolnirConfigError(WorkloadError):
     """Exception raised when something goes wrong while creating mjolnir config."""
 
