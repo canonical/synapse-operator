@@ -152,6 +152,8 @@ class SynapseCharm(ops.CharmBase):
         # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
         username = token_hex(16)
         admin_user = actions.register_user(container, username, True)
+        # If there is no secret, we use peer relation data
+        # If there is secret, then we update the secret and add the secret id to peer data
         peer_relation = self.model.get_relation(PEER_RELATION_NAME)
         if (
             peer_relation
