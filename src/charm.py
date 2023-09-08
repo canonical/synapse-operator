@@ -34,8 +34,8 @@ from saml_observer import SAMLObserver
 
 logger = logging.getLogger(__name__)
 
-SECRET_KEY = "secret-key"
-SECRET_ID = "secret-id"
+SECRET_KEY = "secret-key"  # nosec
+SECRET_ID = "secret-id"  # nosec
 PEER_RELATION_NAME = "synapse-peers"
 
 
@@ -76,6 +76,7 @@ class SynapseCharm(ops.CharmBase):
             strip_prefix=True,
         )
         self._observability = Observability(self)
+        self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
@@ -141,6 +142,7 @@ class SynapseCharm(ops.CharmBase):
 
     def _on_leader_elected(self, _: ops.LeaderElectedEvent) -> None:
         """Handle leader-elected event."""
+        logger.debug("Leader elected event.")
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
@@ -152,12 +154,14 @@ class SynapseCharm(ops.CharmBase):
             and not self._has_secrets()
             and not peer_relation.data[self.app].get(SECRET_KEY)
         ):
+            logger.debug("Updating peer relation data")
             peer_relation.data[self.app].update({SECRET_KEY: admin_user.access_token})
         elif (
             peer_relation
             and self._has_secrets()
             and not peer_relation.data[self.app].get(SECRET_ID)
         ):
+            logger.debug("Adding secret")
             secret = self.app.add_secret({SECRET_KEY: admin_user.access_token})
             peer_relation.data[self.app].update({SECRET_ID: secret.id})
 
