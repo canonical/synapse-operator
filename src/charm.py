@@ -7,6 +7,7 @@
 
 import logging
 import typing
+from secrets import token_hex
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
@@ -25,7 +26,6 @@ from constants import (
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
     SYNAPSE_NGINX_PORT,
-    SYNAPSE_OPERATOR_USER,
 )
 from database_observer import DatabaseObserver
 from observability import Observability
@@ -147,7 +147,11 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        admin_user = actions.register_user(container, SYNAPSE_OPERATOR_USER, True)
+        # Using 16 to create a random value but to  be secure against brute-force attacks, please
+        # check the docs:
+        # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
+        username = token_hex(16)
+        admin_user = actions.register_user(container, username, True)
         peer_relation = self.model.get_relation(PEER_RELATION_NAME)
         if (
             peer_relation
@@ -215,6 +219,7 @@ class SynapseCharm(ops.CharmBase):
                 f"{MJOLNIR_MEMBERSHIP_ROOM} not found and "
                 "is required by Mjolnir. Please, create it."
             )
+            return
         mjolnir_user = actions.register_user(
             container,
             MJOLNIR_USER,
