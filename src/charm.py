@@ -118,16 +118,12 @@ class SynapseCharm(ops.CharmBase):
         except synapse.APIError as exc:
             logger.debug("Cannot set workload version at this time: %s", exc)
 
-    def _on_config_changed(self, event: ops.HookEvent) -> None:
-        """Handle changed configuration.
-
-        Args:
-            event: Event triggering after config is changed.
-        """
+    def _on_config_changed(self, _: ops.HookEvent) -> None:
+        """Handle changed configuration."""
         self.change_config()
         self._set_workload_version()
         if self._charm_state.enable_mjolnir:
-            self._enable_mjolnir(event)
+            self._enable_mjolnir()
 
     def _has_secrets(self) -> bool:
         """Check if current Juju version supports secrets.
@@ -188,7 +184,7 @@ class SynapseCharm(ops.CharmBase):
                 secret_value = secret.get_content().get(SECRET_KEY)
         return secret_value
 
-    def _enable_mjolnir(self, event: ops.HookEvent) -> None:
+    def _enable_mjolnir(self) -> None:
         """Enable mjolnir service.
 
         The required steps to enable Mjolnir are:
@@ -202,9 +198,6 @@ class SynapseCharm(ops.CharmBase):
          - Create the Mjolnir configuration file.
          - Override Mjolnir user rate limit.
          - Finally, add Mjolnir pebble layer.
-
-        Args:
-            event: Event triggering after config is changed.
         """
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -214,17 +207,14 @@ class SynapseCharm(ops.CharmBase):
         # in case there is a charm update that changes Mjolnir configuration
         self.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         admin_access_token = self._get_admin_access_token()
-        try:
-            synapse.get_room_id(
-                room_name=MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
-            )
-        except synapse.RoomNotFoundError:
-            logger.info("Room %s not found, waiting for user action", MJOLNIR_MEMBERSHIP_ROOM)
+        membership_room_id = synapse.get_room_id(
+            room_name=MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
+        )
+        if membership_room_id is None:
             self.model.unit.status = ops.BlockedStatus(
                 f"{MJOLNIR_MEMBERSHIP_ROOM} not found and "
                 "is required by Mjolnir. Please, create it."
             )
-            event.defer()
             return
         mjolnir_user = actions.register_user(
             container,
@@ -234,12 +224,10 @@ class SynapseCharm(ops.CharmBase):
             admin_access_token,
         )
         mjolnir_access_token = mjolnir_user.access_token
-        try:
-            # Considering that the management room exists
-            room_id = synapse.get_room_id(
-                room_name=MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
-            )
-        except synapse.RoomNotFoundError:
+        room_id = synapse.get_room_id(
+            room_name=MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
+        )
+        if room_id is None:
             logger.info("Room %s not found, creating", MJOLNIR_MANAGEMENT_ROOM)
             room_id = synapse.create_management_room(admin_access_token=admin_access_token)
         # Add the Mjolnir user to the management room

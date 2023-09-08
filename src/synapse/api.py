@@ -72,10 +72,6 @@ class GetRoomIDError(APIError):
     """Exception raised when getting room id fails."""
 
 
-class RoomNotFoundError(APIError):
-    """Exception raised when room was not found."""
-
-
 class GetUserIDError(APIError):
     """Exception raised when getting user id fails."""
 
@@ -286,7 +282,7 @@ def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmS
 def get_room_id(
     room_name: str,
     admin_access_token: str,
-) -> str:
+) -> typing.Optional[str]:
     """Get room id.
 
     Args:
@@ -298,7 +294,6 @@ def get_room_id(
 
     Raises:
         GetRoomIDError: if there was an error while getting room id.
-        RoomNotFoundError: if the room was not found.
     """
     authorization_token = f"Bearer {admin_access_token}"
     headers = {"Authorization": authorization_token}
@@ -317,7 +312,7 @@ def get_room_id(
         logger.exception("Failed to decode rooms: %r. Received: %s", exc, res.text)
         raise GetRoomIDError(str(exc)) from exc
 
-    raise RoomNotFoundError(f"Room {room_name} not found. Please, verify if the room exists.")
+    return None
 
 
 def deactivate_user(
