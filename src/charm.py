@@ -92,7 +92,7 @@ class SynapseCharm(ops.CharmBase):
         self.pebble_service.replan_nginx(container)
         self.model.unit.status = ops.ActiveStatus()
 
-    def change_config(self, _: ops.HookEvent) -> None:
+    def change_config(self) -> None:
         """Change configuration."""
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -124,10 +124,10 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering after config is changed.
         """
-        self.change_config(event)
+        self.change_config()
         self._set_workload_version()
         if self._charm_state.enable_mjolnir:
-            self._enable_mjolnir()
+            self._enable_mjolnir(event)
 
     def _has_secrets(self) -> bool:
         """Check if current Juju version supports secrets.
@@ -186,7 +186,7 @@ class SynapseCharm(ops.CharmBase):
                 secret_value = secret.get_content().get(SECRET_KEY)
         return secret_value
 
-    def _enable_mjolnir(self) -> None:
+    def _enable_mjolnir(self, event: ops.HookEvent) -> None:
         """Enable mjolnir service.
 
         The required steps to enable Mjolnir are:
@@ -200,6 +200,9 @@ class SynapseCharm(ops.CharmBase):
          - Create the Mjolnir configuration file.
          - Override Mjolnir user rate limit.
          - Finally, add Mjolnir pebble layer.
+
+        Args:
+            event: Event triggering after config is changed.
         """
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -219,6 +222,7 @@ class SynapseCharm(ops.CharmBase):
                 f"{MJOLNIR_MEMBERSHIP_ROOM} not found and "
                 "is required by Mjolnir. Please, create it."
             )
+            event.defer()
             return
         mjolnir_user = actions.register_user(
             container,
@@ -252,13 +256,9 @@ class SynapseCharm(ops.CharmBase):
         self.pebble_service.replan_mjolnir(container)
         self.model.unit.status = ops.ActiveStatus()
 
-    def _on_pebble_ready(self, event: ops.HookEvent) -> None:
-        """Handle pebble ready event.
-
-        Args:
-            event: Event triggering after pebble is ready.
-        """
-        self.change_config(event)
+    def _on_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle pebble ready event."""
+        self.change_config()
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.
