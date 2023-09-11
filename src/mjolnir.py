@@ -93,7 +93,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         Returns:
             User: admin user that was created.
         """
-        # The username is random because ff the user exists, register_user will try to get the
+        # The username is random because if the user exists, register_user will try to get the
         # access_token.
         # But to do that it needs an admin user and we don't have one yet.
         # So, to be on the safe side, the user name is randomly generated and if for any reason
@@ -125,7 +125,14 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         if self.get_membership_room_id() is None:
             status = ops.BlockedStatus(
                 f"{MJOLNIR_MEMBERSHIP_ROOM} not found and "
-                "is required by Mjolnir. Please, create it."
+                "is required by Mjolnir. Please, check the logs."
+            )
+            interval = self._charm.model.config.get("update-status-hook-interval", "")
+            logger.error(
+                "The Mjolnir configuration will be done in %s after the room %s is created."
+                "This interval is set in update-status-hook-interval model config.",
+                interval,
+                MJOLNIR_MEMBERSHIP_ROOM,
             )
             event.add_status(status)
             return
