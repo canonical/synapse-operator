@@ -12,6 +12,7 @@ import pytest
 import requests
 
 import synapse
+from charm_state import CharmState, SynapseConfig
 from user import User
 
 
@@ -84,6 +85,31 @@ def test_register_user_error(mock_session, monkeypatch: pytest.MonkeyPatch):
         synapse.register_user(shared_secret, user)
 
 
+@mock.patch("synapse.api.requests.Session")
+def test_register_user_keyerror(mock_session, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User parameters and mock post to return empty content.
+    act: register the user.
+    assert: KeyError is raised.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    get_nonce_return = "nonce"
+    get_nonce_mock = mock.MagicMock(return_value=get_nonce_return)
+    monkeypatch.setattr("synapse.api._get_nonce", get_nonce_mock)
+    generate_mac_mock = mock.MagicMock(return_value="mac")
+    monkeypatch.setattr("synapse.api._generate_mac", generate_mac_mock)
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = {}
+    mock_requests = mock.MagicMock()
+    mock_requests.request.return_value = mock_response
+    mock_session.return_value = mock_requests
+    shared_secret = token_hex(16)
+
+    with pytest.raises(synapse.APIError, match="access_token"):
+        synapse.register_user(shared_secret, user)
+
+
 def test_register_user_nonce_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set User parameters and mock once to return error.
@@ -100,6 +126,110 @@ def test_register_user_nonce_error(monkeypatch: pytest.MonkeyPatch):
 
     with pytest.raises(synapse.APIError, match=msg):
         synapse.register_user(shared_secret, user)
+
+
+@mock.patch("synapse.api.requests.Session")
+def test_register_user_exists_error(mock_session, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User parameters and mock post to return UserExistsError.
+    act: register the user.
+    assert: exception is raised because there is no server/admin access token.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    get_nonce_return = "nonce"
+    get_nonce_mock = mock.MagicMock(return_value=get_nonce_return)
+    monkeypatch.setattr("synapse.api._get_nonce", get_nonce_mock)
+    generate_mac_mock = mock.MagicMock(return_value="mac")
+    monkeypatch.setattr("synapse.api._generate_mac", generate_mac_mock)
+    shared_secret = token_hex(16)
+    mock_response_exception = mock.MagicMock()
+    mock_response_exception.text = "User ID already taken"
+    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
+    mock_request = mock.Mock()
+    mock_request.request.side_effect = mock_response_http_error
+    mock_session.return_value = mock_request
+
+    with pytest.raises(synapse.APIError, match="exists but there is no"):
+        synapse.register_user(shared_secret, user)
+
+
+@mock.patch("synapse.api.requests.Session")
+def test_access_token_success(mock_session):
+    """
+    arrange: set User, admin_token and server parameters.
+    act: get access token.
+    assert: token is returned as expected.
+    """
+    # Set user parameters
+    username = "any-user"
+    user = User(username=username, admin=True)
+    # Prepare mock to get the access token
+    mock_response = mock.MagicMock()
+    expected_token = token_hex(16)
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = {"access_token": expected_token}
+    mock_requests = mock.MagicMock()
+    mock_requests.request.return_value = mock_response
+    mock_session.return_value = mock_requests
+    server = token_hex(16)
+    admin_access_token = token_hex(16)
+
+    result = synapse.get_access_token(user, server=server, admin_access_token=admin_access_token)
+
+    assert result == expected_token
+
+
+@mock.patch("synapse.api.requests.Session")
+def test_access_token_error(mock_session):
+    """
+    arrange: set User, admin_token and server parameters.
+    act: get access token.
+    assert: API error is raised.
+    """
+    # Set user parameters
+    username = "any-user"
+    user = User(username=username, admin=True)
+    # Prepare mock to get the access token
+    mock_response = mock.MagicMock()
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = {}
+    mock_requests = mock.MagicMock()
+    mock_requests.request.return_value = mock_response
+    mock_session.return_value = mock_requests
+    server = token_hex(16)
+    admin_access_token = token_hex(16)
+
+    with pytest.raises(synapse.APIError, match="access_token"):
+        synapse.get_access_token(user, server=server, admin_access_token=admin_access_token)
+
+
+def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User, admin_token and server parameters.
+    act: get access token.
+    assert: token is returned as expected.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    admin_access_token = token_hex(16)
+    server = token_hex(16)
+    synapse_config = SynapseConfig(server_name=server, report_stats="False", public_baseurl="")
+    charm_state = CharmState(synapse_config=synapse_config, datasource=None, saml_config=None)
+    expected_url = (
+        f"http://localhost:8008/_synapse/admin/v1/users/@any-user:{server}/override_ratelimit"
+    )
+    expected_authorization = f"Bearer {admin_access_token}"
+    do_request_mock = mock.MagicMock(return_value=mock.MagicMock())
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    synapse.override_rate_limit(
+        user, admin_access_token=admin_access_token, charm_state=charm_state
+    )
+
+    do_request_mock.assert_called_once_with(
+        "DELETE", expected_url, headers={"Authorization": expected_authorization}
+    )
 
 
 def test_generate_mac():
