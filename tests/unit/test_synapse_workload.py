@@ -6,6 +6,7 @@
 # pylint: disable=protected-access
 
 import io
+from secrets import token_hex
 from unittest.mock import MagicMock, Mock
 
 import ops
@@ -15,7 +16,12 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
-from constants import SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME, TEST_SERVER_NAME
+from constants import (
+    MJOLNIR_CONFIG_PATH,
+    SYNAPSE_CONFIG_PATH,
+    SYNAPSE_CONTAINER_NAME,
+    TEST_SERVER_NAME,
+)
 
 
 def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
@@ -157,3 +163,42 @@ def test_enable_saml_error(harness_with_saml: Harness, monkeypatch: pytest.Monke
 
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_saml(container_mock, harness.charm._charm_state)
+
+
+def test_get_mjolnir_config_success():
+    """
+    arrange: set access token and room id parameters.
+    act: call _get_mjolnir_config.
+    assert: config returns as expected.
+    """
+    access_token = token_hex(16)
+    room_id = token_hex(16)
+
+    config = synapse.workload._get_mjolnir_config(access_token=access_token, room_id=room_id)
+
+    assert config["accessToken"] == access_token
+    assert config["managementRoom"] == room_id
+
+
+def test_create_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set container, access token and room id parameters.
+    act: call create_mjolnir_config.
+    assert: file is pushed as expected.
+    """
+    access_token = token_hex(16)
+    room_id = token_hex(16)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    synapse.create_mjolnir_config(
+        container=container_mock, access_token=access_token, room_id=room_id
+    )
+
+    expected_config = synapse.workload._get_mjolnir_config(
+        access_token=access_token, room_id=room_id
+    )
+    push_mock.assert_called_once_with(
+        MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
+    )

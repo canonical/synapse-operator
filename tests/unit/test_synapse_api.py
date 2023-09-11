@@ -409,6 +409,55 @@ def test_create_management_room_error(monkeypatch: pytest.MonkeyPatch):
         synapse.create_management_room(admin_access_token=admin_access_token)
 
 
+def test_make_room_admin_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User, server, admin_access_token and room_id parameters.
+    act: call make_room_admin.
+    assert: request is called as expected.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    admin_access_token = token_hex(16)
+    server = token_hex(16)
+    room_id = token_hex(16)
+    do_request_mock = mock.MagicMock(return_value=mock.MagicMock())
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    synapse.make_room_admin(
+        user, admin_access_token=admin_access_token, server=server, room_id=room_id
+    )
+
+    expected_url = f"http://localhost:8008/_synapse/admin/v1/rooms/{room_id}/make_room_admin"
+    expected_authorization = f"Bearer {admin_access_token}"
+    do_request_mock.assert_called_once_with(
+        "POST",
+        expected_url,
+        headers={"Authorization": expected_authorization},
+        json={"user_id": f"@{user.username}:{server}"},
+    )
+
+
+def test_make_room_admin_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User, server, admin_access_token and room_id parameters.
+    act: call make_room_admin.
+    assert: exception is raised as expected.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    admin_access_token = token_hex(16)
+    server = token_hex(16)
+    room_id = token_hex(16)
+    expected_error_msg = "Failed to connect"
+    do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    with pytest.raises(synapse.APIError, match=expected_error_msg):
+        synapse.make_room_admin(
+            user, admin_access_token=admin_access_token, server=server, room_id=room_id
+        )
+
+
 def test_generate_mac():
     """
     arrange: set User parameters.
