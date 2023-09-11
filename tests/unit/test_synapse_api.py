@@ -192,7 +192,6 @@ def test_access_token_error(mock_session):
     user = User(username=username, admin=True)
     # Prepare mock to get the access token
     mock_response = mock.MagicMock()
-    mock_response = mock.MagicMock()
     mock_response.json.return_value = {}
     mock_requests = mock.MagicMock()
     mock_requests.request.return_value = mock_response
@@ -206,9 +205,9 @@ def test_access_token_error(mock_session):
 
 def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: set User, admin_token and server parameters.
-    act: get access token.
-    assert: token is returned as expected.
+    arrange: set User, admin_token and charm_state parameters.
+    act: call override_rate_limit.
+    assert: request is called as expected.
     """
     username = "any-user"
     user = User(username=username, admin=True)
@@ -230,6 +229,115 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
     do_request_mock.assert_called_once_with(
         "DELETE", expected_url, headers={"Authorization": expected_authorization}
     )
+
+
+def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User, admin_token and charm_state parameters, mock request to raise exception.
+    act: call override_rate_limit.
+    assert: exception is raised as expected.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    admin_access_token = token_hex(16)
+    server = token_hex(16)
+    synapse_config = SynapseConfig(server_name=server, report_stats="False", public_baseurl="")
+    charm_state = CharmState(synapse_config=synapse_config, datasource=None, saml_config=None)
+    expected_error_msg = "Failed to connect"
+    do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    with pytest.raises(synapse.APIError, match=expected_error_msg):
+        synapse.override_rate_limit(
+            user, admin_access_token=admin_access_token, charm_state=charm_state
+        )
+
+
+def test_get_room_id_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set room_name and admin_token parameters.
+    act: get room id.
+    assert: room id is returned as expected.
+    """
+    admin_access_token = token_hex(16)
+    room_name = token_hex(16)
+    expected_url = f"http://localhost:8008/_synapse/admin/v1/rooms?search_term={room_name}"
+    expected_authorization = f"Bearer {admin_access_token}"
+    expected_room_id = token_hex(16)
+    expected_room_res = [{"name": room_name, "room_id": expected_room_id}]
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = {"rooms": expected_room_res}
+    do_request_mock = mock.MagicMock(return_value=mock_response)
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    room_id = synapse.get_room_id(room_name=room_name, admin_access_token=admin_access_token)
+
+    assert room_id == expected_room_id
+    do_request_mock.assert_called_once_with(
+        "GET", expected_url, headers={"Authorization": expected_authorization}
+    )
+
+
+def test_get_room_id_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set room_name and admin_token parameters,
+        mock request to raise exception by removing expected field "room_id".
+    act: get room id.
+    assert: an error is returned.
+    """
+    admin_access_token = token_hex(16)
+    room_name = token_hex(16)
+    expected_room_res = [{"name": room_name}]
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = {"rooms": expected_room_res}
+    do_request_mock = mock.MagicMock(return_value=mock_response)
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    with pytest.raises(synapse.APIError, match="room_id"):
+        synapse.get_room_id(room_name=room_name, admin_access_token=admin_access_token)
+
+
+def test_deactivate_user_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User, admin_token and server parameters.
+    act: deactivate user.
+    assert: request is called as expected.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    admin_access_token = token_hex(16)
+    server = token_hex(16)
+    expected_url = f"http://localhost:8008/_synapse/admin/v1/deactivate/@{username}:{server}"
+    expected_authorization = f"Bearer {admin_access_token}"
+    do_request_mock = mock.MagicMock(return_value=mock.MagicMock())
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    synapse.deactivate_user(user, admin_access_token=admin_access_token, server=server)
+
+    do_request_mock.assert_called_once_with(
+        "POST",
+        expected_url,
+        headers={"Authorization": expected_authorization},
+        json={"erase": True},
+    )
+
+
+def test_deactivate_user_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set User, admin_token and server parameters.
+    act: deactivate user.
+    assert: exception is raised as expected.
+    """
+    username = "any-user"
+    user = User(username=username, admin=True)
+    admin_access_token = token_hex(16)
+    server = token_hex(16)
+    expected_error_msg = "Failed to connect"
+    do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    with pytest.raises(synapse.APIError, match=expected_error_msg):
+        synapse.deactivate_user(user, admin_access_token=admin_access_token, server=server)
 
 
 def test_generate_mac():
