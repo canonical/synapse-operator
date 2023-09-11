@@ -3,7 +3,8 @@
 
 """Synapse API unit tests."""
 
-# pylint: disable=protected-access
+# ignoring duplicate code due json sent to create room request
+# pylint: disable=protected-access,duplicate-code
 
 from secrets import token_hex
 from unittest import mock
@@ -338,6 +339,74 @@ def test_deactivate_user_error(monkeypatch: pytest.MonkeyPatch):
 
     with pytest.raises(synapse.APIError, match=expected_error_msg):
         synapse.deactivate_user(user, admin_access_token=admin_access_token, server=server)
+
+
+def test_create_management_room_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set admin_token parameter and mock get_room_id.
+    act: create management room.
+    assert: room id is returned.
+    """
+    moderator_room_id = token_hex(16)
+    monkeypatch.setattr("synapse.api.get_room_id", mock.MagicMock(return_value=moderator_room_id))
+    do_request_mock = mock.MagicMock(return_value=mock.MagicMock())
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+    admin_access_token = token_hex(16)
+
+    synapse.create_management_room(admin_access_token=admin_access_token)
+
+    expected_url = "http://localhost:8008/_matrix/client/v3/createRoom"
+    expected_authorization = f"Bearer {admin_access_token}"
+    expected_json = {
+        "name": "management",
+        "power_level_content_override": {"events_default": 0},
+        "room_alias_name": "management",
+        "visibility": "private",
+        "initial_state": [
+            {
+                "type": "m.room.history_visibility",
+                "state_key": "",
+                "content": {"history_visibility": "shared"},
+            },
+            {
+                "type": "m.room.guest_access",
+                "state_key": "",
+                "content": {"guest_access": "can_join"},
+            },
+            {"type": "m.room.retention", "state_key": "", "content": {"max_lifetime": 604800000}},
+            {
+                "type": "m.room.join_rules",
+                "state_key": "",
+                "content": {
+                    "join_rule": "restricted",
+                    "allow": [{"room_id": moderator_room_id, "type": "m.room_membership"}],
+                },
+            },
+        ],
+    }
+    do_request_mock.assert_called_once_with(
+        "POST",
+        expected_url,
+        headers={"Authorization": expected_authorization},
+        json=expected_json,
+    )
+
+
+def test_create_management_room_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set admin_token parameter, mock get_room_id and mock do_requests to raise exception.
+    act: create management room.
+    assert: exception is raised.
+    """
+    moderator_room_id = token_hex(16)
+    monkeypatch.setattr("synapse.api.get_room_id", mock.MagicMock(return_value=moderator_room_id))
+    admin_access_token = token_hex(16)
+    expected_error_msg = "Failed to connect"
+    do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    with pytest.raises(synapse.APIError, match=expected_error_msg):
+        synapse.create_management_room(admin_access_token=admin_access_token)
 
 
 def test_generate_mac():

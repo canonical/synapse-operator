@@ -17,7 +17,7 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 from saml_test_helper import SamlK8sTestHelper
 
-from constants import MJOLNIR_HEALTH_PORT, SYNAPSE_NGINX_PORT, SYNAPSE_PORT
+from constants import SYNAPSE_NGINX_PORT, SYNAPSE_PORT
 from synapse.api import SYNAPSE_VERSION_REGEX
 
 # caused by pytest fixtures
@@ -234,9 +234,7 @@ async def test_synapse_enable_mjolnir(
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
     synapse_app.set_config({"enable_mjolnir": True})
-    await synapse_app.model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    response = requests.get(f"http://{synapse_ip}:{MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
-    assert response.status_code == 200
+    await synapse_app.model.wait_for_idle(status="blocked")
 
 
 @pytest.mark.asyncio
