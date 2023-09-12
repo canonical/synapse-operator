@@ -157,14 +157,15 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             admin access token.
         """
         peer_relation = self._charm.model.get_relation(PEER_RELATION_NAME)
-        assert peer_relation is not None  # nosec
-        if not JujuVersion.from_environ().has_secrets:
-            secret_value = peer_relation.data[self._charm.app].get(SECRET_KEY)
-        else:
+        assert peer_relation  # nosec
+        if JujuVersion.from_environ().has_secrets:
             secret_id = peer_relation.data[self._charm.app].get(SECRET_ID)
             if secret_id:
                 secret = self._charm.model.get_secret(id=secret_id)
                 secret_value = secret.get_content().get(SECRET_KEY)
+        else:
+            secret_value = peer_relation.data[self._charm.app].get(SECRET_KEY)
+        assert secret_value
         return secret_value
 
     def enable_mjolnir(self) -> None:
@@ -216,3 +217,4 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             user=mjolnir_user, admin_access_token=admin_access_token, charm_state=self._charm_state
         )
         self._pebble_service.replan_mjolnir(container)
+        self._charm.model.unit.status = ops.ActiveStatus()

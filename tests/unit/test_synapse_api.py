@@ -298,6 +298,36 @@ def test_get_room_id_error(monkeypatch: pytest.MonkeyPatch):
         synapse.get_room_id(room_name=room_name, admin_access_token=admin_access_token)
 
 
+def test_get_room_id_not_found(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set room_name and admin_token parameters.
+    act: get room id.
+    assert: room id is None.
+    """
+    admin_access_token = token_hex(16)
+    room_name = token_hex(16)
+    different_room_name = token_hex(16)
+    expected_url = (
+        f"http://localhost:8008/_synapse/admin/v1/rooms?search_term={different_room_name}"
+    )
+    expected_authorization = f"Bearer {admin_access_token}"
+    expected_room_id = token_hex(16)
+    expected_room_res = [{"name": room_name, "room_id": expected_room_id}]
+    mock_response = mock.MagicMock()
+    mock_response.json.return_value = {"rooms": expected_room_res}
+    do_request_mock = mock.MagicMock(return_value=mock_response)
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+
+    room_id = synapse.get_room_id(
+        room_name=different_room_name, admin_access_token=admin_access_token
+    )
+
+    assert room_id is None
+    do_request_mock.assert_called_once_with(
+        "GET", expected_url, headers={"Authorization": expected_authorization}
+    )
+
+
 def test_deactivate_user_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set User, admin_token and server parameters.
@@ -473,6 +503,24 @@ def test_generate_mac():
         admin=False,
     )
     assert mac == "56a99737dfe3739ed3e49a962f9cb178c81d6d12"
+
+
+def test_generate_mac_user_type():
+    """
+    arrange: set User parameters with user type.
+    act: generate mac.
+    assert: Mac is generated accordingly to parameters.
+    """
+    mac = synapse.api._generate_mac(
+        shared_secret="shared_secret",
+        nonce="nonce",
+        user="username",
+        # changing this to a random value would affect the result to assert
+        password="password",  # nosec
+        admin=False,
+        user_type="bot",
+    )
+    assert mac == "613f9f557cc7c53dc916439b33b02e5602381887"
 
 
 @mock.patch("synapse.api.requests.Session")
