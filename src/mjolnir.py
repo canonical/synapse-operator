@@ -165,7 +165,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
                 secret_value = secret.get_content().get(SECRET_KEY)
         else:
             secret_value = peer_relation.data[self._charm.app].get(SECRET_KEY)
-        assert secret_value
+        assert secret_value  # nosec
         return secret_value
 
     def enable_mjolnir(self) -> None:
