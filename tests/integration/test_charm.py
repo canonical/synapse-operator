@@ -233,8 +233,8 @@ async def test_synapse_enable_mjolnir(
     response = requests.get(f"http://{synapse_ip}:{SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5)
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
-    synapse_app.set_config({"enable_mjolnir": True})
-    await synapse_app.model.wait_for_idle(status="blocked")
+    await synapse_app.set_config({"enable_mjolnir": "true"})
+    await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="blocked")
 
 
 @pytest.mark.asyncio
