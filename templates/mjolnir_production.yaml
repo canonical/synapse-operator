@@ -12,7 +12,7 @@ protectAllJoinedRooms: false
 backgroundDelayMS: 500
 health:
     healthz:
-        enabled: false
+        enabled: true
         port: 7777
         address: "0.0.0.0"
         endpoint: "/healthz"
