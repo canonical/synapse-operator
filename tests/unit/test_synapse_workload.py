@@ -68,6 +68,22 @@ def test_enable_metrics_error(monkeypatch: pytest.MonkeyPatch):
         synapse.enable_metrics(container_mock)
 
 
+def test_enable_saml_config_file_not_found():
+    """
+    arrange: set synapse configuration.
+    act: enable SAML.
+    assert: EnableSAMLError is raised because config file is not found.
+    """
+    harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness.begin()
+
+    container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    with pytest.raises(synapse.workload.EnableSAMLError, match="no such file"):
+        synapse.enable_saml(container, harness.charm._charm_state)
+
+
 def test_enable_saml_success():
     """
     arrange: set mock container with file.
