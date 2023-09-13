@@ -16,6 +16,7 @@ MJOLNIR_MEMBERSHIP_ROOM = "moderators"
 MJOLNIR_SERVICE_NAME = "mjolnir"
 PEER_RELATION_NAME = "synapse-peers"
 PROMETHEUS_TARGET_PORT = "9000"
+# Disabling it since these are not hardcoded password
 SECRET_ID = "secret-id"  # nosec
 SECRET_KEY = "secret-key"  # nosec
 SYNAPSE_COMMAND_PATH = "/start.py"
