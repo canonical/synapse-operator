@@ -167,6 +167,20 @@ def enable_metrics(container: ops.Container) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
+def get_entity_id(charm_state: CharmState) -> str:
+    """Get entity id.
+
+    Args:
+        charm_state: Instance of CharmState.
+
+    Returns:
+        entity id to be used on SAML configuration.
+    """
+    if charm_state.public_baseurl is not None:
+        return charm_state.public_baseurl
+    return f"https://{charm_state.server_name}"
+
+
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     """Create config as expected by pysaml2.
 
@@ -186,6 +200,7 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
         )
 
     saml_config = charm_state.saml_config
+    entity_id = get_entity_id(charm_state=charm_state)
     sp_config = {
         "metadata": {
             "remote": [
@@ -197,12 +212,12 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
         "allow_unknown_attributes": True,
         "service": {
             "sp": {
-                "entityId": saml_config["entity_id"],
+                "entityId": entity_id,
                 "allow_unsolicited": True,
             },
         },
     }
-    # login.staging.canonical.com and login.canonical.com
+    # login.staging.ubuntu.com and login.ubuntu.com
     # dont send uid in SAMLResponse so this will map
     # fullname to uid
     if "ubuntu.com" in saml_config["metadata_url"]:
