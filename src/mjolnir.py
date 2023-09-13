@@ -30,7 +30,12 @@ USERNAME = "mjolnir"
 
 
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
-    """A class representing the Mjolnir plugin for Synapse application."""
+    """A class representing the Mjolnir plugin for Synapse application.
+
+    Mjolnir is a moderation tool for Matrix to be used to protect your server from malicious
+    invites, spam messages etc.
+    See https://github.com/matrix-org/mjolnir/ for more details about it.
+    """
 
     def __init__(self, charm: ops.CharmBase, charm_state: CharmState):
         """Initialize a new instance of the Mjolnir class.
