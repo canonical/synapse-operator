@@ -5,8 +5,7 @@
 
 # pylint: disable=protected-access
 
-import io
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import ops
 import pytest
