@@ -26,7 +26,7 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
-MJOLNIR_USER = "mjolnir"
+USERNAME = "mjolnir"
 
 
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
@@ -191,7 +191,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         admin_access_token = self.get_admin_access_token()
         mjolnir_user = actions.register_user(
             container,
-            MJOLNIR_USER,
+            USERNAME,
             True,
             str(self._charm_state.server_name),
             admin_access_token,

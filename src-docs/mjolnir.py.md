@@ -14,7 +14,7 @@ Provide the Mjolnir class to represent the Mjolnir plugin for Synapse.
 - **SECRET_ID**
 - **SECRET_KEY**
 - **SYNAPSE_CONTAINER_NAME**
-- **MJOLNIR_USER**
+- **USERNAME**
 
 
 ---
