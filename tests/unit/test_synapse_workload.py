@@ -30,20 +30,15 @@ def test_enable_metrics_success():
           bind_addresses:
             - "::"
     """
-
-    # Setup charm
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
     harness.begin()
-
-    # write config
     root = harness.get_filesystem_root(SYNAPSE_CONTAINER_NAME)
     config_path = root / SYNAPSE_CONFIG_PATH[1:]
     config_path.parent.mkdir(parents=True)
     config_path.write_text(config_content)
 
-    # Enable metrics in container
     synapse_container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     synapse.enable_metrics(synapse_container)
 
@@ -54,8 +49,8 @@ def test_enable_metrics_success():
         ],
         "enable_metrics": True,
     }
-
     assert config_path.read_text() == yaml.safe_dump(expected_config_content)
+    harness.cleanup()
 
 
 def test_enable_metrics_error(monkeypatch: pytest.MonkeyPatch):
@@ -82,7 +77,6 @@ def test_enable_saml_success():
     """
     # This test was given as an example in this comment by Ben Hoyt.
     # https://github.com/canonical/synapse-operator/pull/19#discussion_r1302486670
-    # Arrange: set up harness and container filesystem
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     relation_id = harness.add_relation("saml", "saml-integrator")
@@ -145,6 +139,7 @@ listeners:
         },
     }
     assert config_path.read_text() == yaml.safe_dump(expected_config_content)
+    harness.cleanup()
 
 
 def test_enable_saml_error(harness_with_saml: Harness, monkeypatch: pytest.MonkeyPatch):
@@ -153,7 +148,21 @@ def test_enable_saml_error(harness_with_saml: Harness, monkeypatch: pytest.Monke
     act: change the configuration file.
     assert: raise WorkloadError in case of error.
     """
-    harness = harness_with_saml
+    harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    relation_id = harness.add_relation("saml", "saml-integrator")
+    harness.add_relation_unit(relation_id, "saml-integrator/0")
+    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
+    harness.update_relation_data(
+        relation_id,
+        "saml-integrator",
+        {
+            "entity_id": "https://login.staging.ubuntu.com",
+            "metadata_url": metadata_url,
+        },
+    )
+    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness.begin()
     error_message = "Error pulling file"
     path_error = ops.pebble.PathError(kind="fake", message=error_message)
     pull_mock = MagicMock(side_effect=path_error)
@@ -162,3 +171,4 @@ def test_enable_saml_error(harness_with_saml: Harness, monkeypatch: pytest.Monke
 
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_saml(container_mock, harness.charm._charm_state)
+    harness.cleanup()
