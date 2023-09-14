@@ -3,7 +3,7 @@
 
 """Reset instance action unit tests."""
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, no-member
 
 import io
 import unittest.mock
