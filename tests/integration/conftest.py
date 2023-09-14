@@ -219,7 +219,7 @@ async def grafana_app_fixture(
         app = await model.deploy(
             "grafana-k8s",
             application_name=grafana_app_name,
-            channel="1.0/edge",
+            channel="stable",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
@@ -244,7 +244,7 @@ async def deploy_prometheus_fixture(
         app = await model.deploy(
             "prometheus-k8s",
             application_name=prometheus_app_name,
-            channel="1.0/edge",
+            channel="stable",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
