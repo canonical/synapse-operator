@@ -16,3 +16,4 @@ SYNAPSE_PORT = 8008
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_SERVICE_NAME = "synapse"
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
+TEST_SERVER_NAME_CHANGED = "pebble-layer-1.synapse.com"
