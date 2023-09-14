@@ -15,6 +15,7 @@ import synapse
 from charm import SynapseCharm
 
 from constants import (
+    SYNAPSE_CONFIG_PATH,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
@@ -22,7 +23,6 @@ from constants import (
     SYNAPSE_SERVICE_NAME,
     TEST_SERVER_NAME,
     TEST_SERVER_NAME_CHANGED,
-    SYNAPSE_CONFIG_PATH,
 )
 from pebble import PebbleServiceError
 
