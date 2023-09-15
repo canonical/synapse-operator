@@ -15,17 +15,18 @@ from ops.testing import Harness
 
 import synapse
 from user import User
+from constants import TEST_SERVER_NAME
 
 
-def test_register_user_action(
-    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_register_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: run register-user action.
     assert: Synapse charm should reset the instance.
     """
-    harness = harness_server_name_configured
+    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
+    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.begin_with_initial_hooks()
     get_registration_mock = unittest.mock.Mock(return_value="shared_secret")
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     register_user_mock = unittest.mock.MagicMock()
@@ -48,14 +49,16 @@ def test_register_user_action(
 
 
 def test_register_user_registration_none(
-    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: run register-user action.
     assert: event fails if registration shared secret is not found.
     """
-    harness = harness_server_name_configured
+    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
+    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.begin_with_initial_hooks()
     get_registration_mock = unittest.mock.Mock(return_value=None)
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     register_user_mock = unittest.mock.MagicMock()
@@ -84,15 +87,15 @@ def test_register_user_registration_none(
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-def test_register_user_action_api_error(
-    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_register_user_action_api_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: run register-user action.
     assert: Synapse API fails.
     """
-    harness = harness_server_name_configured
+    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
+    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.begin_with_initial_hooks()
     get_registration_mock = unittest.mock.Mock(return_value="shared_secret")
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     fail_message = "Some fail message"
