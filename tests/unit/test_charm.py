@@ -11,9 +11,9 @@ from unittest.mock import MagicMock
 import ops
 import pytest
 from ops.testing import Harness
+
 import synapse
 from charm import SynapseCharm
-
 from constants import (
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_PATH,

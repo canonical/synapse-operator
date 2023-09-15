@@ -15,11 +15,11 @@ from psycopg2 import sql
 
 import database_observer
 import synapse
+from charm import SynapseCharm
 from charm_types import DatasourcePostgreSQL
 from constants import SYNAPSE_CONTAINER_NAME, TEST_SERVER_NAME
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
-from charm import SynapseCharm
 
 
 def test_erase_database(

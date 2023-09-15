@@ -14,8 +14,8 @@ from ops.charm import ActionEvent
 from ops.testing import Harness
 
 import synapse
-from user import User
 from constants import TEST_SERVER_NAME
+from user import User
 
 
 def test_register_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
