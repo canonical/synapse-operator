@@ -162,6 +162,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     yield harness
     harness.cleanup()
 
+
 @pytest.fixture(name="container_mocked")
 def container_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
     """Mock container base to others fixtures."""
