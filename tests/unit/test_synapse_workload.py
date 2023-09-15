@@ -142,7 +142,7 @@ listeners:
     harness.cleanup()
 
 
-def test_enable_saml_error(harness_with_saml: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_enable_saml_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
     act: change the configuration file.
