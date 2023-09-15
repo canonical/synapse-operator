@@ -2,7 +2,7 @@
 
 ## What you’ll do
 - Deploy the Synapse charm.
-- Relate to the PostgreSQL K8s charm.
+- Integrate with the PostgreSQL K8s charm.
 - Expose the Synapse charm by using Traefik K8s charm.
 - Create a user.
 - Access your Synapse instance via Element Desktop.
@@ -52,7 +52,7 @@ synapse/0*                 waiting   idle   10.1.74.70             Waiting for d
 
 Provide integration between Synapse and PostgreSQL:
 ```
-juju relate synapse postgresql-k8s
+juju integrate synapse postgresql-k8s
 ```
 
 Run `juju status` and wait until the Application status is `Active` as the
@@ -64,7 +64,7 @@ synapse                 3.2                           active      1  synapse    
 
 The deployment finishes when the status shows "Active".
 
-## Relate to Traefik
+## Integrate with Traefik
 
 The [Traefik charm](https://github.com/canonical/traefik-k8s-operator) exposes
 Juju applications to the outside of a Kubernetes cluster, without relying on the
@@ -86,7 +86,7 @@ juju config traefik-k8s routing_mode=subdomain
 
 Provide integration between Synapse and Traefik:
 ```
-juju relate synapse traefik-k8s
+juju integrate synapse traefik-k8s
 ```
 
 Now, you will need to go into your DNS settings and set the IP address of the
