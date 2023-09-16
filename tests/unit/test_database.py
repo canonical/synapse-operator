@@ -105,7 +105,7 @@ def test_connect(postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch
 
     db_client._connect()
 
-    relation_database_password = postgresql_relation_data.get("password")
+    relation_database_password = str(postgresql_relation_data.get("password"))
     query = (
         "dbname='synapse' user='user' host='myhost' "
         f"password='{relation_database_password}' connect_timeout=5"
