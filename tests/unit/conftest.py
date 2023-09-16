@@ -114,6 +114,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 @pytest.fixture(name="harness")
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
+    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     harness = Harness(SynapseCharm)
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
@@ -214,3 +215,11 @@ def erase_database_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.m
 def datasource_postgresql_password_fixture() -> str:
     """Generate random password"""
     return token_hex(16)
+
+@pytest.fixture(name="postgresql_relation_data")
+def postgresql_relation_configured_fixture(datasource_postgresql_password: str) -> dict:
+    return {
+        "endpoints": "myhost:5432",
+        "username": "user",
+        "password": datasource_postgresql_password,
+    }

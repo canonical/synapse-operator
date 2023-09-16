@@ -22,9 +22,7 @@ from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
 
 
-def test_erase_database(
-    datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_erase_database(postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation and erase database.
@@ -32,17 +30,7 @@ def test_erase_database(
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
@@ -72,7 +60,7 @@ def test_erase_database(
 
 
 def test_erase_database_error(
-    datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch
+    postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -81,17 +69,7 @@ def test_erase_database_error(
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
@@ -107,7 +85,7 @@ def test_erase_database_error(
     harness.cleanup()
 
 
-def test_connect(monkeypatch: pytest.MonkeyPatch, datasource_postgresql_password: str):
+def test_connect(postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and get connection.
@@ -115,17 +93,7 @@ def test_connect(monkeypatch: pytest.MonkeyPatch, datasource_postgresql_password
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
@@ -136,17 +104,16 @@ def test_connect(monkeypatch: pytest.MonkeyPatch, datasource_postgresql_password
 
     db_client._connect()
 
+    relation_database_password = postgresql_relation_data.get("password")
     query = (
         "dbname='synapse' user='user' host='myhost' "
-        f"password='{datasource_postgresql_password}' connect_timeout=5"
+        f"password='{relation_database_password}' connect_timeout=5"
     )
     connect_mock.assert_called_once_with(query)
     harness.cleanup()
 
 
-def test_connect_error(
-    datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_connect_error(postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and get connection.
@@ -154,17 +121,7 @@ def test_connect_error(
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
@@ -176,9 +133,7 @@ def test_connect_error(
     harness.cleanup()
 
 
-def test_prepare_database(
-    datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_prepare_database(postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation and prepare database.
@@ -186,17 +141,7 @@ def test_prepare_database(
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
@@ -219,7 +164,7 @@ def test_prepare_database(
 
 
 def test_prepare_database_error(
-    datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch
+    postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -228,17 +173,7 @@ def test_prepare_database_error(
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
@@ -254,7 +189,7 @@ def test_prepare_database_error(
     harness.cleanup()
 
 
-def test_relation_as_datasource(datasource_postgresql_password: str) -> None:
+def test_relation_as_datasource(postgresql_relation_data: dict) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation.
@@ -262,24 +197,15 @@ def test_relation_as_datasource(datasource_postgresql_password: str) -> None:
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
 
     harness.begin()
 
+    relation_database_password = postgresql_relation_data.get("password")
     expected = DatasourcePostgreSQL(
         host="myhost",
         db=harness.charm.app.name,
-        password=datasource_postgresql_password,
+        password=relation_database_password,
         port="5432",
         user="user",
     )
@@ -295,7 +221,7 @@ def test_relation_as_datasource(datasource_postgresql_password: str) -> None:
 
 
 def test_relation_as_datasource_error(
-    datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch
+    postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch
 ):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -304,17 +230,7 @@ def test_relation_as_datasource_error(
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
 
     harness.begin()
 
@@ -327,27 +243,14 @@ def test_relation_as_datasource_error(
     harness.cleanup()
 
 
-def test_change_config(
-    harness: Harness, datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch
-):
+def test_change_config(harness: Harness, postgresql_relation_data: dict):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger change config.
     assert: charm status is active.
     """
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
 
     harness.charm.database._change_config()
@@ -355,9 +258,7 @@ def test_change_config(
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-def test_change_config_error(
-    datasource_postgresql_password: str,
-):
+def test_change_config_error(postgresql_relation_data: dict):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger change config.
@@ -365,17 +266,7 @@ def test_change_config_error(
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
 
@@ -385,7 +276,7 @@ def test_change_config_error(
     harness.cleanup()
 
 
-def test_on_database_created(datasource_postgresql_password: str, monkeypatch: pytest.MonkeyPatch):
+def test_on_database_created(postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger _on_database_created.
@@ -393,17 +284,7 @@ def test_on_database_created(datasource_postgresql_password: str, monkeypatch: p
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("database", "postgresql")
-    harness.add_relation_unit(relation_id, "postgresql/0")
-    harness.update_relation_data(
-        relation_id,
-        "postgresql",
-        {
-            "endpoints": "myhost:5432",
-            "username": "user",
-            "password": datasource_postgresql_password,
-        },
-    )
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
     harness.begin()
     db_client_mock = unittest.mock.MagicMock()
     conn_mock = unittest.mock.MagicMock()
