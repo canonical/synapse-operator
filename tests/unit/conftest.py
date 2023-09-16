@@ -216,6 +216,7 @@ def datasource_postgresql_password_fixture() -> str:
     """Generate random password"""
     return token_hex(16)
 
+
 @pytest.fixture(name="postgresql_relation_data")
 def postgresql_relation_configured_fixture(datasource_postgresql_password: str) -> dict:
     return {
