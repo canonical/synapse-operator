@@ -23,8 +23,8 @@ from constants import (
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
-    TEST_SERVER_NAME,
 )
+from tests.constants import TEST_SERVER_NAME
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):

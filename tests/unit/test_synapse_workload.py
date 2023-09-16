@@ -14,7 +14,8 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
-from constants import SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME, TEST_SERVER_NAME
+from constants import SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME
+from tests.constants import TEST_SERVER_NAME
 
 
 def test_enable_metrics_success():

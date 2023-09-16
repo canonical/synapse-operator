@@ -14,7 +14,7 @@ from ops.charm import ActionEvent
 from ops.testing import Harness
 
 import synapse
-from constants import TEST_SERVER_NAME
+from tests.constants import TEST_SERVER_NAME
 from user import User
 
 

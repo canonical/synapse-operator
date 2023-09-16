@@ -21,10 +21,9 @@ from constants import (
     SYNAPSE_NGINX_CONTAINER_NAME,
     SYNAPSE_NGINX_PORT,
     SYNAPSE_SERVICE_NAME,
-    TEST_SERVER_NAME,
-    TEST_SERVER_NAME_CHANGED,
 )
 from pebble import PebbleServiceError
+from tests.constants import TEST_SERVER_NAME, TEST_SERVER_NAME_CHANGED
 
 
 def test_synapse_pebble_layer(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:

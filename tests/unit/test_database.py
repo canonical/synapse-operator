@@ -17,9 +17,10 @@ import database_observer
 import synapse
 from charm import SynapseCharm
 from charm_types import DatasourcePostgreSQL
-from constants import SYNAPSE_CONTAINER_NAME, TEST_SERVER_NAME
+from constants import SYNAPSE_CONTAINER_NAME
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
+from tests.constants import TEST_SERVER_NAME
 
 
 def test_erase_database(postgresql_relation_data: dict, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -201,7 +202,7 @@ def test_relation_as_datasource(postgresql_relation_data: dict) -> None:
 
     harness.begin()
 
-    relation_database_password = postgresql_relation_data.get("password")
+    relation_database_password = str(postgresql_relation_data.get("password"))
     expected = DatasourcePostgreSQL(
         host="myhost",
         db=harness.charm.app.name,
