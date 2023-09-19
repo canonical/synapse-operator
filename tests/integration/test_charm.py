@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import typing
+from secrets import token_hex
 
 import pytest
 import requests
@@ -17,7 +18,7 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 from saml_test_helper import SamlK8sTestHelper
 
-from constants import SYNAPSE_NGINX_PORT, SYNAPSE_PORT
+from constants import MJOLNIR_HEALTH_PORT, SYNAPSE_NGINX_PORT, SYNAPSE_PORT
 from synapse.api import SYNAPSE_VERSION_REGEX
 
 # caused by pytest fixtures
@@ -218,6 +219,74 @@ async def test_workload_version(
         version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
         assert version_match
         assert version_match.group(1) == juju_workload_version
+
+
+async def test_synapse_enable_mjolnir(
+    ops_test: OpsTest,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: build and deploy the Synapse charm, create an user.
+    act: enable Mjolnir and create the management room.
+    assert: the Synapse application is active and Mjolnir health point returns a correct response.
+    """
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    response = requests.get(f"http://{synapse_ip}:{SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5)
+    assert response.status_code == 200
+    assert "Welcome to the Matrix" in response.text
+    username = token_hex(16)
+    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "register-user", username=username, admin=True
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    assert action_register_user.results["register-user"]
+    password = action_register_user.results["user-password"]
+
+    await synapse_app.set_config({"enable_mjolnir": "true"})
+    await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="blocked")
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    # login
+    sess = requests.session()
+    res = sess.post(
+        f"http://{synapse_ip}:8080/_matrix/client/r0/login",
+        json={
+            "identifier": {"type": "m.id.user", "user": username},
+            "password": password,
+            "type": "m.login.password",
+        },
+        timeout=5,
+    )
+    res.raise_for_status()
+    access_token = res.json()["access_token"]
+    assert access_token
+    # create the room
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    room_body = {
+        "creation_content": {"m.federate": False},
+        "name": "moderators",
+        "preset": "public_chat",
+        "room_alias_name": "moderators",
+        "room_version": "1",
+        "topic": "moderators",
+    }
+    res = sess.post(
+        f"http://{synapse_ip}:8080/_matrix/client/v3/createRoom",
+        json=room_body,
+        headers=headers,
+        timeout=5,
+    )
+    res.raise_for_status()
+
+    # wait for idle
+    async with ops_test.fast_forward():
+        # using fast_forward otherwise would wait for model config update-status-hook-interval
+        await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="active")
+    # check healthz endpoint
+    res = sess.get(f"http://{synapse_ip}:{MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
+    assert res.status_code == 200
 
 
 @pytest.mark.asyncio

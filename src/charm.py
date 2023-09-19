@@ -19,6 +19,7 @@ import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_NGINX_CONTAINER_NAME, SYNAPSE_NGINX_PORT
 from database_observer import DatabaseObserver
+from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
@@ -63,6 +64,10 @@ class SynapseCharm(ops.CharmBase):
             strip_prefix=True,
         )
         self._observability = Observability(self)
+        # Mjolnir is a moderation tool for Matrix.
+        # See https://github.com/matrix-org/mjolnir/ for more details about it.
+        if self._charm_state.enable_mjolnir:
+            self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
@@ -75,15 +80,10 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse NGINX")
-        try:
-            self.pebble_service.replan_nginx(container)
-        except PebbleServiceError as exc:
-            logger.error("Error replanning nginx, %s", exc)
-            self.model.unit.status = ops.BlockedStatus("Failed to replan NGINX")
-            return
+        self.pebble_service.replan_nginx(container)
         self.model.unit.status = ops.ActiveStatus()
 
-    def change_config(self, _: ops.HookEvent) -> None:
+    def change_config(self) -> None:
         """Change configuration."""
         container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -109,22 +109,14 @@ class SynapseCharm(ops.CharmBase):
         except synapse.APIError as exc:
             logger.debug("Cannot set workload version at this time: %s", exc)
 
-    def _on_config_changed(self, event: ops.HookEvent) -> None:
-        """Handle changed configuration.
-
-        Args:
-            event: Event triggering after config is changed.
-        """
-        self.change_config(event)
+    def _on_config_changed(self, _: ops.HookEvent) -> None:
+        """Handle changed configuration."""
+        self.change_config()
         self._set_workload_version()
 
-    def _on_pebble_ready(self, event: ops.HookEvent) -> None:
-        """Handle pebble ready event.
-
-        Args:
-            event: Event triggering after pebble is ready.
-        """
-        self.change_config(event)
+    def _on_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle pebble ready event."""
+        self.change_config()
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.
