@@ -34,8 +34,7 @@ synapse-0                         3/3     Running   0         6h4m
 This shows there are 3 containers - the two named above, as well as a container
 for the charm code itself.
 
-And if you run `kubectl describe pod synapse-0`, all the containers will have as
-Command ```/charm/bin/pebble```. That's because Pebble is responsible for the
+All containers will have the command `/charm/bin/pebble`. Pebble is responsible for service management, as explained above.
 processes startup as explained above.
 
 ## OCI images
@@ -57,21 +56,20 @@ directories that define the ROCKs, see the section above.
 ### NGINX
 
 This container is the entry point for all web traffic to the pod (on port
-`8080`). Serves some static files directly and forwards non-static requests to
+`8080`). Serves static files directly and forwards non-static requests to
 the Synapse container (on port `8008`).
 
-The reason for that is since NGINX provides cache static content, reverse proxy,
-and load balance among multiple application servers, as well as other features
-it can be used in front of Synapse server to significantly reduce server and
-network load.
+NGINX provides static content cache, reverse proxy, and load balancer among 
+multiple application servers, as well as other features. It can be used in front of
+Synapse server to significantly reduce server and network load.
 
 The workload that this container is running is defined in the [NGINX ROCK](https://github.com/canonical/synapse-operator/tree/main/nginx_rock/).
 
 ### Synapse
 
-Synapse is a Python application run by the script "/start.py".
+Synapse is a Python application run by the `start.py` script.
 
-Synapse listens by default in a no-TLS port `8008` serving it so NGINX can
+Synapse listens to non-TLS port `8008` serving by default. NGINX can then
 forward non-static traffic to it.
 
 The workload that this container is running is defined in the [Synapse ROCK](https://github.com/canonical/synapse-operator/tree/main/synapse_rock).
@@ -83,7 +81,7 @@ Please, see [Integrations](https://charmhub.io/synapse/docs/reference/integratio
 ## Charm code overview
 
 The `src/charm.py` is the default entry point for a charm and has the
-SynapseOperatorCharm Python class which inherits from CharmBase.
+`SynapseOperatorCharm` Python class which inherits from the `CharmBase`.
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops)
 (Python framework for developing charms).
@@ -100,10 +98,9 @@ Take, for example, when a configuration is changed by using the CLI.
 juju config synapse server_name=myserver.myserver.com
 ```
 2. A `config-changed` event is emitted
-3. In the `__init__` method is defined how to handle this event like this:
+3. Event handlers are defined in the charm's framework observers. An example looks like the following:
 ```python
 self.framework.observe(self.on.config_changed, self._on_config_changed)
-```
-4. The method `_on_config_changed`, for its turn,  will take the necessary
-actions such as waiting for all the relations to be ready and then configuring
+4. The method `_on_config_changed` will take the necessary actions. 
+The actions include waiting for all the relations to be ready and then configuring
 the containers.

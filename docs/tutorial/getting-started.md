@@ -26,7 +26,7 @@ juju add-model synapse-tutorial
 ```
 
 ## Deploy the Synapse charm
-Since Synapse requires connections to PostgreSQL, you'll deploy it too:
+Synapse requires connections to PostgreSQL. Deploy both charm applications.
 
 ### Deploy the charms:
 ```
@@ -62,7 +62,7 @@ App                       Version                       Status  Scale  Charm    
 synapse                 3.2                           active      1  synapse                              17  10.152.183.68   no
 ```
 
-The deployment finishes when the status shows "Active".
+The deployment is complete when the status is `Active`.
 
 ## Integrate with Traefik
 
