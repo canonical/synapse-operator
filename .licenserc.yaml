@@ -34,4 +34,5 @@ header:
     - 'trivy.yaml'
     - 'zap_rules.tsv'
     - 'lib/**'
+    - 'templates/**'
   comment: on-failure

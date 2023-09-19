@@ -14,14 +14,20 @@ from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
 from constants import (
+    CHECK_ALIVE_NAME,
+    CHECK_MJOLNIR_READY_NAME,
+    CHECK_NGINX_READY_NAME,
     CHECK_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
+    MJOLNIR_CONFIG_PATH,
+    MJOLNIR_HEALTH_PORT,
     PROMETHEUS_TARGET_PORT,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_NGINX_PORT,
     SYNAPSE_PORT,
+    SYNAPSE_URL,
 )
 
 from .api import VERSION_URL
@@ -55,6 +61,10 @@ class ServerNameModifiedError(WorkloadError):
 
 class EnableMetricsError(WorkloadError):
     """Exception raised when something goes wrong while enabling metrics."""
+
+
+class CreateMjolnirConfigError(WorkloadError):
+    """Exception raised when something goes wrong while creating mjolnir config."""
 
 
 class EnableSAMLError(WorkloadError):
@@ -94,7 +104,7 @@ def check_alive() -> ops.pebble.CheckDict:
     Returns:
         Dict: check object converted to its dict representation.
     """
-    check = Check(CHECK_READY_NAME)
+    check = Check(CHECK_ALIVE_NAME)
     check.override = "replace"
     check.level = "alive"
     check.tcp = {"port": SYNAPSE_PORT}
@@ -107,10 +117,23 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     Returns:
         Dict: check object converted to its dict representation.
     """
-    check = Check(CHECK_READY_NAME)
+    check = Check(CHECK_NGINX_READY_NAME)
     check.override = "replace"
     check.level = "ready"
     check.tcp = {"port": SYNAPSE_NGINX_PORT}
+    return check.to_dict()
+
+
+def check_mjolnir_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse Mjolnir service check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_MJOLNIR_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": f"http://localhost:{MJOLNIR_HEALTH_PORT}/healthz"}
     return check.to_dict()
 
 
@@ -167,6 +190,43 @@ def enable_metrics(container: ops.Container) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
+def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
+    """Create config as expected by mjolnir.
+
+    Args:
+        access_token: access token to be used by the mjolnir bot.
+        room_id: management room id monitored by the Mjolnir.
+
+    Returns:
+        Mjolnir configuration
+    """
+    with open("templates/mjolnir_production.yaml", encoding="utf-8") as mjolnir_config_file:
+        config = yaml.safe_load(mjolnir_config_file)
+        config["homeserverUrl"] = SYNAPSE_URL
+        config["rawHomeserverUrl"] = SYNAPSE_URL
+        config["accessToken"] = access_token
+        config["managementRoom"] = room_id
+        return config
+
+
+def create_mjolnir_config(container: ops.Container, access_token: str, room_id: str) -> None:
+    """Create mjolnir configuration.
+
+    Args:
+        container: Container of the charm.
+        access_token: access token to be used by the Mjolnir.
+        room_id: management room id monitored by the Mjolnir.
+
+    Raises:
+        CreateMjolnirConfigError: something went wrong creating mjolnir config.
+    """
+    try:
+        config = _get_mjolnir_config(access_token, room_id)
+        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
+    except ops.pebble.PathError as exc:
+        raise CreateMjolnirConfigError(str(exc)) from exc
+
+
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     """Create config as expected by pysaml2.
 
@@ -209,7 +269,7 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     }
     # login.staging.ubuntu.com and login.ubuntu.com
     # dont send uid in SAMLResponse so this will map
-    # fullname to uid
+    # as expected
     if "ubuntu.com" in saml_config["metadata_url"]:
         sp_config["attribute_map_dir"] = "/usr/local/attributemaps"
 

@@ -165,14 +165,20 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
 
 @pytest.fixture(name="harness_server_name_configured")
 def harness_server_name_configured_fixture(harness: Harness, monkeypatch) -> Harness:
-    """Ops testing framework harness fixture with server_name already configured."""
+    """Ops testing framework harness fixture.
+
+    The server_name is already configured and Mjolnir is enabled.
+    """
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     harness.disable_hooks()
     harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.update_config({"enable_mjolnir": True})
     harness.enable_hooks()
     harness.begin_with_initial_hooks()
     container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
-    container.push(SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True)
+    config = {"registration_shared_secret": "shared", "server_name": TEST_SERVER_NAME}
+    container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
+    monkeypatch.setattr(synapse, "register_user", lambda *_args, **_kwargs: "123")
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], True)
     harness.framework.reemit()
     harness.set_leader(True)
