@@ -66,7 +66,8 @@ class SynapseCharm(ops.CharmBase):
         self._observability = Observability(self)
         # Mjolnir is a moderation tool for Matrix.
         # See https://github.com/matrix-org/mjolnir/ for more details about it.
-        self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
+        if self._charm_state.enable_mjolnir:
+            self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
