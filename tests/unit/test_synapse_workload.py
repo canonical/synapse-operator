@@ -87,12 +87,13 @@ def test_enable_saml_success():
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     relation_id = harness.add_relation("saml", "saml-integrator")
     harness.add_relation_unit(relation_id, "saml-integrator/0")
+    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
     harness.update_relation_data(
         relation_id,
         "saml-integrator",
         {
             "entity_id": "https://login.staging.ubuntu.com",
-            "metadata_url": "https://login.staging.ubuntu.com/saml/metadata",
+            "metadata_url": metadata_url,
         },
     )
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
@@ -124,12 +125,10 @@ listeners:
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
-                "metadata": {
-                    "remote": [{"url": "https://login.staging.ubuntu.com/saml/metadata"}]
-                },
+                "metadata": {"remote": [{"url": metadata_url}]},
                 "service": {
                     "sp": {
-                        "entityId": "https://login.staging.ubuntu.com",
+                        "entityId": TEST_SERVER_NAME,
                         "allow_unsolicited": True,
                     }
                 },
