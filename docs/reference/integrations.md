@@ -55,8 +55,7 @@ _Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)
 
 Metrics-endpoint relation allows scraping the `/metrics` endpoint provided by
 Synapse. The metrics are exposed in the [open metrics format](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#data-model) and will only be scraped by Prometheus once the
-relation becomes active. For more information about the metrics exposed, please
-refer to ["How to monitor Synapse metrics using Prometheus"](https://github.com/matrix-org/synapse/blob/master/docs/metrics-howto.md).
+relation becomes active. For more information about the metrics exposed, refer to ["How to monitor Synapse metrics using Prometheus"](https://github.com/matrix-org/synapse/blob/master/docs/metrics-howto.md).
 
 Metrics-endpoint integrate command: `juju integrate synapse prometheus-k8s`
 

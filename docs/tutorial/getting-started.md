@@ -34,11 +34,8 @@ juju deploy postgresql-k8s
 juju deploy synapse-k8s
 ```
 
-Run `juju status` to see the current status of the deployment. In the Unit
-list, you can see that Synapse is waiting:
-```
-synapse/0*                 waiting   idle   10.1.74.70             Waiting for server name
-```
+Run `juju status` to see the current status of the deployment. Synapse
+unit should be in `waiting` status.
 
 Set the server name by running the following command:
 ```

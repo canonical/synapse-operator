@@ -76,7 +76,7 @@ The workload that this container is running is defined in the [Synapse ROCK](htt
 
 ## Integrations
 
-Please, see [Integrations](https://charmhub.io/synapse/docs/reference/integrations).
+See [Integrations](https://charmhub.io/synapse/docs/reference/integrations).
 
 ## Charm code overview
 
