@@ -16,12 +16,7 @@ import yaml
 from ops.testing import Harness
 
 import synapse
-from constants import (
-    MJOLNIR_CONFIG_PATH,
-    SYNAPSE_CONFIG_PATH,
-    SYNAPSE_CONTAINER_NAME,
-    TEST_SERVER_NAME,
-)
+from constants import MJOLNIR_CONFIG_PATH, SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME
 from tests.constants import TEST_SERVER_NAME
 
 
