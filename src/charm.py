@@ -80,6 +80,9 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse NGINX")
+        if self._charm_state.delegation_server_name:
+            logger.info("Setting NGINX .well-known/matrix/server file")
+            synapse.create_well_know_file(container, self._charm_state)
         self.pebble_service.replan_nginx(container)
         self.model.unit.status = ops.ActiveStatus()
 

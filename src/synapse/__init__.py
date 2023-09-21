@@ -23,6 +23,7 @@ from .workload import (  # noqa: F401
     check_nginx_ready,
     check_ready,
     create_mjolnir_config,
+    create_well_know_file,
     enable_metrics,
     enable_saml,
     execute_migrate_config,

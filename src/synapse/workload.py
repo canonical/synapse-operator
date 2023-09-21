@@ -5,6 +5,7 @@
 
 """Helper module used to manage interactions with Synapse."""
 
+import json
 import logging
 import typing
 
@@ -28,6 +29,7 @@ from constants import (
     SYNAPSE_NGINX_PORT,
     SYNAPSE_PORT,
     SYNAPSE_URL,
+    WELL_KNOW_FILE_PATH,
 )
 
 from .api import VERSION_URL
@@ -135,6 +137,23 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     check.level = "ready"
     check.http = {"url": f"http://localhost:{MJOLNIR_HEALTH_PORT}/healthz"}
     return check.to_dict()
+
+
+def create_well_know_file(container: ops.Container, charm_state: CharmState) -> None:
+    """Create .well-known/matrix/server file.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong creating well know file.
+    """
+    try:
+        well_know_file = {"m.server": charm_state.delegation_server_name}
+        container.push(WELL_KNOW_FILE_PATH, json.dumps(well_know_file), make_dirs=True)
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
 
 
 def execute_migrate_config(container: ops.Container, charm_state: CharmState) -> None:

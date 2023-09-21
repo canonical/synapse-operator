@@ -27,6 +27,7 @@ KNOWN_CHARM_CONFIG = (
     "report_stats",
     "public_baseurl",
     "enable_mjolnir",
+    "delegation_server_name",
 )
 
 
@@ -54,12 +55,14 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.
         enable_mjolnir: enable_mjolnir config.
+        delegation_server_name: delegation_server_name config.
     """
 
     server_name: str | None = Field(..., min_length=2)
     report_stats: str | None = Field(None)
     public_baseurl: str | None = Field(None)
     enable_mjolnir: bool = False
+    delegation_server_name: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -94,6 +97,7 @@ class CharmState:
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.
         enable_mjolnir: enable_mjolnir config.
+        delegation_server_name: delegation_server_name config.
         datasource: datasource information.
         saml_config: saml configuration.
     """
@@ -151,6 +155,15 @@ class CharmState:
             bool: enable_mjolnir config.
         """
         return self._synapse_config.enable_mjolnir
+
+    @property
+    def delegation_server_name(self) -> typing.Optional[str]:
+        """Return sdelegation_erver_name config.
+
+        Returns:
+            str: delegation_server_name config.
+        """
+        return self._synapse_config.delegation_server_name
 
     @property
     def datasource(self) -> typing.Union[DatasourcePostgreSQL, None]:

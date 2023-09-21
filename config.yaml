@@ -25,3 +25,11 @@ options:
     description: |
       Configures whether to enable Mjolnir - moderation tool for Matrix.
       Reference: https://github.com/matrix-org/mjolnir
+  delegation_server_name:
+    type: string
+    description: |
+      Delegation server name. If set, a .well-known/matrix/server file will be
+      created using this configuration as value to the key m.server. Example:
+      synapse.example.com:443
+      Reference: https://matrix-org.github.io/synapse/latest/delegate.html
+    default: ""

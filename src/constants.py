@@ -28,3 +28,4 @@ SYNAPSE_PORT = 8008
 SYNAPSE_SERVICE_NAME = "synapse"
 SYNAPSE_URL = "http://localhost:8008"
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
+WELL_KNOW_FILE_PATH = "/var/www/html/.well-known/matrix/server"
