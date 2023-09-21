@@ -34,13 +34,22 @@ class RegisterUserError(Exception):
         self.msg = msg
 
 
-def register_user(container: ops.Container, username: str, admin: bool) -> User:
+# access_token is not a password
+def register_user(
+    container: ops.Container,
+    username: str,
+    admin: bool,
+    server: str = "",
+    admin_access_token: str = "",  # nosec
+) -> User:
     """Run register user action.
 
     Args:
         container: Container of the charm.
         username: username to be registered.
         admin: if user is admin.
+        server: to be used to create the user id.
+        admin_access_token: server admin access token to get user's access token if it exists.
 
     Raises:
         RegisterUserError: if something goes wrong while registering the user.
@@ -55,7 +64,13 @@ def register_user(container: ops.Container, username: str, admin: bool) -> User:
                 "registration_shared_secret was not found, please check the logs"
             )
         user = User(username=username, admin=admin)
-        synapse.register_user(registration_shared_secret=registration_shared_secret, user=user)
+        access_token = synapse.register_user(
+            registration_shared_secret=registration_shared_secret,
+            user=user,
+            admin_access_token=admin_access_token,
+            server=server,
+        )
+        user.access_token = access_token
         return user
     except (ValidationError, synapse.APIError) as exc:
         raise RegisterUserError(str(exc)) from exc

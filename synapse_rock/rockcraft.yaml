@@ -45,6 +45,8 @@ parts:
             - libssl-dev
             - openssl
             - python3
+        stage-snaps:
+            - mjolnir/latest/edge
         plugin: nil
         source: https://github.com/matrix-org/synapse/
         source-type: git
@@ -78,4 +80,4 @@ parts:
         plugin: dump
         source: attributemaps
         organize:
-            u1staging.py: /usr/local/attributemaps/u1staging.py
+            login_ubuntu.py: /usr/local/attributemaps/login_ubuntu.py

@@ -3,6 +3,7 @@ ignore_files:
   - pyproject.toml
   - src/grafana_dashboards/synapse.json
   - tests/unit/test_synapse_workload.py
+  - docs/reference/integrations.md
 rules:
   # Ignore "grandfathered" used by SAML configuration.
   - name: grandfathered

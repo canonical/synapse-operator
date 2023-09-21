@@ -17,5 +17,11 @@ options:
     type: string
     description: |
       The public-facing base URL that clients use to access this Homeserver.
-      It's used as entity_id if set instead of https://server_name. Only used if
-      there is integration with SAML integrator charm.
+      Defaults to https://<server_name>/. Only used if there is integration with
+      SAML integrator charm.
+  enable_mjolnir:
+    type: boolean
+    default: false
+    description: |
+      Configures whether to enable Mjolnir - moderation tool for Matrix.
+      Reference: https://github.com/matrix-org/mjolnir
