@@ -62,6 +62,7 @@ class DatabaseObserver(Object):
         """Change the configuration."""
         container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
+            logger.info(f"{self._pebble_service}, {container.can_connect()}")
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         try:

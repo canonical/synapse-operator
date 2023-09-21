@@ -12,7 +12,6 @@ import ops
 import pytest
 from ops.testing import Harness
 
-import synapse
 from charm import SynapseCharm
 from constants import (
     SYNAPSE_COMMAND_PATH,
@@ -26,15 +25,12 @@ from pebble import PebbleServiceError
 from tests.constants import TEST_SERVER_NAME, TEST_SERVER_NAME_CHANGED
 
 
-def test_synapse_pebble_layer(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_synapse_pebble_layer(harness: Harness) -> None:
     """
     arrange: charm deployed.
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should submit the correct Synapse pebble layer to pebble.
     """
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    harness.update_config({"server_name": TEST_SERVER_NAME})
-
     harness.begin_with_initial_hooks()
 
     synapse_layer = harness.get_container_pebble_plan(SYNAPSE_CONTAINER_NAME).to_dict()[
@@ -61,15 +57,12 @@ def test_synapse_pebble_layer(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     ],
     indirect=True,
 )
-def test_synapse_migrate_config_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_synapse_migrate_config_error(harness: Harness) -> None:
     """
     arrange: charm deployed.
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    harness.update_config({"server_name": TEST_SERVER_NAME})
-
     harness.begin_with_initial_hooks()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
@@ -95,15 +88,13 @@ def test_container_down() -> None:
     harness.cleanup()
 
 
-def test_replan_nginx_container_down(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_replan_nginx_container_down(harness: Harness) -> None:
     """
     arrange: Mock container as down.
     act: start the Synapse charm, set server_name, set NGINX Synapse container to be down
         and then try to change report_stats.
     assert: Synapse charm should submit the correct status.
     """
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_NGINX_CONTAINER_NAME], False)
     harness.update_config({"report_stats": True})
@@ -111,13 +102,16 @@ def test_replan_nginx_container_down(harness: Harness, monkeypatch: pytest.Monke
     assert "Waiting for" in str(harness.model.unit.status)
 
 
-def test_server_name_empty(harness: Harness) -> None:
+def test_server_name_empty() -> None:
     """
     arrange: charm deployed.
     act: start the Synapse charm and set Synapse container to be ready.
     assert: Synapse charm waits for server_name to be set.
     """
+    harness = Harness(SynapseCharm)
+
     harness.begin()
+
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "invalid configuration: server_name" in str(harness.model.unit.status)
 
@@ -128,7 +122,6 @@ def test_traefik_integration(harness: Harness) -> None:
     act: update relation with expected URL.
     assert: Relation data is as expected.
     """
-    harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.begin()
     harness.set_leader(True)
     harness.container_pebble_ready(SYNAPSE_CONTAINER_NAME)
@@ -174,28 +167,14 @@ def test_saml_integration_container_restart(monkeypatch: pytest.MonkeyPatch) -> 
     harness.cleanup()
 
 
-def test_saml_integration_container_down() -> None:
+def test_saml_integration_container_down(harness_with_saml: Harness) -> None:
     """
     arrange: start the Synapse charm, set server_name, set Synapse container to be down.
     act: emit saml_data_available.
     assert: Synapse charm should submit the correct status.
     """
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("saml", "saml-integrator")
-    harness.add_relation_unit(relation_id, "saml-integrator/0")
-    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    harness.update_relation_data(
-        relation_id,
-        "saml-integrator",
-        {
-            "entity_id": "https://login.staging.ubuntu.com",
-            "metadata_url": metadata_url,
-        },
-    )
-    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness = harness_with_saml
     harness.begin()
-    harness.set_leader(True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     relation = harness.charm.framework.model.get_relation("saml", 0)
 
@@ -206,28 +185,16 @@ def test_saml_integration_container_down() -> None:
     harness.cleanup()
 
 
-def test_saml_integration_pebble_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_saml_integration_pebble_error(
+    harness_with_saml: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock pebble to give an error.
     act: emit saml_data_available.
     assert: Synapse charm should submit the correct status.
     """
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("saml", "saml-integrator")
-    harness.add_relation_unit(relation_id, "saml-integrator/0")
-    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    harness.update_relation_data(
-        relation_id,
-        "saml-integrator",
-        {
-            "entity_id": "https://login.staging.ubuntu.com",
-            "metadata_url": metadata_url,
-        },
-    )
-    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness = harness_with_saml
     harness.begin()
-    harness.set_leader(True)
     relation = harness.charm.framework.model.get_relation("saml", 0)
     enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
     monkeypatch.setattr(harness.charm.saml._pebble_service, "enable_saml", enable_saml_mock)
@@ -245,8 +212,6 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
     act: change to a different server_name.
     assert: Synapse charm should prevent the change with a BlockStatus.
     """
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.begin()
     container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     container.push(SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True)
@@ -254,7 +219,7 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
     charm_state_mock.server_name = TEST_SERVER_NAME_CHANGED
     monkeypatch.setattr(harness.charm.pebble_service, "_charm_state", charm_state_mock)
 
-    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)

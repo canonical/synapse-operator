@@ -3,7 +3,7 @@
 
 """Reset instance action unit tests."""
 
-# pylint: disable=protected-access, no-member
+# pylint: disable=protected-access
 
 import io
 import unittest.mock
@@ -13,7 +13,7 @@ import pytest
 from ops.testing import Harness
 
 from constants import SYNAPSE_CONTAINER_NAME
-from tests.constants import TEST_SERVER_NAME_CHANGED
+from tests.constants import TEST_SERVER_NAME
 
 
 def test_reset_instance_action(harness: Harness) -> None:
@@ -22,7 +22,6 @@ def test_reset_instance_action(harness: Harness) -> None:
     act: run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
     harness.begin()
     harness.set_leader(True)
     event = unittest.mock.Mock()
@@ -30,6 +29,8 @@ def test_reset_instance_action(harness: Harness) -> None:
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
 
+    # Disable no-member to allow tests on generated mock attributes
+    # pylint: disable=no-member
     assert event.set_results.call_count == 1
     event.set_results.assert_called_with({"reset-instance": True})
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
@@ -41,7 +42,6 @@ def test_reset_instance_action_container_down(harness: Harness) -> None:
     act: run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
     harness.begin()
     harness.set_leader(True)
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
@@ -68,7 +68,6 @@ def test_reset_instance_action_failed(harness: Harness) -> None:
     act: change server_name and run reset-instance action.
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
-    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
     harness.begin()
     harness.set_leader(True)
     event = unittest.mock.Mock()
@@ -90,7 +89,6 @@ def test_reset_instance_action_path_error_blocked(
     act: change server_name and run reset-instance action.
     assert: Synapse charm should be blocked by error on remove_path.
     """
-    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
     harness.begin()
     harness.set_leader(True)
     harness.charm.unit.get_container = unittest.mock.MagicMock(
@@ -117,11 +115,10 @@ def test_reset_instance_action_path_error_pass(
     act: change server_name and run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
     harness.begin()
     harness.set_leader(True)
     harness.charm._database = erase_database_mocked
-    content = io.StringIO(f'server_name: "{TEST_SERVER_NAME_CHANGED}"')
+    content = io.StringIO(f'server_name: "{TEST_SERVER_NAME}"')
     pull_mock = unittest.mock.MagicMock(return_value=content)
     monkeypatch.setattr(container_with_path_error_pass, "pull", pull_mock)
     harness.charm.unit.get_container = unittest.mock.MagicMock(
@@ -144,7 +141,6 @@ def test_reset_instance_action_no_leader(
     act: change server_name and run reset-instance action.
     assert: Synapse charm should take no action if no leader.
     """
-    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
     harness.begin()
     harness.set_leader(False)
 
@@ -152,5 +148,7 @@ def test_reset_instance_action_no_leader(
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
 
+    # Disable no-member to allow tests on generated mock attributes
+    # pylint: disable=no-member
     assert event.fail.call_count == 1
     assert "Only the juju leader unit can run reset instance action" == event.fail.call_args[0][0]

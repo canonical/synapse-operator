@@ -7,7 +7,6 @@
 
 import typing
 import unittest.mock
-from secrets import token_hex
 
 import ops
 import pytest
@@ -116,6 +115,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     """Ops testing framework harness fixture."""
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
@@ -160,6 +160,37 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container, executable=command_path, handler=start_cmd_handler
     )
+    yield harness
+    harness.cleanup()
+
+
+@pytest.fixture(name="harness_with_postgresql")
+def harness_with_postgresql_fixture() -> typing.Generator[Harness, None, None]:
+    """Harness fixture with postgresql relation configured"""
+    harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME})
+    postgresql_relation_data = {
+        "endpoints": "myhost:5432",
+        "username": "user",
+    }
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
+    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    yield harness
+    harness.cleanup()
+
+
+@pytest.fixture(name="harness_with_saml")
+def harness_with_saml_fixture() -> typing.Generator[Harness, None, None]:
+    """Harness fixture with saml relation configured"""
+    harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    saml_relation_data = {
+        "entity_id": "https://login.staging.ubuntu.com",
+        "metadata_url": "https://login.staging.ubuntu.com/saml/metadata",
+    }
+    harness.add_relation("saml", "saml-integrator", app_data=saml_relation_data)
+    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
     yield harness
     harness.cleanup()
 
@@ -209,19 +240,3 @@ def erase_database_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.m
     monkeypatch.setattr(database_mocked, "get_conn", unittest.mock.MagicMock())
     monkeypatch.setattr(database_mocked, "get_relation_data", unittest.mock.MagicMock())
     return database_mocked
-
-
-@pytest.fixture(name="datasource_postgresql_password")
-def datasource_postgresql_password_fixture() -> str:
-    """Generate random password"""
-    return token_hex(16)
-
-
-@pytest.fixture(name="postgresql_relation_data")
-def postgresql_relation_configured_fixture(datasource_postgresql_password: str) -> dict:
-    """Generate postgresql relation data with random password"""
-    return {
-        "endpoints": "myhost:5432",
-        "username": "user",
-        "password": datasource_postgresql_password,
-    }
