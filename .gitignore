@@ -164,5 +164,3 @@ cython_debug/
 
 # Vscode files
 .vscode/
-
-*/*.snap

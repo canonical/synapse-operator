@@ -33,13 +33,11 @@ class User(BaseModel):
         username: username to be registered.
         admin: if user is an admin.
         password: users password.
-        access_token: obtained when the user is registered.
     """
 
     username: str
     admin: bool = Field(False)
     password: str = Field("")
-    access_token: str = Field("")
 
     def __init__(self, username: str, admin: bool) -> None:
         """Initialize the User.

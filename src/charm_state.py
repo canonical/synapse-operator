@@ -26,7 +26,6 @@ KNOWN_CHARM_CONFIG = (
     "server_name",
     "report_stats",
     "public_baseurl",
-    "enable_mjolnir",
 )
 
 
@@ -53,13 +52,11 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         server_name: server_name config.
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.
-        enable_mjolnir: enable_mjolnir config.
     """
 
     server_name: str | None = Field(..., min_length=2)
     report_stats: str | None = Field(None)
     public_baseurl: str | None = Field(None)
-    enable_mjolnir: bool = False
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -93,7 +90,6 @@ class CharmState:
         server_name: server_name config.
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.
-        enable_mjolnir: enable_mjolnir config.
         datasource: datasource information.
         saml_config: saml configuration.
     """
@@ -142,15 +138,6 @@ class CharmState:
             str: public_baseurl config.
         """
         return self._synapse_config.public_baseurl
-
-    @property
-    def enable_mjolnir(self) -> bool:
-        """Return enable_mjolnir config.
-
-        Returns:
-            bool: enable_mjolnir config.
-        """
-        return self._synapse_config.enable_mjolnir
 
     @property
     def datasource(self) -> typing.Union[DatasourcePostgreSQL, None]:

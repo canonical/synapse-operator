@@ -61,7 +61,3 @@ requires:
         interface: saml
         limit: 1
         optional: true
-
-peers:
-  synapse-peers:
-    interface: synapse-instance
