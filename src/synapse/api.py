@@ -17,14 +17,23 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
+from charm_state import CharmState
+from constants import MJOLNIR_MANAGEMENT_ROOM, MJOLNIR_MEMBERSHIP_ROOM, SYNAPSE_URL
 from user import User
 
 logger = logging.getLogger(__name__)
 
-SYNAPSE_URL = "http://localhost:8008"
+# The API version that should be used is described in the documentation:
+# https://matrix-org.github.io/synapse/latest/usage/administration/index.html
+ADD_USER_ROOM_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/join"
+CREATE_ROOM_URL = f"{SYNAPSE_URL}/_matrix/client/v3/createRoom"
+DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
+LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
+LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
+LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
-VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
+VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
 
 
 class APIError(Exception):
@@ -48,26 +57,57 @@ class NetworkError(APIError):
 
 
 class GetNonceError(APIError):
-    """Exception raised when getting nonce via API fails."""
+    """Exception raised when getting nonce fails."""
 
 
 class GetVersionError(APIError):
-    """Exception raised when getting version via API fails."""
+    """Exception raised when getting version fails."""
 
 
 class VersionUnexpectedContentError(GetVersionError):
     """Exception raised when output of getting version is unexpected."""
 
 
-def register_user(registration_shared_secret: str, user: User) -> None:
+class GetRoomIDError(APIError):
+    """Exception raised when getting room id fails."""
+
+
+class GetUserIDError(APIError):
+    """Exception raised when getting user id fails."""
+
+
+class UserExistsError(APIError):
+    """Exception raised when checking if user exists fails."""
+
+
+class GetAccessTokenError(APIError):
+    """Exception raised when getting access token fails."""
+
+
+class RegisterUserError(APIError):
+    """Exception raised when registering user fails."""
+
+
+# admin_access_token is not a password
+def register_user(
+    registration_shared_secret: str,
+    user: User,
+    server: typing.Optional[str] = None,
+    admin_access_token: typing.Optional[str] = None,  # nosec
+) -> str:
     """Register user.
 
     Args:
         registration_shared_secret: secret to be used to register the user.
         user: user to be registered.
+        server: to be used to create the user id.
+        admin_access_token: admin access token to get user's access token if it exists.
 
     Raises:
-        NetworkError: if there was an error registering the user.
+        RegisterUserError: if there was an error registering the user.
+
+    Returns:
+        Access token to be used by the user.
     """
     # get nonce
     nonce = _get_nonce()
@@ -89,14 +129,20 @@ def register_user(registration_shared_secret: str, user: User) -> None:
     }
     # finally register user
     try:
-        res = requests.post(REGISTER_URL, json=data, timeout=5)
-        res.raise_for_status()
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"Failed to connect to {REGISTER_URL}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", REGISTER_URL, exc)
-        raise NetworkError(f"HTTP error from {REGISTER_URL}.") from exc
+        res = _do_request("POST", REGISTER_URL, json=data)
+        return res.json()["access_token"]
+    except UserExistsError as exc:
+        logger.warning("User %s exists, getting the access token.", user.username)
+        if not server or not admin_access_token:
+            raise RegisterUserError(
+                f"User {user.username} exists but there is no server/admin access token set."
+            ) from exc
+        return get_access_token(
+            user=user, server=str(server), admin_access_token=str(admin_access_token)
+        )
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
+        raise RegisterUserError(str(exc)) from exc
 
 
 def _generate_mac(
@@ -141,39 +187,6 @@ def _generate_mac(
     return mac.hexdigest()
 
 
-def _send_get_request(api_url: str, retry: bool = False) -> requests.Response:
-    """Call Synapse API using requests.get with retry and timeout.
-
-    Args:
-        api_url: URL to be requested.
-        retry: call URL with a retry. Default is False.
-
-    Raises:
-        NetworkError: if there was an error fetching the api_url.
-
-    Returns:
-        Response from calling the URL.
-    """
-    try:
-        session = requests.Session()
-        retries = Retry(
-            total=3,
-            backoff_factor=3,
-        )
-        if retry:
-            session.mount("http://", HTTPAdapter(max_retries=retries))
-        res = session.get(api_url, timeout=10)
-        res.raise_for_status()
-        session.close()
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", api_url, exc)
-        raise NetworkError(f"Failed to connect to {api_url}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", api_url, exc)
-        raise NetworkError(f"HTTP error from {api_url}.") from exc
-    return res
-
-
 def _get_nonce() -> str:
     """Get nonce.
 
@@ -183,7 +196,7 @@ def _get_nonce() -> str:
     Raises:
         GetNonceError: if there was an error while reading nonce.
     """
-    res = _send_get_request(REGISTER_URL)
+    res = _do_request("GET", REGISTER_URL)
     try:
         nonce = res.json()["nonce"]
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
@@ -211,7 +224,7 @@ def get_version() -> str:
         GetVersionError: if there was an error while reading version.
         VersionUnexpectedContentError: if the version has unexpected content.
     """
-    res = _send_get_request(VERSION_URL, retry=True)
+    res = _do_request("GET", VERSION_URL, retry=True)
     try:
         server_version = res.json()["server_version"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
@@ -223,3 +236,224 @@ def get_version() -> str:
             f"server_version has unexpected content: {server_version}"
         )
     return version_match.group(1)
+
+
+def get_access_token(user: User, server: str, admin_access_token: str) -> str:
+    """Get an access token that can be used to authenticate as that user.
+
+    This is a way to do actions on behalf of a user.
+
+    Args:
+        user: the user on behalf of whom you want to request the access token.
+        server: to be used to create the user id. User ID example: @user:server.com.
+        admin_access_token: a server admin access token to be used for the request.
+
+    Returns:
+        Access token.
+
+    Raises:
+        GetAccessTokenError: if there was an error while getting access token.
+    """
+    authorization_token = f"Bearer {admin_access_token}"
+    headers = {"Authorization": authorization_token}
+    # @user:server.com
+    user_id = f"@{user.username}:{server}"
+    res = _do_request("POST", f"{LOGIN_URL}/{user_id}/login", headers=headers)
+    try:
+        res_access_token = res.json()["access_token"]
+    except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
+        logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
+        raise GetAccessTokenError(str(exc)) from exc
+    return res_access_token
+
+
+def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmState) -> None:
+    """Override user's rate limit.
+
+    Args:
+        user: user to be used for requesting access token.
+        admin_access_token: server admin access token to be used.
+        charm_state: Instance of CharmState.
+    """
+    server_name = charm_state.server_name
+    rate_limit_url = (
+        f"{SYNAPSE_URL}/_synapse/admin/v1/users/"
+        f"@{user.username}:{server_name}/override_ratelimit"
+    )
+    authorization_token = f"Bearer {admin_access_token}"
+    headers = {"Authorization": authorization_token}
+    _do_request("DELETE", rate_limit_url, headers=headers)
+
+
+def get_room_id(
+    room_name: str,
+    admin_access_token: str,
+) -> typing.Optional[str]:
+    """Get room id.
+
+    Args:
+        room_name: room name.
+        admin_access_token: server admin access token to be used.
+
+    Returns:
+        The room id.
+
+    Raises:
+        GetRoomIDError: if there was an error while getting room id.
+    """
+    authorization_token = f"Bearer {admin_access_token}"
+    headers = {"Authorization": authorization_token}
+    res = _do_request("GET", f"{LIST_ROOMS_URL}?search_term={room_name}", headers=headers)
+    try:
+        rooms = res.json()["rooms"]
+        total = len(rooms)
+        if total > 1:
+            logger.warning(
+                "%s rooms named with term %s found, checking for exact name.", total, room_name
+            )
+        for room in rooms:
+            if str(room["name"]).upper() == room_name.upper():
+                return room["room_id"]
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode rooms: %r. Received: %s", exc, res.text)
+        raise GetRoomIDError(str(exc)) from exc
+
+    return None
+
+
+def deactivate_user(
+    user: User,
+    server: str,
+    admin_access_token: str,
+) -> None:
+    """Deactivate user.
+
+    Args:
+        user: user to be deactivated.
+        server: to be used to create the user id.
+        admin_access_token: server admin access token to be used.
+    """
+    authorization_token = f"Bearer {admin_access_token}"
+    headers = {"Authorization": authorization_token}
+    data = {
+        "erase": True,
+    }
+    user_id = f"@{user.username}:{server}"
+    url = f"{DEACTIVATE_ACCOUNT_URL}/{user_id}"
+    _do_request("POST", url, headers=headers, json=data)
+
+
+def create_management_room(admin_access_token: str) -> str:
+    """Create the management room to be used by Mjolnir.
+
+    Args:
+        admin_access_token: server admin access token to be used.
+
+    Raises:
+        GetRoomIDError: if there was an error while getting room id.
+
+    Returns:
+        Room id.
+    """
+    authorization_token = f"Bearer {admin_access_token}"
+    headers = {"Authorization": authorization_token}
+    power_level_content_override = {"events_default": 0}
+    moderators_room_id = get_room_id(MJOLNIR_MEMBERSHIP_ROOM, admin_access_token)
+    data = {
+        "name": MJOLNIR_MANAGEMENT_ROOM,
+        "power_level_content_override": power_level_content_override,
+        "room_alias_name": MJOLNIR_MANAGEMENT_ROOM,
+        "visibility": "private",
+        "initial_state": [
+            # Always make history visibility shared
+            {
+                "type": "m.room.history_visibility",
+                "state_key": "",
+                "content": {"history_visibility": "shared"},
+            },
+            {
+                "type": "m.room.guest_access",
+                "state_key": "",
+                "content": {"guest_access": "can_join"},
+            },
+            # Only retain the last 90 days of history
+            {"type": "m.room.retention", "state_key": "", "content": {"max_lifetime": 604800000}},
+            # Only users from MJOLNIR_MEMBERSHIP_ROOM can join
+            {
+                "type": "m.room.join_rules",
+                "state_key": "",
+                "content": {
+                    "join_rule": "restricted",
+                    "allow": [{"room_id": f"{moderators_room_id}", "type": "m.room_membership"}],
+                },
+            },
+        ],
+    }
+    res = _do_request("POST", CREATE_ROOM_URL, headers=headers, json=data)
+    try:
+        return res.json()["room_id"]
+    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
+        logger.exception("Failed to decode room_id: %r. Received: %s", exc, res.text)
+        raise GetRoomIDError(str(exc)) from exc
+
+
+def make_room_admin(user: User, server: str, admin_access_token: str, room_id: str) -> None:
+    """Make user a room's admin.
+
+    Args:
+        user: user to add to the room as admin.
+        server: to be used to create the user id.
+        admin_access_token: server admin access token to be used for the request.
+        room_id: room id to add the user.
+    """
+    authorization_token = f"Bearer {admin_access_token}"
+    headers = {"Authorization": authorization_token}
+    user_id = f"@{user.username}:{server}"
+    data = {"user_id": user_id}
+    url = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms/{room_id}/make_room_admin"
+    _do_request("POST", url, headers=headers, json=data)
+
+
+def _do_request(
+    method: str,
+    url: str,
+    headers: typing.Optional[typing.Dict] = None,
+    json: typing.Optional[typing.Dict] = None,
+    retry: bool = False,
+) -> requests.Response:
+    """Offer a generic request.
+
+    Args:
+        method: HTTP method.
+        url: url to request.
+        headers: header to be used in the request. Defaults to None.
+        json: json data to be sent in the request. Defaults to None.
+        retry: if the request should be retried. Defaults to False.
+
+    Raises:
+        NetworkError: if there was an error fetching the api_url.
+        UserExistsError: if there is an attempt to register an existing user.
+
+    Returns:
+        Response from the request.
+    """
+    try:
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=3,
+        )
+        if retry:
+            session.mount("http://", HTTPAdapter(max_retries=retries))
+        response = session.request(method, url, headers=headers, json=json, timeout=5)
+        response.raise_for_status()
+        session.close()
+        return response
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", url, exc)
+        raise NetworkError(f"Failed to connect to {url}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", url, exc)
+        if "User ID already taken" in exc.response.text:
+            raise UserExistsError("User exists") from exc
+        raise NetworkError(f"HTTP error from {url}.") from exc
