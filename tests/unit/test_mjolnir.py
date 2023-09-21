@@ -21,16 +21,15 @@ from user import User
 
 @patch.object(ops.JujuVersion, "from_environ")
 def test_update_peer_data_no_secrets(
-    mock_juju_env, harness: Harness, monkeypatch: pytest.MonkeyPatch
+    mock_juju_env, harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container and create_admin_user.
     act: call _update_peer_data.
     assert: relation data is updated with access token.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
     mock_juju_env.return_value = MagicMock(has_secrets=False)
+    harness = harness_server_name_configured
     harness.set_leader(True)
     container_mock = MagicMock()
     username = "any-user"
@@ -52,16 +51,15 @@ def test_update_peer_data_no_secrets(
 
 @patch.object(ops.JujuVersion, "from_environ")
 def test_update_peer_data_with_secrets(
-    mock_juju_env, harness: Harness, monkeypatch: pytest.MonkeyPatch
+    mock_juju_env, harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container and create_admin_user.
     act: call _update_peer_data.
     assert: secret with access token.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
     mock_juju_env.return_value = MagicMock(has_secrets=True)
+    harness = harness_server_name_configured
     harness.set_leader(True)
     container_mock = MagicMock()
     username = "any-user"
@@ -87,14 +85,15 @@ def test_update_peer_data_with_secrets(
     )
 
 
-def test_create_admin_user(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_admin_user(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container and register_user.
     act: call create_admin_user.
     assert: register_user is called once.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     container_mock = MagicMock()
     register_user_mock = MagicMock()
     monkeypatch.setattr(actions, "register_user", register_user_mock)
@@ -104,14 +103,15 @@ def test_create_admin_user(harness: Harness, monkeypatch: pytest.MonkeyPatch) ->
     register_user_mock.assert_called_once_with(container_mock, ANY, True)
 
 
-def test_get_membership_room_id(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_membership_room_id(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock get_admin_access_token.
     act: call get_membership_room_id.
     assert: get_membership_room_id is called once with expected args.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     admin_access_token = token_hex(16)
     monkeypatch.setattr(
         Mjolnir, "get_admin_access_token", MagicMock(return_value=admin_access_token)
@@ -126,15 +126,16 @@ def test_get_membership_room_id(harness: Harness, monkeypatch: pytest.MonkeyPatc
     )
 
 
-def test_on_collect_status_blocked(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_on_collect_status_blocked(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container, get_membership_room_id
         and _update_peer_data.
     act: call _on_collect_status.
     assert: status is blocked.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     harness.set_leader(True)
     container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=None))
@@ -157,15 +158,14 @@ def test_on_collect_status_blocked(harness: Harness, monkeypatch: pytest.MonkeyP
 
 
 def test_on_collect_status_service_exists(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock get_services to return something.
     act: call _on_collect_status.
     assert: no actions is taken because the service exists.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     harness.set_leader(True)
     container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=MagicMock()))
@@ -179,15 +179,14 @@ def test_on_collect_status_service_exists(
 
 
 def test_on_collect_status_container_off(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container to not connect.
     act: call _on_collect_status.
     assert: no actions is taken because the container is off.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "can_connect", MagicMock(return_value=False))
     peer_data_mock = MagicMock()
@@ -200,15 +199,16 @@ def test_on_collect_status_container_off(
     event_mock.add_status.assert_not_called()
 
 
-def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_on_collect_status_active(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container, get_membership_room_id
         and _update_peer_data.
     act: call _on_collect_status.
     assert: status is active.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     harness.set_leader(True)
     container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=None))
@@ -232,15 +232,16 @@ def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPa
 
 
 @patch.object(ops.JujuVersion, "from_environ")
-def test_get_admin_access_token_no_secrets(mock_juju_env, harness: Harness) -> None:
+def test_get_admin_access_token_no_secrets(
+    mock_juju_env, harness_server_name_configured: Harness
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, no secrets, update peer relation data.
     act: call get_admin_access_token.
     assert: token is returned.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
     mock_juju_env.return_value = MagicMock(has_secrets=False)
+    harness = harness_server_name_configured
     peer_relation = harness.model.get_relation("synapse-peers")
     assert peer_relation
     expected_token = token_hex(16)
@@ -253,16 +254,15 @@ def test_get_admin_access_token_no_secrets(mock_juju_env, harness: Harness) -> N
 
 @patch.object(ops.JujuVersion, "from_environ")
 def test_get_admin_access_token_with_secrets(
-    mock_juju_env, harness: Harness, monkeypatch: pytest.MonkeyPatch
+    mock_juju_env, harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set server_name, with secrets, update peer relation data.
     act: call get_admin_access_token.
     assert: token is returned.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
     mock_juju_env.return_value = MagicMock(has_secrets=True)
+    harness = harness_server_name_configured
     peer_relation = harness.model.get_relation("synapse-peers")
     assert peer_relation
     expected_id = token_hex(16)
@@ -280,14 +280,15 @@ def test_get_admin_access_token_with_secrets(
     assert token == expected_token
 
 
-def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_enable_mjolnir(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock calls to validate args.
     act: call enable_mjolnir.
     assert: all steps are taken as required.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     harness.set_leader(True)
     admin_access_token = token_hex(16)
     get_admin_access_token_mock = MagicMock(return_value=admin_access_token)
@@ -326,15 +327,16 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     assert harness.model.unit.status == ops.ActiveStatus()
 
 
-def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_enable_mjolnir_room_none(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock calls to validate args,
         get_room_id returns None.
     act: call enable_mjolnir.
     assert: all steps are taken as required.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     harness.set_leader(True)
     admin_access_token = token_hex(16)
     get_admin_access_token_mock = MagicMock(return_value=admin_access_token)
@@ -376,14 +378,15 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     assert harness.model.unit.status == ops.ActiveStatus()
 
 
-def test_enable_mjolnir_container_off(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_enable_mjolnir_container_off(
+    harness_server_name_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container to not connect.
     act: call enable_mjolnir.
     assert: the next step, get admin access token, is not called.
     """
-    harness.update_config({"enable_mjolnir": True})
-    harness.begin_with_initial_hooks()
+    harness = harness_server_name_configured
     container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "can_connect", MagicMock(return_value=False))
     get_admin_access_token_mock = MagicMock(return_value=None)
