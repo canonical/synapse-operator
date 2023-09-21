@@ -1,0 +1,23 @@
+### Extracted from:
+### https://github.com/matrix-org/synapse/blob/develop/contrib/prometheus/synapse-v2.rules
+groups:
+- name: synapse
+  rules:
+  - record: synapse_storage_events_persisted_by_source_type
+    expr: sum without(type, origin_type, origin_entity) (synapse_storage_events_persisted_events_sep_total{origin_type="remote"})
+    labels:
+      type: remote
+  - record: synapse_storage_events_persisted_by_source_type
+    expr: sum without(type, origin_type, origin_entity) (synapse_storage_events_persisted_events_sep_total{origin_entity="*client*",origin_type="local"})
+    labels:
+      type: local
+  - record: synapse_storage_events_persisted_by_source_type
+    expr: sum without(type, origin_type, origin_entity) (synapse_storage_events_persisted_events_sep_total{origin_entity!="*client*",origin_type="local"})
+    labels:
+      type: bridges
+
+  - record: synapse_storage_events_persisted_by_event_type
+    expr: sum without(origin_entity, origin_type) (synapse_storage_events_persisted_events_sep_total)
+
+  - record: synapse_storage_events_persisted_by_origin
+    expr: sum without(type) (synapse_storage_events_persisted_events_sep_total)
