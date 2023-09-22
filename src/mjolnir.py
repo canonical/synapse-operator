@@ -24,8 +24,9 @@ from user import User
 logger = logging.getLogger(__name__)
 
 USERNAME = "mjolnir"
-SECRET_ID = "secret-id"
-SECRET_KEY = "secret-key"
+# Disabling it since these are not hardcoded password
+SECRET_ID = "secret-id"  # no-sec
+SECRET_KEY = "secret-key"  # no-sec
 PEER_RELATION_NAME = "synapse-peers"
 
 
