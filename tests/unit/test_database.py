@@ -17,9 +17,9 @@ from psycopg2 import sql
 import database_observer
 import synapse
 from charm_types import DatasourcePostgreSQL
-from constants import SYNAPSE_CONTAINER_NAME
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
+from synapse.api import SYNAPSE_CONTAINER_NAME
 
 
 def test_erase_database(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch) -> None:

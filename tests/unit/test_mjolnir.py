@@ -14,8 +14,8 @@ from ops.testing import Harness
 
 import actions
 import synapse
-from constants import SYNAPSE_CONTAINER_NAME
 from mjolnir import Mjolnir
+from synapse.api import SYNAPSE_CONTAINER_NAME
 from user import User
 
 

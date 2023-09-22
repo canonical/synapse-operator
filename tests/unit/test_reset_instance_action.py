@@ -12,8 +12,9 @@ import ops
 import pytest
 from ops.testing import Harness
 
-from constants import SYNAPSE_CONTAINER_NAME
-from tests.constants import TEST_SERVER_NAME
+from synapse.api import SYNAPSE_CONTAINER_NAME
+
+from .conftest import TEST_SERVER_NAME
 
 
 def test_reset_instance_action(harness: Harness) -> None:

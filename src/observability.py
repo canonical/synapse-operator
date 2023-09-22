@@ -7,7 +7,7 @@ import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 
-from constants import PROMETHEUS_TARGET_PORT
+from synapse.api import PROMETHEUS_TARGET_PORT
 
 
 class Observability:  # pylint: disable=too-few-public-methods

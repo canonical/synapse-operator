@@ -18,10 +18,30 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 from charm_state import CharmState
-from constants import MJOLNIR_MANAGEMENT_ROOM, MJOLNIR_MEMBERSHIP_ROOM, SYNAPSE_URL
 from user import User
 
 logger = logging.getLogger(__name__)
+
+CHECK_ALIVE_NAME = "synapse-alive"
+CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
+CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
+CHECK_READY_NAME = "synapse-ready"
+COMMAND_MIGRATE_CONFIG = "migrate_config"
+SYNAPSE_CONFIG_DIR = "/data"
+MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
+MJOLNIR_MANAGEMENT_ROOM = "management"
+MJOLNIR_MEMBERSHIP_ROOM = "moderators"
+MJOLNIR_SERVICE_NAME = "mjolnir"
+MJOLNIR_HEALTH_PORT = 7777
+PROMETHEUS_TARGET_PORT = "9000"
+SYNAPSE_CONTAINER_NAME = "synapse"
+SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
+SYNAPSE_COMMAND_PATH = "/start.py"
+SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
+SYNAPSE_NGINX_PORT = 8080
+SYNAPSE_PORT = 8008
+SYNAPSE_SERVICE_NAME = "synapse"
+SYNAPSE_URL = f"http://localhost:{SYNAPSE_PORT}"
 
 # The API version that should be used is described in the documentation:
 # https://matrix-org.github.io/synapse/latest/usage/administration/index.html

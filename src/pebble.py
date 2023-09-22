@@ -12,7 +12,7 @@ import ops
 
 import synapse
 from charm_state import CharmState
-from constants import (
+from synapse.api import (
     CHECK_ALIVE_NAME,
     CHECK_MJOLNIR_READY_NAME,
     CHECK_NGINX_READY_NAME,

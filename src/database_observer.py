@@ -15,9 +15,9 @@ from ops.charm import CharmBase
 from ops.framework import Object
 
 from charm_types import DatasourcePostgreSQL
-from constants import SYNAPSE_CONTAINER_NAME
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
+from synapse.api import SYNAPSE_CONTAINER_NAME
 
 logger = logging.getLogger(__name__)
 

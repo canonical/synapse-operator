@@ -17,12 +17,12 @@ from ops.main import main
 import actions
 import synapse
 from charm_state import CharmConfigInvalidError, CharmState
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_NGINX_CONTAINER_NAME, SYNAPSE_NGINX_PORT
 from database_observer import DatabaseObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
+from synapse.api import SYNAPSE_CONTAINER_NAME, SYNAPSE_NGINX_CONTAINER_NAME, SYNAPSE_NGINX_PORT
 
 logger = logging.getLogger(__name__)
 

@@ -16,8 +16,9 @@ import yaml
 from ops.testing import Harness
 
 import synapse
-from constants import MJOLNIR_CONFIG_PATH, SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME
-from tests.constants import TEST_SERVER_NAME
+from synapse.api import MJOLNIR_CONFIG_PATH, SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME
+
+from .conftest import TEST_SERVER_NAME
 
 
 def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):

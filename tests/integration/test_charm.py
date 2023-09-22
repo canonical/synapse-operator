@@ -18,8 +18,12 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 from saml_test_helper import SamlK8sTestHelper
 
-from constants import MJOLNIR_HEALTH_PORT, SYNAPSE_NGINX_PORT, SYNAPSE_PORT
-from synapse.api import SYNAPSE_VERSION_REGEX
+from synapse.api import (
+    MJOLNIR_HEALTH_PORT,
+    SYNAPSE_NGINX_PORT,
+    SYNAPSE_PORT,
+    SYNAPSE_VERSION_REGEX,
+)
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments

@@ -16,14 +16,16 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
-from constants import (
+from synapse.api import (
     COMMAND_MIGRATE_CONFIG,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
 )
-from tests.constants import TEST_SERVER_NAME
+
+TEST_SERVER_NAME = "server-name-configured.synapse.com"
+TEST_SERVER_NAME_CHANGED = "pebble-layer-1.synapse.com"
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):

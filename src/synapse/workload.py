@@ -13,7 +13,8 @@ import yaml
 from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
-from constants import (
+
+from .api import (
     CHECK_ALIVE_NAME,
     CHECK_MJOLNIR_READY_NAME,
     CHECK_NGINX_READY_NAME,
@@ -28,9 +29,8 @@ from constants import (
     SYNAPSE_NGINX_PORT,
     SYNAPSE_PORT,
     SYNAPSE_URL,
+    VERSION_URL,
 )
-
-from .api import VERSION_URL
 
 logger = logging.getLogger(__name__)
 

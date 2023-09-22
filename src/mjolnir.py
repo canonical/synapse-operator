@@ -13,13 +13,10 @@ from ops.jujuversion import JujuVersion
 import actions
 import synapse
 from charm_state import CharmState
-from constants import (
+from synapse.api import (
     MJOLNIR_MANAGEMENT_ROOM,
     MJOLNIR_MEMBERSHIP_ROOM,
     MJOLNIR_SERVICE_NAME,
-    PEER_RELATION_NAME,
-    SECRET_ID,
-    SECRET_KEY,
     SYNAPSE_CONTAINER_NAME,
 )
 from user import User
@@ -27,6 +24,9 @@ from user import User
 logger = logging.getLogger(__name__)
 
 USERNAME = "mjolnir"
+SECRET_ID = "secret-id"
+SECRET_KEY = "secret-key"
+PEER_RELATION_NAME = "synapse-peers"
 
 
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods

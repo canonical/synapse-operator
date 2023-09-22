@@ -13,7 +13,8 @@ import pytest
 from ops.testing import Harness
 
 from charm import SynapseCharm
-from constants import (
+from pebble import PebbleServiceError
+from synapse.api import (
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_PATH,
     SYNAPSE_CONTAINER_NAME,
@@ -21,8 +22,8 @@ from constants import (
     SYNAPSE_NGINX_PORT,
     SYNAPSE_SERVICE_NAME,
 )
-from pebble import PebbleServiceError
-from tests.constants import TEST_SERVER_NAME, TEST_SERVER_NAME_CHANGED
+
+from .conftest import TEST_SERVER_NAME, TEST_SERVER_NAME_CHANGED
 
 
 def test_synapse_pebble_layer(harness: Harness) -> None:
