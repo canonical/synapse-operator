@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 USERNAME = "mjolnir"
 # Disabling it since these are not hardcoded password
-SECRET_ID = "secret-id"  # no-sec
-SECRET_KEY = "secret-key"  # no-sec
+SECRET_ID = "secret-id"  # nosec
+SECRET_KEY = "secret-key"  # nosec
 PEER_RELATION_NAME = "synapse-peers"
 
 

@@ -166,25 +166,9 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.cleanup()
 
 
-@pytest.fixture(name="harness_with_postgresql")
-def harness_with_postgresql_fixture() -> typing.Generator[Harness, None, None]:
-    """Harness fixture with postgresql relation configured"""
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME})
-    postgresql_relation_data = {
-        "endpoints": "myhost:5432",
-        "username": "user",
-    }
-    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
-    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
-    yield harness
-    harness.cleanup()
-
-
-@pytest.fixture(name="harness_with_saml")
-def harness_with_saml_fixture() -> typing.Generator[Harness, None, None]:
+@pytest.fixture(name="saml_configured")
+def saml_configured_fixture(harness: Harness) -> Harness:
     """Harness fixture with saml relation configured"""
-    harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     saml_relation_data = {
         "entity_id": "https://login.staging.ubuntu.com",
@@ -193,8 +177,7 @@ def harness_with_saml_fixture() -> typing.Generator[Harness, None, None]:
     harness.add_relation("saml", "saml-integrator", app_data=saml_relation_data)
     harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
     harness.set_leader(True)
-    yield harness
-    harness.cleanup()
+    return harness
 
 
 @pytest.fixture(name="container_mocked")

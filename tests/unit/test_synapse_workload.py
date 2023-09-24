@@ -16,6 +16,7 @@ import yaml
 from ops.testing import Harness
 
 import synapse
+from charm import SynapseCharm
 from synapse.api import MJOLNIR_CONFIG_PATH, SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME
 
 from .conftest import TEST_SERVER_NAME
@@ -71,7 +72,7 @@ def test_enable_metrics_error(monkeypatch: pytest.MonkeyPatch):
         synapse.enable_metrics(container_mock)
 
 
-def test_enable_saml_success(harness_with_saml: Harness):
+def test_enable_saml_success():
     """
     arrange: set mock container with file.
     act: change the configuration file.
@@ -79,7 +80,21 @@ def test_enable_saml_success(harness_with_saml: Harness):
     """
     # This test was given as an example in this comment by Ben Hoyt.
     # https://github.com/canonical/synapse-operator/pull/19#discussion_r1302486670
-    harness = harness_with_saml
+    # Arrange: set up harness and container filesystem
+    harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    relation_id = harness.add_relation("saml", "saml-integrator")
+    harness.add_relation_unit(relation_id, "saml-integrator/0")
+    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
+    harness.update_relation_data(
+        relation_id,
+        "saml-integrator",
+        {
+            "entity_id": "https://login.staging.ubuntu.com",
+            "metadata_url": metadata_url,
+        },
+    )
+    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
     harness.begin()
     root = harness.get_filesystem_root(SYNAPSE_CONTAINER_NAME)
     config_path = root / SYNAPSE_CONFIG_PATH[1:]
@@ -100,8 +115,6 @@ listeners:
     synapse.enable_saml(container, harness.charm._charm_state)
 
     # Assert: ensure config file was written correctly
-    saml_relation = harness.model.relations["saml"][0]
-    saml_relation_data = harness.get_relation_data(saml_relation.id, "saml-integrator")
     expected_config_content = {
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
@@ -110,7 +123,7 @@ listeners:
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
-                "metadata": {"remote": [{"url": saml_relation_data.get("metadata_url")}]},
+                "metadata": {"remote": [{"url": metadata_url}]},
                 "service": {
                     "sp": {
                         "entityId": TEST_SERVER_NAME,
@@ -132,13 +145,12 @@ listeners:
     assert config_path.read_text() == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_saml_error(harness_with_saml: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_enable_saml_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
     act: change the configuration file.
     assert: raise WorkloadError in case of error.
     """
-    harness = harness_with_saml
     harness.begin()
     error_message = "Error pulling file"
     path_error = ops.pebble.PathError(kind="fake", message=error_message)

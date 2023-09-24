@@ -168,13 +168,13 @@ def test_saml_integration_container_restart(monkeypatch: pytest.MonkeyPatch) -> 
     harness.cleanup()
 
 
-def test_saml_integration_container_down(harness_with_saml: Harness) -> None:
+def test_saml_integration_container_down(saml_configured: Harness) -> None:
     """
     arrange: start the Synapse charm, set server_name, set Synapse container to be down.
     act: emit saml_data_available.
     assert: Synapse charm should submit the correct status.
     """
-    harness = harness_with_saml
+    harness = saml_configured
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
     relation = harness.charm.framework.model.get_relation("saml", 0)
@@ -187,14 +187,14 @@ def test_saml_integration_container_down(harness_with_saml: Harness) -> None:
 
 
 def test_saml_integration_pebble_error(
-    harness_with_saml: Harness, monkeypatch: pytest.MonkeyPatch
+    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock pebble to give an error.
     act: emit saml_data_available.
     assert: Synapse charm should submit the correct status.
     """
-    harness = harness_with_saml
+    harness = saml_configured
     harness.begin()
     relation = harness.charm.framework.model.get_relation("saml", 0)
     enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
