@@ -19,7 +19,6 @@ import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
-from synapse.api import SYNAPSE_CONTAINER_NAME
 
 
 @pytest.fixture(autouse=True)
@@ -244,7 +243,7 @@ def test_change_config_error(
     assert: charm status is active.
     """
     harness.begin()
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
+    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
 
     harness.charm.database._change_config()
 

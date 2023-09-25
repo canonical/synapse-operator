@@ -13,12 +13,6 @@ from ops.jujuversion import JujuVersion
 import actions
 import synapse
 from charm_state import CharmState
-from synapse.api import (
-    MJOLNIR_MANAGEMENT_ROOM,
-    MJOLNIR_MEMBERSHIP_ROOM,
-    MJOLNIR_SERVICE_NAME,
-    SYNAPSE_CONTAINER_NAME,
-)
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -28,6 +22,7 @@ USERNAME = "mjolnir"
 SECRET_ID = "secret-id"  # nosec
 SECRET_KEY = "secret-key"  # nosec
 PEER_RELATION_NAME = "synapse-peers"
+MJOLNIR_SERVICE_NAME = "mjolnir"
 
 
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
@@ -119,7 +114,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         if not self._charm_state.enable_mjolnir:
             return
-        container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
@@ -130,7 +125,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         self._update_peer_data(container)
         if self.get_membership_room_id() is None:
             status = ops.BlockedStatus(
-                f"{MJOLNIR_MEMBERSHIP_ROOM} not found and "
+                f"{synapse.MJOLNIR_MEMBERSHIP_ROOM} not found and "
                 "is required by Mjolnir. Please, check the logs."
             )
             interval = self._charm.model.config.get("update-status-hook-interval", "")
@@ -138,7 +133,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
                 "The Mjolnir configuration will be done in %s after the room %s is created."
                 "This interval is set in update-status-hook-interval model config.",
                 interval,
-                MJOLNIR_MEMBERSHIP_ROOM,
+                synapse.MJOLNIR_MEMBERSHIP_ROOM,
             )
             event.add_status(status)
             return
@@ -153,7 +148,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         admin_access_token = self.get_admin_access_token()
         return synapse.get_room_id(
-            room_name=MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
+            room_name=synapse.MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
         )
 
     def get_admin_access_token(self) -> str:
@@ -189,7 +184,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
          - Override Mjolnir user rate limit.
          - Finally, add Mjolnir pebble layer.
         """
-        container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
@@ -204,10 +199,10 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         )
         mjolnir_access_token = mjolnir_user.access_token
         room_id = synapse.get_room_id(
-            room_name=MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
+            room_name=synapse.MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
         )
         if room_id is None:
-            logger.info("Room %s not found, creating", MJOLNIR_MANAGEMENT_ROOM)
+            logger.info("Room %s not found, creating", synapse.MJOLNIR_MANAGEMENT_ROOM)
             room_id = synapse.create_management_room(admin_access_token=admin_access_token)
         # Add the Mjolnir user to the management room
         synapse.make_room_admin(

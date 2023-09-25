@@ -14,10 +14,10 @@ from charms.data_platform_libs.v0.data_interfaces import (
 from ops.charm import CharmBase
 from ops.framework import Object
 
+import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
-from synapse.api import SYNAPSE_CONTAINER_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class DatabaseObserver(Object):
 
     def _change_config(self) -> None:
         """Change the configuration."""
-        container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return

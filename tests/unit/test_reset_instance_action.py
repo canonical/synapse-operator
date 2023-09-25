@@ -12,7 +12,7 @@ import ops
 import pytest
 from ops.testing import Harness
 
-from synapse.api import SYNAPSE_CONTAINER_NAME
+import synapse
 
 from .conftest import TEST_SERVER_NAME
 
@@ -45,7 +45,7 @@ def test_reset_instance_action_container_down(harness: Harness) -> None:
     """
     harness.begin()
     harness.set_leader(True)
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
+    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
     event = unittest.mock.Mock()
 
     # Calling to test the action since is not possible calling via harness

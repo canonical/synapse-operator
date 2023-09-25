@@ -15,7 +15,6 @@ from ops.testing import Harness
 import actions
 import synapse
 from mjolnir import Mjolnir
-from synapse.api import SYNAPSE_CONTAINER_NAME
 from user import User
 
 
@@ -136,7 +135,7 @@ def test_on_collect_status_blocked(harness: Harness, monkeypatch: pytest.MonkeyP
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
-    container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=None))
     peer_data_mock = MagicMock()
     monkeypatch.setattr(Mjolnir, "_update_peer_data", peer_data_mock)
@@ -167,7 +166,7 @@ def test_on_collect_status_service_exists(
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
-    container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=MagicMock()))
     peer_data_mock = MagicMock()
     monkeypatch.setattr(Mjolnir, "_update_peer_data", peer_data_mock)
@@ -188,7 +187,7 @@ def test_on_collect_status_container_off(
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "can_connect", MagicMock(return_value=False))
     peer_data_mock = MagicMock()
     monkeypatch.setattr(Mjolnir, "_update_peer_data", peer_data_mock)
@@ -210,7 +209,7 @@ def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPa
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
-    container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=None))
     peer_data_mock = MagicMock()
     monkeypatch.setattr(Mjolnir, "_update_peer_data", peer_data_mock)
@@ -384,7 +383,7 @@ def test_enable_mjolnir_container_off(harness: Harness, monkeypatch: pytest.Monk
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "can_connect", MagicMock(return_value=False))
     get_admin_access_token_mock = MagicMock(return_value=None)
     monkeypatch.setattr(Mjolnir, "get_admin_access_token", get_admin_access_token_mock)

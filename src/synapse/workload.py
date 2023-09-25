@@ -14,23 +14,24 @@ from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
 
-from .api import (
-    CHECK_ALIVE_NAME,
-    CHECK_MJOLNIR_READY_NAME,
-    CHECK_NGINX_READY_NAME,
-    CHECK_READY_NAME,
-    COMMAND_MIGRATE_CONFIG,
-    MJOLNIR_CONFIG_PATH,
-    MJOLNIR_HEALTH_PORT,
-    PROMETHEUS_TARGET_PORT,
-    SYNAPSE_COMMAND_PATH,
-    SYNAPSE_CONFIG_DIR,
-    SYNAPSE_CONFIG_PATH,
-    SYNAPSE_NGINX_PORT,
-    SYNAPSE_PORT,
-    SYNAPSE_URL,
-    VERSION_URL,
-)
+from .api import SYNAPSE_PORT, SYNAPSE_URL, VERSION_URL
+
+COMMAND_MIGRATE_CONFIG = "migrate_config"
+CHECK_ALIVE_NAME = "synapse-alive"
+CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
+CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
+CHECK_READY_NAME = "synapse-ready"
+SYNAPSE_CONFIG_DIR = "/data"
+MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
+MJOLNIR_SERVICE_NAME = "mjolnir"
+MJOLNIR_HEALTH_PORT = 7777
+PROMETHEUS_TARGET_PORT = "9000"
+SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
+SYNAPSE_CONTAINER_NAME = "synapse"
+SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
+SYNAPSE_COMMAND_PATH = "/start.py"
+SYNAPSE_NGINX_PORT = 8080
+SYNAPSE_SERVICE_NAME = "synapse"
 
 logger = logging.getLogger(__name__)
 

@@ -14,9 +14,9 @@ from charms.saml_integrator.v0.saml import SamlDataAvailableEvent, SamlRequires
 from ops.charm import CharmBase
 from ops.framework import Object
 
+import synapse
 from charm_types import SAMLConfiguration
 from pebble import PebbleServiceError
-from synapse.api import SYNAPSE_CONTAINER_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class SAMLObserver(Object):
 
     def _enable_saml(self) -> None:
         """Enable  SAML."""
-        container = self._charm.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return

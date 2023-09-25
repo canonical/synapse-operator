@@ -22,7 +22,6 @@ from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
-from synapse.api import SYNAPSE_CONTAINER_NAME, SYNAPSE_NGINX_CONTAINER_NAME, SYNAPSE_NGINX_PORT
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +51,11 @@ class SynapseCharm(ops.CharmBase):
             charm=self,
             service_hostname=self.app.name,
             service_name=self.app.name,
-            service_port=SYNAPSE_NGINX_PORT,
+            service_port=synapse.SYNAPSE_NGINX_PORT,
         )
         self._ingress = IngressPerAppRequirer(
             self,
-            port=SYNAPSE_NGINX_PORT,
+            port=synapse.SYNAPSE_NGINX_PORT,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
@@ -75,7 +74,7 @@ class SynapseCharm(ops.CharmBase):
 
     def replan_nginx(self) -> None:
         """Replan NGINX."""
-        container = self.unit.get_container(SYNAPSE_NGINX_CONTAINER_NAME)
+        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
@@ -85,7 +84,7 @@ class SynapseCharm(ops.CharmBase):
 
     def change_config(self) -> None:
         """Change configuration."""
-        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
@@ -99,7 +98,7 @@ class SynapseCharm(ops.CharmBase):
 
     def _set_workload_version(self) -> None:
         """Set workload version with Synapse version."""
-        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
@@ -130,7 +129,7 @@ class SynapseCharm(ops.CharmBase):
         if not self.model.unit.is_leader():
             event.fail("Only the juju leader unit can run reset instance action")
             return
-        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             event.fail("Failed to connect to container")
             return
@@ -157,7 +156,7 @@ class SynapseCharm(ops.CharmBase):
         Args:
             event: Event triggering the reset instance action.
         """
-        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return

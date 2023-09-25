@@ -17,7 +17,6 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
-from synapse.api import MJOLNIR_CONFIG_PATH, SYNAPSE_CONFIG_PATH, SYNAPSE_CONTAINER_NAME
 
 from .conftest import TEST_SERVER_NAME
 
@@ -44,8 +43,8 @@ def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
 
     synapse.enable_metrics(container_mock)
 
-    assert pull_mock.call_args[0][0] == SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == SYNAPSE_CONFIG_PATH
+    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
@@ -94,10 +93,10 @@ def test_enable_saml_success():
             "metadata_url": metadata_url,
         },
     )
-    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     harness.begin()
-    root = harness.get_filesystem_root(SYNAPSE_CONTAINER_NAME)
-    config_path = root / SYNAPSE_CONFIG_PATH[1:]
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
     config_path.parent.mkdir(parents=True)
     config_path.write_text(
         """
@@ -111,7 +110,7 @@ listeners:
     )
 
     # Act: write the Synapse config file with SAML enabled
-    container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     synapse.enable_saml(container, harness.charm._charm_state)
 
     # Assert: ensure config file was written correctly
@@ -197,5 +196,5 @@ def test_create_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
         access_token=access_token, room_id=room_id
     )
     push_mock.assert_called_once_with(
-        MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
+        synapse.MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
     )

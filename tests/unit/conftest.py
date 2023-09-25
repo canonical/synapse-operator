@@ -16,13 +16,6 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
-from synapse.api import (
-    COMMAND_MIGRATE_CONFIG,
-    SYNAPSE_COMMAND_PATH,
-    SYNAPSE_CONFIG_PATH,
-    SYNAPSE_CONTAINER_NAME,
-    SYNAPSE_NGINX_CONTAINER_NAME,
-)
 
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
 TEST_SERVER_NAME_CHANGED = "pebble-layer-1.synapse.com"
@@ -119,13 +112,17 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.set_model_name("testmodel")  # needed for testing Traefik
-    synapse_container: ops.Container = harness.model.unit.get_container(SYNAPSE_CONTAINER_NAME)
-    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_NGINX_CONTAINER_NAME], True)
+    synapse_container: ops.Container = harness.model.unit.get_container(
+        synapse.SYNAPSE_CONTAINER_NAME
+    )
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_can_connect(
+        harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME], True
+    )
     synapse_container.make_dir("/data", make_parents=True)
     # unused-variable disabled to pass constants values to inner function
-    command_path = SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
-    command_migrate_config = COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
+    command_path = synapse.SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
+    command_migrate_config = synapse.COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
     exit_code = 0
     if hasattr(request, "param"):
         exit_code = request.param
@@ -152,7 +149,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
                     "server_name": TEST_SERVER_NAME,
                 }
                 synapse_container.push(
-                    SYNAPSE_CONFIG_PATH, yaml.safe_dump(config_content), make_dirs=True
+                    synapse.SYNAPSE_CONFIG_PATH, yaml.safe_dump(config_content), make_dirs=True
                 )
                 return synapse.ExecResult(exit_code, "", "")
             case _:
@@ -175,7 +172,7 @@ def saml_configured_fixture(harness: Harness) -> Harness:
         "metadata_url": "https://login.staging.ubuntu.com/saml/metadata",
     }
     harness.add_relation("saml", "saml-integrator", app_data=saml_relation_data)
-    harness.set_can_connect(SYNAPSE_CONTAINER_NAME, True)
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     harness.set_leader(True)
     return harness
 
