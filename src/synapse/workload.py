@@ -191,6 +191,24 @@ def enable_metrics(container: ops.Container) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
+def enable_serve_server_wellknown(container: ops.Container) -> None:
+    """Change the Synapse configuration to enable server wellknown file.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["serve_server_wellknown"] = True
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     """Create config as expected by mjolnir.
 

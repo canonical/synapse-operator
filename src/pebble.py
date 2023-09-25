@@ -85,6 +85,7 @@ class PebbleService:
         try:
             synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
             synapse.enable_metrics(container=container)
+            synapse.enable_serve_server_wellknown(container=container)
             if self._charm_state.saml_config is not None:
                 logger.debug("pebble.change_config: Enabling SAML")
                 synapse.enable_saml(container=container, charm_state=self._charm_state)

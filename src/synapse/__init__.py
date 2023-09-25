@@ -54,6 +54,7 @@ from .workload import (  # noqa: F401
     create_mjolnir_config,
     enable_metrics,
     enable_saml,
+    enable_serve_server_wellknown,
     execute_migrate_config,
     get_environment,
     get_registration_shared_secret,
