@@ -12,17 +12,6 @@ import ops
 
 import synapse
 from charm_state import CharmState
-from constants import (
-    CHECK_ALIVE_NAME,
-    CHECK_MJOLNIR_READY_NAME,
-    CHECK_NGINX_READY_NAME,
-    CHECK_READY_NAME,
-    MJOLNIR_CONFIG_PATH,
-    MJOLNIR_SERVICE_NAME,
-    SYNAPSE_COMMAND_PATH,
-    SYNAPSE_CONTAINER_NAME,
-    SYNAPSE_SERVICE_NAME,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +52,8 @@ class PebbleService:
             container: Synapse container.
         """
         logger.debug("Restarting the Synapse container")
-        container.add_layer(SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
-        container.restart(SYNAPSE_SERVICE_NAME)
+        container.add_layer(synapse.SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
+        container.restart(synapse.SYNAPSE_SERVICE_NAME)
 
     def replan_nginx(self, container: ops.model.Container) -> None:
         """Replan Synapse NGINX service.
@@ -134,11 +123,11 @@ class PebbleService:
         try:
             logger.info("Replan service to not restart")
             container.add_layer(
-                SYNAPSE_CONTAINER_NAME, self._pebble_layer_without_restart, combine=True
+                synapse.SYNAPSE_CONTAINER_NAME, self._pebble_layer_without_restart, combine=True
             )
             container.replan()
             logger.info("Stop Synapse instance")
-            container.stop(SYNAPSE_SERVICE_NAME)
+            container.stop(synapse.SYNAPSE_SERVICE_NAME)
             logger.info("Erase Synapse data")
             synapse.reset_instance(container)
         except ops.pebble.PathError as exc:
@@ -151,17 +140,17 @@ class PebbleService:
             "summary": "Synapse layer",
             "description": "pebble config layer for Synapse",
             "services": {
-                SYNAPSE_SERVICE_NAME: {
+                synapse.SYNAPSE_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Synapse application service",
                     "startup": "enabled",
-                    "command": SYNAPSE_COMMAND_PATH,
+                    "command": synapse.SYNAPSE_COMMAND_PATH,
                     "environment": synapse.get_environment(self._charm_state),
                 }
             },
             "checks": {
-                CHECK_READY_NAME: synapse.check_ready(),
-                CHECK_ALIVE_NAME: synapse.check_alive(),
+                synapse.CHECK_READY_NAME: synapse.check_ready(),
+                synapse.CHECK_ALIVE_NAME: synapse.check_alive(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)
@@ -170,10 +159,10 @@ class PebbleService:
     def _pebble_layer_without_restart(self) -> ops.pebble.LayerDict:
         """Return a dictionary representing a Pebble layer without restart."""
         new_layer = self._pebble_layer
-        new_layer["services"][SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
-        new_layer["services"][SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
-        ignore = {CHECK_READY_NAME: "ignore"}
-        new_layer["services"][SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
+        new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
+        new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
+        ignore = {synapse.CHECK_READY_NAME: "ignore"}
+        new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
         return new_layer
 
     @property
@@ -195,7 +184,7 @@ class PebbleService:
                 },
             },
             "checks": {
-                CHECK_NGINX_READY_NAME: synapse.check_nginx_ready(),
+                synapse.CHECK_NGINX_READY_NAME: synapse.check_nginx_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)
@@ -207,12 +196,12 @@ class PebbleService:
         Returns:
             The pebble configuration for the mjolnir service.
         """
-        command_params = f"bot --mjolnir-config {MJOLNIR_CONFIG_PATH}"
+        command_params = f"bot --mjolnir-config {synapse.MJOLNIR_CONFIG_PATH}"
         layer = {
             "summary": "Synapse mjolnir layer",
             "description": "Synapse mjolnir layer",
             "services": {
-                MJOLNIR_SERVICE_NAME: {
+                synapse.MJOLNIR_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Mjolnir service",
                     "command": f"/mjolnir-entrypoint.sh {command_params}",
@@ -220,7 +209,7 @@ class PebbleService:
                 },
             },
             "checks": {
-                CHECK_MJOLNIR_READY_NAME: synapse.check_mjolnir_ready(),
+                synapse.CHECK_MJOLNIR_READY_NAME: synapse.check_mjolnir_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

@@ -6,6 +6,7 @@
 # pylint: disable=protected-access
 
 import unittest.mock
+from secrets import token_hex
 
 import ops
 import psycopg2
@@ -16,18 +17,27 @@ from psycopg2 import sql
 import database_observer
 import synapse
 from charm_types import DatasourcePostgreSQL
-from constants import SYNAPSE_CONTAINER_NAME
 from database_client import DatabaseClient
 from exceptions import CharmDatabaseRelationNotFoundError
 
 
-def test_erase_database(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.fixture(autouse=True)
+def postgresql_relation_data_fixture(harness: Harness) -> None:
+    """Configure postgres relation for base harness"""
+    postgresql_relation_data = {
+        "endpoints": "myhost:5432",
+        "username": "user",
+    }
+    harness.add_relation("database", "postgresql", app_data=postgresql_relation_data)
+
+
+def test_erase_database(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation and erase database.
     assert: erase query is executed.
     """
-    harness = harness_with_postgresql
+    harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
@@ -54,15 +64,13 @@ def test_erase_database(harness_with_postgresql: Harness, monkeypatch: pytest.Mo
     cursor_mock.execute.assert_has_calls(calls)
 
 
-def test_erase_database_error(
-    harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_erase_database_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation and erase database.
     assert: exception is raised.
     """
-    harness = harness_with_postgresql
+    harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
@@ -76,17 +84,15 @@ def test_erase_database_error(
         db_client.erase()
 
 
-def test_connect(
-    harness_with_postgresql: Harness,
-    monkeypatch: pytest.MonkeyPatch,
-    datasource_postgresql_password: str,
-):
+def test_connect(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and get connection.
     assert: connection is called with correct parameters.
     """
-    harness = harness_with_postgresql
+    postgresql_relation = harness.model.relations["database"][0]
+    harness.update_relation_data(postgresql_relation.id, "postgresql", {"password": token_hex(16)})
+    harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     mock_connection = unittest.mock.MagicMock()
@@ -96,23 +102,22 @@ def test_connect(
 
     db_client._connect()
 
+    postgresql_relation_data = harness.get_relation_data(postgresql_relation.id, "postgresql")
+    relation_database_password = str(postgresql_relation_data.get("password"))
     query = (
         "dbname='synapse' user='user' host='myhost' "
-        f"password='{datasource_postgresql_password}' connect_timeout=5"
+        f"password='{relation_database_password}' connect_timeout=5"
     )
     connect_mock.assert_called_once_with(query)
 
 
-def test_connect_error(
-    harness_with_postgresql: Harness,
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_connect_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and get connection.
     assert: exception is raised.
     """
-    harness = harness_with_postgresql
+    harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     error_msg = "Invalid query"
@@ -122,15 +127,13 @@ def test_connect_error(
         db_client._connect()
 
 
-def test_prepare_database(
-    harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_prepare_database(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation and prepare database.
     assert: update query is executed.
     """
-    harness = harness_with_postgresql
+    harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
@@ -150,15 +153,13 @@ def test_prepare_database(
     )
 
 
-def test_prepare_database_error(
-    harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_prepare_database_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation and prepare database.
     assert: exception is raised.
     """
-    harness = harness_with_postgresql
+    harness.begin()
     datasource = harness.charm.database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
@@ -167,23 +168,30 @@ def test_prepare_database_error(
     cursor_mock.execute.side_effect = psycopg2.Error(error_msg)
     monkeypatch.setattr(db_client, "_connect", unittest.mock.MagicMock())
     db_client._conn = conn_mock
+
     with pytest.raises(psycopg2.Error):
         db_client.prepare()
 
 
 def test_relation_as_datasource(
-    harness_with_postgresql: Harness, datasource_postgresql_password: str
+    harness: Harness,
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add database relation.
     assert: database data and synapse environment should be the same as relation data.
     """
-    harness = harness_with_postgresql
+    postgresql_relation = harness.model.relations["database"][0]
+    harness.update_relation_data(postgresql_relation.id, "postgresql", {"password": token_hex(16)})
+
+    harness.begin()
+
+    postgresql_relation_data = harness.get_relation_data(postgresql_relation.id, "postgresql")
+    relation_database_password = str(postgresql_relation_data.get("password"))
     expected = DatasourcePostgreSQL(
         host="myhost",
         db=harness.charm.app.name,
-        password=datasource_postgresql_password,
+        password=relation_database_password,
         port="5432",
         user="user",
     )
@@ -197,15 +205,14 @@ def test_relation_as_datasource(
     assert synapse_env["POSTGRES_PASSWORD"] == expected["password"]
 
 
-def test_relation_as_datasource_error(
-    harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch
-):
+def test_relation_as_datasource_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger change config.
     assert: charm status is active.
     """
-    harness = harness_with_postgresql
+    harness.begin()
+
     get_relation_as_datasource_mock = unittest.mock.MagicMock(return_value=None)
     monkeypatch.setattr(
         harness.charm.database, "get_relation_as_datasource", get_relation_as_datasource_mock
@@ -214,41 +221,42 @@ def test_relation_as_datasource_error(
         harness.charm.database.get_database_name()
 
 
-def test_change_config(
-    harness_with_postgresql: Harness,
-):
+def test_change_config(harness: Harness):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger change config.
     assert: charm status is active.
     """
-    harness = harness_with_postgresql
+    harness.begin()
+
     harness.charm.database._change_config()
+
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
 def test_change_config_error(
-    harness_with_postgresql: Harness,
+    harness: Harness,
 ):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger change config.
     assert: charm status is active.
     """
-    harness = harness_with_postgresql
-    harness.set_can_connect(harness.model.unit.containers[SYNAPSE_CONTAINER_NAME], False)
+    harness.begin()
+    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
+
     harness.charm.database._change_config()
+
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 
 
-def test_on_database_created(harness_with_postgresql: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_on_database_created(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger _on_database_created.
     assert: charm status is active.
     """
-    harness = harness_with_postgresql
-    harness = harness_with_postgresql
+    harness.begin()
     db_client_mock = unittest.mock.MagicMock()
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
@@ -258,5 +266,7 @@ def test_on_database_created(harness_with_postgresql: Harness, monkeypatch: pyte
     monkeypatch.setattr(
         database_observer, "DatabaseClient", unittest.mock.MagicMock(return_value=db_client_mock)
     )
+
     harness.charm.database._on_database_created(unittest.mock.MagicMock())
+
     db_client_mock.prepare.assert_called_once()
