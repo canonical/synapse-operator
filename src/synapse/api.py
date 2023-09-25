@@ -22,19 +22,19 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
-MJOLNIR_MANAGEMENT_ROOM = "management"
-MJOLNIR_MEMBERSHIP_ROOM = "moderators"
-SYNAPSE_PORT = 8008
-SYNAPSE_URL = f"http://localhost:{SYNAPSE_PORT}"
 
 # The API version that should be used is described in the documentation:
 # https://matrix-org.github.io/synapse/latest/usage/administration/index.html
+SYNAPSE_PORT = 8008
+SYNAPSE_URL = f"http://localhost:{SYNAPSE_PORT}"
 ADD_USER_ROOM_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/join"
 CREATE_ROOM_URL = f"{SYNAPSE_URL}/_matrix/client/v3/createRoom"
 DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
 LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
 LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
+MJOLNIR_MANAGEMENT_ROOM = "management"
+MJOLNIR_MEMBERSHIP_ROOM = "moderators"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"

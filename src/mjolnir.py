@@ -17,12 +17,12 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
-USERNAME = "mjolnir"
+MJOLNIR_SERVICE_NAME = "mjolnir"
+PEER_RELATION_NAME = "synapse-peers"
 # Disabling it since these are not hardcoded password
 SECRET_ID = "secret-id"  # nosec
 SECRET_KEY = "secret-key"  # nosec
-PEER_RELATION_NAME = "synapse-peers"
-MJOLNIR_SERVICE_NAME = "mjolnir"
+USERNAME = "mjolnir"
 
 
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
