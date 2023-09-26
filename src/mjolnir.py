@@ -118,9 +118,16 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        service = container.get_services(MJOLNIR_SERVICE_NAME)
-        if service:
-            logger.debug("%s service already exists, skipping")
+        mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
+        if mjolnir_service:
+            logger.debug("%s service already exists, skipping", MJOLNIR_SERVICE_NAME)
+            return
+        current_services = container.get_services()
+        all_svcs_running = all(svc.is_running() for svc in current_services.values())
+        if not all_svcs_running:
+            # Synapse must be running so the charm can check if there is
+            # a membership_room.
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
         self._update_peer_data(container)
         if self.get_membership_room_id() is None:
