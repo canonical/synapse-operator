@@ -161,4 +161,8 @@ cython_debug/
 # Juju and Rock files
 *.charm
 */*.rock
+
+# Vscode files
+.vscode/
+
 */*.snap

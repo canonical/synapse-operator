@@ -13,24 +13,25 @@ import yaml
 from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
-from constants import (
-    CHECK_ALIVE_NAME,
-    CHECK_MJOLNIR_READY_NAME,
-    CHECK_NGINX_READY_NAME,
-    CHECK_READY_NAME,
-    COMMAND_MIGRATE_CONFIG,
-    MJOLNIR_CONFIG_PATH,
-    MJOLNIR_HEALTH_PORT,
-    PROMETHEUS_TARGET_PORT,
-    SYNAPSE_COMMAND_PATH,
-    SYNAPSE_CONFIG_DIR,
-    SYNAPSE_CONFIG_PATH,
-    SYNAPSE_NGINX_PORT,
-    SYNAPSE_PORT,
-    SYNAPSE_URL,
-)
 
-from .api import VERSION_URL
+from .api import SYNAPSE_PORT, SYNAPSE_URL, VERSION_URL
+
+CHECK_ALIVE_NAME = "synapse-alive"
+CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
+CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
+CHECK_READY_NAME = "synapse-ready"
+COMMAND_MIGRATE_CONFIG = "migrate_config"
+SYNAPSE_CONFIG_DIR = "/data"
+MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
+MJOLNIR_HEALTH_PORT = 7777
+MJOLNIR_SERVICE_NAME = "mjolnir"
+PROMETHEUS_TARGET_PORT = "9000"
+SYNAPSE_COMMAND_PATH = "/start.py"
+SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
+SYNAPSE_CONTAINER_NAME = "synapse"
+SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
+SYNAPSE_NGINX_PORT = 8080
+SYNAPSE_SERVICE_NAME = "synapse"
 
 logger = logging.getLogger(__name__)
 
@@ -188,6 +189,24 @@ def enable_metrics(container: ops.Container) -> None:
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise EnableMetricsError(str(exc)) from exc
+
+
+def enable_serve_server_wellknown(container: ops.Container) -> None:
+    """Change the Synapse configuration to enable server wellknown file.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["serve_server_wellknown"] = True
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
 
 
 def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:

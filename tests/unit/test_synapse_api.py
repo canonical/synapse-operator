@@ -77,7 +77,9 @@ def test_register_user_error(mock_session, monkeypatch: pytest.MonkeyPatch):
 
     mock_response_exception = mock.MagicMock()
     mock_response_exception.text = "Fail"
-    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
+    mock_response_http_error = requests.exceptions.HTTPError(
+        request=mock.Mock(), response=mock_response_exception
+    )
     mock_request = mock.Mock()
     mock_request.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_request
@@ -146,7 +148,9 @@ def test_register_user_exists_error(mock_session, monkeypatch: pytest.MonkeyPatc
     shared_secret = token_hex(16)
     mock_response_exception = mock.MagicMock()
     mock_response_exception.text = "User ID already taken"
-    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
+    mock_response_http_error = requests.exceptions.HTTPError(
+        request=mock.Mock(), response=mock_response_exception
+    )
     mock_request = mock.Mock()
     mock_request.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_request
@@ -558,7 +562,9 @@ def test_get_nonce_requests_error(mock_session):
         synapse.api._get_nonce()
     mock_response_exception = mock.MagicMock()
     mock_response_exception.text = "Fail"
-    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
+    mock_response_http_error = requests.exceptions.HTTPError(
+        request=mock.Mock(), response=mock_response_exception
+    )
     mock_request = mock.Mock()
     mock_request.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_request
@@ -609,7 +615,9 @@ def test_get_version_requests_error(mock_session):
 
     mock_response_exception = mock.MagicMock()
     mock_response_exception.text = "Fail"
-    mock_response_http_error = requests.exceptions.HTTPError(response=mock_response_exception)
+    mock_response_http_error = requests.exceptions.HTTPError(
+        request=mock.Mock(), response=mock_response_exception
+    )
     mock_requests = mock.MagicMock()
     mock_requests.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_requests

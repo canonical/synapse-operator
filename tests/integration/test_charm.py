@@ -18,8 +18,7 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 from saml_test_helper import SamlK8sTestHelper
 
-from constants import MJOLNIR_HEALTH_PORT, SYNAPSE_NGINX_PORT, SYNAPSE_PORT
-from synapse.api import SYNAPSE_VERSION_REGEX
+import synapse
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -41,7 +40,7 @@ async def test_synapse_is_up(
     """
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = requests.get(
-            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+            f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
         )
         assert response.status_code == 200
         assert "Welcome to the Matrix" in response.text
@@ -190,7 +189,9 @@ async def test_register_user_action(
     data = {"type": "m.login.password", "user": username, "password": password}
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = requests.post(
-            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_matrix/client/r0/login", json=data, timeout=5
+            f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/client/r0/login",
+            json=data,
+            timeout=5,
         )
         assert response.status_code == 200
         assert response.json()["access_token"]
@@ -213,10 +214,10 @@ async def test_workload_version(
     assert juju_workload_version
     for unit_ip in await get_unit_ips(synapse_app.name):
         res = requests.get(
-            f"http://{unit_ip}:{SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
+            f"http://{unit_ip}:{synapse.SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
         )
         server_version = res.json()["server_version"]
-        version_match = re.search(SYNAPSE_VERSION_REGEX, server_version)
+        version_match = re.search(synapse.SYNAPSE_VERSION_REGEX, server_version)
         assert version_match
         assert version_match.group(1) == juju_workload_version
 
@@ -232,7 +233,9 @@ async def test_synapse_enable_mjolnir(
     assert: the Synapse application is active and Mjolnir health point returns a correct response.
     """
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    response = requests.get(f"http://{synapse_ip}:{SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5)
+    response = requests.get(
+        f"http://{synapse_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+    )
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
     username = token_hex(16)
@@ -285,7 +288,7 @@ async def test_synapse_enable_mjolnir(
         # using fast_forward otherwise would wait for model config update-status-hook-interval
         await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="active")
     # check healthz endpoint
-    res = sess.get(f"http://{synapse_ip}:{MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
+    res = sess.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
     assert res.status_code == 200
 
 
@@ -333,7 +336,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
     headers = {"Host": server_name}
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = session.get(
-            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml",
+            f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_synapse/client/saml2/metadata.xml",
             timeout=10,
             headers=headers,
         )
@@ -342,7 +345,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         saml_page_path = "_matrix/client/r0/login/sso/redirect/saml"
         saml_page_params = "redirectUrl=http%3A%2F%2Flocalhost%2F&org.matrix.msc3824.action=login"
         redirect_response = session.get(
-            f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}/{saml_page_path}?{saml_page_params}",
+            f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/{saml_page_path}?{saml_page_params}",
             verify=False,
             timeout=10,
             headers=headers,
@@ -354,7 +357,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         assert f"https://{server_name}" in saml_response.url
 
         url = saml_response.url.replace(
-            f"https://{server_name}", f"http://{unit_ip}:{SYNAPSE_NGINX_PORT}"
+            f"https://{server_name}", f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}"
         )
         logged_in_page = session.post(url, data=saml_response.data, headers={"Host": server_name})
 
