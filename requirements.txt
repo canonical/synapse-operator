@@ -1,6 +1,6 @@
 jsonschema ==4.19.1
 ops ==2.6.0
-pydantic ==1.10.12
+pydantic ==1.10.13
 psycopg2-binary ==2.9.7
 requests == 2.31.0
 cosl ==0.0.7
