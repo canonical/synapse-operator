@@ -124,7 +124,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             return
         current_services = container.get_services()
         all_svcs_running = all(svc.is_running() for svc in current_services.values())
-        if not all_svcs_running:
+        if not all_svcs_running or not current_services:
             # Synapse must be running so the charm can check if there is
             # a membership_room.
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
