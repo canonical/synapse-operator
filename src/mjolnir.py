@@ -125,8 +125,9 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         current_services = container.get_services()
         all_svcs_running = all(svc.is_running() for svc in current_services.values())
         if not all_svcs_running or not current_services:
-            # Synapse must be running so the charm can check if there is
-            # a membership_room.
+            # The get_membership_room_id does a call to Synapse API in order to get the
+            # membership room id. This only works if Synapse and NGINX are running so that's why
+            # the services are being checked here.
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
         self._update_peer_data(container)
