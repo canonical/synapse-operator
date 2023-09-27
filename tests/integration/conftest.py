@@ -80,8 +80,8 @@ def synapse_app_name_fixture() -> str:
     return "synapse"
 
 
-@pytest_asyncio.fixture(scope="module", name="synapse_app")
-async def synapse_app_fixture(
+@pytest_asyncio.fixture(scope="module", name="synapse_app_install")
+async def synapse_app_install_fixture(
     ops_test: OpsTest,
     synapse_app_name: str,
     synapse_image: str,
@@ -92,7 +92,7 @@ async def synapse_app_fixture(
     postgresql_app: Application,
     postgresql_app_name: str,
 ):
-    """Build and deploy the Synapse charm."""
+    """Build and deploy the Synapse charm so the install can be tested."""
     resources = {
         "synapse-image": synapse_image,
         "synapse-nginx-image": synapse_nginx_image,
@@ -107,8 +107,58 @@ async def synapse_app_fixture(
     async with ops_test.fast_forward():
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
         await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
-        await model.wait_for_idle(wait_for_active=True, status=ACTIVE_STATUS_NAME)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     return app
+
+
+@pytest_asyncio.fixture(scope="module", name="synapse_charmhub_app")
+async def synapse_charmhub_app_fixture(
+    ops_test: OpsTest,
+    model: Model,
+    synapse_app_name: str,
+    server_name: str,
+    synapse_app_install: Application,
+    postgresql_app: Application,
+    postgresql_app_name: str,
+):
+    """Remove existing Synapse and deploy synapse from Charmhub so the refresh can be tested."""
+    async with ops_test.fast_forward():
+        await model.remove_application("synapse", block_until_done=True)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+        app = await model.deploy(
+            "synapse",
+            application_name=synapse_app_name,
+            trust=True,
+            channel="latest/edge",
+            series="jammy",
+            config={"server_name": server_name},
+        )
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    return app
+
+
+@pytest_asyncio.fixture(scope="module", name="synapse_app")
+async def synapse_app_fixture(
+    ops_test: OpsTest,
+    synapse_charmhub_app: Application,
+    synapse_app_name: str,
+    synapse_image: str,
+    synapse_nginx_image: str,
+    model: Model,
+    synapse_charm: str,
+):
+    """Build and refresh the Synapse application."""
+    assert synapse_charmhub_app
+    resources = {
+        "synapse-image": synapse_image,
+        "synapse-nginx-image": synapse_nginx_image,
+    }
+    async with ops_test.fast_forward():
+        await synapse_charmhub_app.refresh(path=f"./{synapse_charm}", resources=resources)
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+    return synapse_charmhub_app
 
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ips")

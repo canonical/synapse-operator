@@ -29,6 +29,23 @@ ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 logger = logging.getLogger(__name__)
 
 
+async def test_synapse_from_install_is_up(
+    synapse_app_install: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: build and deploy the Synapse charm.
+    act: send a request to the Synapse application managed by the Synapse charm.
+    assert: the Synapse application should return a correct response.
+    """
+    for unit_ip in await get_unit_ips(synapse_app_install.name):
+        response = requests.get(
+            f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+        )
+        assert response.status_code == 200
+        assert "Welcome to the Matrix" in response.text
+
+
 async def test_synapse_is_up(
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
