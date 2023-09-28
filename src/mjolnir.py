@@ -122,12 +122,14 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         if mjolnir_service:
             logger.debug("%s service already exists, skipping", MJOLNIR_SERVICE_NAME)
             return
-        current_services = container.get_services()
-        all_svcs_running = all(svc.is_running() for svc in current_services.values())
-        if not all_svcs_running or not current_services:
+        synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
+        synapse_not_active = [
+            service for service in synapse_service.values() if not service.is_running()
+        ]
+        if not synapse_service or synapse_not_active:
             # The get_membership_room_id does a call to Synapse API in order to get the
-            # membership room id. This only works if Synapse and NGINX are running so that's why
-            # the services are being checked here.
+            # membership room id. This only works if Synapse is running so that's why
+            # the service status is checked here.
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
         self._update_peer_data(container)
