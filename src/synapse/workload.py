@@ -338,6 +338,31 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         raise EnableSAMLError(str(exc)) from exc
 
 
+def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable SMTP.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling SMTP.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["email"] = {}
+        current_yaml["email"]["smtp_host"] = charm_state.synapse_config.smtp_host
+        current_yaml["email"]["smtp_port"] = charm_state.synapse_config.smtp_port
+        current_yaml["email"]["smtp_user"] = charm_state.synapse_config.smtp_user
+        current_yaml["email"]["smtp_pass"] = charm_state.synapse_config.smtp_pass
+        current_yaml["email"]["enable_tls"] = charm_state.synapse_config.smtp_enable_tls
+        current_yaml["email"]["notif_from"] = charm_state.synapse_config.smtp_notif_from
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def get_registration_shared_secret(container: ops.Container) -> typing.Optional[str]:
     """Get registration_shared_secret from configuration file.
 

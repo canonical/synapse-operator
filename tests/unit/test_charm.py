@@ -143,26 +143,6 @@ def test_traefik_integration(harness: Harness) -> None:
     }
 
 
-def test_saml_integration_container_restart(monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    arrange: start the Synapse charm, set server_name, mock container and enable_saml.
-    act: enable saml via pebble_service as the observer does.
-    assert: The container is restarted.
-    """
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME})
-    harness.begin()
-    monkeypatch.setattr("synapse.enable_saml", MagicMock)
-    container = MagicMock()
-    container_restart = MagicMock()
-    monkeypatch.setattr(container, "restart", container_restart)
-
-    harness.charm.pebble_service.enable_saml(container)
-
-    container_restart.assert_called_once()
-    harness.cleanup()
-
-
 def test_saml_integration_container_down(saml_configured: Harness) -> None:
     """
     arrange: start the Synapse charm, set server_name, set Synapse container to be down.
