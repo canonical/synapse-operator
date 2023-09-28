@@ -174,7 +174,7 @@ def test_saml_integration_container_down(saml_configured: Harness) -> None:
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
     relation = harness.charm.framework.model.get_relation("saml", 0)
 
-    harness.charm.saml.saml.on.saml_data_available.emit(relation)
+    harness.charm._saml.saml.on.saml_data_available.emit(relation)
 
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
@@ -193,9 +193,9 @@ def test_saml_integration_pebble_error(
     harness.begin()
     relation = harness.charm.framework.model.get_relation("saml", 0)
     enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
-    monkeypatch.setattr(harness.charm.saml._pebble_service, "enable_saml", enable_saml_mock)
+    monkeypatch.setattr(harness.charm._saml._pebble_service, "enable_saml", enable_saml_mock)
 
-    harness.charm.saml.saml.on.saml_data_available.emit(relation)
+    harness.charm._saml.saml.on.saml_data_available.emit(relation)
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "SAML integration failed" in str(harness.model.unit.status)

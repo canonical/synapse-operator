@@ -266,9 +266,9 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
 
     saml_config = charm_state.saml_config
     entity_id = (
-        charm_state.public_baseurl
-        if charm_state.public_baseurl is not None
-        else f"https://{charm_state.server_name}"
+        charm_state.synapse_config.public_baseurl
+        if charm_state.synapse_config.public_baseurl is not None
+        else f"https://{charm_state.synapse_config.server_name}"
     )
     sp_config = {
         "metadata": {
@@ -308,8 +308,8 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
     try:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
-        if charm_state.public_baseurl is not None:
-            current_yaml["public_baseurl"] = charm_state.public_baseurl
+        if charm_state.synapse_config.public_baseurl is not None:
+            current_yaml["public_baseurl"] = charm_state.synapse_config.public_baseurl
         # enable x_forwarded to pass expected headers
         current_listeners = current_yaml["listeners"]
         updated_listeners = [
@@ -386,8 +386,8 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         A dictionary representing the Synapse environment variables.
     """
     environment = {
-        "SYNAPSE_SERVER_NAME": f"{charm_state.server_name}",
-        "SYNAPSE_REPORT_STATS": f"{charm_state.report_stats}",
+        "SYNAPSE_SERVER_NAME": f"{charm_state.synapse_config.server_name}",
+        "SYNAPSE_REPORT_STATS": f"{charm_state.synapse_config.report_stats}",
         # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
         # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
         "SYNAPSE_NO_TLS": str(True),
@@ -416,9 +416,12 @@ def _check_server_name(container: ops.Container, charm_state: CharmState) -> Non
             configuration file.
     """
     configured_server_name = _get_configuration_field(container=container, fieldname="server_name")
-    if configured_server_name is not None and configured_server_name != charm_state.server_name:
+    if (
+        configured_server_name is not None
+        and configured_server_name != charm_state.synapse_config.server_name
+    ):
         msg = (
-            f"server_name {charm_state.server_name} is different from the existing "
+            f"server_name {charm_state.synapse_config.server_name} is different from the existing "
             f"one {configured_server_name}. Please revert the config or run the action "
             "reset-instance if you want to erase the existing instance and start a new "
             "one."

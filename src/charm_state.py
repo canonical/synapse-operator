@@ -4,8 +4,11 @@
 # See LICENSE file for licensing details.
 
 """State of the Charm."""
+import dataclasses
 import itertools
 import typing
+
+import ops
 
 # pydantic is causing this no-name-in-module problem
 from pydantic import (  # pylint: disable=no-name-in-module,import-error
@@ -17,10 +20,6 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 )
 
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration
-
-if typing.TYPE_CHECKING:
-    from charm import SynapseCharm
-
 
 KNOWN_CHARM_CONFIG = (
     "server_name",
@@ -86,96 +85,33 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         return "no"
 
 
+@dataclasses.dataclass(frozen=True)
 class CharmState:
     """State of the Charm.
 
-    Attrs:
-        server_name: server_name config.
-        report_stats: report_stats config.
-        public_baseurl: public_baseurl config.
-        enable_mjolnir: enable_mjolnir config.
+    Attributes:
+        synapse_config: synapse configuration.
         datasource: datasource information.
         saml_config: saml configuration.
     """
 
-    def __init__(
-        self,
-        *,
-        synapse_config: SynapseConfig,
-        datasource: typing.Optional[DatasourcePostgreSQL],
-        saml_config: typing.Optional[SAMLConfiguration],
-    ) -> None:
-        """Construct.
-
-        Args:
-            synapse_config: The value of the synapse_config charm configuration.
-            datasource: Datasource information.
-            saml_config: SAML configuration.
-        """
-        self._synapse_config = synapse_config
-        self._datasource = datasource
-        self._saml_config = saml_config
-
-    @property
-    def server_name(self) -> typing.Optional[str]:
-        """Return server_name config.
-
-        Returns:
-            str: server_name config.
-        """
-        return self._synapse_config.server_name
-
-    @property
-    def report_stats(self) -> typing.Union[str, bool, None]:
-        """Return report_stats config.
-
-        Returns:
-            str: report_stats config as yes or no.
-        """
-        return self._synapse_config.report_stats
-
-    @property
-    def public_baseurl(self) -> typing.Optional[str]:
-        """Return public_baseurl config.
-
-        Returns:
-            str: public_baseurl config.
-        """
-        return self._synapse_config.public_baseurl
-
-    @property
-    def enable_mjolnir(self) -> bool:
-        """Return enable_mjolnir config.
-
-        Returns:
-            bool: enable_mjolnir config.
-        """
-        return self._synapse_config.enable_mjolnir
-
-    @property
-    def datasource(self) -> typing.Union[DatasourcePostgreSQL, None]:
-        """Return datasource.
-
-        Returns:
-            datasource or None.
-        """
-        return self._datasource
-
-    @property
-    def saml_config(self) -> typing.Union[SAMLConfiguration, None]:
-        """Return SAML configuration.
-
-        Returns:
-            SAMLConfiguration or None.
-        """
-        return self._saml_config
+    synapse_config: SynapseConfig
+    datasource: typing.Optional[DatasourcePostgreSQL]
+    saml_config: typing.Optional[SAMLConfiguration]
 
     @classmethod
-    def from_charm(cls, charm: "SynapseCharm") -> "CharmState":
+    def from_charm(
+        cls,
+        charm: ops.CharmBase,
+        datasource: typing.Optional[DatasourcePostgreSQL],
+        saml_config: typing.Optional[SAMLConfiguration],
+    ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
         Args:
             charm: The charm instance associated with this state.
+            datasource: datasource information to be used by Synapse.
+            saml_config: saml configuration to be used by Synapse.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -194,6 +130,6 @@ class CharmState:
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
         return cls(
             synapse_config=valid_synapse_config,
-            datasource=charm.database.get_relation_as_datasource(),
-            saml_config=charm.saml.get_relation_as_saml_conf(),
+            datasource=datasource,
+            saml_config=saml_config,
         )

@@ -112,7 +112,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         Args:
             event: Collect status event.
         """
-        if not self._charm_state.enable_mjolnir:
+        if not self._charm_state.synapse_config.enable_mjolnir:
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -194,7 +194,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             container,
             USERNAME,
             True,
-            str(self._charm_state.server_name),
+            str(self._charm_state.synapse_config.server_name),
             admin_access_token,
         )
         mjolnir_access_token = mjolnir_user.access_token
@@ -207,7 +207,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         # Add the Mjolnir user to the management room
         synapse.make_room_admin(
             user=mjolnir_user,
-            server=str(self._charm_state.server_name),
+            server=str(self._charm_state.synapse_config.server_name),
             admin_access_token=admin_access_token,
             room_id=room_id,
         )

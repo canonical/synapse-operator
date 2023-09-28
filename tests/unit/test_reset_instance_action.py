@@ -13,6 +13,7 @@ import pytest
 from ops.testing import Harness
 
 import synapse
+from database_client import DatabaseClient
 
 from .conftest import TEST_SERVER_NAME
 
@@ -84,6 +85,7 @@ def test_reset_instance_action_failed(harness: Harness) -> None:
 def test_reset_instance_action_path_error_blocked(
     container_with_path_error_blocked: unittest.mock.MagicMock,
     harness: Harness,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -96,6 +98,7 @@ def test_reset_instance_action_path_error_blocked(
         return_value=container_with_path_error_blocked
     )
     event = unittest.mock.MagicMock()
+    monkeypatch.setattr(DatabaseClient, "erase", unittest.mock.MagicMock())
 
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
@@ -109,7 +112,6 @@ def test_reset_instance_action_path_error_pass(
     container_with_path_error_pass: unittest.mock.MagicMock,
     harness: Harness,
     monkeypatch: pytest.MonkeyPatch,
-    erase_database_mocked: unittest.mock.MagicMock,
 ) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -118,7 +120,6 @@ def test_reset_instance_action_path_error_pass(
     """
     harness.begin()
     harness.set_leader(True)
-    harness.charm._database = erase_database_mocked
     content = io.StringIO(f'server_name: "{TEST_SERVER_NAME}"')
     pull_mock = unittest.mock.MagicMock(return_value=content)
     monkeypatch.setattr(container_with_path_error_pass, "pull", pull_mock)
@@ -126,6 +127,7 @@ def test_reset_instance_action_path_error_pass(
         return_value=container_with_path_error_pass
     )
     event = unittest.mock.MagicMock()
+    monkeypatch.setattr(DatabaseClient, "erase", unittest.mock.MagicMock())
 
     # Calling to test the action since is not possible calling via harness
     harness.charm._on_reset_instance_action(event)
