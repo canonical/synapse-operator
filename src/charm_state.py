@@ -26,6 +26,12 @@ KNOWN_CHARM_CONFIG = (
     "report_stats",
     "public_baseurl",
     "enable_mjolnir",
+    "smtp_enable_tls",
+    "smtp_host",
+    "smtp_notif_from",
+    "smtp_pass",
+    "smtp_port",
+    "smtp_user",
 )
 
 
@@ -53,12 +59,24 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.
         enable_mjolnir: enable_mjolnir config.
+        smtp_enable_tls: enable tls while connecting to SMTP server.
+        smtp_host: SMTP host.
+        smtp_notif_from: defines the "From" address to use when sending emails.
+        smtp_pass: password to authenticate to SMTP host.
+        smtp_port: SMTP port.
+        smtp_user: username to autehtncate to SMTP host.
     """
 
     server_name: str | None = Field(..., min_length=2)
     report_stats: str | None = Field(None)
     public_baseurl: str | None = Field(None)
     enable_mjolnir: bool = False
+    smtp_enable_tls: bool = True
+    smtp_host: str | None = Field(None)
+    smtp_notif_from: str | None = Field(None)
+    smtp_pass: str | None = Field(None)
+    smtp_port: int | None = Field(None)
+    smtp_user: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -68,6 +86,25 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         """
 
         extra = Extra.allow
+
+    @validator("smtp_notif_from", pre=True, always=True)
+    @classmethod
+    def set_default_smtp_notif_from(
+        cls, smtp_notif_from: typing.Optional[str], values: dict
+    ) -> typing.Optional[str]:
+        """Set server_name as default value to smtp_notif_from.
+
+        Args:
+            smtp_notif_from: the smtp_notif_from current value.
+            values: values already defined.
+
+        Returns:
+            The default value for smtp_notif_from if not defined.
+        """
+        server_name = values.get("server_name")
+        if smtp_notif_from is None and server_name:
+            return server_name
+        return smtp_notif_from
 
     @validator("report_stats")
     @classmethod
