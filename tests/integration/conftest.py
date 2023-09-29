@@ -97,7 +97,7 @@ async def synapse_app_fixture(
     pytestconfig: Config,
 ):
     """Build and deploy the Synapse charm."""
-    use_existing = pytestconfig.getoption("--charm-file")
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
     if use_existing:
         return model.applications[synapse_app_name]
     resources = {
@@ -202,7 +202,7 @@ async def postgresql_app_fixture(
     ops_test: OpsTest, model: Model, postgresql_app_name: str, pytestconfig: Config
 ):
     """Deploy postgresql."""
-    use_existing = pytestconfig.getoption("--charm-file")
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
     if use_existing:
         return model.applications[postgresql_app_name]
     async with ops_test.fast_forward():
