@@ -89,7 +89,7 @@ class PebbleService:
             if self._charm_state.saml_config is not None:
                 logger.debug("pebble.change_config: Enabling SAML")
                 synapse.enable_saml(container=container, charm_state=self._charm_state)
-            if self._charm_state.synapse_config.smtp_host is not None:
+            if self._charm_state.synapse_config.smtp_host:
                 synapse.enable_smtp(container=container, charm_state=self._charm_state)
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:

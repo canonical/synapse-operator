@@ -198,3 +198,108 @@ def test_create_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
     push_mock.assert_called_once_with(
         synapse.MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
     )
+
+
+def test_enable_smtp_success(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: update smtp_host config and call enable_smtp.
+    assert: new configuration file is pushed and SMTP is enabled.
+    """
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    expected_smtp_host = "127.0.0.1"
+    harness.update_config({"smtp_host": expected_smtp_host})
+    harness.begin()
+    synapse.enable_smtp(container_mock, harness.charm._charm_state)
+
+    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    server_name = harness.charm._charm_state.synapse_config.server_name
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "email": {"notif_from": server_name, "smtp_host": expected_smtp_host, "smtp_port": 25},
+    }
+    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+
+
+def test_enable_smtp_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: update smtp_host config and call enable_smtp.
+    assert: raise WorkloadError in case of error.
+    """
+    error_message = "Error pulling file"
+    path_error = ops.pebble.PathError(kind="fake", message=error_message)
+    pull_mock = MagicMock(side_effect=path_error)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    with pytest.raises(synapse.WorkloadError, match=error_message):
+        expected_smtp_host = "127.0.0.1"
+        harness.update_config({"smtp_host": expected_smtp_host})
+        harness.begin()
+        synapse.enable_smtp(container_mock, harness.charm._charm_state)
+
+
+def test_enable_serve_server_wellknown_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: update smtp_host config and call enable_serve_server_wellknown.
+    assert: new configuration file is pushed and serve_server_wellknown is enabled.
+    """
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    synapse.enable_serve_server_wellknown(container_mock)
+
+    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "serve_server_wellknown": True,
+    }
+    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+
+
+def test_enable_serve_server_wellknown_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: call enable_serve_server_wellknown.
+    assert: raise WorkloadError.
+    """
+    error_message = "Error pulling file"
+    path_error = ops.pebble.PathError(kind="fake", message=error_message)
+    pull_mock = MagicMock(side_effect=path_error)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    with pytest.raises(synapse.WorkloadError, match=error_message):
+        synapse.enable_serve_server_wellknown(container_mock)
