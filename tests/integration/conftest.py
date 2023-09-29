@@ -149,10 +149,10 @@ async def synapse_refresh_app_fixture(
         await model.relate(f"{synapse_app_refresh_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(idle_period=5)
         await synapse_app.set_config({"enable_mjolnir": "true"})
-        await model.wait_for_idle(apps=[synapse_app_refresh_name],idle_period=5, status="blocked")
+        await model.wait_for_idle(apps=[synapse_app_refresh_name], idle_period=5, status="blocked")
         app = model.applications[synapse_app_refresh_name]
         await app.refresh(path=f"./{synapse_charm}")
-        await model.wait_for_idle(apps=[synapse_app_refresh_name],idle_period=5, status="blocked")
+        await model.wait_for_idle(apps=[synapse_app_refresh_name], idle_period=5, status="blocked")
     return app
 
 
@@ -242,7 +242,6 @@ async def postgresql_app_fixture(
     postgresql_app_name: str,
 ):
     """Deploy postgresql."""
-    return model.applications[postgresql_app_name]
     async with ops_test.fast_forward():
         await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
