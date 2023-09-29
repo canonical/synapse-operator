@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `observability.py`
 Provide the Observability class to represent the observability stack for Synapse. 
 
-**Global Variables**
----------------
-- **PROMETHEUS_TARGET_PORT**
 
 
 ---

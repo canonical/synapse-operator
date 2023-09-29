@@ -5,11 +5,6 @@
 # <kbd>module</kbd> `charm.py`
 Charm for Synapse on kubernetes. 
 
-**Global Variables**
----------------
-- **SYNAPSE_CONTAINER_NAME**
-- **SYNAPSE_NGINX_CONTAINER_NAME**
-- **SYNAPSE_NGINX_PORT**
 
 
 ---
@@ -17,7 +12,7 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
-<a href="../src/charm.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

@@ -5,17 +5,6 @@
 # <kbd>module</kbd> `pebble.py`
 Class to interact with pebble. 
 
-**Global Variables**
----------------
-- **CHECK_ALIVE_NAME**
-- **CHECK_MJOLNIR_READY_NAME**
-- **CHECK_NGINX_READY_NAME**
-- **CHECK_READY_NAME**
-- **MJOLNIR_CONFIG_PATH**
-- **MJOLNIR_SERVICE_NAME**
-- **SYNAPSE_COMMAND_PATH**
-- **SYNAPSE_CONTAINER_NAME**
-- **SYNAPSE_SERVICE_NAME**
 
 
 ---
@@ -23,7 +12,7 @@ Class to interact with pebble.
 ## <kbd>class</kbd> `PebbleService`
 The charm pebble service manager. 
 
-<a href="../src/pebble.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -44,7 +33,7 @@ Initialize the pebble service.
 
 ---
 
-<a href="../src/pebble.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -68,7 +57,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_saml`
 
@@ -92,7 +81,7 @@ Enable SAML.
 
 ---
 
-<a href="../src/pebble.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `replan_mjolnir`
 
@@ -110,7 +99,7 @@ Replan Synapse Mjolnir service.
 
 ---
 
-<a href="../src/pebble.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `replan_nginx`
 
@@ -128,7 +117,7 @@ Replan Synapse NGINX service.
 
 ---
 
-<a href="../src/pebble.py#L122"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `reset_instance`
 
@@ -152,7 +141,7 @@ Reset instance.
 
 ---
 
-<a href="../src/pebble.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `restart_synapse`
 
@@ -178,7 +167,7 @@ Exception raised when something fails while interacting with Pebble.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/pebble.py#L37"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

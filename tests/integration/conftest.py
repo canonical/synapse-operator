@@ -102,7 +102,7 @@ async def synapse_app_fixture(
     """Build and deploy the Synapse charm so the install can be tested."""
     if synapse_app_refresh_name in model.applications:
         await model.remove_application(synapse_app_refresh_name, block_until_done=True)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
     resources = {
         "synapse-image": synapse_image,
         "synapse-nginx-image": synapse_nginx_image,
@@ -133,24 +133,26 @@ async def synapse_refresh_app_fixture(
 ):
     """Remove existing Synapse and deploy synapse from Charmhub so the refresh can be tested."""
     async with ops_test.fast_forward():
-        app = await model.deploy(
+        synapse_app = await model.deploy(
             "synapse",
             application_name=synapse_app_refresh_name,
             trust=True,
             channel="latest/edge",
             series="jammy",
-            config={"server_name": server_name, "enable_mjolnir": True},
+            config={"server_name": server_name},
         )
         await model.wait_for_idle(
             apps=[synapse_app_refresh_name, postgresql_app_name],
-            raise_on_blocked=True,
             status=ACTIVE_STATUS_NAME,
+            idle_period=5,
         )
         await model.relate(f"{synapse_app_refresh_name}:database", f"{postgresql_app_name}")
-        # We are expecting block because there is no membership room id.
-        await model.wait_for_idle(status="blocked")
+        await model.wait_for_idle(idle_period=5)
+        await synapse_app.set_config({"enable_mjolnir": "true"})
+        await model.wait_for_idle(apps=[synapse_app_refresh_name],idle_period=5, status="blocked")
+        app = model.applications[synapse_app_refresh_name]
         await app.refresh(path=f"./{synapse_charm}")
-        await model.wait_for_idle(raise_on_blocked=True, status="blocked")
+        await model.wait_for_idle(apps=[synapse_app_refresh_name],idle_period=5, status="blocked")
     return app
 
 
@@ -240,6 +242,7 @@ async def postgresql_app_fixture(
     postgresql_app_name: str,
 ):
     """Deploy postgresql."""
+    return model.applications[postgresql_app_name]
     async with ops_test.fast_forward():
         await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
