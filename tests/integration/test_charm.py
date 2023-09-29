@@ -326,7 +326,7 @@ async def test_synapse_enable_smtp(
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
-    dummy_check = {
+    sample_check = {
         "id_server": "id.matrix.org",
         "client_secret": "this_is_my_secret_string",
         "email": "example@example.com",
@@ -335,7 +335,7 @@ async def test_synapse_enable_smtp(
     sess = requests.session()
     res = sess.post(
         f"http://{synapse_ip}:8080/_matrix/client/r0/register/email/requestToken",
-        json=dummy_check,
+        json=sample_check,
         headers=headers,
         timeout=5,
     )
