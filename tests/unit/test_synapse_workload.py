@@ -303,3 +303,40 @@ def test_enable_serve_server_wellknown_error(monkeypatch: pytest.MonkeyPatch):
 
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_serve_server_wellknown(container_mock)
+
+
+def test_get_registration_shared_secret_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: call get_registration_shared_secret.
+    assert: registration_shared_secret is returned.
+    """
+    expected_secret = token_hex(16)
+    config_content = f"registration_shared_secret: {expected_secret}"
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    received_secret = synapse.get_registration_shared_secret(container_mock)
+
+    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    assert received_secret == expected_secret
+
+
+def test_get_registration_shared_secret_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: call get_registration_shared_secret.
+    assert: raise WorkloadError.
+    """
+    error_message = "Error pulling file"
+    path_error = ops.pebble.PathError(kind="fake", message=error_message)
+    pull_mock = MagicMock(side_effect=path_error)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    with pytest.raises(ops.pebble.PathError, match=error_message):
+        synapse.get_registration_shared_secret(container_mock)
