@@ -135,8 +135,6 @@ def test_on_collect_status_blocked(harness: Harness, monkeypatch: pytest.MonkeyP
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    monkeypatch.setattr(container, "get_services", MagicMock(return_value=None))
     peer_data_mock = MagicMock()
     monkeypatch.setattr(Mjolnir, "_update_peer_data", peer_data_mock)
     monkeypatch.setattr(Mjolnir, "get_membership_room_id", MagicMock(return_value=None))
@@ -209,8 +207,6 @@ def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPa
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    monkeypatch.setattr(container, "get_services", MagicMock(return_value=None))
     peer_data_mock = MagicMock()
     monkeypatch.setattr(Mjolnir, "_update_peer_data", peer_data_mock)
     membership_room_id_mock = MagicMock(return_value="123")
@@ -228,6 +224,34 @@ def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPa
     membership_room_id_mock.assert_called_once()
     enable_mjolnir_mock.assert_called_once()
     event_mock.add_status.assert_called_once_with(ops.ActiveStatus())
+
+
+def test_on_collect_status_api_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock container, mock get_membership_room_id
+        to raise an API error.
+    act: call _on_collect_status.
+    assert: mjolnir is not enabled.
+    """
+    harness.update_config({"enable_mjolnir": True})
+    harness.begin_with_initial_hooks()
+    harness.set_leader(True)
+    peer_data_mock = MagicMock()
+    monkeypatch.setattr(Mjolnir, "_update_peer_data", peer_data_mock)
+    membership_room_id_mock = MagicMock(side_effect=synapse.APIError("error"))
+    monkeypatch.setattr(Mjolnir, "get_membership_room_id", membership_room_id_mock)
+    enable_mjolnir_mock = MagicMock(return_value=None)
+    monkeypatch.setattr(Mjolnir, "enable_mjolnir", enable_mjolnir_mock)
+    charm_state_mock = MagicMock()
+    charm_state_mock.enable_mjolnir = True
+    harness.charm._mjolnir._charm_state = charm_state_mock
+
+    event_mock = MagicMock()
+    harness.charm._mjolnir._on_collect_status(event_mock)
+
+    peer_data_mock.assert_called_once()
+    membership_room_id_mock.assert_called_once()
+    enable_mjolnir_mock.assert_not_called()
 
 
 @patch.object(ops.JujuVersion, "from_environ")

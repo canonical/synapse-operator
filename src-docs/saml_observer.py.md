@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `saml_observer.py`
 The SAML integrator relation observer. 
 
-**Global Variables**
----------------
-- **SYNAPSE_CONTAINER_NAME**
 
 
 ---
