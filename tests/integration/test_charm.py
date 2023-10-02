@@ -79,7 +79,7 @@ async def test_prometheus_integration(
     """
     await model.add_relation(prometheus_app_name, synapse_app_name)
     await model.wait_for_idle(
-        apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME, idle_period=5
+        apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME
     )
 
     for unit_ip in await get_unit_ips(prometheus_app_name):
@@ -135,6 +135,7 @@ async def test_grafana_integration(
     assert len(dashboards)
 
 
+@pytest.mark.nginx
 @pytest.mark.usefixtures("synapse_app")
 async def test_nginx_route_integration(
     model: Model,
@@ -221,7 +222,7 @@ async def test_synapse_enable_mjolnir(
     assert: the Synapse application is active and Mjolnir health point returns a correct response.
     """
     await synapse_app.set_config({"enable_mjolnir": "true"})
-    await synapse_app.model.wait_for_idle(apps=[synapse_app.name], idle_period=5, status="blocked")
+    await synapse_app.model.wait_for_idle(timeout=120, apps=[synapse_app.name], status="blocked")
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
@@ -243,15 +244,14 @@ async def test_synapse_enable_mjolnir(
     res.raise_for_status()
     async with ops_test.fast_forward():
         # using fast_forward otherwise would wait for model config update-status-hook-interval
-        await synapse_app.model.wait_for_idle(
-            idle_period=5, apps=[synapse_app.name], status="active"
-        )
+        await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="active")
 
     res = sess.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
 
     assert res.status_code == 200
 
 
+@pytest.mark.nginx
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("nginx_integrator_app")
 async def test_saml_auth(  # pylint: disable=too-many-locals
@@ -277,7 +277,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         series="jammy",
         trust=True,
     )
-    await model.wait_for_idle(idle_period=5)
+    await model.wait_for_idle()
     saml_helper.prepare_pod(model_name, f"{saml_integrator_app.name}-0")
     saml_helper.prepare_pod(model_name, f"{synapse_app.name}-0")
     await saml_integrator_app.set_config(
@@ -286,10 +286,10 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
             "metadata_url": f"https://{saml_helper.SAML_HOST}/metadata",
         }
     )
-    await model.wait_for_idle(idle_period=5)
+    await model.wait_for_idle()
     await model.add_relation(saml_integrator_app.name, synapse_app.name)
     await model.wait_for_idle(
-        apps=[synapse_app.name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME, idle_period=5
+        apps=[synapse_app.name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME
     )
 
     session = requests.session()
@@ -337,9 +337,7 @@ async def test_synapse_enable_smtp(
     assert: the Synapse application is active and the error returned is the one expected.
     """
     await synapse_app.set_config({"smtp_host": "127.0.0.1"})
-    await synapse_app.model.wait_for_idle(
-        apps=[synapse_app.name], status=ACTIVE_STATUS_NAME, idle_period=5
-    )
+    await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status=ACTIVE_STATUS_NAME)
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
