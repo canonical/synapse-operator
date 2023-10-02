@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `database_observer.py`
 The Database agent relation observer. 
 
-**Global Variables**
----------------
-- **SYNAPSE_CONTAINER_NAME**
 
 
 ---
