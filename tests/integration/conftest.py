@@ -83,10 +83,17 @@ def synapse_app_name_fixture() -> str:
     return "synapse"
 
 
+@pytest_asyncio.fixture(scope="module", name="synapse_app_refresh_name")
+def synapse_app_refresh_name_fixture() -> str:
+    """Get Synapse application name for refresh fixture."""
+    return "synapse-refresh"
+
+
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
     ops_test: OpsTest,
     synapse_app_name: str,
+    synapse_app_refresh_name: str,
     synapse_image: str,
     synapse_nginx_image: str,
     model: Model,
@@ -100,6 +107,9 @@ async def synapse_app_fixture(
     use_existing = pytestconfig.getoption("--use-existing", default=False)
     if use_existing:
         return model.applications[synapse_app_name]
+    if synapse_app_refresh_name in model.applications:
+        await model.remove_application(synapse_app_refresh_name, block_until_done=True)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
     resources = {
         "synapse-image": synapse_image,
         "synapse-nginx-image": synapse_nginx_image,
@@ -114,7 +124,42 @@ async def synapse_app_fixture(
     async with ops_test.fast_forward():
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
         await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
-        await model.wait_for_idle(wait_for_active=True, status=ACTIVE_STATUS_NAME)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    return app
+
+
+@pytest_asyncio.fixture(scope="module", name="synapse_refresh_app")
+async def synapse_refresh_app_fixture(
+    ops_test: OpsTest,
+    model: Model,
+    server_name: str,
+    synapse_app_refresh_name: str,
+    postgresql_app: Application,
+    postgresql_app_name: str,
+    synapse_charm: str,
+):
+    """Remove existing Synapse and deploy synapse from Charmhub so the refresh can be tested."""
+    async with ops_test.fast_forward():
+        synapse_app = await model.deploy(
+            "synapse",
+            application_name=synapse_app_refresh_name,
+            trust=True,
+            channel="latest/edge",
+            series="jammy",
+            config={"server_name": server_name},
+        )
+        await model.wait_for_idle(
+            apps=[synapse_app_refresh_name, postgresql_app_name],
+            status=ACTIVE_STATUS_NAME,
+            idle_period=5,
+        )
+        await model.relate(f"{synapse_app_refresh_name}:database", f"{postgresql_app_name}")
+        await model.wait_for_idle(idle_period=5)
+        await synapse_app.set_config({"enable_mjolnir": "true"})
+        await model.wait_for_idle(apps=[synapse_app_refresh_name], idle_period=5, status="blocked")
+        app = model.applications[synapse_app_refresh_name]
+        await app.refresh(path=f"./{synapse_charm}")
+        await model.wait_for_idle(apps=[synapse_app_refresh_name], idle_period=5, status="blocked")
     return app
 
 

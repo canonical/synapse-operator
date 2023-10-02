@@ -118,24 +118,41 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
-        service = container.get_services(MJOLNIR_SERVICE_NAME)
-        if service:
-            logger.debug("%s service already exists, skipping")
+        mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
+        if mjolnir_service:
+            logger.debug("%s service already exists, skipping", MJOLNIR_SERVICE_NAME)
+            return
+        synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
+        synapse_not_active = [
+            service for service in synapse_service.values() if not service.is_running()
+        ]
+        if not synapse_service or synapse_not_active:
+            # The get_membership_room_id does a call to Synapse API in order to get the
+            # membership room id. This only works if Synapse is running so that's why
+            # the service status is checked here.
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
         self._update_peer_data(container)
-        if self.get_membership_room_id() is None:
-            status = ops.BlockedStatus(
-                f"{synapse.MJOLNIR_MEMBERSHIP_ROOM} not found and "
-                "is required by Mjolnir. Please, check the logs."
+        try:
+            if self.get_membership_room_id() is None:
+                status = ops.BlockedStatus(
+                    f"{synapse.MJOLNIR_MEMBERSHIP_ROOM} not found and "
+                    "is required by Mjolnir. Please, check the logs."
+                )
+                interval = self._charm.model.config.get("update-status-hook-interval", "")
+                logger.error(
+                    "The Mjolnir configuration will be done in %s after the room %s is created."
+                    "This interval is set in update-status-hook-interval model config.",
+                    interval,
+                    synapse.MJOLNIR_MEMBERSHIP_ROOM,
+                )
+                event.add_status(status)
+                return
+        except synapse.APIError as exc:
+            logger.exception(
+                "Failed to check for membership_room. Mjolnir will not be configured: %r",
+                exc,
             )
-            interval = self._charm.model.config.get("update-status-hook-interval", "")
-            logger.error(
-                "The Mjolnir configuration will be done in %s after the room %s is created."
-                "This interval is set in update-status-hook-interval model config.",
-                interval,
-                synapse.MJOLNIR_MEMBERSHIP_ROOM,
-            )
-            event.add_status(status)
             return
         self.enable_mjolnir()
         event.add_status(ops.ActiveStatus())
