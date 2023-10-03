@@ -79,7 +79,7 @@ async def test_prometheus_integration(
     """
     await model.add_relation(prometheus_app_name, synapse_app_name)
     await model.wait_for_idle(
-        apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME
+        idle_period=30, apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME
     )
 
     for unit_ip in await get_unit_ips(prometheus_app_name):
@@ -150,7 +150,7 @@ async def test_nginx_route_integration(
     """
     await model.add_relation(f"{synapse_app_name}", f"{nginx_integrator_app_name}")
     await nginx_integrator_app.set_config({"service-hostname": synapse_app_name})
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.wait_for_idle(idle_period=30, status=ACTIVE_STATUS_NAME)
 
     response = requests.get(
         "http://127.0.0.1/_matrix/static/", headers={"Host": synapse_app_name}, timeout=5
@@ -195,6 +195,7 @@ async def test_workload_version(
     act: get status from Juju.
     assert: the workload version is set and match the one given by Synapse API request.
     """
+    await synapse_app.model.wait_for_idle(idle_period=30, apps=[synapse_app.name], status="active")
     _, status, _ = await ops_test.juju("status", "--format", "json")
     status = json.loads(status)
     juju_workload_version = status["applications"][synapse_app.name].get("version", "")
@@ -222,7 +223,9 @@ async def test_synapse_enable_mjolnir(
     assert: the Synapse application is active and Mjolnir health point returns a correct response.
     """
     await synapse_app.set_config({"enable_mjolnir": "true"})
-    await synapse_app.model.wait_for_idle(timeout=120, apps=[synapse_app.name], status="blocked")
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
+    )
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
@@ -244,7 +247,9 @@ async def test_synapse_enable_mjolnir(
     res.raise_for_status()
     async with ops_test.fast_forward():
         # using fast_forward otherwise would wait for model config update-status-hook-interval
-        await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="active")
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_app.name], status="active"
+        )
 
     res = sess.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
 
@@ -286,10 +291,12 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
             "metadata_url": f"https://{saml_helper.SAML_HOST}/metadata",
         }
     )
-    await model.wait_for_idle()
+    await model.wait_for_idle(idle_period=30)
     await model.add_relation(saml_integrator_app.name, synapse_app.name)
     await model.wait_for_idle(
-        apps=[synapse_app.name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME
+        idle_period=30,
+        apps=[synapse_app.name, saml_integrator_app.name],
+        status=ACTIVE_STATUS_NAME,
     )
 
     session = requests.session()
@@ -337,7 +344,9 @@ async def test_synapse_enable_smtp(
     assert: the Synapse application is active and the error returned is the one expected.
     """
     await synapse_app.set_config({"smtp_host": "127.0.0.1"})
-    await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status=ACTIVE_STATUS_NAME)
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME
+    )
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
