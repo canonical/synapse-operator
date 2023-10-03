@@ -22,10 +22,10 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration
 
 KNOWN_CHARM_CONFIG = (
-    "server_name",
-    "report_stats",
-    "public_baseurl",
     "enable_mjolnir",
+    "public_baseurl",
+    "report_stats",
+    "server_name",
     "smtp_enable_tls",
     "smtp_host",
     "smtp_notif_from",

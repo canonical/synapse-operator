@@ -153,8 +153,7 @@ def _get_configuration_field(container: ops.Container, fieldname: str) -> typing
     """
     try:
         configuration_content = str(container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read())
-        value = yaml.safe_load(configuration_content)[fieldname]
-        return value
+        return yaml.safe_load(configuration_content)[fieldname]
     except PathError as path_error:
         if path_error.kind == "not-found":
             logger.debug(
