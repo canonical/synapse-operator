@@ -8,9 +8,6 @@ Provide the Mjolnir class to represent the Mjolnir plugin for Synapse.
 **Global Variables**
 ---------------
 - **MJOLNIR_SERVICE_NAME**
-- **PEER_RELATION_NAME**
-- **SECRET_ID**
-- **SECRET_KEY**
 - **USERNAME**
 
 
@@ -21,7 +18,7 @@ A class representing the Mjolnir plugin for Synapse application.
 
 Mjolnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/matrix-org/mjolnir/ for more details about it. 
 
-<a href="../src/mjolnir.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -49,31 +46,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/mjolnir.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `create_admin_user`
-
-```python
-create_admin_user(container: Container) → User
-```
-
-Create an admin user. 
-
-
-
-**Args:**
- 
- - <b>`container`</b>:  Synapse container. 
-
-
-
-**Returns:**
- 
- - <b>`User`</b>:  admin user that was created. 
-
----
-
-<a href="../src/mjolnir.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_mjolnir`
 
@@ -97,24 +70,7 @@ The required steps to enable Mjolnir are:
 
 ---
 
-<a href="../src/mjolnir.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `get_admin_access_token`
-
-```python
-get_admin_access_token() → str
-```
-
-Get admin access token. 
-
-
-
-**Returns:**
-  admin access token. 
-
----
-
-<a href="../src/mjolnir.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_membership_room_id`
 

@@ -242,7 +242,7 @@ def get_version() -> str:
     return version_match.group(1)
 
 
-def get_access_token(user: User, server: str, admin_access_token: str) -> str:
+def get_access_token(user: User, server: str, admin_access_token: typing.Optional[str]) -> str:
     """Get an access token that can be used to authenticate as that user.
 
     This is a way to do actions on behalf of a user.
@@ -271,7 +271,9 @@ def get_access_token(user: User, server: str, admin_access_token: str) -> str:
     return res_access_token
 
 
-def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmState) -> None:
+def override_rate_limit(
+    user: User, admin_access_token: typing.Optional[str], charm_state: CharmState
+) -> None:
     """Override user's rate limit.
 
     Args:
@@ -291,7 +293,7 @@ def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmS
 
 def get_room_id(
     room_name: str,
-    admin_access_token: str,
+    admin_access_token: typing.Optional[str],
 ) -> typing.Optional[str]:
     """Get room id.
 
@@ -328,7 +330,7 @@ def get_room_id(
 def deactivate_user(
     user: User,
     server: str,
-    admin_access_token: str,
+    admin_access_token: typing.Optional[str],
 ) -> None:
     """Deactivate user.
 
@@ -347,7 +349,7 @@ def deactivate_user(
     _do_request("POST", url, headers=headers, json=data)
 
 
-def create_management_room(admin_access_token: str) -> str:
+def create_management_room(admin_access_token: typing.Optional[str]) -> str:
     """Create the management room to be used by Mjolnir.
 
     Args:
@@ -401,7 +403,9 @@ def create_management_room(admin_access_token: str) -> str:
         raise GetRoomIDError(str(exc)) from exc
 
 
-def make_room_admin(user: User, server: str, admin_access_token: str, room_id: str) -> None:
+def make_room_admin(
+    user: User, server: str, admin_access_token: typing.Optional[str], room_id: str
+) -> None:
     """Make user a room's admin.
 
     Args:

@@ -6,6 +6,7 @@
 """Module to interact with Register User action."""
 
 import logging
+import typing
 
 import ops
 
@@ -39,8 +40,8 @@ def register_user(
     container: ops.Container,
     username: str,
     admin: bool,
+    admin_access_token: typing.Optional[str] = None,
     server: str = "",
-    admin_access_token: str = "",  # nosec
 ) -> User:
     """Run register user action.
 

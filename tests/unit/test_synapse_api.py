@@ -218,8 +218,13 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
     user = User(username=username, admin=True)
     admin_access_token = token_hex(16)
     server = token_hex(16)
-    synapse_config = SynapseConfig(server_name=server, report_stats="False", public_baseurl="")
-    charm_state = CharmState(synapse_config=synapse_config, datasource=None, saml_config=None)
+    # while using Pydantic, mypy ignores default values
+    synapse_config = SynapseConfig(server_name=server)  # type: ignore[call-arg]
+    charm_state = CharmState(
+        synapse_config=synapse_config,
+        datasource=None,
+        saml_config=None,
+    )
     expected_url = (
         f"http://localhost:8008/_synapse/admin/v1/users/@any-user:{server}/override_ratelimit"
     )
@@ -246,8 +251,13 @@ def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
     user = User(username=username, admin=True)
     admin_access_token = token_hex(16)
     server = token_hex(16)
-    synapse_config = SynapseConfig(server_name=server, report_stats="False", public_baseurl="")
-    charm_state = CharmState(synapse_config=synapse_config, datasource=None, saml_config=None)
+    # while using Pydantic, mypy ignores default values
+    synapse_config = SynapseConfig(server_name=server)  # type: ignore[call-arg]
+    charm_state = CharmState(
+        synapse_config=synapse_config,
+        datasource=None,
+        saml_config=None,
+    )
     expected_error_msg = "Failed to connect"
     do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))
     monkeypatch.setattr("synapse.api._do_request", do_request_mock)
