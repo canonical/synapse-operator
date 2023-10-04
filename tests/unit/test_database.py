@@ -38,7 +38,7 @@ def test_erase_database(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     assert: erase query is executed.
     """
     harness.begin()
-    datasource = harness.charm.database.get_relation_as_datasource()
+    datasource = harness.charm._database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
@@ -71,7 +71,7 @@ def test_erase_database_error(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     assert: exception is raised.
     """
     harness.begin()
-    datasource = harness.charm.database.get_relation_as_datasource()
+    datasource = harness.charm._database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
@@ -93,7 +93,7 @@ def test_connect(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     postgresql_relation = harness.model.relations["database"][0]
     harness.update_relation_data(postgresql_relation.id, "postgresql", {"password": token_hex(16)})
     harness.begin()
-    datasource = harness.charm.database.get_relation_as_datasource()
+    datasource = harness.charm._database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     mock_connection = unittest.mock.MagicMock()
     mock_connection.autocommit = True
@@ -118,7 +118,7 @@ def test_connect_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> Non
     assert: exception is raised.
     """
     harness.begin()
-    datasource = harness.charm.database.get_relation_as_datasource()
+    datasource = harness.charm._database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     error_msg = "Invalid query"
     connect_mock = unittest.mock.MagicMock(side_effect=psycopg2.Error(error_msg))
@@ -134,7 +134,7 @@ def test_prepare_database(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> 
     assert: update query is executed.
     """
     harness.begin()
-    datasource = harness.charm.database.get_relation_as_datasource()
+    datasource = harness.charm._database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
@@ -160,7 +160,7 @@ def test_prepare_database_error(harness: Harness, monkeypatch: pytest.MonkeyPatc
     assert: exception is raised.
     """
     harness.begin()
-    datasource = harness.charm.database.get_relation_as_datasource()
+    datasource = harness.charm._database.get_relation_as_datasource()
     db_client = DatabaseClient(datasource=datasource)
     conn_mock = unittest.mock.MagicMock()
     cursor_mock = conn_mock.cursor.return_value.__enter__.return_value
@@ -195,8 +195,8 @@ def test_relation_as_datasource(
         port="5432",
         user="user",
     )
-    assert expected == harness.charm.database.get_relation_as_datasource()
-    assert harness.charm.app.name == harness.charm.database.get_database_name()
+    assert expected == harness.charm._database.get_relation_as_datasource()
+    assert harness.charm.app.name == harness.charm._database.get_database_name()
     synapse_env = synapse.get_environment(harness.charm._charm_state)
     assert synapse_env["POSTGRES_DB"] == expected["db"]
     assert synapse_env["POSTGRES_HOST"] == expected["host"]
@@ -215,10 +215,10 @@ def test_relation_as_datasource_error(harness: Harness, monkeypatch: pytest.Monk
 
     get_relation_as_datasource_mock = unittest.mock.MagicMock(return_value=None)
     monkeypatch.setattr(
-        harness.charm.database, "get_relation_as_datasource", get_relation_as_datasource_mock
+        harness.charm._database, "get_relation_as_datasource", get_relation_as_datasource_mock
     )
     with pytest.raises(CharmDatabaseRelationNotFoundError):
-        harness.charm.database.get_database_name()
+        harness.charm._database.get_database_name()
 
 
 def test_change_config(harness: Harness):
@@ -229,7 +229,7 @@ def test_change_config(harness: Harness):
     """
     harness.begin()
 
-    harness.charm.database._change_config()
+    harness.charm._database._change_config()
 
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
@@ -245,7 +245,7 @@ def test_change_config_error(
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
 
-    harness.charm.database._change_config()
+    harness.charm._database._change_config()
 
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 
@@ -267,6 +267,6 @@ def test_on_database_created(harness: Harness, monkeypatch: pytest.MonkeyPatch):
         database_observer, "DatabaseClient", unittest.mock.MagicMock(return_value=db_client_mock)
     )
 
-    harness.charm.database._on_database_created(unittest.mock.MagicMock())
+    harness.charm._database._on_database_created(unittest.mock.MagicMock())
 
     db_client_mock.prepare.assert_called_once()

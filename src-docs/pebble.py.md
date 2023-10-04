@@ -57,7 +57,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_saml`
 
@@ -65,7 +65,7 @@ Change the configuration.
 enable_saml(container: Container) → None
 ```
 
-Enable SAML. 
+Enable SAML while receiving on_saml_data_available event. 
 
 
 
@@ -117,7 +117,7 @@ Replan Synapse NGINX service.
 
 ---
 
-<a href="../src/pebble.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `reset_instance`
 

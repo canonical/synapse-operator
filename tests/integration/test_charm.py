@@ -7,7 +7,6 @@ import json
 import logging
 import re
 import typing
-from secrets import token_hex
 
 import pytest
 import requests
@@ -64,6 +63,7 @@ async def test_synapse_is_up(
         assert "Welcome to the Matrix" in response.text
 
 
+@pytest.mark.cos
 @pytest.mark.usefixtures("synapse_app", "prometheus_app")
 async def test_prometheus_integration(
     model: Model,
@@ -79,7 +79,7 @@ async def test_prometheus_integration(
     """
     await model.add_relation(prometheus_app_name, synapse_app_name)
     await model.wait_for_idle(
-        apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME
+        idle_period=30, apps=[synapse_app_name, prometheus_app_name], status=ACTIVE_STATUS_NAME
     )
 
     for unit_ip in await get_unit_ips(prometheus_app_name):
@@ -87,6 +87,7 @@ async def test_prometheus_integration(
         assert len(query_targets["data"]["activeTargets"])
 
 
+@pytest.mark.cos
 @pytest.mark.usefixtures("synapse_app", "prometheus_app", "grafana_app")
 async def test_grafana_integration(
     model: Model,
@@ -134,6 +135,7 @@ async def test_grafana_integration(
     assert len(dashboards)
 
 
+@pytest.mark.nginx
 @pytest.mark.usefixtures("synapse_app")
 async def test_nginx_route_integration(
     model: Model,
@@ -148,7 +150,7 @@ async def test_nginx_route_integration(
     """
     await model.add_relation(f"{synapse_app_name}", f"{nginx_integrator_app_name}")
     await nginx_integrator_app.set_config({"service-hostname": synapse_app_name})
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.wait_for_idle(idle_period=30, status=ACTIVE_STATUS_NAME)
 
     response = requests.get(
         "http://127.0.0.1/_matrix/static/", headers={"Host": synapse_app_name}, timeout=5
@@ -182,39 +184,6 @@ async def test_reset_instance_action(
     assert current_server_name == another_server_name
 
 
-async def test_register_user_action(
-    model: Model,
-    synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-) -> None:
-    """
-    arrange: a deployed Synapse charm.
-    act: call the register user action.
-    assert: the user is registered and the login is successful.
-    """
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    username = "operator"
-    unit = model.applications[synapse_app.name].units[0]
-    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "register-user", username=username, admin=True
-    )
-    await action_register_user.wait()
-    assert action_register_user.status == "completed"
-    assert action_register_user.results["register-user"]
-    password = action_register_user.results["user-password"]
-    assert password
-    assert unit.workload_status == "active"
-    data = {"type": "m.login.password", "user": username, "password": password}
-    for unit_ip in await get_unit_ips(synapse_app.name):
-        response = requests.post(
-            f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/client/r0/login",
-            json=data,
-            timeout=5,
-        )
-        assert response.status_code == 200
-        assert response.json()["access_token"]
-
-
 @pytest.mark.asyncio
 async def test_workload_version(
     ops_test: OpsTest,
@@ -226,6 +195,7 @@ async def test_workload_version(
     act: get status from Juju.
     assert: the workload version is set and match the one given by Synapse API request.
     """
+    await synapse_app.model.wait_for_idle(idle_period=30, apps=[synapse_app.name], status="active")
     _, status, _ = await ops_test.juju("status", "--format", "json")
     status = json.loads(status)
     juju_workload_version = status["applications"][synapse_app.name].get("version", "")
@@ -243,46 +213,20 @@ async def test_workload_version(
 async def test_synapse_enable_mjolnir(
     ops_test: OpsTest,
     synapse_app: Application,
+    access_token: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
-    arrange: build and deploy the Synapse charm, create an user.
-    act: enable Mjolnir and create the management room.
+    arrange: build and deploy the Synapse charm, create an user, get the access token,
+        enable Mjolnir and create the management room.
+    act: check Mjolnir health point.
     assert: the Synapse application is active and Mjolnir health point returns a correct response.
     """
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    response = requests.get(
-        f"http://{synapse_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
-    )
-    assert response.status_code == 200
-    assert "Welcome to the Matrix" in response.text
-    username = token_hex(16)
-    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "register-user", username=username, admin=True
-    )
-    await action_register_user.wait()
-    assert action_register_user.status == "completed"
-    assert action_register_user.results["register-user"]
-    password = action_register_user.results["user-password"]
-
     await synapse_app.set_config({"enable_mjolnir": "true"})
-    await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="blocked")
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    # login
-    sess = requests.session()
-    res = sess.post(
-        f"http://{synapse_ip}:8080/_matrix/client/r0/login",
-        json={
-            "identifier": {"type": "m.id.user", "user": username},
-            "password": password,
-            "type": "m.login.password",
-        },
-        timeout=5,
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
     )
-    res.raise_for_status()
-    access_token = res.json()["access_token"]
-    assert access_token
-    # create the room
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
     room_body = {
@@ -293,6 +237,7 @@ async def test_synapse_enable_mjolnir(
         "room_version": "1",
         "topic": "moderators",
     }
+    sess = requests.session()
     res = sess.post(
         f"http://{synapse_ip}:8080/_matrix/client/v3/createRoom",
         json=room_body,
@@ -300,16 +245,18 @@ async def test_synapse_enable_mjolnir(
         timeout=5,
     )
     res.raise_for_status()
-
-    # wait for idle
     async with ops_test.fast_forward():
         # using fast_forward otherwise would wait for model config update-status-hook-interval
-        await synapse_app.model.wait_for_idle(apps=[synapse_app.name], status="active")
-    # check healthz endpoint
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_app.name], status="active"
+        )
+
     res = sess.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
+
     assert res.status_code == 200
 
 
+@pytest.mark.nginx
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("nginx_integrator_app")
 async def test_saml_auth(  # pylint: disable=too-many-locals
@@ -344,10 +291,12 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
             "metadata_url": f"https://{saml_helper.SAML_HOST}/metadata",
         }
     )
-    await model.wait_for_idle()
+    await model.wait_for_idle(idle_period=30)
     await model.add_relation(saml_integrator_app.name, synapse_app.name)
     await model.wait_for_idle(
-        apps=[synapse_app.name, saml_integrator_app.name], status=ACTIVE_STATUS_NAME
+        idle_period=30,
+        apps=[synapse_app.name, saml_integrator_app.name],
+        status=ACTIVE_STATUS_NAME,
     )
 
     session = requests.session()
@@ -381,3 +330,44 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
 
         assert logged_in_page.status_code == 200
         assert "Continue to your account" in logged_in_page.text
+
+
+async def test_synapse_enable_smtp(
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    access_token: str,
+):
+    """
+    arrange: build and deploy the Synapse charm, create an user, get the access token
+        and enable SMTP.
+    act:  try to check if a given email address is not already associated.
+    assert: the Synapse application is active and the error returned is the one expected.
+    """
+    await synapse_app.set_config({"smtp_host": "127.0.0.1"})
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME
+    )
+
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    sample_check = {
+        "id_server": "id.matrix.org",
+        "client_secret": "this_is_my_secret_string",
+        "email": "example@example.com",
+        "send_attempt": "1",
+    }
+    sess = requests.session()
+    res = sess.post(
+        f"http://{synapse_ip}:8080/_matrix/client/r0/register/email/requestToken",
+        json=sample_check,
+        headers=headers,
+        timeout=5,
+    )
+
+    assert res.status_code == 500
+    # If the configuration change fails, will return something like:
+    # "Email-based registration has been disabled on this server".
+    # The expected error confirms that the e-mail is configured but failed since
+    # is not a real SMTP server.
+    assert "error was encountered when sending the email" in res.text

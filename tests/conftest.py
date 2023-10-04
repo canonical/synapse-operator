@@ -20,3 +20,9 @@ def pytest_addoption(parser: Parser) -> None:
         SYNAPSE_NGINX_IMAGE_PARAM, action="store", help="Synapse NGINX image to be deployed"
     )
     parser.addoption("--charm-file", action="store", help="Charm file to be deployed")
+    parser.addoption(
+        "--use-existing",
+        action="store_true",
+        default=False,
+        help="This parameter will skip deploy of Synapse and PostgreSQL",
+    )
