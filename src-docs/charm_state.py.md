@@ -91,7 +91,7 @@ Return: The CharmState instance created by the provided charm.
 ## <kbd>class</kbd> `SynapseConfig`
 Represent Synapse builtin configuration values. 
 
-Attrs:  server_name: server_name config.  report_stats: report_stats config.  public_baseurl: public_baseurl config.  enable_mjolnir: enable_mjolnir config.  smtp_enable_tls: enable tls while connecting to SMTP server.  smtp_host: SMTP host.  smtp_notif_from: defines the "From" address to use when sending emails.  smtp_pass: password to authenticate to SMTP host.  smtp_port: SMTP port.  smtp_user: username to autehtncate to SMTP host. 
+Attrs:  server_name: server_name config.  report_stats: report_stats config.  public_baseurl: public_baseurl config.  enable_mjolnir: enable_mjolnir config.  smtp_enable_tls: enable tls while connecting to SMTP server.  smtp_host: SMTP host.  smtp_notif_from: defines the "From" address to use when sending emails.  smtp_pass: password to authenticate to SMTP host.  smtp_port: SMTP port.  smtp_user: username to authenticate to SMTP host. 
 
 
 

@@ -64,7 +64,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         smtp_notif_from: defines the "From" address to use when sending emails.
         smtp_pass: password to authenticate to SMTP host.
         smtp_port: SMTP port.
-        smtp_user: username to autehtncate to SMTP host.
+        smtp_user: username to authenticate to SMTP host.
     """
 
     server_name: str | None = Field(..., min_length=2)
