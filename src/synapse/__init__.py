@@ -19,6 +19,7 @@ from .api import (  # noqa: F401
     SYNAPSE_VERSION_REGEX,
     VERSION_URL,
     APIError,
+    change_user_admin,
     create_management_room,
     deactivate_user,
     get_access_token,

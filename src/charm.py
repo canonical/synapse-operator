@@ -15,6 +15,7 @@ from ops.charm import ActionEvent
 from ops.main import main
 
 import actions
+import secret_storage
 import synapse
 from charm_state import CharmConfigInvalidError, CharmState
 from database_observer import DatabaseObserver
@@ -173,6 +174,34 @@ class SynapseCharm(ops.CharmBase):
             return
         results = {"register-user": True, "user-password": user.password}
         event.set_results(results)
+
+    def _on_change_user_admin_action(self, event: ActionEvent) -> None:
+        """Change user admin and report action result.
+
+        Args:
+            event: Event triggering the reset instance action.
+        """
+        results = {
+            "change-user-admin": False,
+        }
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            event.fail("Failed to connect to container")
+            return
+        try:
+            admin_access_token = secret_storage.get_admin_access_token(self)
+            actions.change_user_admin(
+                username=event.params["username"],
+                server=self._charm_state.synapse_config.server_name,
+                admin_access_token=admin_access_token,
+            )
+            results["change-user-admin"] = True
+        except (PebbleServiceError, actions.ChangeUserAdminError) as exc:
+            self.model.unit.status = ops.BlockedStatus(str(exc))
+            event.fail(str(exc))
+            return
+        event.set_results(results)
+        self.model.unit.status = ops.ActiveStatus()
 
 
 if __name__ == "__main__":  # pragma: nocover

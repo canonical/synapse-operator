@@ -3,23 +3,21 @@
 <a href="../src/actions/change_user_admin.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `change_user_admin`
-Module to interact with Register User action. 
+Module to interact with Change User Admin action. 
 
 
 ---
 
-<a href="../src/actions/change_user_admin.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/actions/change_user_admin.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `register_user`
+## <kbd>function</kbd> `change_user_admin`
 
 ```python
-register_user(
-    container: Container,
+change_user_admin(
     username: str,
-    admin: bool,
-    server: str = '',
-    admin_access_token: str = ''
-) → User
+    server: Optional[str],
+    admin_access_token: Optional[str]
+) → None
 ```
 
 Run register user action. 
@@ -28,34 +26,27 @@ Run register user action.
 
 **Args:**
  
- - <b>`container`</b>:  Container of the charm. 
- - <b>`username`</b>:  username to be registered. 
- - <b>`admin`</b>:  if user is admin. 
+ - <b>`username`</b>:  username to be changed. 
  - <b>`server`</b>:  to be used to create the user id. 
- - <b>`admin_access_token`</b>:  server admin access token to get user's access token if it exists. 
+ - <b>`admin_access_token`</b>:  server admin access token to call API. 
 
 
 
 **Raises:**
  
- - <b>`RegisterUserError`</b>:  if something goes wrong while registering the user. 
-
-
-
-**Returns:**
- User with password registered. 
+ - <b>`ChangeUserAdminError`</b>:  if something goes wrong while changing the user to  be an admin. 
 
 
 ---
 
-<a href="../src/actions/change_user_admin.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/actions/change_user_admin.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `RegisterUserError`
-Exception raised when something fails while running register-user. 
+## <kbd>class</kbd> `ChangeUserAdminError`
+Exception raised when something fails while running change-user-admin. 
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/actions/change_user_admin.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/actions/change_user_admin.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -63,7 +54,7 @@ Attrs:  msg (str): Explanation of the error.
 __init__(msg: str)
 ```
 
-Initialize a new instance of the RegisterUserError exception. 
+Initialize a new instance of the ChangeUserAdminError exception. 
 
 
 
