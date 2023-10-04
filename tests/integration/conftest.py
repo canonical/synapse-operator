@@ -6,9 +6,12 @@
 
 import json
 import typing
+from secrets import token_hex
 
 import pytest
 import pytest_asyncio
+import requests
+from juju.action import Action
 from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
@@ -98,8 +101,12 @@ async def synapse_app_fixture(
     synapse_charm: str,
     postgresql_app: Application,
     postgresql_app_name: str,
+    pytestconfig: Config,
 ):
-    """Build and deploy the Synapse charm so the install can be tested."""
+    """Build and deploy the Synapse charm."""
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if use_existing:
+        return model.applications[synapse_app_name]
     if synapse_app_refresh_name in model.applications:
         await model.remove_application(synapse_app_refresh_name, block_until_done=True)
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
@@ -237,11 +244,12 @@ def postgresql_app_name_app_name_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="postgresql_app")
 async def postgresql_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    postgresql_app_name: str,
+    ops_test: OpsTest, model: Model, postgresql_app_name: str, pytestconfig: Config
 ):
     """Deploy postgresql."""
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if use_existing:
+        return model.applications[postgresql_app_name]
     async with ops_test.fast_forward():
         await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
@@ -295,3 +303,51 @@ async def deploy_prometheus_fixture(
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
 
     return app
+
+
+@pytest.fixture(scope="module", name="user_username")
+def user_username_fixture() -> typing.Generator[str, None, None]:
+    """Return the a username to be created for tests."""
+    yield token_hex(16)
+
+
+@pytest_asyncio.fixture(scope="module", name="user_password")
+async def user_password_fixture(
+    synapse_app: Application, user_username: str
+) -> typing.AsyncGenerator[str, None]:
+    """Return the a username to be created for tests."""
+    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "register-user", username=user_username, admin=True
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    assert action_register_user.results["register-user"]
+    password = action_register_user.results["user-password"]
+    assert password
+    yield password
+
+
+@pytest_asyncio.fixture(scope="module", name="access_token")
+async def access_token_fixture(
+    user_username: str,
+    user_password: str,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> typing.AsyncGenerator[str, None]:
+    """Return the access token after login with the username and password."""
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    # login
+    sess = requests.session()
+    res = sess.post(
+        f"http://{synapse_ip}:8080/_matrix/client/r0/login",
+        json={
+            "identifier": {"type": "m.id.user", "user": user_username},
+            "password": user_password,
+            "type": "m.login.password",
+        },
+        timeout=5,
+    )
+    res.raise_for_status()
+    access_token = res.json()["access_token"]
+    assert access_token
+    yield access_token

@@ -2,26 +2,51 @@
 # See LICENSE file for licensing details.
 
 options:
-  server_name:
-    type: string
-    description: |
-      Synapse server name. Must be set to deploy the charm. Corresponds to the
-      server_name option on Synapse configuration file and sets the
-      public-facing domain of the server.
-  report_stats:
-    description: |
-      Configures whether to report statistics.
-    default: false
-    type: boolean
-  public_baseurl:
-    type: string
-    description: |
-      The public-facing base URL that clients use to access this Homeserver.
-      Defaults to https://<server_name>/. Only used if there is integration with
-      SAML integrator charm.
   enable_mjolnir:
     type: boolean
     default: false
     description: |
       Configures whether to enable Mjolnir - moderation tool for Matrix.
       Reference: https://github.com/matrix-org/mjolnir
+  public_baseurl:
+    type: string
+    description: |
+      The public-facing base URL that clients use to access this Homeserver.
+      Defaults to https://<server_name>/. Only used if there is integration with
+      SAML integrator charm.
+  report_stats:
+    description: |
+      Configures whether to report statistics.
+    default: false
+    type: boolean
+  server_name:
+    type: string
+    description: |
+      Synapse server name. Must be set to deploy the charm. Corresponds to the
+      server_name option on Synapse configuration file and sets the
+      public-facing domain of the server.
+  smtp_enable_tls:
+    type: boolean
+    description: If enabled, STARTTLS will be used to use an encrypted SMTP
+      connection.
+    default: true
+  smtp_host:
+    type: string
+    description: The hostname of the SMTP host used for sending emails.
+    default: ''
+  smtp_notif_from:
+    type: string
+    description: defines the "From" address to use when sending emails.
+      It must be set if email sending is enabled. Defaults to server_name.
+  smtp_pass:
+    type: string
+    description: The password if the SMTP server requires authentication.
+    default: ''
+  smtp_port:
+    type: int
+    description: The port of the SMTP server used for sending emails.
+    default: 25
+  smtp_user:
+    type: string
+    description: The username if the SMTP server requires authentication.
+    default: ''

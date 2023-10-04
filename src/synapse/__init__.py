@@ -55,6 +55,7 @@ from .workload import (  # noqa: F401
     enable_metrics,
     enable_saml,
     enable_serve_server_wellknown,
+    enable_smtp,
     execute_migrate_config,
     get_environment,
     get_registration_shared_secret,

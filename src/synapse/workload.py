@@ -138,6 +138,104 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
+def _get_configuration_field(container: ops.Container, fieldname: str) -> typing.Optional[str]:
+    """Get configuration field.
+
+    Args:
+        container: Container of the charm.
+        fieldname: field to get.
+
+    Raises:
+        PathError: if somethings goes wrong while reading the configuration file.
+
+    Returns:
+        configuration field value.
+    """
+    try:
+        configuration_content = str(container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read())
+        return yaml.safe_load(configuration_content)[fieldname]
+    except PathError as path_error:
+        if path_error.kind == "not-found":
+            logger.debug(
+                "configuration file %s not found, will be created by config-changed",
+                SYNAPSE_CONFIG_PATH,
+            )
+            return None
+        logger.exception(
+            "exception while reading configuration file %s: %r",
+            SYNAPSE_CONFIG_PATH,
+            path_error,
+        )
+        raise
+
+
+def get_registration_shared_secret(container: ops.Container) -> typing.Optional[str]:
+    """Get registration_shared_secret from configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Returns:
+        registration_shared_secret value.
+    """
+    return _get_configuration_field(container=container, fieldname="registration_shared_secret")
+
+
+def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:
+    """Check server_name.
+
+    Check if server_name of the state has been modified in relation to the configuration file.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        ServerNameModifiedError: if server_name from state is different than the one in the
+            configuration file.
+    """
+    configured_server_name = _get_configuration_field(container=container, fieldname="server_name")
+    if (
+        configured_server_name is not None
+        and configured_server_name != charm_state.synapse_config.server_name
+    ):
+        msg = (
+            f"server_name {charm_state.synapse_config.server_name} is different from the existing "
+            f"one {configured_server_name}. Please revert the config or run the action "
+            "reset-instance if you want to erase the existing instance and start a new "
+            "one."
+        )
+        logger.error(msg)
+        raise ServerNameModifiedError(
+            "The server_name modification is not allowed, please check the logs"
+        )
+
+
+def _exec(
+    container: ops.Container,
+    command: list[str],
+    environment: dict[str, str] | None = None,
+) -> ExecResult:
+    """Execute a command inside the Synapse workload container.
+
+    Args:
+        container: Container of the charm.
+        command: A list of strings representing the command to be executed.
+        environment: Environment variables for the command to be executed.
+
+    Returns:
+        ExecResult: An `ExecResult` object representing the result of the command execution.
+    """
+    exec_process = container.exec(command, environment=environment, working_dir=SYNAPSE_CONFIG_DIR)
+    try:
+        stdout, stderr = exec_process.wait_output()
+        return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
+    except ExecError as exc:
+        return ExecResult(
+            exc.exit_code, typing.cast(str, exc.stdout), typing.cast(str, exc.stderr)
+        )
+
+
 def execute_migrate_config(container: ops.Container, charm_state: CharmState) -> None:
     """Run the Synapse command migrate_config.
 
@@ -266,9 +364,9 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
 
     saml_config = charm_state.saml_config
     entity_id = (
-        charm_state.public_baseurl
-        if charm_state.public_baseurl is not None
-        else f"https://{charm_state.server_name}"
+        charm_state.synapse_config.public_baseurl
+        if charm_state.synapse_config.public_baseurl is not None
+        else f"https://{charm_state.synapse_config.server_name}"
     )
     sp_config = {
         "metadata": {
@@ -308,8 +406,8 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
     try:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
-        if charm_state.public_baseurl is not None:
-            current_yaml["public_baseurl"] = charm_state.public_baseurl
+        if charm_state.synapse_config.public_baseurl is not None:
+            current_yaml["public_baseurl"] = charm_state.synapse_config.public_baseurl
         # enable x_forwarded to pass expected headers
         current_listeners = current_yaml["listeners"]
         updated_listeners = [
@@ -338,16 +436,36 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         raise EnableSAMLError(str(exc)) from exc
 
 
-def get_registration_shared_secret(container: ops.Container) -> typing.Optional[str]:
-    """Get registration_shared_secret from configuration file.
+def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable SMTP.
 
     Args:
         container: Container of the charm.
+        charm_state: Instance of CharmState.
 
-    Returns:
-        registration_shared_secret value.
+    Raises:
+        WorkloadError: something went wrong enabling SMTP.
     """
-    return _get_configuration_field(container=container, fieldname="registration_shared_secret")
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["email"] = {}
+        # The following three configurations are mandatory for SMTP.
+        current_yaml["email"]["smtp_host"] = charm_state.synapse_config.smtp_host
+        current_yaml["email"]["smtp_port"] = charm_state.synapse_config.smtp_port
+        current_yaml["email"]["notif_from"] = charm_state.synapse_config.smtp_notif_from
+        if charm_state.synapse_config.smtp_user:
+            current_yaml["email"]["smtp_user"] = charm_state.synapse_config.smtp_user
+        if charm_state.synapse_config.smtp_pass:
+            current_yaml["email"]["smtp_pass"] = charm_state.synapse_config.smtp_pass
+        if not charm_state.synapse_config.smtp_enable_tls:
+            # Only set if the user set as false.
+            # By default, if the server supports TLS, it will be used,
+            # and the server must present a certificate that is valid for 'smtp_host'.
+            current_yaml["email"]["enable_tls"] = charm_state.synapse_config.smtp_enable_tls
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
 
 
 def reset_instance(container: ops.Container) -> None:
@@ -386,8 +504,8 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         A dictionary representing the Synapse environment variables.
     """
     environment = {
-        "SYNAPSE_SERVER_NAME": f"{charm_state.server_name}",
-        "SYNAPSE_REPORT_STATS": f"{charm_state.report_stats}",
+        "SYNAPSE_SERVER_NAME": f"{charm_state.synapse_config.server_name}",
+        "SYNAPSE_REPORT_STATS": f"{charm_state.synapse_config.report_stats}",
         # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
         # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
         "SYNAPSE_NO_TLS": str(True),
@@ -400,87 +518,3 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         environment["POSTGRES_USER"] = datasource["user"]
         environment["POSTGRES_PASSWORD"] = datasource["password"]
     return environment
-
-
-def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:
-    """Check server_name.
-
-    Check if server_name of the state has been modified in relation to the configuration file.
-
-    Args:
-        container: Container of the charm.
-        charm_state: Instance of CharmState.
-
-    Raises:
-        ServerNameModifiedError: if server_name from state is different than the one in the
-            configuration file.
-    """
-    configured_server_name = _get_configuration_field(container=container, fieldname="server_name")
-    if configured_server_name is not None and configured_server_name != charm_state.server_name:
-        msg = (
-            f"server_name {charm_state.server_name} is different from the existing "
-            f"one {configured_server_name}. Please revert the config or run the action "
-            "reset-instance if you want to erase the existing instance and start a new "
-            "one."
-        )
-        logger.error(msg)
-        raise ServerNameModifiedError(
-            "The server_name modification is not allowed, please check the logs"
-        )
-
-
-def _exec(
-    container: ops.Container,
-    command: list[str],
-    environment: dict[str, str] | None = None,
-) -> ExecResult:
-    """Execute a command inside the Synapse workload container.
-
-    Args:
-        container: Container of the charm.
-        command: A list of strings representing the command to be executed.
-        environment: Environment variables for the command to be executed.
-
-    Returns:
-        ExecResult: An `ExecResult` object representing the result of the command execution.
-    """
-    exec_process = container.exec(command, environment=environment, working_dir=SYNAPSE_CONFIG_DIR)
-    try:
-        stdout, stderr = exec_process.wait_output()
-        return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
-    except ExecError as exc:
-        return ExecResult(
-            exc.exit_code, typing.cast(str, exc.stdout), typing.cast(str, exc.stderr)
-        )
-
-
-def _get_configuration_field(container: ops.Container, fieldname: str) -> typing.Optional[str]:
-    """Get configuration field.
-
-    Args:
-        container: Container of the charm.
-        fieldname: field to get.
-
-    Raises:
-        PathError: if somethings goes wrong while reading the configuration file.
-
-    Returns:
-        configuration field value.
-    """
-    try:
-        configuration_content = str(container.pull(SYNAPSE_CONFIG_PATH, encoding="utf-8").read())
-        value = yaml.safe_load(configuration_content)[fieldname]
-        return value
-    except PathError as path_error:
-        if path_error.kind == "not-found":
-            logger.debug(
-                "configuration file %s not found, will be created by config-changed",
-                SYNAPSE_CONFIG_PATH,
-            )
-            return None
-        logger.exception(
-            "exception while reading configuration file %s: %r",
-            SYNAPSE_CONFIG_PATH,
-            path_error,
-        )
-        raise

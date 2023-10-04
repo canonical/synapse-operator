@@ -160,6 +160,27 @@ def test_on_collect_status_service_exists(
     enable_mjolnir_mock.assert_not_called()
 
 
+def test_on_collect_status_no_service(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock get_services to return a empty dict.
+    act: call _on_collect_status.
+    assert: no actions is taken because Synapse service is not ready.
+    """
+    harness.update_config({"enable_mjolnir": True})
+    harness.begin_with_initial_hooks()
+    harness.set_leader(True)
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(container, "get_services", MagicMock(return_value={}))
+    enable_mjolnir_mock = MagicMock()
+    monkeypatch.setattr(Mjolnir, "enable_mjolnir", enable_mjolnir_mock)
+
+    event_mock = MagicMock()
+    harness.charm._mjolnir._on_collect_status(event_mock)
+
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+    enable_mjolnir_mock.assert_not_called()
+
+
 def test_on_collect_status_container_off(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:

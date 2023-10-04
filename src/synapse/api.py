@@ -281,7 +281,7 @@ def override_rate_limit(
         admin_access_token: server admin access token to be used.
         charm_state: Instance of CharmState.
     """
-    server_name = charm_state.server_name
+    server_name = charm_state.synapse_config.server_name
     rate_limit_url = (
         f"{SYNAPSE_URL}/_synapse/admin/v1/users/"
         f"@{user.username}:{server_name}/override_ratelimit"
