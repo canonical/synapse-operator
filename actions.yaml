@@ -22,12 +22,12 @@ register-user:
       default: false
   required:
     - username
-change-user-admin:
+promote-user-admin:
   description: |
-    Change whether a user is a server administrator.
+    Promote a user as a server administrator.
     You need to supply a user name.
   properties:
     username:
       description: |
-        User name to be changed to admin.
+        User name to be promoted to admin.
       type: string

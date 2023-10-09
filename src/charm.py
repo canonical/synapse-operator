@@ -76,6 +76,9 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+        self.framework.observe(
+            self.on.promote_user_admin_action, self._on_promote_user_admin_action
+        )
 
     def replan_nginx(self) -> None:
         """Replan NGINX."""
@@ -175,14 +178,14 @@ class SynapseCharm(ops.CharmBase):
         results = {"register-user": True, "user-password": user.password}
         event.set_results(results)
 
-    def _on_change_user_admin_action(self, event: ActionEvent) -> None:
-        """Change user admin and report action result.
+    def _on_promote_user_admin_action(self, event: ActionEvent) -> None:
+        """Promote user admin and report action result.
 
         Args:
-            event: Event triggering the reset instance action.
+            event: Event triggering the promote user admin action.
         """
         results = {
-            "change-user-admin": False,
+            "promote-user-admin": False,
         }
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -190,13 +193,13 @@ class SynapseCharm(ops.CharmBase):
             return
         try:
             admin_access_token = secret_storage.get_admin_access_token(self)
-            actions.change_user_admin(
+            actions.promote_user_admin(
                 username=event.params["username"],
                 server=self._charm_state.synapse_config.server_name,
                 admin_access_token=admin_access_token,
             )
-            results["change-user-admin"] = True
-        except (PebbleServiceError, actions.ChangeUserAdminError) as exc:
+            results["promote-user-admin"] = True
+        except (PebbleServiceError, actions.PromoteUserAdminError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return

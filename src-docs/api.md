@@ -10,7 +10,7 @@ Helper module used to manage interactions with Synapse API.
 - **SYNAPSE_PORT**
 - **SYNAPSE_URL**
 - **ADD_USER_ROOM_URL**
-- **CHANGE_USER_ADMIN_URL**
+- **PROMOTE_USER_ADMIN_URL**
 - **CREATE_ROOM_URL**
 - **DEACTIVATE_ACCOUNT_URL**
 - **LIST_ROOMS_URL**
@@ -269,24 +269,24 @@ Make user a room's admin.
 
 <a href="../src/synapse/api.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `change_user_admin`
+## <kbd>function</kbd> `promote_user_admin`
 
 ```python
-change_user_admin(
+promote_user_admin(
     user: User,
     server: Optional[str],
     admin_access_token: Optional[str]
 ) → None
 ```
 
-Change user to admin. 
+Promote user to admin. 
 
 
 
 **Args:**
  
- - <b>`user`</b>:  user to be changed to admin. 
- - <b>`server`</b>:  to be used to create the user id. 
+ - <b>`user`</b>:  user to be promoted to admin. 
+ - <b>`server`</b>:  to be used to promote the user id. 
  - <b>`admin_access_token`</b>:  server admin access token to be used. 
 
 

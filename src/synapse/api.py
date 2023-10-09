@@ -29,7 +29,7 @@ SYNAPSE_PORT = 8008
 SYNAPSE_URL = f"http://localhost:{SYNAPSE_PORT}"
 
 ADD_USER_ROOM_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/join"
-CHANGE_USER_ADMIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users/user_id/admin"
+PROMOTE_USER_ADMIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users/user_id/admin"
 CREATE_ROOM_URL = f"{SYNAPSE_URL}/_matrix/client/v3/createRoom"
 DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
@@ -469,16 +469,16 @@ def _do_request(
         raise NetworkError(f"HTTP error from {url}.") from exc
 
 
-def change_user_admin(
+def promote_user_admin(
     user: User,
     server: typing.Optional[str],
     admin_access_token: typing.Optional[str],
 ) -> None:
-    """Change user to admin.
+    """Promote user to admin.
 
     Args:
-        user: user to be changed to admin.
-        server: to be used to create the user id.
+        user: user to be promoted to admin.
+        server: to be used to promote the user id.
         admin_access_token: server admin access token to be used.
     """
     authorization_token = f"Bearer {admin_access_token}"
@@ -487,5 +487,5 @@ def change_user_admin(
         "admin": True,
     }
     user_id = f"@{user.username}:{server}"
-    url = CHANGE_USER_ADMIN_URL.replace("user_id", user_id)
+    url = PROMOTE_USER_ADMIN_URL.replace("user_id", user_id)
     _do_request("POST", url, headers=headers, json=data)
