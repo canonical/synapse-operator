@@ -274,7 +274,7 @@ Make user a room's admin.
 ```python
 promote_user_admin(
     user: User,
-    server: Optional[str],
+    server: str,
     admin_access_token: Optional[str]
 ) → None
 ```

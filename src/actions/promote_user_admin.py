@@ -32,7 +32,7 @@ class PromoteUserAdminError(Exception):
 
 # admin_access_token is not a password
 def promote_user_admin(
-    username: str, server: typing.Optional[str], admin_access_token: typing.Optional[str]
+    username: str, server: str, admin_access_token: typing.Optional[str]
 ) -> None:
     """Run promote user admin action.
 

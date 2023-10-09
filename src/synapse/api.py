@@ -471,7 +471,7 @@ def _do_request(
 
 def promote_user_admin(
     user: User,
-    server: typing.Optional[str],
+    server: str,
     admin_access_token: typing.Optional[str],
 ) -> None:
     """Promote user to admin.

@@ -67,7 +67,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         smtp_user: username to authenticate to SMTP host.
     """
 
-    server_name: str | None = Field(..., min_length=2)
+    server_name: str = Field(..., min_length=2)
     report_stats: str | None = Field(None)
     public_baseurl: str | None = Field(None)
     enable_mjolnir: bool = False

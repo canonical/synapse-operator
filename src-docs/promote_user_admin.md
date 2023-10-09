@@ -15,7 +15,7 @@ Module to interact with Promote User Admin action.
 ```python
 promote_user_admin(
     username: str,
-    server: Optional[str],
+    server: str,
     admin_access_token: Optional[str]
 ) → None
 ```
