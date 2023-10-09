@@ -199,7 +199,7 @@ class SynapseCharm(ops.CharmBase):
                 admin_access_token=admin_access_token,
             )
             results["promote-user-admin"] = True
-        except (PebbleServiceError, actions.PromoteUserAdminError) as exc:
+        except actions.PromoteUserAdminError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return
