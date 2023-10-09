@@ -166,7 +166,7 @@ class SynapseCharm(ops.CharmBase):
         """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            event.fail("Failed to connect to container")
             return
         try:
             user = actions.register_user(
@@ -200,11 +200,9 @@ class SynapseCharm(ops.CharmBase):
             )
             results["promote-user-admin"] = True
         except actions.PromoteUserAdminError as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return
         event.set_results(results)
-        self.model.unit.status = ops.ActiveStatus()
 
 
 if __name__ == "__main__":  # pragma: nocover
