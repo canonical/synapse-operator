@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 def _update_peer_data(charm: ops.CharmBase, container: ops.model.Container) -> None:
     """Update peer data if needed.
 
+    The admin access token is stored in a Secret (Juju 3) or in a peer relation
+    data. If already exists, no action is taken. Otherwise, will create an admin
+    user and store the token.
+
     Args:
         charm: The charm object.
         container: Synapse container.

@@ -13,7 +13,7 @@ Helper module used to manage interactions with Synapse secrets.
 
 ---
 
-<a href="../src/secret_storage.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/secret_storage.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_admin_access_token`
 
