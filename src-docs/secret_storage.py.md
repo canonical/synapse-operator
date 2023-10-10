@@ -7,13 +7,14 @@ Helper module used to manage interactions with Synapse secrets.
 
 **Global Variables**
 ---------------
+- **JUJU_HAS_SECRETS**
 - **PEER_RELATION_NAME**
 - **SECRET_ID**
 - **SECRET_KEY**
 
 ---
 
-<a href="../src/secret_storage.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/secret_storage.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_admin_access_token`
 
@@ -48,7 +49,7 @@ Exception raised when there is not admin access token.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/secret_storage.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/secret_storage.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

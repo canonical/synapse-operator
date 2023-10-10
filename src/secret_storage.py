@@ -12,6 +12,7 @@ from ops.jujuversion import JujuVersion
 import actions
 import synapse
 
+JUJU_HAS_SECRETS = JujuVersion.from_environ().has_secrets
 PEER_RELATION_NAME = "synapse-peers"
 # Disabling it since these are not hardcoded password
 SECRET_ID = "secret-id"  # nosec
@@ -63,7 +64,7 @@ def _update_peer_data(charm: ops.CharmBase, container: ops.model.Container) -> N
     # please check the docs:
     # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
     username = token_hex(16)
-    if JujuVersion.from_environ().has_secrets and not peer_relation.data[charm.app].get(SECRET_ID):
+    if JUJU_HAS_SECRETS and not peer_relation.data[charm.app].get(SECRET_ID):
         # we can create secrets and the one that we need was not created yet
         logger.debug("Adding secret")
         admin_user = actions.register_user(container, username, True)
@@ -71,9 +72,7 @@ def _update_peer_data(charm: ops.CharmBase, container: ops.model.Container) -> N
         peer_relation.data[charm.app].update({SECRET_ID: secret.id})
         return
 
-    if not JujuVersion.from_environ().has_secrets and not peer_relation.data[charm.app].get(
-        SECRET_KEY
-    ):
+    if not JUJU_HAS_SECRETS and not peer_relation.data[charm.app].get(SECRET_KEY):
         # we can't create secrets and peer data is empty
         logger.debug("Updating peer relation data")
         admin_user = actions.register_user(container, username, True)
@@ -99,7 +98,7 @@ def get_admin_access_token(charm: ops.CharmBase) -> str:
     if not peer_relation:
         raise AdminAccessTokenNotFoundError("No peer relation found")
     _update_peer_data(charm, container)
-    if JujuVersion.from_environ().has_secrets:
+    if JUJU_HAS_SECRETS:
         secret_id = peer_relation.data[charm.app].get(SECRET_ID)
         if not secret_id:
             raise AdminAccessTokenNotFoundError(f"No secret id {SECRET_ID} found")
