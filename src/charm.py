@@ -199,7 +199,10 @@ class SynapseCharm(ops.CharmBase):
                 admin_access_token=admin_access_token,
             )
             results["promote-user-admin"] = True
-        except actions.PromoteUserAdminError as exc:
+        except (
+            actions.PromoteUserAdminError,
+            secret_storage.AdminAccessTokenNotFoundError,
+        ) as exc:
             event.fail(str(exc))
             return
         event.set_results(results)

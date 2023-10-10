@@ -4,7 +4,6 @@
 """Helper module used to manage interactions with Synapse secrets."""
 
 import logging
-import typing
 from secrets import token_hex
 
 import ops
@@ -19,6 +18,22 @@ SECRET_ID = "secret-id"  # nosec
 SECRET_KEY = "secret-key"  # nosec
 
 logger = logging.getLogger(__name__)
+
+
+class AdminAccessTokenNotFoundError(Exception):
+    """Exception raised when there is not admin access token.
+
+    Attrs:
+        msg (str): Explanation of the error.
+    """
+
+    def __init__(self, msg: str):
+        """Initialize a new instance of the AdminAccessTokenNotFoundError exception.
+
+        Args:
+            msg (str): Explanation of the error.
+        """
+        self.msg = msg
 
 
 def _update_peer_data(charm: ops.CharmBase, container: ops.model.Container) -> None:
@@ -65,7 +80,7 @@ def _update_peer_data(charm: ops.CharmBase, container: ops.model.Container) -> N
         peer_relation.data[charm.app].update({SECRET_KEY: admin_user.access_token})
 
 
-def get_admin_access_token(charm: ops.CharmBase) -> typing.Optional[str]:
+def get_admin_access_token(charm: ops.CharmBase) -> str:
     """Get admin access token.
 
     Args:
@@ -73,22 +88,25 @@ def get_admin_access_token(charm: ops.CharmBase) -> typing.Optional[str]:
 
     Returns:
         admin access token.
+
+    Raises:
+        AdminAccessTokenNotFoundError: if admin access token is not found.
     """
     container = charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     if not container.can_connect():
-        logger.warning("Failed to get secret storage: waiting for pebble")
-        return None
+        raise AdminAccessTokenNotFoundError("Container not ready to connect")
     peer_relation = charm.model.get_relation(PEER_RELATION_NAME)
     if not peer_relation:
-        # there is no peer relation so nothing to be done
-        logger.warning("Failed to get secret storage: waiting for peer relation")
-        return None
+        raise AdminAccessTokenNotFoundError("No peer relation found")
     _update_peer_data(charm, container)
     if JujuVersion.from_environ().has_secrets:
         secret_id = peer_relation.data[charm.app].get(SECRET_ID)
-        if secret_id:
-            secret = charm.model.get_secret(id=secret_id)
-            secret_value = secret.get_content().get(SECRET_KEY)
+        if not secret_id:
+            raise AdminAccessTokenNotFoundError(f"No secret id {SECRET_ID} found")
+        secret = charm.model.get_secret(id=secret_id)
+        secret_value = secret.get_content().get(SECRET_KEY)
     else:
         secret_value = peer_relation.data[charm.app].get(SECRET_KEY)
+    if not secret_value:
+        raise AdminAccessTokenNotFoundError(f"No secret key {SECRET_KEY} found")
     return secret_value
