@@ -494,4 +494,4 @@ def promote_user_admin(
     }
     user_id = f"@{user.username}:{server}"
     url = PROMOTE_USER_ADMIN_URL.replace("user_id", user_id)
-    _do_request("POST", url, admin_access_token=admin_access_token, json=data)
+    _do_request("PUT", url, admin_access_token=admin_access_token, json=data)
