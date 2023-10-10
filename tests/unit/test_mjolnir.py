@@ -51,10 +51,7 @@ def test_update_peer_data_no_secrets(
     )
 
 
-@patch.object(ops.JujuVersion, "from_environ")
-def test_update_peer_data_with_secrets(
-    mock_juju_env, harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_update_peer_data_with_secrets(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container and create_admin_user.
     act: call _update_peer_data.
@@ -63,7 +60,7 @@ def test_update_peer_data_with_secrets(
     harness = Harness(SynapseCharm)
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    mock_juju_env.return_value = MagicMock(has_secrets=True)
+    secret_storage.JUJU_HAS_SECRETS = True
     harness.set_leader(True)
     container_mock = MagicMock()
     username = "any-user"
@@ -262,8 +259,7 @@ def test_on_collect_status_api_error(harness: Harness, monkeypatch: pytest.Monke
     enable_mjolnir_mock.assert_not_called()
 
 
-@patch.object(ops.JujuVersion, "from_environ")
-def test_get_admin_access_token_no_secrets(mock_juju_env, harness: Harness) -> None:
+def test_get_admin_access_token_no_secrets(harness: Harness) -> None:
     """
     arrange: start the Synapse charm, set server_name, no secrets.
     act: update relation data with secret key.
@@ -271,7 +267,7 @@ def test_get_admin_access_token_no_secrets(mock_juju_env, harness: Harness) -> N
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    mock_juju_env.return_value = MagicMock(has_secrets=False)
+    secret_storage.JUJU_HAS_SECRETS = False
     peer_relation = harness.model.get_relation("synapse-peers")
     assert peer_relation
 
@@ -281,9 +277,8 @@ def test_get_admin_access_token_no_secrets(mock_juju_env, harness: Harness) -> N
     assert secret_storage.get_admin_access_token(harness.charm) == expected_token
 
 
-@patch.object(ops.JujuVersion, "from_environ")
 def test_get_admin_access_token_with_secrets(
-    mock_juju_env, harness: Harness, monkeypatch: pytest.MonkeyPatch
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
     arrange: start the Synapse charm, set server_name, with secrets.
@@ -292,7 +287,7 @@ def test_get_admin_access_token_with_secrets(
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    mock_juju_env.return_value = MagicMock(has_secrets=True)
+    secret_storage.JUJU_HAS_SECRETS = True
     peer_relation = harness.model.get_relation("synapse-peers")
     assert peer_relation
     expected_id = token_hex(16)
