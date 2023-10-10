@@ -278,7 +278,7 @@ def test_get_admin_access_token_no_secrets(mock_juju_env, harness: Harness) -> N
     expected_token = token_hex(16)
     harness.update_relation_data(peer_relation.id, "synapse", {"secret-key": expected_token})
 
-    assert harness.charm._mjolnir._admin_access_token == expected_token
+    assert secret_storage.get_admin_access_token(harness.charm) == expected_token
 
 
 @patch.object(ops.JujuVersion, "from_environ")
@@ -304,7 +304,7 @@ def test_get_admin_access_token_with_secrets(
     get_secret_mock = MagicMock(return_value=secret_mock)
     monkeypatch.setattr(harness.charm.model, "get_secret", get_secret_mock)
 
-    token = harness.charm._mjolnir._admin_access_token
+    token = secret_storage.get_admin_access_token(harness.charm)
 
     get_secret_mock.assert_called_once()
     assert token == expected_token

@@ -48,15 +48,6 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         return getattr(self._charm, "pebble_service", None)
 
-    @property
-    def _admin_access_token(self) -> typing.Optional[str]:
-        """Return admin access token.
-
-        Returns:
-            admin access token or none.
-        """
-        return secret_storage.get_admin_access_token(self._charm)
-
     def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
         """Collect status event handler.
 
@@ -98,7 +89,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
                 )
                 event.add_status(status)
                 return
-        except synapse.APIError as exc:
+        except (synapse.APIError, secret_storage.AdminAccessTokenNotFoundError) as exc:
             logger.exception(
                 "Failed to check for membership_room. Mjolnir will not be configured: %r",
                 exc,
@@ -112,11 +103,18 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
 
         Returns:
             The room id or None if is not found.
+
+        Raises:
+            AdminAccessTokenNotFoundError: if there is not admin access token.
         """
-        admin_access_token = self._admin_access_token
-        return synapse.get_room_id(
-            room_name=synapse.MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
-        )
+        try:
+            admin_access_token = secret_storage.get_admin_access_token(self._charm)
+            return synapse.get_room_id(
+                room_name=synapse.MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
+            )
+        except secret_storage.AdminAccessTokenNotFoundError:
+            logger.warning("Failed to get membership room id while getting admin access token.")
+            raise
 
     def enable_mjolnir(self) -> None:
         """Enable mjolnir service.
@@ -137,26 +135,27 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
+        admin_access_token = secret_storage.get_admin_access_token(self._charm)
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         mjolnir_user = actions.register_user(
             container,
             USERNAME,
             True,
-            self._admin_access_token,
+            admin_access_token,
             str(self._charm_state.synapse_config.server_name),
         )
         mjolnir_access_token = mjolnir_user.access_token
         room_id = synapse.get_room_id(
-            room_name=synapse.MJOLNIR_MANAGEMENT_ROOM, admin_access_token=self._admin_access_token
+            room_name=synapse.MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
         )
         if room_id is None:
             logger.info("Room %s not found, creating", synapse.MJOLNIR_MANAGEMENT_ROOM)
-            room_id = synapse.create_management_room(admin_access_token=self._admin_access_token)
+            room_id = synapse.create_management_room(admin_access_token=admin_access_token)
         # Add the Mjolnir user to the management room
         synapse.make_room_admin(
             user=mjolnir_user,
             server=str(self._charm_state.synapse_config.server_name),
-            admin_access_token=self._admin_access_token,
+            admin_access_token=admin_access_token,
             room_id=room_id,
         )
         synapse.create_mjolnir_config(
@@ -164,7 +163,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         )
         synapse.override_rate_limit(
             user=mjolnir_user,
-            admin_access_token=self._admin_access_token,
+            admin_access_token=admin_access_token,
             charm_state=self._charm_state,
         )
         self._pebble_service.replan_mjolnir(container)
