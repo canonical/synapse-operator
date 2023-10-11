@@ -96,11 +96,7 @@ We're using retry here because after the config change, Synapse is restarted.
 ## <kbd>function</kbd> `get_access_token`
 
 ```python
-get_access_token(
-    user: User,
-    server: str,
-    admin_access_token: Optional[str]
-) → str
+get_access_token(user: User, server: str, admin_access_token: str) → str
 ```
 
 Get an access token that can be used to authenticate as that user. 
@@ -136,7 +132,7 @@ This is a way to do actions on behalf of a user.
 ```python
 override_rate_limit(
     user: User,
-    admin_access_token: Optional[str],
+    admin_access_token: str,
     charm_state: CharmState
 ) → None
 ```
@@ -154,12 +150,12 @@ Override user's rate limit.
 
 ---
 
-<a href="../src/synapse/api.py#L355"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_room_id`
 
 ```python
-get_room_id(room_name: str, admin_access_token: Optional[str]) → Optional[str]
+get_room_id(room_name: str, admin_access_token: str) → Optional[str]
 ```
 
 Get room id. 
@@ -185,16 +181,12 @@ Get room id.
 
 ---
 
-<a href="../src/synapse/api.py#L391"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `deactivate_user`
 
 ```python
-deactivate_user(
-    user: User,
-    server: str,
-    admin_access_token: Optional[str]
-) → None
+deactivate_user(user: User, server: str, admin_access_token: str) → None
 ```
 
 Deactivate user. 
@@ -210,12 +202,12 @@ Deactivate user.
 
 ---
 
-<a href="../src/synapse/api.py#L411"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_management_room`
 
 ```python
-create_management_room(admin_access_token: Optional[str]) → str
+create_management_room(admin_access_token: str) → str
 ```
 
 Create the management room to be used by Mjolnir. 
@@ -240,7 +232,7 @@ Create the management room to be used by Mjolnir.
 
 ---
 
-<a href="../src/synapse/api.py#L463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L461"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `make_room_admin`
 
@@ -248,7 +240,7 @@ Create the management room to be used by Mjolnir.
 make_room_admin(
     user: User,
     server: str,
-    admin_access_token: Optional[str],
+    admin_access_token: str,
     room_id: str
 ) → None
 ```
@@ -267,16 +259,12 @@ Make user a room's admin.
 
 ---
 
-<a href="../src/synapse/api.py#L480"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L476"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `promote_user_admin`
 
 ```python
-promote_user_admin(
-    user: User,
-    server: str,
-    admin_access_token: Optional[str]
-) → None
+promote_user_admin(user: User, server: str, admin_access_token: str) → None
 ```
 
 Promote user to admin. 

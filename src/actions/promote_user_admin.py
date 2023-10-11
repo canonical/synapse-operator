@@ -6,7 +6,6 @@
 """Module to interact with Promote User Admin action."""
 
 import logging
-import typing
 
 import synapse
 from user import User
@@ -31,9 +30,7 @@ class PromoteUserAdminError(Exception):
 
 
 # admin_access_token is not a password
-def promote_user_admin(
-    username: str, server: str, admin_access_token: typing.Optional[str]
-) -> None:
+def promote_user_admin(username: str, server: str, admin_access_token: str) -> None:
     """Run promote user admin action.
 
     Args:
