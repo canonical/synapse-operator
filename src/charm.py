@@ -23,6 +23,7 @@ from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
+from user import User
 
 logger = logging.getLogger(__name__)
 
@@ -193,14 +194,15 @@ class SynapseCharm(ops.CharmBase):
             return
         try:
             admin_access_token = secret_storage.get_admin_access_token(self)
-            actions.promote_user_admin(
-                username=event.params["username"],
-                server=self._charm_state.synapse_config.server_name,
-                admin_access_token=admin_access_token,
+            username = event.params["username"]
+            server = self._charm_state.synapse_config.server_name
+            user = User(username=username, admin=True)
+            synapse.promote_user_admin(
+                user=user, server=server, admin_access_token=admin_access_token
             )
             results["promote-user-admin"] = True
         except (
-            actions.PromoteUserAdminError,
+            synapse.APIError,
             secret_storage.AdminAccessTokenNotFoundError,
         ) as exc:
             event.fail(str(exc))
