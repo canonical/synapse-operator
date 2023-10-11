@@ -54,7 +54,7 @@ class CharmConfigInvalidError(Exception):
 class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """Represent Synapse builtin configuration values.
 
-    Attrs:
+    Attributes:
         server_name: server_name config.
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.

@@ -8,7 +8,7 @@ Module to interact with Promote User Admin action.
 
 ---
 
-<a href="../src/actions/promote_user_admin.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/actions/promote_user_admin.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `promote_user_admin`
 

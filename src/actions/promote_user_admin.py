@@ -29,7 +29,6 @@ class PromoteUserAdminError(Exception):
         self.msg = msg
 
 
-# admin_access_token is not a password
 def promote_user_admin(username: str, server: str, admin_access_token: str) -> None:
     """Run promote user admin action.
 
