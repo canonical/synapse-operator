@@ -144,6 +144,77 @@ listeners:
     assert config_path.read_text() == yaml.safe_dump(expected_config_content)
 
 
+def test_enable_saml_success_no_ubuntu_url():
+    """
+    arrange: set configuration and saml-integrator relation without ubuntu.com
+        in metadata_url.
+    act: enable saml.
+    assert: SAML configuration is created as expected.
+    """
+    # Arrange: set up harness and container filesystem
+    harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    relation_id = harness.add_relation("saml", "saml-integrator")
+    harness.add_relation_unit(relation_id, "saml-integrator/0")
+    metadata_url = "https://login.staging.com/saml/metadata"
+    harness.update_relation_data(
+        relation_id,
+        "saml-integrator",
+        {
+            "entity_id": "https://login.staging.com",
+            "metadata_url": metadata_url,
+        },
+    )
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.begin()
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+      x_forwarded: false
+"""
+    )
+
+    # Act: write the Synapse config file with SAML enabled
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    synapse.enable_saml(container, harness.charm._charm_state)
+
+    # Assert: ensure config file was written correctly
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
+        ],
+        "public_baseurl": TEST_SERVER_NAME,
+        "saml2_enabled": True,
+        "saml2_config": {
+            "sp_config": {
+                "metadata": {"remote": [{"url": metadata_url}]},
+                "service": {
+                    "sp": {
+                        "entityId": TEST_SERVER_NAME,
+                        "allow_unsolicited": True,
+                    }
+                },
+                "allow_unknown_attributes": True,
+            },
+            "user_mapping_provider": {
+                "config": {
+                    "grandfathered_mxid_source_attribute": "uid",
+                    "mxid_source_attribute": "uid",
+                    "mxid_mapping": "dotreplace",
+                }
+            },
+        },
+    }
+    assert config_path.read_text() == yaml.safe_dump(expected_config_content)
+
+
 def test_enable_saml_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
