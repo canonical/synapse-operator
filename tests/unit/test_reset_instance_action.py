@@ -55,7 +55,7 @@ def test_reset_instance_action_container_down(harness: Harness) -> None:
 
     assert event.set_results.call_count == 0
     assert event.fail.call_count == 1
-    assert "Failed to connect to container" == event.fail.call_args[0][0]
+    assert "Failed to connect to the container" == event.fail.call_args[0][0]
 
 
 @pytest.mark.parametrize(

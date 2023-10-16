@@ -147,7 +147,7 @@ class SynapseCharm(ops.CharmBase):
             return
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            event.fail("Failed to connect to container")
+            event.fail("Failed to connect to the container")
             return
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
@@ -174,7 +174,7 @@ class SynapseCharm(ops.CharmBase):
         """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            event.fail("Failed to connect to container")
+            event.fail("Failed to connect to the container")
             return
         try:
             user = actions.register_user(

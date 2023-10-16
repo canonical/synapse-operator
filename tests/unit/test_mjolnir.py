@@ -6,7 +6,8 @@
 # pylint: disable=protected-access
 
 from secrets import token_hex
-from unittest.mock import ANY, MagicMock
+from unittest import mock
+from unittest.mock import ANY, MagicMock, PropertyMock
 
 import ops
 import pytest
@@ -29,16 +30,18 @@ def test_get_membership_room_id(harness: Harness, monkeypatch: pytest.MonkeyPatc
     admin_access_token = token_hex(16)
     get_room_id = MagicMock()
     monkeypatch.setattr(synapse, "get_room_id", get_room_id)
-    monkeypatch.setattr(Mjolnir, "_admin_access_token", admin_access_token)
 
-    harness.charm._mjolnir.get_membership_room_id()
+    harness.charm._mjolnir.get_membership_room_id(admin_access_token)
 
     get_room_id.assert_called_once_with(
         room_name="moderators", admin_access_token=admin_access_token
     )
 
 
-def test_on_collect_status_blocked(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+@mock.patch("mjolnir.Mjolnir._admin_access_token", new_callable=PropertyMock)
+def test_on_collect_status_blocked(
+    _admin_access_token_mock, harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container, get_membership_room_id
         and _update_peer_data.
@@ -48,6 +51,7 @@ def test_on_collect_status_blocked(harness: Harness, monkeypatch: pytest.MonkeyP
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
+    _admin_access_token_mock.__get__ = mock.Mock(return_value=token_hex(16))
     monkeypatch.setattr(Mjolnir, "get_membership_room_id", MagicMock(return_value=None))
     charm_state_mock = MagicMock()
     charm_state_mock.enable_mjolnir = True
@@ -210,9 +214,8 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
-    harness.charm._mjolnir.enable_mjolnir()
+    harness.charm._mjolnir.enable_mjolnir(admin_access_token)
 
-    register_user_mock.assert_called_once_with(ANY, ANY, ANY, admin_access_token, ANY)
     get_room_id.assert_called_once_with(
         room_name="management", admin_access_token=admin_access_token
     )
@@ -257,7 +260,7 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
-    harness.charm._mjolnir.enable_mjolnir()
+    harness.charm._mjolnir.enable_mjolnir(admin_access_token)
 
     register_user_mock.assert_called_once_with(ANY, ANY, ANY, admin_access_token, ANY)
     get_room_id.assert_called_once_with(
@@ -289,6 +292,6 @@ def test_enable_mjolnir_container_off(harness: Harness, monkeypatch: pytest.Monk
     register_user_mock = MagicMock()
     monkeypatch.setattr(actions, "register_user", register_user_mock)
 
-    harness.charm._mjolnir.enable_mjolnir()
+    harness.charm._mjolnir.enable_mjolnir(token_hex(16))
 
     register_user_mock.assert_not_called()
