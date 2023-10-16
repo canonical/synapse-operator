@@ -12,9 +12,8 @@ import ops
 import yaml
 from ops.pebble import Check, ExecError, PathError
 
+import synapse
 from charm_state import CharmState
-
-from .api import SYNAPSE_PORT, SYNAPSE_URL, VERSION_URL
 
 CHECK_ALIVE_NAME = "synapse-alive"
 CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
@@ -95,7 +94,7 @@ def check_ready() -> ops.pebble.CheckDict:
     check = Check(CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": VERSION_URL}
+    check.http = {"url": synapse.VERSION_URL}
     return check.to_dict()
 
 
@@ -108,7 +107,7 @@ def check_alive() -> ops.pebble.CheckDict:
     check = Check(CHECK_ALIVE_NAME)
     check.override = "replace"
     check.level = "alive"
-    check.tcp = {"port": SYNAPSE_PORT}
+    check.tcp = {"port": synapse.SYNAPSE_PORT}
     return check.to_dict()
 
 
@@ -319,8 +318,8 @@ def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     """
     with open("templates/mjolnir_production.yaml", encoding="utf-8") as mjolnir_config_file:
         config = yaml.safe_load(mjolnir_config_file)
-        config["homeserverUrl"] = SYNAPSE_URL
-        config["rawHomeserverUrl"] = SYNAPSE_URL
+        config["homeserverUrl"] = synapse.SYNAPSE_URL
+        config["rawHomeserverUrl"] = synapse.SYNAPSE_URL
         config["accessToken"] = access_token
         config["managementRoom"] = room_id
         return config
