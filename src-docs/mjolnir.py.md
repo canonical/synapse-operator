@@ -18,7 +18,7 @@ A class representing the Mjolnir plugin for Synapse application.
 
 Mjolnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/matrix-org/mjolnir/ for more details about it. 
 
-<a href="../src/mjolnir.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -46,12 +46,12 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/mjolnir.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_mjolnir`
 
 ```python
-enable_mjolnir() → None
+enable_mjolnir(admin_access_token: str) → None
 ```
 
 Enable mjolnir service. 
@@ -68,27 +68,33 @@ The required steps to enable Mjolnir are:
  - Override Mjolnir user rate limit. 
  - Finally, add Mjolnir pebble layer. 
 
+
+
+**Args:**
+ 
+ - <b>`admin_access_token`</b>:  not empty admin access token. 
+
 ---
 
-<a href="../src/mjolnir.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_membership_room_id`
 
 ```python
-get_membership_room_id() → Optional[str]
+get_membership_room_id(admin_access_token: str) → Optional[str]
 ```
 
 Check if membership room exists. 
 
 
 
-**Returns:**
-  The room id or None if is not found. 
-
-
-
-**Raises:**
+**Args:**
  
- - <b>`AdminAccessTokenNotFoundError`</b>:  if there is not admin access token. 
+ - <b>`admin_access_token`</b>:  not empty admin access token. 
+
+
+
+**Returns:**
+ The room id or None if is not found. 
 
 

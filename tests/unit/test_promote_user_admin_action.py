@@ -24,8 +24,6 @@ def test_promote_user_admin_action(harness: Harness, monkeypatch: pytest.MonkeyP
     """
     harness.begin_with_initial_hooks()
     admin_access_token = token_hex(16)
-    get_admin_access_token_mock = unittest.mock.Mock(return_value=admin_access_token)
-    monkeypatch.setattr("secret_storage.get_admin_access_token", get_admin_access_token_mock)
     promote_user_admin_mock = unittest.mock.Mock()
     monkeypatch.setattr("synapse.promote_user_admin", promote_user_admin_mock)
     user = "username"
@@ -38,7 +36,6 @@ def test_promote_user_admin_action(harness: Harness, monkeypatch: pytest.MonkeyP
 
     assert event.set_results.call_count == 1
     event.set_results.assert_called_with({"promote-user-admin": True})
-    get_admin_access_token_mock.assert_called_once()
     promote_user_admin_mock.assert_called_with(
         user=unittest.mock.ANY, server=unittest.mock.ANY, admin_access_token=admin_access_token
     )
@@ -51,14 +48,11 @@ def test_promote_user_admin_api_error(harness: Harness, monkeypatch: pytest.Monk
     assert: event fails as expected.
     """
     harness.begin_with_initial_hooks()
-    admin_access_token = token_hex(16)
-    get_admin_access_token_mock = unittest.mock.Mock(return_value=admin_access_token)
-    monkeypatch.setattr("secret_storage.get_admin_access_token", get_admin_access_token_mock)
     fail_message = "Some fail message"
     synapse_api_error = synapse.APIError(fail_message)
     promote_user_admin_mock = unittest.mock.MagicMock(side_effect=synapse_api_error)
     monkeypatch.setattr("synapse.promote_user_admin", promote_user_admin_mock)
-    admin_access_token = token_hex(16)
+    # admin_access_token = token_hex(16)
     user = "username"
     event = unittest.mock.MagicMock(spec=ActionEvent)
     event.params = {
