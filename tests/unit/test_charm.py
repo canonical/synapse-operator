@@ -323,3 +323,50 @@ def test_get_admin_access_token_existing_secret(mock_get_secret, harness: Harnes
         == secret_id
     )
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@patch("charm.JUJU_HAS_SECRETS", True)
+@patch.object(ops.Model, "get_secret")
+def test_get_admin_access_token_not_found_secret(mock_get_secret, harness: Harness) -> None:
+    """
+    arrange: start the Synapse charm, mock relation.
+    act: get admin access token.
+    assert: secret is not found, peer data is erased and None is retrieved.
+    """
+    harness.begin_with_initial_hooks()
+    peer_relation = harness.model.get_relation("synapse-peers")
+    assert peer_relation
+    secret_id = token_hex(16)
+    harness.update_relation_data(peer_relation.id, "synapse", {"secret-id": secret_id})
+    # Mocking like the following doesn't get evaluated as expected
+    # mock_juju_env.return_value = MagicMock(has_secrets=True)
+    mock_get_secret.side_effect = ops.model.SecretNotFoundError()
+
+    admin_access_token = harness.charm.get_admin_access_token()
+
+    assert not admin_access_token
+    peer_relation = harness.model.get_relation("synapse-peers")
+    assert peer_relation
+    assert not harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@patch("charm.JUJU_HAS_SECRETS", False)
+def test_get_admin_access_token_existing_peer_data(harness: Harness) -> None:
+    """
+    arrange: start the Synapse charm, mock relation.
+    act: get admin access token.
+    assert: secret is queried and the token is retrieved.
+    """
+    harness.begin_with_initial_hooks()
+    peer_relation = harness.model.get_relation("synapse-peers")
+    assert peer_relation
+    admin_access_token_expected = token_hex(16)
+    harness.update_relation_data(
+        peer_relation.id, "synapse", {"secret-key": admin_access_token_expected}
+    )
+
+    admin_access_token = harness.charm.get_admin_access_token()
+
+    assert admin_access_token == admin_access_token_expected
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)

@@ -86,3 +86,45 @@ def test_promote_user_admin_api_error(harness: Harness, monkeypatch: pytest.Monk
     harness.charm._on_promote_user_admin_action(event)
 
     assert fail_message in event.fail_message
+
+
+def test_promote_user_admin_container_down(harness: Harness) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be off.
+    act: run promote-user-admin action.
+    assert: event fails as expected.
+    """
+    harness.begin_with_initial_hooks()
+    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
+    event = unittest.mock.Mock()
+
+    harness.charm._on_promote_user_admin_action(event)
+
+    assert event.set_results.call_count == 0
+    assert event.fail.call_count == 1
+    assert "Failed to connect to the container" == event.fail.call_args[0][0]
+
+
+def test_promote_user_admin_action_no_token(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: run promote-user-admin action.
+    assert: event fails as expected.
+    """
+    harness.begin_with_initial_hooks()
+    promote_user_admin_mock = unittest.mock.Mock()
+    monkeypatch.setattr(
+        SynapseCharm,
+        "get_admin_access_token",
+        unittest.mock.MagicMock(return_value=None),
+    )
+    monkeypatch.setattr("synapse.promote_user_admin", promote_user_admin_mock)
+    event = unittest.mock.Mock()
+
+    harness.charm._on_promote_user_admin_action(event)
+
+    assert event.set_results.call_count == 0
+    assert event.fail.call_count == 1
+    assert "Failed to get admin access token" == event.fail.call_args[0][0]
