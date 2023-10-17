@@ -1,0 +1,45 @@
+name: Matrix Deployment Bug Report
+description: Report a bug with the chat.ubuntu.com deployment
+labels: ["Type: Bug", "Status: Triage", "Context: deployment"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thank you for taking the time to report an issue with the ubuntu.com Matrix instance. We'd
+        like to learn more about your issue and appreciate your support. Please take a moment to
+        check the existing issues in case someone else has encountered a similar issues.
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to reproduce
+      description: Please attach screenshots, videos or logs if you can.
+      placeholder: Tell us what you see!
+      value: |
+        1. Where are you starting? What can you see?
+        2. What do you click?
+        3. More steps…
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Outcome
+      placeholder: Tell us what went wrong
+      value: |
+        #### What did you expect?
+
+        #### What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: client-info
+    attributes:
+      label: Client information
+      description: >
+        Provide information about the Matrix client you are using
+      value: |
+        **Name**:
+        **Version**:
+        **OS and install type**:
+    validations:
+      required: false

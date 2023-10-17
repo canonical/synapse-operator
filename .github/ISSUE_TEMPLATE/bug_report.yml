@@ -1,6 +1,6 @@
-name: Bug Report
-description: File a bug report
-labels: ["Type: Bug", "Status: Triage"]
+name: Operator Bug Report
+description: File a bug report on the synapse operator
+labels: ["Type: Bug", "Status: Triage", "Context: Operator"]
 body:
   - type: markdown
     attributes:
