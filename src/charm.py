@@ -224,8 +224,13 @@ class SynapseCharm(ops.CharmBase):
         if JUJU_HAS_SECRETS:
             secret_id = peer_relation.data[self.app].get(SECRET_ID)
             if secret_id:
-                secret = self.model.get_secret(id=secret_id)
-                admin_access_token = secret.get_content().get(SECRET_KEY)
+                try:
+                    secret = self.model.get_secret(id=secret_id)
+                    admin_access_token = secret.get_content().get(SECRET_KEY)
+                except ops.model.SecretNotFoundError as exc:
+                    logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
+                    del peer_relation.data[self.app][SECRET_ID]
+                    return None
             else:
                 # There is Secrets support but none was created
                 # So lets create the user and store its token in the secret
