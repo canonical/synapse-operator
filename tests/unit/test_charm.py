@@ -6,12 +6,14 @@
 # pylint: disable=protected-access
 
 import json
-from unittest.mock import MagicMock
+from secrets import token_hex
+from unittest.mock import MagicMock, patch
 
 import ops
 import pytest
 from ops.testing import Harness
 
+import actions
 import synapse
 from charm import SynapseCharm
 from pebble import PebbleServiceError
@@ -201,3 +203,123 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)
+
+
+@patch("charm.JUJU_HAS_SECRETS", True)
+@patch.object(ops.Application, "add_secret")
+def test_get_admin_access_token_with_secrets(
+    mock_add_secret, harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, mock register_user and add_secret.
+    act: get admin access token.
+    assert: admin user is created, secret is created and the token is retrieved.
+    """
+    harness.begin_with_initial_hooks()
+    # Mocking like the following doesn't get evaluated as expected
+    # mock_juju_env.return_value = MagicMock(has_secrets=True)
+    secret_mock = MagicMock
+    secret_id = token_hex(16)
+    secret_mock.id = secret_id
+    mock_add_secret.return_value = secret_mock
+    user_mock = MagicMock()
+    admin_access_token_expected = token_hex(16)
+    user_mock.access_token = admin_access_token_expected
+    register_user_mock = MagicMock(return_value=user_mock)
+    monkeypatch.setattr(actions, "register_user", register_user_mock)
+
+    admin_access_token = harness.charm.get_admin_access_token()
+
+    register_user_mock.assert_called_once()
+    mock_add_secret.assert_called_once()
+    assert admin_access_token == admin_access_token_expected
+    peer_relation = harness.model.get_relation("synapse-peers")
+    assert peer_relation
+    assert (
+        harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
+        == secret_id
+    )
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@patch("charm.JUJU_HAS_SECRETS", False)
+@patch.object(ops.Application, "add_secret")
+def test_get_admin_access_token_no_secrets(
+    mock_add_secret, harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, mock register_user and add_secret.
+    act: get admin access token.
+    assert: admin user is created, relation is updated and the token is
+        retrieved.
+    """
+    harness.begin_with_initial_hooks()
+    # Mocking like the following doesn't get evaluated as expected
+    # mock_juju_env.return_value = MagicMock(has_secrets=True)
+    user_mock = MagicMock()
+    admin_access_token_expected = token_hex(16)
+    user_mock.access_token = admin_access_token_expected
+    register_user_mock = MagicMock(return_value=user_mock)
+    monkeypatch.setattr(actions, "register_user", register_user_mock)
+
+    admin_access_token = harness.charm.get_admin_access_token()
+
+    register_user_mock.assert_called_once()
+    mock_add_secret.assert_not_called()
+    assert admin_access_token == admin_access_token_expected
+    peer_relation = harness.model.get_relation("synapse-peers")
+    assert peer_relation
+    assert (
+        harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-key")
+        == admin_access_token_expected
+    )
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@patch("charm.JUJU_HAS_SECRETS", True)
+@patch.object(ops.Application, "add_secret")
+def test_get_admin_access_token_no_peer_relation(mock_add_secret, harness: Harness) -> None:
+    """
+    arrange: start the Synapse charm without relations.
+    act: get admin access token.
+    assert: add secret is not called and None is retrieved.
+    """
+    harness.begin()
+
+    admin_access_token = harness.charm.get_admin_access_token()
+
+    mock_add_secret.assert_not_called()
+    assert not admin_access_token
+
+
+@patch("charm.JUJU_HAS_SECRETS", True)
+@patch.object(ops.Model, "get_secret")
+def test_get_admin_access_token_existing_secret(mock_get_secret, harness: Harness) -> None:
+    """
+    arrange: start the Synapse charm, mock relation.
+    act: get admin access token.
+    assert: secret is queried and the token is retrieved.
+    """
+    harness.begin_with_initial_hooks()
+    peer_relation = harness.model.get_relation("synapse-peers")
+    assert peer_relation
+    secret_id = token_hex(16)
+    harness.update_relation_data(peer_relation.id, "synapse", {"secret-id": secret_id})
+    # Mocking like the following doesn't get evaluated as expected
+    # mock_juju_env.return_value = MagicMock(has_secrets=True)
+    secret_mock = MagicMock
+    secret_mock.id = secret_id
+    admin_access_token_expected = token_hex(16)
+    secret_mock.get_content = MagicMock(return_value={"secret-key": admin_access_token_expected})
+    mock_get_secret.return_value = secret_mock
+
+    admin_access_token = harness.charm.get_admin_access_token()
+
+    assert admin_access_token == admin_access_token_expected
+    peer_relation = harness.model.get_relation("synapse-peers")
+    assert peer_relation
+    assert (
+        harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
+        == secret_id
+    )
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
