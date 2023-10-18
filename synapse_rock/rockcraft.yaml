@@ -16,7 +16,6 @@ parts:
     synapse:
         build-packages:
             - build-essential
-            - ca-certificates
             - curl
             - git
             - libffi-dev
@@ -79,9 +78,8 @@ parts:
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
             mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
-            # Copy root certificates
-            mkdir -p $CRAFT_PART_INSTALL/etc/ssl/certs/
-            cp /etc/ssl/certs/ca-certificates.crt $CRAFT_PART_INSTALL/etc/ssl/certs/
+        overlay-packages:
+            - ca-certificates
     synapse-conf:
         plugin: dump
         source: attributemaps
