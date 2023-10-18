@@ -8,6 +8,11 @@ options:
     description: |
       Configures whether to enable Mjolnir - moderation tool for Matrix.
       Reference: https://github.com/matrix-org/mjolnir
+  enable_password_config:
+    type: boolean
+    default: true
+    description: |
+      Defaults to true. Set to false to disable password authentication.
   public_baseurl:
     type: string
     description: |

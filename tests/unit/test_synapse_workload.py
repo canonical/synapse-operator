@@ -305,6 +305,51 @@ def test_enable_serve_server_wellknown_error(monkeypatch: pytest.MonkeyPatch):
         synapse.enable_serve_server_wellknown(container_mock)
 
 
+def test_disable_password_config_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: call disable_password_config.
+    assert: new configuration file is pushed and password_config is disabled.
+    """
+    config_content = """
+    password_config:
+        enabled: true
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    synapse.disable_password_config(container_mock)
+
+    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    expected_config_content = {
+        "password_config": {
+            "enabled": False,
+        },
+    }
+    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+
+
+def test_disable_password_config_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: call disable_password_config.
+    assert: raise WorkloadError.
+    """
+    error_message = "Error pulling file"
+    path_error = ops.pebble.PathError(kind="fake", message=error_message)
+    pull_mock = MagicMock(side_effect=path_error)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    with pytest.raises(synapse.WorkloadError, match=error_message):
+        synapse.disable_password_config(container_mock)
+
+
 def test_get_registration_shared_secret_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.

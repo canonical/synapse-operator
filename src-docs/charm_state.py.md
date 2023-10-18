@@ -17,7 +17,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -55,7 +55,7 @@ State of the Charm.
 
 ---
 
-<a href="../src/charm_state.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -91,14 +91,14 @@ Return: The CharmState instance created by the provided charm.
 ## <kbd>class</kbd> `SynapseConfig`
 Represent Synapse builtin configuration values. 
 
-Attrs:  server_name: server_name config.  report_stats: report_stats config.  public_baseurl: public_baseurl config.  enable_mjolnir: enable_mjolnir config.  smtp_enable_tls: enable tls while connecting to SMTP server.  smtp_host: SMTP host.  smtp_notif_from: defines the "From" address to use when sending emails.  smtp_pass: password to authenticate to SMTP host.  smtp_port: SMTP port.  smtp_user: username to autehtncate to SMTP host. 
+Attrs:  server_name: server_name config.  report_stats: report_stats config.  public_baseurl: public_baseurl config.  enable_mjolnir: enable_mjolnir config.  enable_password_config: enable_password_config config.  smtp_enable_tls: enable tls while connecting to SMTP server.  smtp_host: SMTP host.  smtp_notif_from: defines the "From" address to use when sending emails.  smtp_pass: password to authenticate to SMTP host.  smtp_port: SMTP port.  smtp_user: username to autehtncate to SMTP host. 
 
 
 
 
 ---
 
-<a href="../src/charm_state.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `set_default_smtp_notif_from`
 
@@ -125,7 +125,7 @@ Set server_name as default value to smtp_notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

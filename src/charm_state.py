@@ -23,6 +23,7 @@ from charm_types import DatasourcePostgreSQL, SAMLConfiguration
 
 KNOWN_CHARM_CONFIG = (
     "enable_mjolnir",
+    "enable_password_config",
     "public_baseurl",
     "report_stats",
     "server_name",
@@ -59,6 +60,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.
         enable_mjolnir: enable_mjolnir config.
+        enable_password_config: enable_password_config config.
         smtp_enable_tls: enable tls while connecting to SMTP server.
         smtp_host: SMTP host.
         smtp_notif_from: defines the "From" address to use when sending emails.
@@ -71,6 +73,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     report_stats: str | None = Field(None)
     public_baseurl: str | None = Field(None)
     enable_mjolnir: bool = False
+    enable_password_config: bool = True
     smtp_enable_tls: bool = True
     smtp_host: str | None = Field(None)
     smtp_notif_from: str | None = Field(None)
