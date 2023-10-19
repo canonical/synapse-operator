@@ -55,7 +55,7 @@ class CharmConfigInvalidError(Exception):
 
 
 class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
-    """Configuration for accessing Jenkins through proxy.
+    """Configuration for accessing Synapse through proxy.
 
     Attributes:
         http_proxy: The http proxy URL.

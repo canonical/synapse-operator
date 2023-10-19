@@ -101,7 +101,7 @@ Return: The CharmState instance created by the provided charm.
 ---
 
 ## <kbd>class</kbd> `ProxyConfig`
-Configuration for accessing Jenkins through proxy. 
+Configuration for accessing Synapse through proxy. 
 
 
 
