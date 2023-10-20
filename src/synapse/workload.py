@@ -535,4 +535,9 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         environment["POSTGRES_PORT"] = datasource["port"]
         environment["POSTGRES_USER"] = datasource["user"]
         environment["POSTGRES_PASSWORD"] = datasource["password"]
+    for proxy_variable in ("http_proxy", "https_proxy", "no_proxy"):
+        proxy_value = getattr(charm_state.proxy, proxy_variable)
+        if proxy_value:
+            environment[proxy_variable] = str(proxy_value)
+            environment[proxy_variable.upper()] = str(proxy_value)
     return environment

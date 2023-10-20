@@ -6,16 +6,19 @@
 """State of the Charm."""
 import dataclasses
 import itertools
+import os
 import typing
 
 import ops
 
 # pydantic is causing this no-name-in-module problem
 from pydantic import (  # pylint: disable=no-name-in-module,import-error
+    AnyHttpUrl,
     BaseModel,
     Extra,
     Field,
     ValidationError,
+    parse_obj_as,
     validator,
 )
 
@@ -50,6 +53,20 @@ class CharmConfigInvalidError(Exception):
             msg (str): Explanation of the error.
         """
         self.msg = msg
+
+
+class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
+    """Configuration for accessing Synapse through proxy.
+
+    Attributes:
+        http_proxy: The http proxy URL.
+        https_proxy: The https proxy URL.
+        no_proxy: Comma separated list of hostnames to bypass proxy.
+    """
+
+    http_proxy: typing.Optional[AnyHttpUrl]
+    https_proxy: typing.Optional[AnyHttpUrl]
+    no_proxy: typing.Optional[str]
 
 
 class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
@@ -133,11 +150,28 @@ class CharmState:
         synapse_config: synapse configuration.
         datasource: datasource information.
         saml_config: saml configuration.
+        proxy: proxy information.
     """
 
     synapse_config: SynapseConfig
     datasource: typing.Optional[DatasourcePostgreSQL]
     saml_config: typing.Optional[SAMLConfiguration]
+
+    @property
+    def proxy(self) -> "ProxyConfig":
+        """Get charm proxy information from juju charm environment.
+
+        Returns:
+            charm proxy information in the form of ProxyConfig.
+        """
+        http_proxy = os.environ.get("JUJU_CHARM_HTTP_PROXY")
+        https_proxy = os.environ.get("JUJU_CHARM_HTTPS_PROXY")
+        no_proxy = os.environ.get("JUJU_CHARM_NO_PROXY")
+        return ProxyConfig(
+            http_proxy=parse_obj_as(AnyHttpUrl, http_proxy) if http_proxy else None,
+            https_proxy=parse_obj_as(AnyHttpUrl, https_proxy) if https_proxy else None,
+            no_proxy=no_proxy,
+        )
 
     @classmethod
     def from_charm(
