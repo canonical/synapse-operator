@@ -194,7 +194,7 @@ class SynapseCharm(ops.CharmBase):
         """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            logger.error("Failed to create admin user: waiting for pebble")
+            logger.error("Failed to connect to the container")
             return None
         # The username is random because if the user exists, register_user will try to get the
         # access_token.
