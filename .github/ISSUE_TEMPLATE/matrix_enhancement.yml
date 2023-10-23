@@ -1,0 +1,37 @@
+name: Matrix Deployment Enhancement
+description: Suggest a feature for the chat.ubuntu.com deployment
+labels: ["Type: Enhancement", "Status: Triage", "deployment"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        We're looking forward to hearing how you think chat.ubuntu.com could be improved. Be sure to
+        give us all the context we need to understand your request. Thank you for your support!
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Your use case
+      description: What would you like to be able to do? Please feel welcome to include screenshots or mock ups.
+      placeholder: Tell us what you would like to do!
+      value: |
+        #### What would you like to do?
+
+        #### Why would you like to do it?
+
+        #### How would you like to achieve it?
+    validations:
+      required: true
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Have you considered any alternatives?
+      placeholder: A clear and concise description of any alternative solutions or features you've considered.
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      placeholder: Is there anything else you'd like to add?
+    validations:
+      required: false

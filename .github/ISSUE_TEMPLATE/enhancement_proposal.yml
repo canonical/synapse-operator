@@ -1,6 +1,6 @@
-name: Enhancement Proposal
-description: File an enhancement proposal
-labels: ["Type: Enhancement", "Status: Triage"]
+name: Operator Enhancement Proposal
+description: File an enhancement proposal for the synapse operator
+labels: ["Type: Enhancement", "Status: Triage", "Context: Operator"]
 body:
   - type: markdown
     attributes:
