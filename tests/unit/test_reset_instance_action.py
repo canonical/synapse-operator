@@ -12,6 +12,7 @@ import ops
 import pytest
 from ops.testing import Harness
 
+import actions
 import synapse
 from database_client import DatabaseClient
 
@@ -54,7 +55,7 @@ def test_reset_instance_action_container_down(harness: Harness) -> None:
 
     assert event.set_results.call_count == 0
     assert event.fail.call_count == 1
-    assert "Failed to connect to container" == event.fail.call_args[0][0]
+    assert "Failed to connect to the container" == event.fail.call_args[0][0]
 
 
 @pytest.mark.parametrize(
@@ -155,3 +156,27 @@ def test_reset_instance_action_no_leader(
     # pylint: disable=no-member
     assert event.fail.call_count == 1
     assert "Only the juju leader unit can run reset instance action" == event.fail.call_args[0][0]
+
+
+def test_reset_instance_action_erase_database(
+    harness: Harness,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: run reset-instance action.
+    assert: since there is a datasource, erase should be called.
+    """
+    harness.begin()
+    harness.set_leader(True)
+    db_erase_mock = unittest.mock.MagicMock()
+    monkeypatch.setattr(DatabaseClient, "erase", db_erase_mock)
+    monkeypatch.setattr("synapse.execute_migrate_config", unittest.mock.MagicMock())
+
+    actions.reset_instance(
+        container=unittest.mock.MagicMock(),
+        charm_state=harness.charm._charm_state,
+        datasource=unittest.mock.MagicMock(),
+    )
+
+    db_erase_mock.assert_called_once()

@@ -5,6 +5,12 @@
 # <kbd>module</kbd> `charm.py`
 Charm for Synapse on kubernetes. 
 
+**Global Variables**
+---------------
+- **JUJU_HAS_SECRETS**
+- **PEER_RELATION_NAME**
+- **SECRET_ID**
+- **SECRET_KEY**
 
 
 ---
@@ -12,7 +18,7 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
-<a href="../src/charm.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -69,7 +75,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -81,7 +87,24 @@ Change configuration.
 
 ---
 
-<a href="../src/charm.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_admin_access_token`
+
+```python
+get_admin_access_token() → Optional[str]
+```
+
+Get admin access token. 
+
+
+
+**Returns:**
+  admin access token or None if fails. 
+
+---
+
+<a href="../src/charm.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `replan_nginx`
 
