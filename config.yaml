@@ -12,7 +12,9 @@ options:
     type: boolean
     default: true
     description: |
-      Defaults to true. Set to false to disable password authentication.
+      Defaults to true. If Synapse uses a single sign-on provider for
+      authentication, this option can be used to disable the regular login
+      flow.
   public_baseurl:
     type: string
     description: |
