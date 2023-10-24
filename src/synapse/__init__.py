@@ -26,6 +26,7 @@ from .api import (  # noqa: F401
     get_version,
     make_room_admin,
     override_rate_limit,
+    promote_user_admin,
     register_user,
 )
 from .workload import (  # noqa: F401

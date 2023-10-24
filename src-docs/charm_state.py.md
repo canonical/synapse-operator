@@ -120,7 +120,21 @@ Configuration for accessing Synapse through proxy.
 ## <kbd>class</kbd> `SynapseConfig`
 Represent Synapse builtin configuration values. 
 
-Attrs:  server_name: server_name config.  report_stats: report_stats config.  public_baseurl: public_baseurl config.  enable_mjolnir: enable_mjolnir config.  enable_password_config: enable_password_config config.  smtp_enable_tls: enable tls while connecting to SMTP server.  smtp_host: SMTP host.  smtp_notif_from: defines the "From" address to use when sending emails.  smtp_pass: password to authenticate to SMTP host.  smtp_port: SMTP port.  smtp_user: username to autehtncate to SMTP host. 
+
+
+**Attributes:**
+ 
+ - <b>`server_name`</b>:  server_name config. 
+ - <b>`report_stats`</b>:  report_stats config. 
+ - <b>`public_baseurl`</b>:  public_baseurl config. 
+ - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
+ - <b>`enable_password_config`</b>:  enable_password_config config. 
+ - <b>`smtp_enable_tls`</b>:  enable tls while connecting to SMTP server. 
+ - <b>`smtp_host`</b>:  SMTP host. 
+ - <b>`smtp_notif_from`</b>:  defines the "From" address to use when sending emails. 
+ - <b>`smtp_pass`</b>:  password to authenticate to SMTP host. 
+ - <b>`smtp_port`</b>:  SMTP port. 
+ - <b>`smtp_user`</b>:  username to authenticate to SMTP host. 
 
 
 

@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 # https://matrix-org.github.io/synapse/latest/usage/administration/index.html
 SYNAPSE_PORT = 8008
 SYNAPSE_URL = f"http://localhost:{SYNAPSE_PORT}"
+
 ADD_USER_ROOM_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/join"
+PROMOTE_USER_ADMIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users/user_id/admin"
 CREATE_ROOM_URL = f"{SYNAPSE_URL}/_matrix/client/v3/createRoom"
 DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
@@ -90,6 +92,67 @@ class GetAccessTokenError(APIError):
 
 class RegisterUserError(APIError):
     """Exception raised when registering user fails."""
+
+
+def _generate_authorization_header(admin_access_token: str) -> dict[str, str]:
+    """Generate authorization header with admin_access_token.
+
+    Args:
+        admin_access_token: admin access token to be used in the header.
+
+    Returns:
+        The authozation header as expected by Synapse API.
+    """
+    authorization_token = f"Bearer {admin_access_token}"
+    return {"Authorization": authorization_token}
+
+
+def _do_request(
+    method: str,
+    url: str,
+    admin_access_token: typing.Optional[str] = None,
+    json: typing.Optional[typing.Dict] = None,
+    retry: bool = False,
+) -> requests.Response:
+    """Offer a generic request.
+
+    Args:
+        method: HTTP method.
+        url: url to request.
+        admin_access_token: if set, generate Authorization header with it. Defaults to None.
+        json: json data to be sent in the request. Defaults to None.
+        retry: if the request should be retried. Defaults to False.
+
+    Raises:
+        NetworkError: if there was an error fetching the api_url.
+        UserExistsError: if there is an attempt to register an existing user.
+
+    Returns:
+        Response from the request.
+    """
+    try:
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=3,
+        )
+        if retry:
+            session.mount("http://", HTTPAdapter(max_retries=retries))
+        headers = None
+        if admin_access_token:
+            headers = _generate_authorization_header(admin_access_token)
+        response = session.request(method, url, headers=headers, json=json, timeout=5)
+        response.raise_for_status()
+        session.close()
+        return response
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        logger.exception("Failed to connect to %s: %r", url, exc)
+        raise NetworkError(f"Failed to connect to {url}.") from exc
+    except requests.exceptions.HTTPError as exc:
+        logger.exception("HTTP error from %s: %r", url, exc)
+        if exc.response and "User ID already taken" in exc.response.text:
+            raise UserExistsError("User exists") from exc
+        raise NetworkError(f"HTTP error from {url}.") from exc
 
 
 # admin_access_token is not a password
@@ -258,11 +321,11 @@ def get_access_token(user: User, server: str, admin_access_token: str) -> str:
     Raises:
         GetAccessTokenError: if there was an error while getting access token.
     """
-    authorization_token = f"Bearer {admin_access_token}"
-    headers = {"Authorization": authorization_token}
     # @user:server.com
     user_id = f"@{user.username}:{server}"
-    res = _do_request("POST", f"{LOGIN_URL}/{user_id}/login", headers=headers)
+    res = _do_request(
+        "POST", f"{LOGIN_URL}/{user_id}/login", admin_access_token=admin_access_token
+    )
     try:
         res_access_token = res.json()["access_token"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
@@ -284,9 +347,7 @@ def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmS
         f"{SYNAPSE_URL}/_synapse/admin/v1/users/"
         f"@{user.username}:{server_name}/override_ratelimit"
     )
-    authorization_token = f"Bearer {admin_access_token}"
-    headers = {"Authorization": authorization_token}
-    _do_request("DELETE", rate_limit_url, headers=headers)
+    _do_request("DELETE", rate_limit_url, admin_access_token=admin_access_token)
 
 
 def get_room_id(
@@ -305,9 +366,9 @@ def get_room_id(
     Raises:
         GetRoomIDError: if there was an error while getting room id.
     """
-    authorization_token = f"Bearer {admin_access_token}"
-    headers = {"Authorization": authorization_token}
-    res = _do_request("GET", f"{LIST_ROOMS_URL}?search_term={room_name}", headers=headers)
+    res = _do_request(
+        "GET", f"{LIST_ROOMS_URL}?search_term={room_name}", admin_access_token=admin_access_token
+    )
     try:
         rooms = res.json()["rooms"]
         total = len(rooms)
@@ -337,14 +398,12 @@ def deactivate_user(
         server: to be used to create the user id.
         admin_access_token: server admin access token to be used.
     """
-    authorization_token = f"Bearer {admin_access_token}"
-    headers = {"Authorization": authorization_token}
     data = {
         "erase": True,
     }
     user_id = f"@{user.username}:{server}"
     url = f"{DEACTIVATE_ACCOUNT_URL}/{user_id}"
-    _do_request("POST", url, headers=headers, json=data)
+    _do_request("POST", url, admin_access_token=admin_access_token, json=data)
 
 
 def create_management_room(admin_access_token: str) -> str:
@@ -359,8 +418,6 @@ def create_management_room(admin_access_token: str) -> str:
     Returns:
         Room id.
     """
-    authorization_token = f"Bearer {admin_access_token}"
-    headers = {"Authorization": authorization_token}
     power_level_content_override = {"events_default": 0}
     moderators_room_id = get_room_id(MJOLNIR_MEMBERSHIP_ROOM, admin_access_token)
     data = {
@@ -393,7 +450,7 @@ def create_management_room(admin_access_token: str) -> str:
             },
         ],
     }
-    res = _do_request("POST", CREATE_ROOM_URL, headers=headers, json=data)
+    res = _do_request("POST", CREATE_ROOM_URL, admin_access_token=admin_access_token, json=data)
     try:
         return res.json()["room_id"]
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
@@ -410,54 +467,27 @@ def make_room_admin(user: User, server: str, admin_access_token: str, room_id: s
         admin_access_token: server admin access token to be used for the request.
         room_id: room id to add the user.
     """
-    authorization_token = f"Bearer {admin_access_token}"
-    headers = {"Authorization": authorization_token}
     user_id = f"@{user.username}:{server}"
     data = {"user_id": user_id}
     url = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms/{room_id}/make_room_admin"
-    _do_request("POST", url, headers=headers, json=data)
+    _do_request("POST", url, admin_access_token=admin_access_token, json=data)
 
 
-def _do_request(
-    method: str,
-    url: str,
-    headers: typing.Optional[typing.Dict] = None,
-    json: typing.Optional[typing.Dict] = None,
-    retry: bool = False,
-) -> requests.Response:
-    """Offer a generic request.
+def promote_user_admin(
+    user: User,
+    server: str,
+    admin_access_token: str,
+) -> None:
+    """Promote user to admin.
 
     Args:
-        method: HTTP method.
-        url: url to request.
-        headers: header to be used in the request. Defaults to None.
-        json: json data to be sent in the request. Defaults to None.
-        retry: if the request should be retried. Defaults to False.
-
-    Raises:
-        NetworkError: if there was an error fetching the api_url.
-        UserExistsError: if there is an attempt to register an existing user.
-
-    Returns:
-        Response from the request.
+        user: user to be promoted to admin.
+        server: to be used to promote the user id.
+        admin_access_token: server admin access token to be used.
     """
-    try:
-        session = requests.Session()
-        retries = Retry(
-            total=3,
-            backoff_factor=3,
-        )
-        if retry:
-            session.mount("http://", HTTPAdapter(max_retries=retries))
-        response = session.request(method, url, headers=headers, json=json, timeout=5)
-        response.raise_for_status()
-        session.close()
-        return response
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
-        logger.exception("Failed to connect to %s: %r", url, exc)
-        raise NetworkError(f"Failed to connect to {url}.") from exc
-    except requests.exceptions.HTTPError as exc:
-        logger.exception("HTTP error from %s: %r", url, exc)
-        if exc.response and "User ID already taken" in exc.response.text:
-            raise UserExistsError("User exists") from exc
-        raise NetworkError(f"HTTP error from {url}.") from exc
+    data = {
+        "admin": True,
+    }
+    user_id = f"@{user.username}:{server}"
+    url = PROMOTE_USER_ADMIN_URL.replace("user_id", user_id)
+    _do_request("PUT", url, admin_access_token=admin_access_token, json=data)
