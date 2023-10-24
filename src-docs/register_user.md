@@ -8,7 +8,7 @@ Module to interact with Register User action.
 
 ---
 
-<a href="../src/actions/register_user.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/actions/register_user.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `register_user`
 
@@ -17,8 +17,8 @@ register_user(
     container: Container,
     username: str,
     admin: bool,
-    server: str = '',
-    admin_access_token: str = ''
+    admin_access_token: Optional[str] = None,
+    server: str = ''
 ) → User
 ```
 
@@ -48,14 +48,14 @@ Run register user action.
 
 ---
 
-<a href="../src/actions/register_user.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/actions/register_user.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `RegisterUserError`
 Exception raised when something fails while running register-user. 
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/actions/register_user.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/actions/register_user.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 

@@ -22,3 +22,12 @@ register-user:
       default: false
   required:
     - username
+promote-user-admin:
+  description: |
+    Promote a user as a server administrator.
+    You need to supply a user name.
+  properties:
+    username:
+      description: |
+        User name to be promoted to admin.
+      type: string

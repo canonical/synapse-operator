@@ -71,7 +71,7 @@ class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
 class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """Represent Synapse builtin configuration values.
 
-    Attrs:
+    Attributes:
         server_name: server_name config.
         report_stats: report_stats config.
         public_baseurl: public_baseurl config.
@@ -81,10 +81,10 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         smtp_notif_from: defines the "From" address to use when sending emails.
         smtp_pass: password to authenticate to SMTP host.
         smtp_port: SMTP port.
-        smtp_user: username to autehtncate to SMTP host.
+        smtp_user: username to authenticate to SMTP host.
     """
 
-    server_name: str | None = Field(..., min_length=2)
+    server_name: str = Field(..., min_length=2)
     report_stats: str | None = Field(None)
     public_baseurl: str | None = Field(None)
     enable_mjolnir: bool = False

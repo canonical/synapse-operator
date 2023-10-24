@@ -7,6 +7,7 @@
 
 
 import io
+import typing
 from secrets import token_hex
 from unittest.mock import MagicMock, Mock
 
@@ -131,6 +132,77 @@ listeners:
                 },
                 "allow_unknown_attributes": True,
                 "attribute_map_dir": "/usr/local/attributemaps",
+            },
+            "user_mapping_provider": {
+                "config": {
+                    "grandfathered_mxid_source_attribute": "uid",
+                    "mxid_source_attribute": "uid",
+                    "mxid_mapping": "dotreplace",
+                }
+            },
+        },
+    }
+    assert config_path.read_text() == yaml.safe_dump(expected_config_content)
+
+
+def test_enable_saml_success_no_ubuntu_url():
+    """
+    arrange: set configuration and saml-integrator relation without ubuntu.com
+        in metadata_url.
+    act: enable saml.
+    assert: SAML configuration is created as expected.
+    """
+    # Arrange: set up harness and container filesystem
+    harness = Harness(SynapseCharm)
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    relation_id = harness.add_relation("saml", "saml-integrator")
+    harness.add_relation_unit(relation_id, "saml-integrator/0")
+    metadata_url = "https://login.staging.com/saml/metadata"
+    harness.update_relation_data(
+        relation_id,
+        "saml-integrator",
+        {
+            "entity_id": "https://login.staging.com",
+            "metadata_url": metadata_url,
+        },
+    )
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.begin()
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+      x_forwarded: false
+"""
+    )
+
+    # Act: write the Synapse config file with SAML enabled
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    synapse.enable_saml(container, harness.charm._charm_state)
+
+    # Assert: ensure config file was written correctly
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
+        ],
+        "public_baseurl": TEST_SERVER_NAME,
+        "saml2_enabled": True,
+        "saml2_config": {
+            "sp_config": {
+                "metadata": {"remote": [{"url": metadata_url}]},
+                "service": {
+                    "sp": {
+                        "entityId": TEST_SERVER_NAME,
+                        "allow_unsolicited": True,
+                    }
+                },
+                "allow_unknown_attributes": True,
             },
             "user_mapping_provider": {
                 "config": {
@@ -340,3 +412,58 @@ def test_get_registration_shared_secret_error(monkeypatch: pytest.MonkeyPatch):
 
     with pytest.raises(ops.pebble.PathError, match=error_message):
         synapse.get_registration_shared_secret(container_mock)
+
+
+HTTP_PROXY_TEST_PARAMS = [
+    pytest.param({}, {}, id="no_env"),
+    pytest.param({"JUJU_CHARM_NO_PROXY": "127.0.0.1"}, {"no_proxy": "127.0.0.1"}, id="no_proxy"),
+    pytest.param(
+        {"JUJU_CHARM_HTTP_PROXY": "http://proxy.test"},
+        {"http_proxy": "http://proxy.test"},
+        id="http_proxy",
+    ),
+    pytest.param(
+        {"JUJU_CHARM_HTTPS_PROXY": "http://proxy.test"},
+        {"https_proxy": "http://proxy.test"},
+        id="https_proxy",
+    ),
+    pytest.param(
+        {
+            "JUJU_CHARM_HTTP_PROXY": "http://proxy.test",
+            "JUJU_CHARM_HTTPS_PROXY": "http://proxy.test",
+        },
+        {"http_proxy": "http://proxy.test", "https_proxy": "http://proxy.test"},
+        id="http_https_proxy",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "set_env, expected",
+    HTTP_PROXY_TEST_PARAMS,
+)
+def test_http_proxy(
+    set_env: typing.Dict[str, str],
+    expected: typing.Dict[str, str],
+    monkeypatch,
+    harness: Harness,
+):
+    """
+    arrange: set juju charm http proxy related environment variables.
+    act: generate a Synapse environment.
+    assert: environment generated should contain proper proxy environment variables.
+    """
+    for set_env_name, set_env_value in set_env.items():
+        monkeypatch.setenv(set_env_name, set_env_value)
+
+    harness.begin()
+    env = synapse.get_environment(harness.charm._charm_state)
+
+    expected_env: typing.Dict[str, typing.Optional[str]] = {
+        "http_proxy": None,
+        "https_proxy": None,
+        "no_proxy": None,
+    }
+    expected_env.update(expected)
+    for env_name, env_value in expected_env.items():
+        assert env.get(env_name) == env.get(env_name.upper()) == env_value

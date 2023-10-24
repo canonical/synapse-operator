@@ -3,25 +3,21 @@
 
 """Provide the Mjolnir class to represent the Mjolnir plugin for Synapse."""
 
+# disabling due the fact that collect status does many checks
+# pylint: disable=too-many-return-statements
+
 import logging
 import typing
-from secrets import token_hex
 
 import ops
-from ops.jujuversion import JujuVersion
 
 import actions
 import synapse
 from charm_state import CharmState
-from user import User
 
 logger = logging.getLogger(__name__)
 
 MJOLNIR_SERVICE_NAME = "mjolnir"
-PEER_RELATION_NAME = "synapse-peers"
-# Disabling it since these are not hardcoded password
-SECRET_ID = "secret-id"  # nosec
-SECRET_KEY = "secret-key"  # nosec
 USERNAME = "mjolnir"
 
 
@@ -54,57 +50,18 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         return getattr(self._charm, "pebble_service", None)
 
-    def _update_peer_data(self, container: ops.model.Container) -> None:
-        """Update peer data if needed.
-
-        Args:
-            container: Synapse container.
-        """
-        # If there is no secret, we use peer relation data
-        # If there is secret, then we update the secret and add the secret id to peer data
-        peer_relation = self._charm.model.get_relation(PEER_RELATION_NAME)
-        if not peer_relation:
-            # there is no peer relation so nothing to be done
-            return
-
-        if JujuVersion.from_environ().has_secrets and not peer_relation.data[self._charm.app].get(
-            SECRET_ID
-        ):
-            # we can create secrets and the one that we need was not created yet
-            logger.debug("Adding secret")
-            admin_user = self.create_admin_user(container)
-            secret = self._charm.app.add_secret({SECRET_KEY: admin_user.access_token})
-            peer_relation.data[self._charm.app].update({SECRET_ID: secret.id})
-            return
-
-        if not JujuVersion.from_environ().has_secrets and not peer_relation.data[
-            self._charm.app
-        ].get(SECRET_KEY):
-            # we can't create secrets and peer data is empty
-            logger.debug("Updating peer relation data")
-            admin_user = self.create_admin_user(container)
-            peer_relation.data[self._charm.app].update({SECRET_KEY: admin_user.access_token})
-
-    def create_admin_user(self, container: ops.model.Container) -> User:
-        """Create an admin user.
-
-        Args:
-            container: Synapse container.
+    @property
+    def _admin_access_token(self) -> typing.Optional[str]:
+        """Get admin access token.
 
         Returns:
-            User: admin user that was created.
+            admin access token or None if fails.
         """
-        # The username is random because if the user exists, register_user will try to get the
-        # access_token.
-        # But to do that it needs an admin user and we don't have one yet.
-        # So, to be on the safe side, the user name is randomly generated and if for any reason
-        # there is no access token on peer data/secret, another user will be created.
-        #
-        # Using 16 to create a random value but to  be secure against brute-force attacks, please
-        # check the docs:
-        # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
-        username = token_hex(16)
-        return actions.register_user(container, username, True)
+        get_admin_access_token = getattr(self._charm, "get_admin_access_token", None)
+        if not get_admin_access_token:
+            logging.error("Failed to get method get_admin_access_token.")
+            return None
+        return get_admin_access_token()
 
     def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
         """Collect status event handler.
@@ -132,9 +89,13 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             # the service status is checked here.
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
-        self._update_peer_data(container)
+        if not self._admin_access_token:
+            self._charm.unit.status = ops.MaintenanceStatus(
+                "Failed to get admin access token. Please, check the logs."
+            )
+            return
         try:
-            if self.get_membership_room_id() is None:
+            if self.get_membership_room_id(self._admin_access_token) is None:
                 status = ops.BlockedStatus(
                     f"{synapse.MJOLNIR_MEMBERSHIP_ROOM} not found and "
                     "is required by Mjolnir. Please, check the logs."
@@ -154,39 +115,23 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
                 exc,
             )
             return
-        self.enable_mjolnir()
+        self.enable_mjolnir(self._admin_access_token)
         event.add_status(ops.ActiveStatus())
 
-    def get_membership_room_id(self) -> typing.Optional[str]:
+    def get_membership_room_id(self, admin_access_token: str) -> typing.Optional[str]:
         """Check if membership room exists.
+
+        Args:
+            admin_access_token: not empty admin access token.
 
         Returns:
             The room id or None if is not found.
         """
-        admin_access_token = self.get_admin_access_token()
         return synapse.get_room_id(
             room_name=synapse.MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
         )
 
-    def get_admin_access_token(self) -> str:
-        """Get admin access token.
-
-        Returns:
-            admin access token.
-        """
-        peer_relation = self._charm.model.get_relation(PEER_RELATION_NAME)
-        assert peer_relation  # nosec
-        if JujuVersion.from_environ().has_secrets:
-            secret_id = peer_relation.data[self._charm.app].get(SECRET_ID)
-            if secret_id:
-                secret = self._charm.model.get_secret(id=secret_id)
-                secret_value = secret.get_content().get(SECRET_KEY)
-        else:
-            secret_value = peer_relation.data[self._charm.app].get(SECRET_KEY)
-        assert secret_value  # nosec
-        return secret_value
-
-    def enable_mjolnir(self) -> None:
+    def enable_mjolnir(self, admin_access_token: str) -> None:
         """Enable mjolnir service.
 
         The required steps to enable Mjolnir are:
@@ -200,19 +145,21 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
          - Create the Mjolnir configuration file.
          - Override Mjolnir user rate limit.
          - Finally, add Mjolnir pebble layer.
+
+        Args:
+            admin_access_token: not empty admin access token.
         """
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
-        admin_access_token = self.get_admin_access_token()
         mjolnir_user = actions.register_user(
             container,
             USERNAME,
             True,
-            str(self._charm_state.synapse_config.server_name),
             admin_access_token,
+            str(self._charm_state.synapse_config.server_name),
         )
         mjolnir_access_token = mjolnir_user.access_token
         room_id = synapse.get_room_id(
@@ -232,7 +179,9 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             container=container, access_token=mjolnir_access_token, room_id=room_id
         )
         synapse.override_rate_limit(
-            user=mjolnir_user, admin_access_token=admin_access_token, charm_state=self._charm_state
+            user=mjolnir_user,
+            admin_access_token=admin_access_token,
+            charm_state=self._charm_state,
         )
         self._pebble_service.replan_mjolnir(container)
         self._charm.model.unit.status = ops.ActiveStatus()

@@ -7,11 +7,13 @@
 
 import logging
 import typing
+from secrets import token_hex
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
+from ops.jujuversion import JujuVersion
 from ops.main import main
 
 import actions
@@ -22,6 +24,13 @@ from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
+from user import User
+
+JUJU_HAS_SECRETS = JujuVersion.from_environ().has_secrets
+PEER_RELATION_NAME = "synapse-peers"
+# Disabling it since these are not hardcoded password
+SECRET_ID = "secret-id"  # nosec
+SECRET_KEY = "secret-key"  # nosec
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +84,9 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+        self.framework.observe(
+            self.on.promote_user_admin_action, self._on_promote_user_admin_action
+        )
 
     def replan_nginx(self) -> None:
         """Replan NGINX."""
@@ -135,7 +147,7 @@ class SynapseCharm(ops.CharmBase):
             return
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            event.fail("Failed to connect to container")
+            event.fail("Failed to connect to the container")
             return
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
@@ -162,7 +174,7 @@ class SynapseCharm(ops.CharmBase):
         """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            event.fail("Failed to connect to the container")
             return
         try:
             user = actions.register_user(
@@ -172,6 +184,106 @@ class SynapseCharm(ops.CharmBase):
             event.fail(str(exc))
             return
         results = {"register-user": True, "user-password": user.password}
+        event.set_results(results)
+
+    def _create_admin_user(self) -> typing.Optional[User]:
+        """Create admin user.
+
+        Returns:
+            Admin user with token to be used in Synapse API requests or None if fails.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            logger.error("Failed to connect to the container")
+            return None
+        # The username is random because if the user exists, register_user will try to get the
+        # access_token.
+        # But to do that it needs an admin user and we don't have one yet.
+        # So, to be on the safe side, the user name is randomly generated and if for any reason
+        # there is no access token on peer data/secret, another user will be created.
+        #
+        # Using 16 to create a random value but to  be secure against brute-force attacks,
+        # please check the docs:
+        # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
+        username = token_hex(16)
+        return actions.register_user(container, username, True)
+
+    def get_admin_access_token(self) -> typing.Optional[str]:
+        """Get admin access token.
+
+        Returns:
+            admin access token or None if fails.
+        """
+        peer_relation = self.model.get_relation(PEER_RELATION_NAME)
+        if not peer_relation:
+            logger.error(
+                "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
+            )
+            return None
+        admin_access_token = None
+        if JUJU_HAS_SECRETS:
+            secret_id = peer_relation.data[self.app].get(SECRET_ID)
+            if secret_id:
+                try:
+                    secret = self.model.get_secret(id=secret_id)
+                    admin_access_token = secret.get_content().get(SECRET_KEY)
+                except ops.model.SecretNotFoundError as exc:
+                    logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
+                    del peer_relation.data[self.app][SECRET_ID]
+                    return None
+            else:
+                # There is Secrets support but none was created
+                # So lets create the user and store its token in the secret
+                admin_user = self._create_admin_user()
+                if not admin_user:
+                    return None
+                logger.debug("Adding secret")
+                secret = self.app.add_secret({SECRET_KEY: admin_user.access_token})
+                peer_relation.data[self.app].update({SECRET_ID: secret.id})
+                admin_access_token = admin_user.access_token
+        else:
+            # There is no Secrets support and none relation data was created
+            # So lets create the user and store its token in the peer relation
+            secret_value = peer_relation.data[self.app].get(SECRET_KEY)
+            if secret_value:
+                admin_access_token = secret_value
+            else:
+                admin_user = self._create_admin_user()
+                if not admin_user:
+                    return None
+                logger.debug("Adding peer data")
+                peer_relation.data[self.app].update({SECRET_KEY: admin_user.access_token})
+                admin_access_token = admin_user.access_token
+        return admin_access_token
+
+    def _on_promote_user_admin_action(self, event: ActionEvent) -> None:
+        """Promote user admin and report action result.
+
+        Args:
+            event: Event triggering the promote user admin action.
+        """
+        results = {
+            "promote-user-admin": False,
+        }
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            event.fail("Failed to connect to the container")
+            return
+        try:
+            admin_access_token = self.get_admin_access_token()
+            if not admin_access_token:
+                event.fail("Failed to get admin access token")
+                return
+            username = event.params["username"]
+            server = self._charm_state.synapse_config.server_name
+            user = User(username=username, admin=True)
+            synapse.promote_user_admin(
+                user=user, server=server, admin_access_token=admin_access_token
+            )
+            results["promote-user-admin"] = True
+        except synapse.APIError as exc:
+            event.fail(str(exc))
+            return
         event.set_results(results)
 
 
