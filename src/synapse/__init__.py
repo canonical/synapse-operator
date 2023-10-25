@@ -53,6 +53,7 @@ from .workload import (  # noqa: F401
     check_nginx_ready,
     check_ready,
     create_mjolnir_config,
+    disable_password_config,
     enable_metrics,
     enable_saml,
     enable_serve_server_wellknown,

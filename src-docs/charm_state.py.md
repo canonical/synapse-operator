@@ -17,7 +17,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -67,7 +67,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L176"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -128,6 +128,7 @@ Represent Synapse builtin configuration values.
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
+ - <b>`enable_password_config`</b>:  enable_password_config config. 
  - <b>`smtp_enable_tls`</b>:  enable tls while connecting to SMTP server. 
  - <b>`smtp_host`</b>:  SMTP host. 
  - <b>`smtp_notif_from`</b>:  defines the "From" address to use when sending emails. 
@@ -140,7 +141,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `set_default_smtp_notif_from`
 
@@ -167,7 +168,7 @@ Set server_name as default value to smtp_notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

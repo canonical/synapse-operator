@@ -8,6 +8,13 @@ options:
     description: |
       Configures whether to enable Mjolnir - moderation tool for Matrix.
       Reference: https://github.com/matrix-org/mjolnir
+  enable_password_config:
+    type: boolean
+    default: true
+    description: |
+      Defaults to true. If Synapse uses a single sign-on provider for
+      authentication, this option can be used to disable the regular login
+      flow.
   public_baseurl:
     type: string
     description: |
