@@ -150,7 +150,7 @@ def _do_request(
         raise NetworkError(f"Failed to connect to {url}.") from exc
     except requests.exceptions.HTTPError as exc:
         logger.exception("HTTP error from %s: %r", url, exc)
-        if exc.response and "User ID already taken" in exc.response.text:
+        if exc.response is not None and "User ID already taken" in exc.response.text:
             raise UserExistsError("User exists") from exc
         raise NetworkError(f"HTTP error from {url}.") from exc
 
