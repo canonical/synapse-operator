@@ -18,7 +18,7 @@ from charm_state import CharmState
 logger = logging.getLogger(__name__)
 
 MJOLNIR_SERVICE_NAME = "mjolnir"
-USERNAME = "mjolnir"
+USERNAME = "moderator"
 
 
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
