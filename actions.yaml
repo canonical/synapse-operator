@@ -1,6 +1,20 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+anonymize-user:
+  description: |
+    Anonymizes an user in order to make it GDPR-erased.
+  properties:
+    username:
+      description: |
+        User name to be anonymized.
+      type: string
+    admin:
+      description: Whether the user is an admin user or not.
+      type: boolean
+      default: false
+  required:
+    - username
 reset-instance:
   description: |
     Set a new server_name before running this action.

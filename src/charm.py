@@ -87,6 +87,9 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
+        self.framework.observe(
+            self.on.anonymize_user_action, self._on_anonymize_user_action
+        )
 
     def replan_nginx(self) -> None:
         """Replan NGINX."""
@@ -281,6 +284,37 @@ class SynapseCharm(ops.CharmBase):
                 user=user, server=server, admin_access_token=admin_access_token
             )
             results["promote-user-admin"] = True
+        except synapse.APIError as exc:
+            event.fail(str(exc))
+            return
+        event.set_results(results)
+
+    def _on_anonymize_user_action(self, event: ActionEvent) -> None:
+        """Promote user admin and report action result.
+
+        Args:
+            event: Event triggering the promote user admin action.
+        """
+        results = {
+            "anonymize-user": False,
+        }
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            event.fail("Failed to connect to the container")
+            return
+        try:
+            admin_access_token = self.get_admin_access_token()
+            if not admin_access_token:
+                event.fail("Failed to get admin access token")
+                return
+            username = event.params["username"]
+            admin = event.params["admin"]
+            server = self._charm_state.synapse_config.server_name
+            user = User(username=username, admin=admin)
+            synapse.deactivate_user(
+                user=user, server=server, admin_access_token=admin_access_token
+            )
+            results["anonymize-user"] = True
         except synapse.APIError as exc:
             event.fail(str(exc))
             return

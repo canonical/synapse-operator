@@ -426,3 +426,43 @@ async def test_promote_user_admin(
         timeout=5,
     )
     assert res.status_code == 200
+
+async def test_anonymize_user(
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: build and deploy the Synapse charm, create an user, get the access token and assert
+        that the user is not an admin.
+    act:  run action to promote user to admin.
+    assert: the Synapse application is active and the API request returns as expected.
+    """
+    operator_username = "operator-new"
+    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "register-user", username=operator_username, admin=False
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    password = action_register_user.results["user-password"]
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    sess = requests.session()
+    res = sess.post(
+        f"http://{synapse_ip}:8080/_matrix/client/r0/login",
+        # same thing is done on fixture but we are creating a non-admin user here.
+        json={  # pylint: disable=duplicate-code
+            "identifier": {"type": "m.id.user", "user": operator_username},
+            "password": password,
+            "type": "m.login.password",
+        },
+        timeout=5,
+    )
+    res.raise_for_status()
+    access_token = res.json()["access_token"]
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+
+    action_promote: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "anonymize-user", username=operator_username
+    )
+    await action_promote.wait()
+    assert action_promote.status == "completed"
