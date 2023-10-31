@@ -87,9 +87,7 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
-        self.framework.observe(
-            self.on.anonymize_user_action, self._on_anonymize_user_action
-        )
+        self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
 
     def replan_nginx(self) -> None:
         """Replan NGINX."""

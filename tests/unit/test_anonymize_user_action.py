@@ -61,13 +61,13 @@ def test_anonymize_user_api_error(harness: Harness, monkeypatch: pytest.MonkeyPa
     anonymize_user_mock = unittest.mock.MagicMock(side_effect=synapse_api_error)
     monkeypatch.setattr("synapse.deactivate_user", anonymize_user_mock)
     admin_access_token = token_hex(16)
+    user = "username"
+    admin = True
     monkeypatch.setattr(
         SynapseCharm,
         "get_admin_access_token",
         unittest.mock.MagicMock(return_value=admin_access_token),
     )
-    user = "username"
-    admin = True
     event = unittest.mock.MagicMock(spec=ActionEvent)
     event.params = {
         "username": user,
@@ -110,9 +110,7 @@ def test_anonymize_user_container_down(harness: Harness) -> None:
     assert "Failed to connect to the container" == event.fail.call_args[0][0]
 
 
-def test_anonymize_user_action_no_token(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_anonymize_user_action_no_token(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: run promote-user-admin action.

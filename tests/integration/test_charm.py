@@ -427,6 +427,7 @@ async def test_promote_user_admin(
     )
     assert res.status_code == 200
 
+
 async def test_anonymize_user(
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
@@ -457,12 +458,9 @@ async def test_anonymize_user(
         timeout=5,
     )
     res.raise_for_status()
-    access_token = res.json()["access_token"]
-    authorization_token = f"Bearer {access_token}"
-    headers = {"Authorization": authorization_token}
 
-    action_promote: Action = await synapse_app.units[0].run_action(  # type: ignore
+    action_anonymize: Action = await synapse_app.units[0].run_action(  # type: ignore
         "anonymize-user", username=operator_username
     )
-    await action_promote.wait()
-    assert action_promote.status == "completed"
+    await action_anonymize.wait()
+    assert action_anonymize.status == "completed"
