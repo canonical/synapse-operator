@@ -7,3 +7,5 @@ ignore_files:
 rules:
   # Ignore "grandfathered" used by SAML configuration.
   - name: grandfathered
+  # Ignore "whitelist" used by Synapse configuration.
+  - name: whitelist
