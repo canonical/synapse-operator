@@ -22,6 +22,71 @@ from charm import SynapseCharm
 from .conftest import TEST_SERVER_NAME
 
 
+def test_enable_federation_domain_whitelist_success(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: set mock container with file.
+    act: update federation_domain_whitelist config and call enable_federation_domain_whitelist.
+    assert: new configuration file is pushed and federation_domain_whitelist is enabled.
+    """
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    expected_first_domain = "foo1"
+    expected_second_domain = "foo2"
+    harness.update_config(
+        {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+    )
+    harness.begin()
+    synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
+
+    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "federation_domain_whitelist": [expected_first_domain, expected_second_domain],
+    }
+    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+
+
+def test_enable_federation_domain_whitelist_error(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: set mock container with file.
+    act: update federation_domain_whitelist config and call enable_smtp.
+    assert: raise WorkloadError in case of error.
+    """
+    error_message = "Error pulling file"
+    path_error = ops.pebble.PathError(kind="fake", message=error_message)
+    pull_mock = MagicMock(side_effect=path_error)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    with pytest.raises(synapse.WorkloadError, match=error_message):
+        expected_first_domain = "foo1"
+        expected_second_domain = "foo2"
+        harness.update_config(
+            {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+        )
+        harness.begin()
+        synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
+
+
 def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
