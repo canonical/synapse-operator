@@ -315,8 +315,8 @@ class SynapseCharm(ops.CharmBase):
             results["anonymize-user"] = True
         except synapse.APIError:
             event.fail(
-                "Action failed to anonymize the user. "
-                "Please check the user is correctly created and active."
+                "Failed to anonymize the user. "
+                "Check if the user is created and active."
             )
             return
         event.set_results(results)
