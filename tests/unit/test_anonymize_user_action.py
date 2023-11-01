@@ -20,7 +20,7 @@ from charm import SynapseCharm
 def test_anonymize_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: run promote-user-admin action.
+    act: run anonymize-user action.
     assert: event results are returned as expected.
     """
     harness.begin_with_initial_hooks()
@@ -52,11 +52,11 @@ def test_anonymize_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch
 def test_anonymize_user_api_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: run promote-user-admin action.
+    act: run anonymize-user action.
     assert: event fails as expected.
     """
     harness.begin_with_initial_hooks()
-    fail_message = "Some fail message"
+    fail_message = "Action failed to anonymize the user. Please check the user is correctly created and active."
     synapse_api_error = synapse.APIError(fail_message)
     anonymize_user_mock = unittest.mock.MagicMock(side_effect=synapse_api_error)
     monkeypatch.setattr("synapse.deactivate_user", anonymize_user_mock)
@@ -96,7 +96,7 @@ def test_anonymize_user_api_error(harness: Harness, monkeypatch: pytest.MonkeyPa
 def test_anonymize_user_container_down(harness: Harness) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be off.
-    act: run promote-user-admin action.
+    act: run anonymize-user action.
     assert: event fails as expected.
     """
     harness.begin_with_initial_hooks()
@@ -107,13 +107,13 @@ def test_anonymize_user_container_down(harness: Harness) -> None:
 
     assert event.set_results.call_count == 0
     assert event.fail.call_count == 1
-    assert "Failed to connect to the container" == event.fail.call_args[0][0]
+    assert "Container not yet ready. Try again later" == event.fail.call_args[0][0]
 
 
 def test_anonymize_user_action_no_token(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: run promote-user-admin action.
+    act: run anonymize-user action.
     assert: event fails as expected.
     """
     harness.begin_with_initial_hooks()

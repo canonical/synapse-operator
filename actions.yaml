@@ -3,7 +3,7 @@
 
 anonymize-user:
   description: |
-    Anonymizes an user in order to make it GDPR-erased.
+    Anonymizes an user in order to make it GDPR compliant.
   properties:
     username:
       description: |

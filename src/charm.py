@@ -288,17 +288,17 @@ class SynapseCharm(ops.CharmBase):
         event.set_results(results)
 
     def _on_anonymize_user_action(self, event: ActionEvent) -> None:
-        """Promote user admin and report action result.
+        """Anonymize user and report action result.
 
         Args:
-            event: Event triggering the promote user admin action.
+            event: Event triggering the anonymize user action.
         """
         results = {
             "anonymize-user": False,
         }
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            event.fail("Failed to connect to the container")
+            event.fail("Container not yet ready. Try again later")
             return
         try:
             admin_access_token = self.get_admin_access_token()
@@ -313,8 +313,11 @@ class SynapseCharm(ops.CharmBase):
                 user=user, server=server, admin_access_token=admin_access_token
             )
             results["anonymize-user"] = True
-        except synapse.APIError as exc:
-            event.fail(str(exc))
+        except synapse.APIError:
+            event.fail(
+                "Action failed to anonymize the user. "
+                "Please check the user is correctly created and active."
+            )
             return
         event.set_results(results)
 
