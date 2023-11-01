@@ -56,7 +56,7 @@ def test_anonymize_user_api_error(harness: Harness, monkeypatch: pytest.MonkeyPa
     assert: event fails as expected.
     """
     harness.begin_with_initial_hooks()
-    fail_message = "Action failed to anonymize the user. Please check the user is correctly created and active."
+    fail_message = "Failed to anonymize the user. Check if the user is created and active."
     synapse_api_error = synapse.APIError(fail_message)
     anonymize_user_mock = unittest.mock.MagicMock(side_effect=synapse_api_error)
     monkeypatch.setattr("synapse.deactivate_user", anonymize_user_mock)
