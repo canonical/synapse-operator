@@ -13,6 +13,7 @@ import requests
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
+from juju.unit import Unit
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 from saml_test_helper import SamlK8sTestHelper
@@ -426,3 +427,55 @@ async def test_promote_user_admin(
         timeout=5,
     )
     assert res.status_code == 200
+
+
+async def test_anonymize_user(
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: build and deploy the Synapse charm, create an user, get the access token and assert
+        that the user is not an admin.
+    act:  run action to anonymize user.
+    assert: the Synapse application is active and the API request returns as expected.
+    """
+    operator_username = "operator-new"
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    action_register_user: Action = await synapse_unit.run_action(
+        "register-user", username=operator_username, admin=False
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    password = action_register_user.results["user-password"]
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    with requests.session() as sess:
+        res = sess.post(
+            f"http://{synapse_ip}:8080/_matrix/client/r0/login",
+            # same thing is done on fixture but we are creating a non-admin user here.
+            json={  # pylint: disable=duplicate-code
+                "identifier": {"type": "m.id.user", "user": operator_username},
+                "password": password,
+                "type": "m.login.password",
+            },
+            timeout=5,
+        )
+        res.raise_for_status()
+
+    action_anonymize: Action = await synapse_unit.run_action(
+        "anonymize-user", username=operator_username
+    )
+    await action_anonymize.wait()
+    assert action_anonymize.status == "completed"
+
+    with requests.session() as sess:
+        res = sess.post(
+            f"http://{synapse_ip}:8080/_matrix/client/r0/login",
+            # same thing is done on fixture but we are creating a non-admin user here.
+            json={  # pylint: disable=duplicate-code
+                "identifier": {"type": "m.id.user", "user": operator_username},
+                "password": password,
+                "type": "m.login.password",
+            },
+            timeout=5,
+        )
+    assert res.status_code == 403
