@@ -306,9 +306,8 @@ class SynapseCharm(ops.CharmBase):
                 event.fail("Failed to get admin access token")
                 return
             username = event.params["username"]
-            admin = event.params["admin"]
             server = self._charm_state.synapse_config.server_name
-            user = User(username=username, admin=admin)
+            user = User(username=username, admin=False)
             synapse.deactivate_user(
                 user=user, server=server, admin_access_token=admin_access_token
             )

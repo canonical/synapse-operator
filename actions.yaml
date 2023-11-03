@@ -9,10 +9,6 @@ anonymize-user:
       description: |
         User name to be anonymized.
       type: string
-    admin:
-      description: Whether the user is an admin user or not.
-      type: boolean
-      default: false
   required:
     - username
 reset-instance:
