@@ -284,6 +284,8 @@ def enable_metrics(container: ops.Container) -> None:
         }
         current_yaml["listeners"].extend([metric_listener])
         current_yaml["enable_metrics"] = True
+        current_yaml["rc_messages_per_second"] = 10000
+        current_yaml["rc_message_burst_count"] = 10000
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise EnableMetricsError(str(exc)) from exc
