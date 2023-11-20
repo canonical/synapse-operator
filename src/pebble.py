@@ -93,6 +93,10 @@ class PebbleService:
                 synapse.enable_smtp(container=container, charm_state=self._charm_state)
             if not self._charm_state.synapse_config.enable_password_config:
                 synapse.disable_password_config(container=container)
+            if self._charm_state.synapse_config.federation_domain_whitelist:
+                synapse.enable_federation_domain_whitelist(
+                    container=container, charm_state=self._charm_state
+                )
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc

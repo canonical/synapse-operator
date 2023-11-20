@@ -15,6 +15,10 @@ options:
       Defaults to true. If Synapse uses a single sign-on provider for
       authentication, this option can be used to disable the regular login
       flow.
+  federation_domain_whitelist:
+    type: string
+    description: Comma separated list of domains to be allowed to federate.
+    default: ''
   public_baseurl:
     type: string
     description: |

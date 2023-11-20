@@ -325,6 +325,28 @@ def enable_serve_server_wellknown(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_federation_domain_whitelist(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable federation_domain_whitelist.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        if charm_state.synapse_config.federation_domain_whitelist is not None:
+            current_yaml[
+                "federation_domain_whitelist"
+            ] = charm_state.synapse_config.federation_domain_whitelist.split(",")
+            container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     """Create config as expected by mjolnir.
 

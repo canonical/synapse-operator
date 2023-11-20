@@ -370,3 +370,51 @@ def test_get_admin_access_token_existing_peer_data(harness: Harness) -> None:
 
     assert admin_access_token == admin_access_token_expected
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+def test_enable_federation_domain_whitelist_is_called(
+    harness: Harness,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready,
+        set server_name and federation_domain_whitelist.
+    act: call pebble change_config.
+    assert: enable_federation_domain_whitelist is called.
+    """
+    harness.update_config({"federation_domain_whitelist": "foo"})
+    harness.begin()
+    harness.set_leader(True)
+    monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
+    monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
+    monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    enable_federation_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
+
+    harness.charm.pebble_service.change_config(container=MagicMock())
+
+    enable_federation_mock.assert_called_once()
+
+
+def test_disable_password_config_is_called(
+    harness: Harness,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    arrange: start the Synapse charm, set Synapse container to be ready,
+        set server_name and enable_password_config.
+    act: call pebble change_config.
+    assert: disable_password_config is called.
+    """
+    harness.update_config({"enable_password_config": False})
+    harness.begin()
+    harness.set_leader(True)
+    monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
+    monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
+    monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    disable_password_config_mock = MagicMock()
+    monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
+
+    harness.charm.pebble_service.change_config(container=MagicMock())
+
+    disable_password_config_mock.assert_called_once()
