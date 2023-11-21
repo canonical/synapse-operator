@@ -121,7 +121,7 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     check = Check(CHECK_NGINX_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.tcp = {"port": SYNAPSE_NGINX_PORT}
+    check.http = {"url": f"http://localhost:{SYNAPSE_NGINX_PORT}/health"}
     return check.to_dict()
 
 
