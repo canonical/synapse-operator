@@ -295,7 +295,7 @@ async def deploy_prometheus_fixture(
     """Deploy prometheus."""
     async with ops_test.fast_forward():
         app = await model.deploy(
-            "prometheus-k8s",
+            "ch:prometheus-k8s-129",
             application_name=prometheus_app_name,
             channel="stable",
             trust=True,
