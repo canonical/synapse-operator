@@ -115,7 +115,7 @@ class SynapseCharm(ops.CharmBase):
         """Set workload version with Synapse version."""
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
             synapse_version = synapse.get_version()
@@ -136,7 +136,7 @@ class SynapseCharm(ops.CharmBase):
         """Handle synapse nginx pebble ready event."""
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
         self.pebble_service.replan_nginx(container)
 
