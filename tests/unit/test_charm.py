@@ -418,3 +418,18 @@ def test_disable_password_config_is_called(
     harness.charm.pebble_service.change_config(container=MagicMock())
 
     disable_password_config_mock.assert_called_once()
+
+
+def test_nginx_replan(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start the Synapse charm, mock replan_nginx call.
+    act: fire that NGINX container is ready.
+    assert: Pebble Service replan NGINX is called.
+    """
+    harness.begin()
+    replan_nginx_mock = MagicMock()
+    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+
+    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+
+    replan_nginx_mock.assert_called_once()
