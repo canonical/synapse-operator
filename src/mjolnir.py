@@ -73,7 +73,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
         if mjolnir_service:
@@ -151,7 +151,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
         mjolnir_user = actions.register_user(

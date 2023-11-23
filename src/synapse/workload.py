@@ -121,7 +121,7 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     check = Check(CHECK_NGINX_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.tcp = {"port": SYNAPSE_NGINX_PORT}
+    check.http = {"url": f"http://localhost:{SYNAPSE_NGINX_PORT}/health"}
     return check.to_dict()
 
 
@@ -339,9 +339,10 @@ def enable_federation_domain_whitelist(container: ops.Container, charm_state: Ch
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
         if charm_state.synapse_config.federation_domain_whitelist is not None:
-            current_yaml[
-                "federation_domain_whitelist"
-            ] = charm_state.synapse_config.federation_domain_whitelist.split(",")
+            current_yaml["federation_domain_whitelist"] = [
+                item.strip()
+                for item in charm_state.synapse_config.federation_domain_whitelist.split(",")
+            ]
             container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc

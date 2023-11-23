@@ -270,9 +270,11 @@ async def grafana_app_fixture(
     """Deploy grafana."""
     async with ops_test.fast_forward():
         app = await model.deploy(
-            "grafana-k8s",
+            grafana_app_name,
             application_name=grafana_app_name,
             channel="stable",
+            series="focal",
+            revision=82,  # last one compatible with Juju 2
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
@@ -295,9 +297,11 @@ async def deploy_prometheus_fixture(
     """Deploy prometheus."""
     async with ops_test.fast_forward():
         app = await model.deploy(
-            "prometheus-k8s",
+            prometheus_app_name,
             application_name=prometheus_app_name,
             channel="stable",
+            series="focal",
+            revision=129,  # last one compatible with Juju 2
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
