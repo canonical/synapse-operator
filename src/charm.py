@@ -82,28 +82,21 @@ class SynapseCharm(ops.CharmBase):
             self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
-        self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
+        self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
+        self.framework.observe(
+            self.on.synapse_nginx_pebble_ready, self._on_synapse_nginx_pebble_ready
+        )
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
 
-    def replan_nginx(self) -> None:
-        """Replan NGINX."""
-        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
-            return
-        self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse NGINX")
-        self.pebble_service.replan_nginx(container)
-        self.model.unit.status = ops.ActiveStatus()
-
     def change_config(self) -> None:
         """Change configuration."""
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
@@ -111,13 +104,18 @@ class SynapseCharm(ops.CharmBase):
         except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
-        self.replan_nginx()
+        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
+            return
+        self.pebble_service.replan_nginx(container)
+        self.model.unit.status = ops.ActiveStatus()
 
     def _set_workload_version(self) -> None:
         """Set workload version with Synapse version."""
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
             synapse_version = synapse.get_version()
@@ -130,9 +128,17 @@ class SynapseCharm(ops.CharmBase):
         self.change_config()
         self._set_workload_version()
 
-    def _on_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle pebble ready event."""
+    def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse pebble ready event."""
         self.change_config()
+
+    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse nginx pebble ready event."""
+        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
+            return
+        self.pebble_service.replan_nginx(container)
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.

@@ -54,7 +54,7 @@ class SAMLObserver(Object):
         """Enable  SAML."""
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
             self._pebble_service.enable_saml(container)
