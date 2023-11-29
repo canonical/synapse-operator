@@ -24,21 +24,6 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration
 
-KNOWN_CHARM_CONFIG = (
-    "enable_mjolnir",
-    "enable_password_config",
-    "federation_domain_whitelist",
-    "public_baseurl",
-    "report_stats",
-    "server_name",
-    "smtp_enable_tls",
-    "smtp_host",
-    "smtp_notif_from",
-    "smtp_pass",
-    "smtp_port",
-    "smtp_user",
-)
-
 
 class CharmConfigInvalidError(Exception):
     """Exception raised when a charm configuration is found to be invalid.
@@ -80,6 +65,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
         federation_domain_whitelist: federation_domain_whitelist config.
+        ip_range_whitelist: ip_range_whitelist config.
         smtp_enable_tls: enable tls while connecting to SMTP server.
         smtp_host: SMTP host.
         smtp_notif_from: defines the "From" address to use when sending emails.
@@ -94,6 +80,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     federation_domain_whitelist: str | None = Field(None)
+    ip_range_whitelist: str | None = Field(None)
     smtp_enable_tls: bool = True
     smtp_host: str | None = Field(None)
     smtp_notif_from: str | None = Field(None)
@@ -196,9 +183,8 @@ class CharmState:
         Raises:
             CharmConfigInvalidError: if the charm configuration is invalid.
         """
-        synapse_config = {k: v for k, v in charm.config.items() if k in KNOWN_CHARM_CONFIG}
         try:
-            valid_synapse_config = SynapseConfig(**synapse_config)  # type: ignore
+            valid_synapse_config = SynapseConfig(**dict(charm.config.items()))  # type: ignore
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())

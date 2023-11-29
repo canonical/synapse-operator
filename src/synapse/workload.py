@@ -348,6 +348,28 @@ def enable_federation_domain_whitelist(container: ops.Container, charm_state: Ch
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable ip_range_whitelist.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        if charm_state.synapse_config.ip_range_whitelist is not None:
+            current_yaml["ip_range_whitelist"] = [
+                item.strip() for item in charm_state.synapse_config.ip_range_whitelist.split(",")
+            ]
+            container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     """Create config as expected by mjolnir.
 
