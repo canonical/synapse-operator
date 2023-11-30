@@ -83,6 +83,33 @@ def test_enable_ip_range_whitelist_error(harness: Harness, monkeypatch: pytest.M
         synapse.enable_ip_range_whitelist(container_mock, harness.charm._charm_state)
 
 
+def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: leave ip_range_whitelist config empty and call enable_ip_range_whitelist.
+    assert: configuration file is not changed.
+    """
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    harness.begin()
+    synapse.enable_ip_range_whitelist(container_mock, harness.charm._charm_state)
+
+    pull_mock.assert_called_once()
+    push_mock.assert_not_called()
+
+
 def test_enable_federation_domain_whitelist_success(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ):
