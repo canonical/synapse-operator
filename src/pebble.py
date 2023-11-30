@@ -97,6 +97,10 @@ class PebbleService:
                 synapse.enable_federation_domain_whitelist(
                     container=container, charm_state=self._charm_state
                 )
+            if self._charm_state.synapse_config.ip_range_whitelist:
+                synapse.enable_ip_range_whitelist(
+                    container=container, charm_state=self._charm_state
+                )
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
