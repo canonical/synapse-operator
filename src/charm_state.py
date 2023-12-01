@@ -186,6 +186,8 @@ class CharmState:
             CharmConfigInvalidError: if the charm configuration is invalid.
         """
         try:
+            # ignoring because mypy fails with:
+            # "has incompatible type "**dict[str, str]"; expected ...""
             valid_synapse_config = SynapseConfig(**dict(charm.config.items()))  # type: ignore
         except ValidationError as exc:
             error_fields = set(
