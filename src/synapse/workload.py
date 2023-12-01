@@ -348,6 +348,24 @@ def enable_federation_domain_whitelist(container: ops.Container, charm_state: Ch
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
+    """Change the Synapse configuration to allow public rooms in federation.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["allow_public_rooms_over_federation"] = True
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable ip_range_whitelist.
 

@@ -2,6 +2,12 @@
 # See LICENSE file for licensing details.
 
 options:
+  allow_public_rooms_over_federation:
+    type: boolean
+    default: false
+    description: |
+      Allows any other homeserver to fetch the server's public rooms directory
+      via federation.
   enable_mjolnir:
     type: boolean
     default: false

@@ -54,6 +54,7 @@ from .workload import (  # noqa: F401
     check_ready,
     create_mjolnir_config,
     disable_password_config,
+    enable_allow_public_rooms_over_federation,
     enable_federation_domain_whitelist,
     enable_ip_range_whitelist,
     enable_metrics,

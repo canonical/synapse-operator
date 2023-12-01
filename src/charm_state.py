@@ -59,13 +59,14 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """Represent Synapse builtin configuration values.
 
     Attributes:
-        server_name: server_name config.
-        report_stats: report_stats config.
-        public_baseurl: public_baseurl config.
+        allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
         federation_domain_whitelist: federation_domain_whitelist config.
         ip_range_whitelist: ip_range_whitelist config.
+        public_baseurl: public_baseurl config.
+        report_stats: report_stats config.
+        server_name: server_name config.
         smtp_enable_tls: enable tls while connecting to SMTP server.
         smtp_host: SMTP host.
         smtp_notif_from: defines the "From" address to use when sending emails.
@@ -74,13 +75,14 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         smtp_user: username to authenticate to SMTP host.
     """
 
-    server_name: str = Field(..., min_length=2)
-    report_stats: str | None = Field(None)
-    public_baseurl: str | None = Field(None)
+    allow_public_rooms_over_federation: bool = False
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     federation_domain_whitelist: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None)
+    public_baseurl: str | None = Field(None)
+    report_stats: str | None = Field(None)
+    server_name: str = Field(..., min_length=2)
     smtp_enable_tls: bool = True
     smtp_host: str | None = Field(None)
     smtp_notif_from: str | None = Field(None)
