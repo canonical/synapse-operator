@@ -366,6 +366,20 @@ def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def _create_ip_range_whitelist(charm_state: CharmState) -> list[str]:
+    """Format IP range whitelist.
+
+    Args:
+        charm_state: Instance of CharmState.
+
+    Returns:
+        IP range whitelist as expected by Synapse or None.
+    """
+    # The field is validated in enable_ip_range_whitelist
+    whitelist = charm_state.synapse_config.ip_range_whitelist
+    return [item.strip() for item in whitelist.split(",")]  # type: ignore[union-attr]
+
+
 def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable ip_range_whitelist.
 
@@ -379,11 +393,11 @@ def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState)
     try:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
-        if charm_state.synapse_config.ip_range_whitelist is not None:
-            current_yaml["ip_range_whitelist"] = [
-                item.strip() for item in charm_state.synapse_config.ip_range_whitelist.split(",")
-            ]
-            container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+        if charm_state.synapse_config.ip_range_whitelist is None:
+            logger.warning("enable_ip_range_whitelist called but config is empty")
+            return
+        current_yaml["ip_range_whitelist"] = _create_ip_range_whitelist(charm_state)
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc
 
