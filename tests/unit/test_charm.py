@@ -388,6 +388,7 @@ def test_enable_federation_domain_whitelist_is_called(
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    monkeypatch.setattr(synapse, "validate_config", MagicMock())
     enable_federation_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
@@ -412,6 +413,7 @@ def test_disable_password_config_is_called(
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    monkeypatch.setattr(synapse, "validate_config", MagicMock())
     disable_password_config_mock = MagicMock()
     monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
 

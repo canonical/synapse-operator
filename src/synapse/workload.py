@@ -265,6 +265,27 @@ def execute_migrate_config(container: ops.Container, charm_state: CharmState) ->
         )
 
 
+def validate_config(container: ops.Container) -> None:
+    """Run the Synapse command to validate the configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong running migrate_config.
+    """
+    validate_config_result = _exec(
+        container, ["/usr/bin/python3", "-m", "synapse.config", "-c", SYNAPSE_CONFIG_PATH]
+    )
+    if validate_config_result.exit_code:
+        logger.error(
+            "validate config failed, stdout: %s, stderr: %s",
+            validate_config_result.stdout,
+            validate_config_result.stderr,
+        )
+        raise WorkloadError("Validate config failed, please review your charm configuration")
+
+
 def enable_metrics(container: ops.Container) -> None:
     """Change the Synapse configuration to enable metrics.
 

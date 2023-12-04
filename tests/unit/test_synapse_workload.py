@@ -75,7 +75,8 @@ def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatc
 @pytest.mark.parametrize(
     "ip_range_whitelist",
     [
-        pytest.param("foo1,foo2", id="common"),
+        pytest.param("10.10.10.10", id="1_item"),
+        pytest.param(",".join(["10.10.10.10"] * 100), id="100_items"),
     ],
 )
 def test_enable_ip_range_whitelist_success(ip_range_whitelist: str, harness: Harness):

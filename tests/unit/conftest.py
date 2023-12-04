@@ -159,6 +159,11 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container, executable=command_path, handler=start_cmd_handler
     )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_container,
+        executable="/usr/bin/python3",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
     yield harness
     harness.cleanup()
 

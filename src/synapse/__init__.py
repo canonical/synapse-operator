@@ -65,4 +65,5 @@ from .workload import (  # noqa: F401
     get_environment,
     get_registration_shared_secret,
     reset_instance,
+    validate_config,
 )
