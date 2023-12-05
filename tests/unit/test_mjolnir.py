@@ -188,6 +188,30 @@ def test_on_collect_status_api_error(harness: Harness, monkeypatch: pytest.Monke
     enable_mjolnir_mock.assert_not_called()
 
 
+def test_on_collect_status_admin_none(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock container, mock _admin_access_token
+        to be None.
+    act: call _on_collect_status.
+    assert: mjolnir is not enabled and the model status is Maintenance.
+    """
+    harness.update_config({"enable_mjolnir": True})
+    harness.begin_with_initial_hooks()
+    harness.set_leader(True)
+    monkeypatch.setattr(Mjolnir, "_admin_access_token", None)
+    enable_mjolnir_mock = MagicMock(return_value=None)
+    monkeypatch.setattr(Mjolnir, "enable_mjolnir", enable_mjolnir_mock)
+    charm_state_mock = MagicMock()
+    charm_state_mock.enable_mjolnir = True
+    harness.charm._mjolnir._charm_state = charm_state_mock
+
+    event_mock = MagicMock()
+    harness.charm._mjolnir._on_collect_status(event_mock)
+
+    enable_mjolnir_mock.assert_not_called()
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+
+
 def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock calls to validate args.
