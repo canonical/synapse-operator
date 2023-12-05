@@ -73,6 +73,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         smtp_pass: password to authenticate to SMTP host.
         smtp_port: SMTP port.
         smtp_user: username to authenticate to SMTP host.
+        trusted_key_servers: trusted_key_servers config.
     """
 
     allow_public_rooms_over_federation: bool = False
@@ -89,6 +90,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     smtp_pass: str | None = Field(None)
     smtp_port: int | None = Field(None)
     smtp_user: str | None = Field(None)
+    trusted_key_servers: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
