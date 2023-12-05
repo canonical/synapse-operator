@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `charm_state.py`
 State of the Charm. 
 
-**Global Variables**
----------------
-- **KNOWN_CHARM_CONFIG**
 
 
 ---
@@ -17,7 +14,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -67,7 +64,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -127,6 +124,7 @@ Represent Synapse builtin configuration values.
  - <b>`allow_public_rooms_over_federation`</b>:  allow_public_rooms_over_federation config. 
  - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
  - <b>`enable_password_config`</b>:  enable_password_config config. 
+ - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`report_stats`</b>:  report_stats config. 
@@ -143,7 +141,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L102"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `set_default_smtp_notif_from`
 
@@ -170,7 +168,7 @@ Set server_name as default value to smtp_notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

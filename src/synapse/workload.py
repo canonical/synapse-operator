@@ -307,6 +307,24 @@ def disable_password_config(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def disable_room_list_search(container: ops.Container) -> None:
+    """Change the Synapse configuration to disable room_list_search.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong disabling room_list_search.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["enable_room_list_search"] = False
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def enable_serve_server_wellknown(container: ops.Container) -> None:
     """Change the Synapse configuration to enable server wellknown file.
 

@@ -24,21 +24,6 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration
 
-KNOWN_CHARM_CONFIG = (
-    "enable_mjolnir",
-    "enable_password_config",
-    "federation_domain_whitelist",
-    "public_baseurl",
-    "report_stats",
-    "server_name",
-    "smtp_enable_tls",
-    "smtp_host",
-    "smtp_notif_from",
-    "smtp_pass",
-    "smtp_port",
-    "smtp_user",
-)
-
 
 class CharmConfigInvalidError(Exception):
     """Exception raised when a charm configuration is found to be invalid.
@@ -77,6 +62,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
+        enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
         public_baseurl: public_baseurl config.
         report_stats: report_stats config.
@@ -92,6 +78,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     allow_public_rooms_over_federation: bool = False
     enable_mjolnir: bool = False
     enable_password_config: bool = True
+    enable_room_list_search: bool = True
     federation_domain_whitelist: str | None = Field(None)
     public_baseurl: str | None = Field(None)
     report_stats: str | None = Field(None)
@@ -198,9 +185,10 @@ class CharmState:
         Raises:
             CharmConfigInvalidError: if the charm configuration is invalid.
         """
-        synapse_config = {k: v for k, v in charm.config.items() if k in KNOWN_CHARM_CONFIG}
         try:
-            valid_synapse_config = SynapseConfig(**synapse_config)  # type: ignore
+            # ignoring because mypy fails with:
+            # "has incompatible type "**dict[str, str]"; expected ...""
+            valid_synapse_config = SynapseConfig(**dict(charm.config.items()))  # type: ignore
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())

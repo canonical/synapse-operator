@@ -99,6 +99,8 @@ class PebbleService:
                 )
             if self._charm_state.synapse_config.allow_public_rooms_over_federation:
                 synapse.enable_allow_public_rooms_over_federation(container=container)
+            if not self._charm_state.synapse_config.enable_room_list_search:
+                synapse.disable_room_list_search(container=container)
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
