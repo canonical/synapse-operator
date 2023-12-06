@@ -75,8 +75,31 @@ def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatc
 @pytest.mark.parametrize(
     "ip_range_whitelist",
     [
-        pytest.param("10.10.10.10", id="1_item"),
-        pytest.param(",".join(["10.10.10.10"] * 100), id="100_items"),
+        pytest.param("", id="empty_list", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("10.10.10.10", id="single_item"),
+        pytest.param(",".join(["10.10.10.10"] * 100), id="multiple_items"),
+        pytest.param(
+            " 10.10.10.10",
+            id="single_item_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            " 10.10.10.10,11.11.11.11",
+            id="multiple_items_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "10.10.10.10 ",
+            id="single_item_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "10.10.10.10 ,11.11.11.11",
+            id="multiple_items_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param("abc,def", id="letters", marks=pytest.mark.xfail(strict=True)),
+        pytest.param(",,,", id="only_commas", marks=pytest.mark.xfail(strict=True)),
     ],
 )
 def test_enable_ip_range_whitelist_success(ip_range_whitelist: str, harness: Harness):
@@ -116,26 +139,21 @@ listeners:
         assert content == expected_config_content
 
 
-def test_enable_ip_range_whitelist_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_enable_ip_range_whitelist_error(harness: Harness):
     """
-    arrange: set mock container with file.
-    act: update ip_range_whitelist config and call enable_smtp.
-    assert: raise WorkloadError in case of error.
+    arrange: update the ip_range_whitelist with invalid value.
+    act: start the charm.
+    assert: charm is blocked due invalid configuration.
     """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    expected_first_domain = "foo1"
+    expected_second_domain = "foo2"
+    harness.update_config(
+        {"ip_range_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+    )
 
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        expected_first_domain = "foo1"
-        expected_second_domain = "foo2"
-        harness.update_config(
-            {"ip_range_whitelist": f"{expected_first_domain},{expected_second_domain}"}
-        )
-        harness.begin()
-        synapse.enable_ip_range_whitelist(container_mock, harness.charm._charm_state)
+    harness.begin()
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
 
 
 def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pytest.MonkeyPatch):

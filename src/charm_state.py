@@ -79,7 +79,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     federation_domain_whitelist: str | None = Field(None)
-    ip_range_whitelist: str | None = Field(None)
+    ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
