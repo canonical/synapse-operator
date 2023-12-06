@@ -23,14 +23,16 @@ Documentation is an important part of this project, and we take the same open-so
 
 If there’s a particular area of documentation that you’d like to see that’s missing, please [file a bug](https://github.com/canonical/synapse-operator/issues).
 
-# Contents
+# Navigation
 
-1. [Tutorial](tutorial)
-  1. [Getting Started](tutorial/getting-started.md)
-1. [How to](how-to)
-  1. [Contribute](how-to/contribute.md)
-1. [Reference](reference)
-  1. [Actions](reference/actions.md)
-  1. [Integrations](reference/integrations.md)
-1. [Explanation](explanation)
-  1. [Charm architecture](explanation/charm-architecture.md)
+| Level | Path | Navlink |
+| -- | -- | -- |
+| 1 | tutorial | [Tutorial]() |
+| 2 | tutorial-getting-started | [Getting Started](https://discourse.charmhub.io/t/synapse-docs-getting-started/12737) |
+| 1 | how-to | [How to]() |
+| 2 | how-to-contribute | [Contribute](https://discourse.charmhub.io/t/synapse-docs-contribute/12738) |
+| 1 | reference | [Reference]() |
+| 2 | reference-actions | [Actions](https://discourse.charmhub.io/t/synapse-docs-actions/12739) |
+| 2 | reference-integrations | [Integrations](https://discourse.charmhub.io/t/synapse-docs-integrations/12740) |
+| 1 | explanation | [Explanation]() |
+| 2 | explanation-charm-architecture | [Charm architecture](https://discourse.charmhub.io/t/synapse-docs-charm-architecture/12742) |
