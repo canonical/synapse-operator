@@ -18,6 +18,7 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
+from charm_state import CharmState, SynapseConfig
 
 from .conftest import TEST_SERVER_NAME
 
@@ -132,9 +133,7 @@ listeners:
             "listeners": [
                 {"type": "http", "port": 8080, "bind_addresses": ["::"]},
             ],
-            "ip_range_whitelist": synapse.workload._create_ip_range_whitelist(
-                ip_range_whitelist
-            ),
+            "ip_range_whitelist": synapse.workload._create_ip_range_whitelist(ip_range_whitelist),
         }
         assert content == expected_config_content
 
@@ -162,6 +161,7 @@ def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pyte
     act: leave ip_range_whitelist config empty and call enable_ip_range_whitelist.
     assert: configuration file is not changed.
     """
+    container_mock = MagicMock(spec=ops.Container)
     config_content = """
     listeners:
         - type: http
@@ -171,16 +171,20 @@ def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pyte
     """
     text_io_mock = io.StringIO(config_content)
     pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
 
     harness.begin()
-    synapse.enable_ip_range_whitelist(container_mock, harness.charm._charm_state)
+    config = {"server_name": "foo", "ip_range_whitelist": None}
+    # ignoring setting the other arguments
+    synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
+    synapse.enable_ip_range_whitelist(
+        container_mock,
+        CharmState(datasource=None, saml_config=None, synapse_config=synapse_config),
+    )
 
-    pull_mock.assert_called_once()
-    push_mock.assert_not_called()
+    container_mock.pull.assert_called_once()
+    container_mock.push.assert_not_called()
 
 
 def test_enable_federation_domain_whitelist_success(
