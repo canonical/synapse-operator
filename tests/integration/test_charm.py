@@ -76,7 +76,7 @@ async def test_synapse_validate_configuration(synapse_app: Application):
         idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
     )
 
-    await synapse_app.set_config({"ip_range_whitelist": ""})
+    await synapse_app.reset_config(["ip_range_whitelist"])
 
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
