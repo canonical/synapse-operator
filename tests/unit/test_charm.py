@@ -163,6 +163,25 @@ def test_saml_integration_container_down(saml_configured: Harness) -> None:
     harness.cleanup()
 
 
+def test_saml_integration_pebble_success(
+    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_saml.
+    act: call enable_saml from pebble_service.
+    assert: synapse.enable_saml is called once.
+    """
+    harness = saml_configured
+    harness.begin()
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    enable_saml_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_saml", enable_saml_mock)
+
+    harness.charm._saml._pebble_service.enable_saml(container=container)
+
+    enable_saml_mock.assert_called_once()
+
+
 def test_saml_integration_pebble_error(
     saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:

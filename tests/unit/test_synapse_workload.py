@@ -138,7 +138,7 @@ listeners:
         assert content == expected_config_content
 
 
-def test_enable_ip_range_whitelist_error(harness: Harness):
+def test_enable_ip_range_whitelist_blocked(harness: Harness):
     """
     arrange: update the ip_range_whitelist with invalid value.
     act: start the charm.
@@ -242,13 +242,13 @@ def test_enable_federation_domain_whitelist_error(
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
 
+    expected_first_domain = "foo1"
+    expected_second_domain = "foo2"
+    harness.update_config(
+        {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+    )
+    harness.begin()
     with pytest.raises(synapse.WorkloadError, match=error_message):
-        expected_first_domain = "foo1"
-        expected_second_domain = "foo2"
-        harness.update_config(
-            {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
-        )
-        harness.begin()
         synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
 
 
