@@ -133,7 +133,7 @@ listeners:
                 {"type": "http", "port": 8080, "bind_addresses": ["::"]},
             ],
             "ip_range_whitelist": synapse.workload._create_ip_range_whitelist(
-                harness.charm._charm_state
+                ip_range_whitelist
             ),
         }
         assert content == expected_config_content
