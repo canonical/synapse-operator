@@ -283,7 +283,7 @@ def validate_config(container: ops.Container) -> None:
             validate_config_result.stdout,
             validate_config_result.stderr,
         )
-        raise WorkloadError("Validate config failed, please review your charm configuration")
+        raise WorkloadError("Validate config failed, please check the logs")
 
 
 def enable_metrics(container: ops.Container) -> None:

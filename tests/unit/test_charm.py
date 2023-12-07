@@ -179,7 +179,9 @@ def test_saml_integration_pebble_success(
 
     harness.charm._saml._pebble_service.enable_saml(container=container)
 
-    enable_saml_mock.assert_called_once()
+    enable_saml_mock.assert_called_once_with(
+        container=container, charm_state=harness.charm._charm_state
+    )
 
 
 def test_saml_integration_pebble_error(

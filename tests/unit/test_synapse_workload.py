@@ -129,11 +129,12 @@ listeners:
 
     with open(config_path, encoding="utf-8") as config_file:
         content = yaml.safe_load(config_file)
+        expected_ip_range_whitelist = [item.strip() for item in ip_range_whitelist.split(",")]
         expected_config_content = {
             "listeners": [
                 {"type": "http", "port": 8080, "bind_addresses": ["::"]},
             ],
-            "ip_range_whitelist": synapse.workload._create_ip_range_whitelist(ip_range_whitelist),
+            "ip_range_whitelist": expected_ip_range_whitelist,
         }
         assert content == expected_config_content
 
