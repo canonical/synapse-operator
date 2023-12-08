@@ -74,6 +74,81 @@ def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.parametrize(
+    "trusted_key_servers,expected_trusted_key_servers",
+    [
+        pytest.param("", [], id="empty_list", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("ubuntu.com", [{"server_name": "ubuntu.com"}], id="single_item"),
+        pytest.param(
+            "ubuntu.com,canonical.com",
+            [{"server_name": "ubuntu.com"}, {"server_name": "canonical.com"}],
+            id="multiple_items",
+        ),
+        pytest.param(
+            " ubuntu.com",
+            [],
+            id="single_item_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            " ubuntu.com,canonical.com",
+            [],
+            id="multiple_items_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "ubuntu.com ",
+            [],
+            id="single_item_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "ubuntu.com,canonical.com ",
+            [],
+            id="multiple_items_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param("111,222", [], id="numbers", marks=pytest.mark.xfail(strict=True)),
+        pytest.param(",,,", [], id="only_commas", marks=pytest.mark.xfail(strict=True)),
+    ],
+)
+def test_enable_trusted_key_servers_success(
+    trusted_key_servers: str, expected_trusted_key_servers: list[dict[str, str]], harness: Harness
+):
+    """
+    arrange: set mock container with file.
+    act: update trusted_key_servers config and call enable_trusted_key_servers.
+    assert: new configuration file is pushed and trusted_key_servers is enabled.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    harness.update_config({"trusted_key_servers": trusted_key_servers})
+    harness.begin()
+    synapse.enable_trusted_key_servers(container, harness.charm._charm_state)
+
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        expected_config_content = {
+            "listeners": [
+                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            ],
+            "trusted_key_servers": expected_trusted_key_servers,
+        }
+        assert content == expected_config_content
+
+
+@pytest.mark.parametrize(
     "ip_range_whitelist,expected_ip_range_whitelist",
     [
         pytest.param("", [], id="empty_list", marks=pytest.mark.xfail(strict=True)),

@@ -92,7 +92,9 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     smtp_pass: str | None = Field(None)
     smtp_port: int | None = Field(None)
     smtp_user: str | None = Field(None)
-    trusted_key_servers: str | None = Field(None)
+    trusted_key_servers: str | None = Field(
+        None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"
+    )
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
