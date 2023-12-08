@@ -333,6 +333,40 @@ def test_enable_federation_domain_whitelist_error(
         synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
 
 
+def test_disable_room_list_search_success(harness: Harness):
+    """
+    arrange: set mock container with file.
+    act: change the configuration file.
+    assert: new configuration file is pushed and room_list_search is disabled.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+
+    synapse.disable_room_list_search(container)
+
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        expected_config_content = {
+            "listeners": [
+                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            ],
+            "enable_room_list_search": False,
+        }
+        assert content == expected_config_content
+
+
 def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
