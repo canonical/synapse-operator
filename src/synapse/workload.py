@@ -428,7 +428,7 @@ def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
-def _create_ip_range_whitelist(ip_range_whitelist: str) -> list[str]:
+def _create_ip_range_whitelist(ip_range_whitelist: str) -> tuple[str, ...]:
     """Format IP range whitelist.
 
     Args:
@@ -437,7 +437,7 @@ def _create_ip_range_whitelist(ip_range_whitelist: str) -> list[str]:
     Returns:
         IP range whitelist as expected by Synapse or None.
     """
-    return [item.strip() for item in ip_range_whitelist.split(",")]
+    return tuple(item.strip() for item in ip_range_whitelist.split(","))
 
 
 def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:

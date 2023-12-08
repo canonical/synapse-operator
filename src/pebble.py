@@ -73,7 +73,8 @@ class PebbleService:
         container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
         container.replan()
 
-    def change_config(self, container: ops.model.Container) -> None:
+    # The complexity of this method will be reviewed.
+    def change_config(self, container: ops.model.Container) -> None:  # noqa: C901
         """Change the configuration.
 
         Args:
