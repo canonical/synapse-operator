@@ -64,6 +64,25 @@ async def test_synapse_is_up(
         assert "Welcome to the Matrix" in response.text
 
 
+async def test_synapse_validate_configuration(synapse_app: Application):
+    """
+    arrange: build and deploy the Synapse charm.
+    act: configure ip_range_whitelist with invalid IP and revert it.
+    assert: the Synapse application should be blocked and then active.
+    """
+    await synapse_app.set_config({"ip_range_whitelist": "foo"})
+
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
+    )
+
+    await synapse_app.reset_config(["ip_range_whitelist"])
+
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+
+
 @pytest.mark.cos
 @pytest.mark.usefixtures("synapse_app", "prometheus_app")
 async def test_prometheus_integration(

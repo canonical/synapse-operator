@@ -56,6 +56,7 @@ from .workload import (  # noqa: F401
     disable_password_config,
     enable_allow_public_rooms_over_federation,
     enable_federation_domain_whitelist,
+    enable_ip_range_whitelist,
     enable_metrics,
     enable_saml,
     enable_serve_server_wellknown,
@@ -64,4 +65,5 @@ from .workload import (  # noqa: F401
     get_environment,
     get_registration_shared_secret,
     reset_instance,
+    validate_config,
 )

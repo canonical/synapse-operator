@@ -163,6 +163,27 @@ def test_saml_integration_container_down(saml_configured: Harness) -> None:
     harness.cleanup()
 
 
+def test_saml_integration_pebble_success(
+    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_saml.
+    act: call enable_saml from pebble_service.
+    assert: synapse.enable_saml is called once.
+    """
+    harness = saml_configured
+    harness.begin()
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    enable_saml_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_saml", enable_saml_mock)
+
+    harness.charm._saml._pebble_service.enable_saml(container=container)
+
+    enable_saml_mock.assert_called_once_with(
+        container=container, charm_state=harness.charm._charm_state
+    )
+
+
 def test_saml_integration_pebble_error(
     saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -388,6 +409,7 @@ def test_enable_federation_domain_whitelist_is_called(
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    monkeypatch.setattr(synapse, "validate_config", MagicMock())
     enable_federation_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
@@ -412,6 +434,7 @@ def test_disable_password_config_is_called(
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    monkeypatch.setattr(synapse, "validate_config", MagicMock())
     disable_password_config_mock = MagicMock()
     monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
 
