@@ -367,6 +367,32 @@ listeners:
         assert content == expected_config_content
 
 
+def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with invalid configuration file.
+    act: validate the configuration file.
+    assert: WorkloadError is raised.
+    """
+    monkeypatch.setattr(
+        synapse.workload, "_exec", MagicMock(return_value=synapse.ExecResult(1, "Fail", "Error"))
+    )
+    container_mock = MagicMock(spec=ops.Container)
+
+    with pytest.raises(synapse.WorkloadError, match="Validate config failed"):
+        synapse.validate_config(container_mock)
+
+
+def test_disable_room_list_search_path_error(harness: Harness):
+    """
+    arrange: dont add any configuration file to the container.
+    act: disable room list search.
+    assert: WorkloadError is raised.
+    """
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    with pytest.raises(synapse.WorkloadError, match="not-found"):
+        synapse.disable_room_list_search(container)
+
+
 def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
