@@ -333,6 +333,43 @@ def test_enable_federation_domain_whitelist_error(
         synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
 
 
+def test_enable_trusted_key_servers_no_action(harness: Harness):
+    """
+    arrange: set mock container with file.
+    act: call enable_trusted_key_servers without changing the configuration.
+    assert: configuration is not changed.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    config = {"server_name": "foo"}
+    synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
+
+    synapse.enable_trusted_key_servers(
+        container, CharmState(datasource=None, saml_config=None, synapse_config=synapse_config)
+    )
+
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        expected_config_content = {
+            "listeners": [
+                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            ],
+        }
+        assert content == expected_config_content
+
+
 def test_disable_room_list_search_success(harness: Harness):
     """
     arrange: set mock container with file.
