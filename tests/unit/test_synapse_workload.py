@@ -18,6 +18,7 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
+from charm_state import CharmState, SynapseConfig
 
 from .conftest import TEST_SERVER_NAME
 
@@ -70,6 +71,121 @@ def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatc
 
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_allow_public_rooms_over_federation(container_mock)
+
+
+@pytest.mark.parametrize(
+    "ip_range_whitelist",
+    [
+        pytest.param("", id="empty_list", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("10.10.10.10", id="single_item"),
+        pytest.param(",".join(["10.10.10.10"] * 100), id="multiple_items"),
+        pytest.param(
+            " 10.10.10.10",
+            id="single_item_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            " 10.10.10.10,11.11.11.11",
+            id="multiple_items_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "10.10.10.10 ",
+            id="single_item_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "10.10.10.10 ,11.11.11.11",
+            id="multiple_items_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param("abc,def", id="letters", marks=pytest.mark.xfail(strict=True)),
+        pytest.param(",,,", id="only_commas", marks=pytest.mark.xfail(strict=True)),
+    ],
+)
+def test_enable_ip_range_whitelist_success(ip_range_whitelist: str, harness: Harness):
+    """
+    arrange: set mock container with file.
+    act: update ip_range_whitelist config and call enable_ip_range_whitelist.
+    assert: new configuration file is pushed and ip_range_whitelist is enabled.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    harness.update_config({"ip_range_whitelist": ip_range_whitelist})
+    harness.begin()
+    synapse.enable_ip_range_whitelist(container, harness.charm._charm_state)
+
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        expected_ip_range_whitelist = [item.strip() for item in ip_range_whitelist.split(",")]
+        expected_config_content = {
+            "listeners": [
+                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            ],
+            "ip_range_whitelist": expected_ip_range_whitelist,
+        }
+        assert content == expected_config_content
+
+
+def test_enable_ip_range_whitelist_blocked(harness: Harness):
+    """
+    arrange: update the ip_range_whitelist with invalid value.
+    act: start the charm.
+    assert: charm is blocked due invalid configuration.
+    """
+    expected_first_domain = "foo1"
+    expected_second_domain = "foo2"
+    harness.update_config(
+        {"ip_range_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+    )
+
+    harness.begin()
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+
+
+def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: leave ip_range_whitelist config empty and call enable_ip_range_whitelist.
+    assert: configuration file is not changed.
+    """
+    container_mock = MagicMock(spec=ops.Container)
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    harness.begin()
+    config = {"server_name": "foo", "ip_range_whitelist": None}
+    # ignoring setting the other arguments
+    synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
+    synapse.enable_ip_range_whitelist(
+        container_mock,
+        CharmState(datasource=None, saml_config=None, synapse_config=synapse_config),
+    )
+
+    container_mock.pull.assert_called_once()
+    container_mock.push.assert_not_called()
 
 
 def test_enable_federation_domain_whitelist_success(
@@ -127,13 +243,13 @@ def test_enable_federation_domain_whitelist_error(
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
 
+    expected_first_domain = "foo1"
+    expected_second_domain = "foo2"
+    harness.update_config(
+        {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+    )
+    harness.begin()
     with pytest.raises(synapse.WorkloadError, match=error_message):
-        expected_first_domain = "foo1"
-        expected_second_domain = "foo2"
-        harness.update_config(
-            {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
-        )
-        harness.begin()
         synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
 
 

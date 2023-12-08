@@ -59,6 +59,7 @@ Change the configuration.
 
 <a href="../src/pebble.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+
 ### <kbd>function</kbd> `enable_saml`
 
 ```python
@@ -118,6 +119,7 @@ Replan Synapse NGINX service.
 ---
 
 <a href="../src/pebble.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 
 ### <kbd>function</kbd> `reset_instance`
 

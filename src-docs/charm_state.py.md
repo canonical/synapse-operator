@@ -126,6 +126,7 @@ Represent Synapse builtin configuration values.
  - <b>`enable_password_config`</b>:  enable_password_config config. 
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
+ - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`server_name`</b>:  server_name config. 
@@ -143,6 +144,7 @@ Represent Synapse builtin configuration values.
 ---
 
 <a href="../src/charm_state.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 
 ### <kbd>classmethod</kbd> `set_default_smtp_notif_from`
 
@@ -170,6 +172,7 @@ Set server_name as default value to smtp_notif_from.
 ---
 
 <a href="../src/charm_state.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

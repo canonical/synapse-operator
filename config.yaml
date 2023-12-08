@@ -30,7 +30,12 @@ options:
   federation_domain_whitelist:
     type: string
     description: Comma separated list of domains to be allowed to federate.
-    default: ''
+  ip_range_whitelist:
+    type: string
+    description: |
+      Comma separated list of IP address CIDR ranges that should be allowed for
+      federation, identity servers, push servers, and for checking key validity
+      for third-party invite events.
   public_baseurl:
     type: string
     description: |

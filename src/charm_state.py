@@ -64,6 +64,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
+        ip_range_whitelist: ip_range_whitelist config.
         public_baseurl: public_baseurl config.
         report_stats: report_stats config.
         server_name: server_name config.
@@ -81,6 +82,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     enable_password_config: bool = True
     enable_room_list_search: bool = True
     federation_domain_whitelist: str | None = Field(None)
+    ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
