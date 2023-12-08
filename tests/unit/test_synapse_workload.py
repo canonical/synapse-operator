@@ -74,36 +74,42 @@ def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.parametrize(
-    "ip_range_whitelist",
+    "ip_range_whitelist,expected_ip_range_whitelist",
     [
-        pytest.param("", id="empty_list", marks=pytest.mark.xfail(strict=True)),
-        pytest.param("10.10.10.10", id="single_item"),
-        pytest.param(",".join(["10.10.10.10"] * 100), id="multiple_items"),
+        pytest.param("", [], id="empty_list", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("10.10.10.10", ["10.10.10.10"], id="single_item"),
+        pytest.param(",".join(["10.10.10.10"] * 100), ["10.10.10.10"] * 100, id="multiple_items"),
         pytest.param(
             " 10.10.10.10",
+            [],
             id="single_item_leading_whitespace",
             marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             " 10.10.10.10,11.11.11.11",
+            [],
             id="multiple_items_leading_whitespace",
             marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             "10.10.10.10 ",
+            [],
             id="single_item_trailing_whitespace",
             marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             "10.10.10.10 ,11.11.11.11",
+            [],
             id="multiple_items_trailing_whitespace",
             marks=pytest.mark.xfail(strict=True),
         ),
-        pytest.param("abc,def", id="letters", marks=pytest.mark.xfail(strict=True)),
-        pytest.param(",,,", id="only_commas", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("abc,def", [], id="letters", marks=pytest.mark.xfail(strict=True)),
+        pytest.param(",,,", [], id="only_commas", marks=pytest.mark.xfail(strict=True)),
     ],
 )
-def test_enable_ip_range_whitelist_success(ip_range_whitelist: str, harness: Harness):
+def test_enable_ip_range_whitelist_success(
+    ip_range_whitelist: str, expected_ip_range_whitelist: list[str], harness: Harness
+):
     """
     arrange: set mock container with file.
     act: update ip_range_whitelist config and call enable_ip_range_whitelist.
@@ -129,7 +135,6 @@ listeners:
 
     with open(config_path, encoding="utf-8") as config_file:
         content = yaml.safe_load(config_file)
-        expected_ip_range_whitelist = [item.strip() for item in ip_range_whitelist.split(",")]
         expected_config_content = {
             "listeners": [
                 {"type": "http", "port": 8080, "bind_addresses": ["::"]},
