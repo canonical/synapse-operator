@@ -137,7 +137,7 @@ listeners:
     harness.begin()
     synapse.enable_trusted_key_servers(container, harness.charm._charm_state)
 
-    content = yaml.safe_load(config_path.read_text())
+    content = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
