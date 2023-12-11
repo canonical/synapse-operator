@@ -21,3 +21,15 @@ health:
     sentry:
 pollReports: false
 displayReports: false
+web:
+  enabled: true
+  port: 9999
+  address: localhost
+  # A web API designed to intercept Matrix API
+  # POST /_matrix/client/r0/rooms/{roomId}/report/{eventId}
+  # and display readable abuse reports in the moderation room.
+  #
+  # If you wish to take advantage of this feature, you will need
+  # to configure a reverse proxy, see e.g. test/nginx.conf
+  abuseReporting:
+    enabled: true
