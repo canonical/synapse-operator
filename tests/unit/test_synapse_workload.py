@@ -406,7 +406,7 @@ listeners:
 
 def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: set mock container with invalid configuration file.
+    arrange: mock the validation command to fail.
     act: validate the configuration file.
     assert: WorkloadError is raised.
     """
