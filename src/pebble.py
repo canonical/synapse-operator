@@ -99,6 +99,11 @@ class PebbleService:
                 )
             if self._charm_state.synapse_config.allow_public_rooms_over_federation:
                 synapse.enable_allow_public_rooms_over_federation(container=container)
+            if self._charm_state.synapse_config.ip_range_whitelist:
+                synapse.enable_ip_range_whitelist(
+                    container=container, charm_state=self._charm_state
+                )
+            synapse.validate_config(container=container)
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc

@@ -265,6 +265,27 @@ def execute_migrate_config(container: ops.Container, charm_state: CharmState) ->
         )
 
 
+def validate_config(container: ops.Container) -> None:
+    """Run the Synapse command to validate the configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong running migrate_config.
+    """
+    validate_config_result = _exec(
+        container, ["/usr/bin/python3", "-m", "synapse.config", "-c", SYNAPSE_CONFIG_PATH]
+    )
+    if validate_config_result.exit_code:
+        logger.error(
+            "validate config failed, stdout: %s, stderr: %s",
+            validate_config_result.stdout,
+            validate_config_result.stderr,
+        )
+        raise WorkloadError("Validate config failed, please check the logs")
+
+
 def enable_metrics(container: ops.Container) -> None:
     """Change the Synapse configuration to enable metrics.
 
@@ -361,6 +382,41 @@ def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
         current_yaml["allow_public_rooms_over_federation"] = True
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
+def _create_ip_range_whitelist(ip_range_whitelist: str) -> list[str]:
+    """Format IP range whitelist.
+
+    Args:
+        ip_range_whitelist: ip_range_whitelist configuration.
+
+    Returns:
+        IP range whitelist as expected by Synapse or None.
+    """
+    return [item.strip() for item in ip_range_whitelist.split(",")]
+
+
+def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable ip_range_whitelist.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        ip_range_whitelist = charm_state.synapse_config.ip_range_whitelist
+        if ip_range_whitelist is None:
+            logger.warning("enable_ip_range_whitelist called but config is empty")
+            return
+        current_yaml["ip_range_whitelist"] = _create_ip_range_whitelist(ip_range_whitelist)
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc
