@@ -137,15 +137,14 @@ listeners:
     harness.begin()
     synapse.enable_trusted_key_servers(container, harness.charm._charm_state)
 
-    with open(config_path, encoding="utf-8") as config_file:
-        content = yaml.safe_load(config_file)
-        expected_config_content = {
-            "listeners": [
-                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            ],
-            "trusted_key_servers": expected_trusted_key_servers,
-        }
-        assert content == expected_config_content
+    content = yaml.safe_load(config_path.read_text())
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "trusted_key_servers": expected_trusted_key_servers,
+    }
+    assert content == expected_config_content
 
 
 @pytest.mark.parametrize(
