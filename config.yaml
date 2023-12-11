@@ -80,5 +80,5 @@ options:
     default: ''
   trusted_key_servers:
     type: string
-    description: Comma separated list of trusted key servers. Defaults to
-      matrix.org.
+    description: Comma separated list of trusted servers to download signing
+      keys from. Synapse configuration sets default to matrix.org.
