@@ -21,6 +21,12 @@ options:
       Defaults to true. If Synapse uses a single sign-on provider for
       authentication, this option can be used to disable the regular login
       flow.
+  enable_room_list_search:
+    type: boolean
+    default: true
+    description: |
+      When disabled, blocks searching local and remote room lists for local and
+      remote users by always returning an empty list for all queries.
   federation_domain_whitelist:
     type: string
     description: Comma separated list of domains to be allowed to federate.
@@ -72,3 +78,7 @@ options:
     type: string
     description: The username if the SMTP server requires authentication.
     default: ''
+  trusted_key_servers:
+    type: string
+    description: Comma separated list of trusted servers to download signing
+      keys from. Synapse configuration sets default to matrix.org.

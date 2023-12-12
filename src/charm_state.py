@@ -62,6 +62,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
+        enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
         ip_range_whitelist: ip_range_whitelist config.
         public_baseurl: public_baseurl config.
@@ -73,11 +74,13 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         smtp_pass: password to authenticate to SMTP host.
         smtp_port: SMTP port.
         smtp_user: username to authenticate to SMTP host.
+        trusted_key_servers: trusted_key_servers config.
     """
 
     allow_public_rooms_over_federation: bool = False
     enable_mjolnir: bool = False
     enable_password_config: bool = True
+    enable_room_list_search: bool = True
     federation_domain_whitelist: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
@@ -89,6 +92,9 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     smtp_pass: str | None = Field(None)
     smtp_port: int | None = Field(None)
     smtp_user: str | None = Field(None)
+    trusted_key_servers: str | None = Field(
+        None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"
+    )
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.

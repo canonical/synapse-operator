@@ -33,7 +33,7 @@ Initialize the pebble service.
 
 ---
 
-<a href="../src/pebble.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -57,7 +57,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_saml`
 
@@ -117,7 +117,7 @@ Replan Synapse NGINX service.
 
 ---
 
-<a href="../src/pebble.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `reset_instance`
 
