@@ -20,7 +20,7 @@ health:
         unhealthyStatus: 418
     sentry:
 pollReports: false
-displayReports: false
+displayReports: true
 web:
   enabled: true
   port: 9999
