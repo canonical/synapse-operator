@@ -64,7 +64,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -124,6 +124,7 @@ Represent Synapse builtin configuration values.
  - <b>`allow_public_rooms_over_federation`</b>:  allow_public_rooms_over_federation config. 
  - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
  - <b>`enable_password_config`</b>:  enable_password_config config. 
+ - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
  - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
@@ -135,13 +136,14 @@ Represent Synapse builtin configuration values.
  - <b>`smtp_pass`</b>:  password to authenticate to SMTP host. 
  - <b>`smtp_port`</b>:  SMTP port. 
  - <b>`smtp_user`</b>:  username to authenticate to SMTP host. 
+ - <b>`trusted_key_servers`</b>:  trusted_key_servers config. 
 
 
 
 
 ---
 
-<a href="../src/charm_state.py#L102"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `set_default_smtp_notif_from`
 
@@ -168,7 +170,7 @@ Set server_name as default value to smtp_notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

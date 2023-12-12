@@ -328,6 +328,24 @@ def disable_password_config(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def disable_room_list_search(container: ops.Container) -> None:
+    """Change the Synapse configuration to disable room_list_search.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong disabling room_list_search.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["enable_room_list_search"] = False
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def enable_serve_server_wellknown(container: ops.Container) -> None:
     """Change the Synapse configuration to enable server wellknown file.
 
@@ -359,11 +377,35 @@ def enable_federation_domain_whitelist(container: ops.Container, charm_state: Ch
     try:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
-        if charm_state.synapse_config.federation_domain_whitelist is not None:
-            current_yaml["federation_domain_whitelist"] = [
-                item.strip()
-                for item in charm_state.synapse_config.federation_domain_whitelist.split(",")
-            ]
+        federation_domain_whitelist = charm_state.synapse_config.federation_domain_whitelist
+        if federation_domain_whitelist is not None:
+            current_yaml["federation_domain_whitelist"] = _create_tuple_from_string_list(
+                federation_domain_whitelist
+            )
+            container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
+def enable_trusted_key_servers(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to set trusted_key_servers.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        trusted_key_servers = charm_state.synapse_config.trusted_key_servers
+        if trusted_key_servers is not None:
+            current_yaml["trusted_key_servers"] = tuple(
+                {"server_name": f"{item}"}
+                for item in _create_tuple_from_string_list(trusted_key_servers)
+            )
             container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc
@@ -387,16 +429,16 @@ def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
-def _create_ip_range_whitelist(ip_range_whitelist: str) -> list[str]:
+def _create_tuple_from_string_list(string_list: str) -> tuple[str, ...]:
     """Format IP range whitelist.
 
     Args:
-        ip_range_whitelist: ip_range_whitelist configuration.
+        string_list: comma separated list configuration.
 
     Returns:
-        IP range whitelist as expected by Synapse or None.
+        Tuple as expected by Synapse.
     """
-    return [item.strip() for item in ip_range_whitelist.split(",")]
+    return tuple(item.strip() for item in string_list.split(","))
 
 
 def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:
@@ -416,7 +458,7 @@ def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState)
         if ip_range_whitelist is None:
             logger.warning("enable_ip_range_whitelist called but config is empty")
             return
-        current_yaml["ip_range_whitelist"] = _create_ip_range_whitelist(ip_range_whitelist)
+        current_yaml["ip_range_whitelist"] = _create_tuple_from_string_list(ip_range_whitelist)
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc

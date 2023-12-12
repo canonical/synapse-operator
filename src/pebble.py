@@ -73,7 +73,8 @@ class PebbleService:
         container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
         container.replan()
 
-    def change_config(self, container: ops.model.Container) -> None:
+    # The complexity of this method will be reviewed.
+    def change_config(self, container: ops.model.Container) -> None:  # noqa: C901
         """Change the configuration.
 
         Args:
@@ -99,6 +100,12 @@ class PebbleService:
                 )
             if self._charm_state.synapse_config.allow_public_rooms_over_federation:
                 synapse.enable_allow_public_rooms_over_federation(container=container)
+            if not self._charm_state.synapse_config.enable_room_list_search:
+                synapse.disable_room_list_search(container=container)
+            if self._charm_state.synapse_config.trusted_key_servers:
+                synapse.enable_trusted_key_servers(
+                    container=container, charm_state=self._charm_state
+                )
             if self._charm_state.synapse_config.ip_range_whitelist:
                 synapse.enable_ip_range_whitelist(
                     container=container, charm_state=self._charm_state
