@@ -610,7 +610,7 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
         # The following three configurations are mandatory for SMTP.
         current_yaml["email"]["smtp_host"] = charm_state.synapse_config.smtp_host
         current_yaml["email"]["smtp_port"] = charm_state.synapse_config.smtp_port
-        current_yaml["email"]["notif_from"] = charm_state.synapse_config.smtp_notif_from
+        current_yaml["email"]["notif_from"] = charm_state.synapse_config.notif_from
         if charm_state.synapse_config.smtp_user:
             current_yaml["email"]["smtp_user"] = charm_state.synapse_config.smtp_user
         if charm_state.synapse_config.smtp_pass:

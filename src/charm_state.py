@@ -65,12 +65,12 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
         ip_range_whitelist: ip_range_whitelist config.
+        notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
         report_stats: report_stats config.
         server_name: server_name config.
         smtp_enable_tls: enable tls while connecting to SMTP server.
         smtp_host: SMTP host.
-        smtp_notif_from: defines the "From" address to use when sending emails.
         smtp_pass: password to authenticate to SMTP host.
         smtp_port: SMTP port.
         smtp_user: username to authenticate to SMTP host.
@@ -86,9 +86,9 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     public_baseurl: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
+    notif_from: str | None = Field(None)
     smtp_enable_tls: bool = True
     smtp_host: str | None = Field(None)
-    smtp_notif_from: str | None = Field(None)
     smtp_pass: str | None = Field(None)
     smtp_port: int | None = Field(None)
     smtp_user: str | None = Field(None)
@@ -105,24 +105,24 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
         extra = Extra.allow
 
-    @validator("smtp_notif_from", pre=True, always=True)
+    @validator("notif_from", pre=True, always=True)
     @classmethod
-    def set_default_smtp_notif_from(
-        cls, smtp_notif_from: typing.Optional[str], values: dict
+    def set_default_notif_from(
+        cls, notif_from: typing.Optional[str], values: dict
     ) -> typing.Optional[str]:
-        """Set server_name as default value to smtp_notif_from.
+        """Set server_name as default value to notif_from.
 
         Args:
-            smtp_notif_from: the smtp_notif_from current value.
+            notif_from: the notif_from current value.
             values: values already defined.
 
         Returns:
-            The default value for smtp_notif_from if not defined.
+            The default value for notif_from if not defined.
         """
         server_name = values.get("server_name")
-        if smtp_notif_from is None and server_name:
+        if notif_from is None and server_name:
             return server_name
-        return smtp_notif_from
+        return notif_from
 
     @validator("report_stats")
     @classmethod

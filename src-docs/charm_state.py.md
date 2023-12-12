@@ -127,12 +127,12 @@ Represent Synapse builtin configuration values.
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
  - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
+ - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`server_name`</b>:  server_name config. 
  - <b>`smtp_enable_tls`</b>:  enable tls while connecting to SMTP server. 
  - <b>`smtp_host`</b>:  SMTP host. 
- - <b>`smtp_notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`smtp_pass`</b>:  password to authenticate to SMTP host. 
  - <b>`smtp_port`</b>:  SMTP port. 
  - <b>`smtp_user`</b>:  username to authenticate to SMTP host. 
@@ -145,28 +145,25 @@ Represent Synapse builtin configuration values.
 
 <a href="../src/charm_state.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>classmethod</kbd> `set_default_smtp_notif_from`
+### <kbd>classmethod</kbd> `set_default_notif_from`
 
 ```python
-set_default_smtp_notif_from(
-    smtp_notif_from: Optional[str],
-    values: dict
-) → Optional[str]
+set_default_notif_from(notif_from: Optional[str], values: dict) → Optional[str]
 ```
 
-Set server_name as default value to smtp_notif_from. 
+Set server_name as default value to notif_from. 
 
 
 
 **Args:**
  
- - <b>`smtp_notif_from`</b>:  the smtp_notif_from current value. 
+ - <b>`notif_from`</b>:  the notif_from current value. 
  - <b>`values`</b>:  values already defined. 
 
 
 
 **Returns:**
- The default value for smtp_notif_from if not defined. 
+ The default value for notif_from if not defined. 
 
 ---
 

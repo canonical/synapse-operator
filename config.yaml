@@ -36,6 +36,10 @@ options:
       Comma separated list of IP address CIDR ranges that should be allowed for
       federation, identity servers, push servers, and for checking key validity
       for third-party invite events.
+  notif_from:
+    type: string
+    description: defines the "From" address to use when sending emails.
+      It must be set if email sending is enabled. Defaults to server_name.
   public_baseurl:
     type: string
     description: |
@@ -62,10 +66,6 @@ options:
     type: string
     description: The hostname of the SMTP host used for sending emails.
     default: ''
-  smtp_notif_from:
-    type: string
-    description: defines the "From" address to use when sending emails.
-      It must be set if email sending is enabled. Defaults to server_name.
   smtp_pass:
     type: string
     description: The password if the SMTP server requires authentication.
