@@ -57,27 +57,6 @@ options:
       Synapse server name. Must be set to deploy the charm. Corresponds to the
       server_name option on Synapse configuration file and sets the
       public-facing domain of the server.
-  smtp_enable_tls:
-    type: boolean
-    description: If enabled, STARTTLS will be used to use an encrypted SMTP
-      connection.
-    default: true
-  smtp_host:
-    type: string
-    description: The hostname of the SMTP host used for sending emails.
-    default: ''
-  smtp_pass:
-    type: string
-    description: The password if the SMTP server requires authentication.
-    default: ''
-  smtp_port:
-    type: int
-    description: The port of the SMTP server used for sending emails.
-    default: 25
-  smtp_user:
-    type: string
-    description: The username if the SMTP server requires authentication.
-    default: ''
   trusted_key_servers:
     type: string
     description: Comma separated list of trusted servers to download signing

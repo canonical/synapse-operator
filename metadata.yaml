@@ -61,6 +61,9 @@ requires:
         interface: saml
         limit: 1
         optional: true
+    smtp:
+        interface: smtp
+        limit: 1
 
 peers:
   synapse-peers:

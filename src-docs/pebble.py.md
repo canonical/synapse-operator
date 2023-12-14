@@ -57,7 +57,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_saml`
 
@@ -66,6 +66,30 @@ enable_saml(container: Container) → None
 ```
 
 Enable SAML while receiving on_saml_data_available event. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+---
+
+<a href="../src/pebble.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `enable_smtp`
+
+```python
+enable_smtp(container: Container) → None
+```
+
+Enable SMTP while receiving on_smtp_data_available event. 
 
 
 
@@ -117,7 +141,7 @@ Replan Synapse NGINX service.
 
 ---
 
-<a href="../src/pebble.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `reset_instance`
 

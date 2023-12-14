@@ -22,7 +22,7 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
     validator,
 )
 
-from charm_types import DatasourcePostgreSQL, SAMLConfiguration
+from charm_types import DatasourcePostgreSQL, SAMLConfiguration, SMTPConfiguration
 
 
 class CharmConfigInvalidError(Exception):
@@ -69,11 +69,6 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         public_baseurl: public_baseurl config.
         report_stats: report_stats config.
         server_name: server_name config.
-        smtp_enable_tls: enable tls while connecting to SMTP server.
-        smtp_host: SMTP host.
-        smtp_pass: password to authenticate to SMTP host.
-        smtp_port: SMTP port.
-        smtp_user: username to authenticate to SMTP host.
         trusted_key_servers: trusted_key_servers config.
     """
 
@@ -87,11 +82,6 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     notif_from: str | None = Field(None)
-    smtp_enable_tls: bool = True
-    smtp_host: str | None = Field(None)
-    smtp_pass: str | None = Field(None)
-    smtp_port: int | None = Field(None)
-    smtp_user: str | None = Field(None)
     trusted_key_servers: str | None = Field(
         None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"
     )
@@ -148,12 +138,14 @@ class CharmState:
         synapse_config: synapse configuration.
         datasource: datasource information.
         saml_config: saml configuration.
+        smtp_config: smtp configuration.
         proxy: proxy information.
     """
 
     synapse_config: SynapseConfig
     datasource: typing.Optional[DatasourcePostgreSQL]
     saml_config: typing.Optional[SAMLConfiguration]
+    smtp_config: typing.Optional[SMTPConfiguration]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -177,6 +169,7 @@ class CharmState:
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],
         saml_config: typing.Optional[SAMLConfiguration],
+        smtp_config: typing.Optional[SMTPConfiguration],
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
@@ -184,6 +177,7 @@ class CharmState:
             charm: The charm instance associated with this state.
             datasource: datasource information to be used by Synapse.
             saml_config: saml configuration to be used by Synapse.
+            smtp_config: SMTP configuration to be used by Synapse.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -205,4 +199,5 @@ class CharmState:
             synapse_config=valid_synapse_config,
             datasource=datasource,
             saml_config=saml_config,
+            smtp_config=smtp_config,
         )

@@ -24,6 +24,7 @@ from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
+from smtp_observer import SMTPObserver
 from user import User
 
 JUJU_HAS_SECRETS = JujuVersion.from_environ().has_secrets
@@ -38,6 +39,8 @@ logger = logging.getLogger(__name__)
 class SynapseCharm(ops.CharmBase):
     """Charm the service."""
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, *args: typing.Any) -> None:
         """Construct.
 
@@ -47,11 +50,13 @@ class SynapseCharm(ops.CharmBase):
         super().__init__(*args)
         self._database = DatabaseObserver(self)
         self._saml = SAMLObserver(self)
+        self._smtp = SMTPObserver(self)
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
                 datasource=self._database.get_relation_as_datasource(),
                 saml_config=self._saml.get_relation_as_saml_conf(),
+                smtp_config=self._smtp.get_relation_as_smtp_conf(),
             )
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)
