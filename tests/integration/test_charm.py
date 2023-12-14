@@ -406,6 +406,7 @@ async def test_synapse_enable_smtp_legacy(
     # is not a real SMTP server.
     assert "error was encountered when sending the email" in res.text
 
+
 @pytest.mark.skip(reason="smtp-integrator does not reply with a password-id. Investigate")
 @pytest.mark.requires_secrets
 async def test_synapse_enable_smtp(
