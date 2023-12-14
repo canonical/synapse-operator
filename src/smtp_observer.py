@@ -60,6 +60,9 @@ class SMTPObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
+        if self.model.get_relation(self._RELATION_NAME) is None:
+            return None
+
         relation_data: Optional[SmtpRelationData] = self.smtp.get_relation_data()
         if relation_data is None:
             return None
