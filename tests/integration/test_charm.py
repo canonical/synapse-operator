@@ -352,20 +352,90 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         assert "Continue to your account" in logged_in_page.text
 
 
-async def test_synapse_enable_smtp(
+async def test_synapse_enable_smtp_legacy(
+    model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
 ):
     """
-    arrange: build and deploy the Synapse charm, create an user, get the access token
-        and enable SMTP.
+    arrange: build and deploy the Synapse charm. Create an user and get the access token
+        Deploy, configure and integrate with Synapse the smtp-integrator charm.
     act:  try to check if a given email address is not already associated.
     assert: the Synapse application is active and the error returned is the one expected.
     """
-    await synapse_app.set_config({"smtp_host": "127.0.0.1"})
-    await synapse_app.model.wait_for_idle(
-        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME
+    smtp_integrator_app = await model.deploy(
+        "smtp-integrator",
+        channel="latest/edge",
+        config={
+            "host": "127.0.0.1",
+            "user": "username",
+            "password": "SECRET",
+            "auth_type": "plain",
+        },
+    )
+    await model.wait_for_idle()
+    await model.add_relation(f"{smtp_integrator_app.name}:smtp-legacy", synapse_app.name)
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, smtp_integrator_app.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
+    sample_check = {
+        "id_server": "id.matrix.org",
+        "client_secret": "this_is_my_secret_string",
+        "email": "example@example.com",
+        "send_attempt": "1",
+    }
+    sess = requests.session()
+    res = sess.post(
+        f"http://{synapse_ip}:8080/_matrix/client/r0/register/email/requestToken",
+        json=sample_check,
+        headers=headers,
+        timeout=5,
+    )
+
+    assert res.status_code == 500
+    # If the configuration change fails, will return something like:
+    # "Email-based registration has been disabled on this server".
+    # The expected error confirms that the e-mail is configured but failed since
+    # is not a real SMTP server.
+    assert "error was encountered when sending the email" in res.text
+
+
+@pytest.mark.requires_secrets
+async def test_synapse_enable_smtp(
+    model: Model,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    access_token: str,
+):
+    """
+    arrange: build and deploy the Synapse charm. Create an user and get the access token
+        Deploy, configure and integrate with Synapse the smtp-integrator charm.
+    act:  try to check if a given email address is not already associated.
+    assert: the Synapse application is active and the error returned is the one expected.
+    """
+    smtp_integrator_app = await model.deploy(
+        "smtp-integrator",
+        channel="latest/edge",
+        config={
+            "host": "127.0.0.1",
+            "user": "username",
+            "password": "SECRET",
+            "auth_type": "plain",
+        },
+    )
+    await model.wait_for_idle()
+    await model.add_relation(f"{smtp_integrator_app.name}:smtp", synapse_app.name)
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, smtp_integrator_app.name],
+        status=ACTIVE_STATUS_NAME,
     )
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
