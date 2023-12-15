@@ -366,7 +366,6 @@ async def test_synapse_enable_smtp(
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
     relation_name: str,
-    ops_test: OpsTest,
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -387,8 +386,8 @@ async def test_synapse_enable_smtp(
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     await model.add_relation(f"{smtp_integrator_app.name}:{relation_name}", synapse_app.name)
     # When receiving smtp-relation-joined, and trying to get the
-    # relation data, it fails, as it has not been set by smtp-integrator yet,
-    # and the relation data is empty. Thats is why it should not raise on
+    # relation data, it fails, as it has not been set by the smtp-integrator yet,
+    # and the relation data is empty. That's is why it should not raise on
     # error, as that will be fixed automatically.
     await model.wait_for_idle(
         idle_period=30,
