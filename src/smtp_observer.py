@@ -20,6 +20,7 @@ from charms.smtp_integrator.v0.smtp import (
 )
 from ops.charm import CharmBase
 from ops.framework import Object
+from pydantic import ValidationError
 
 import synapse
 from charm_types import SMTPConfiguration
@@ -60,7 +61,13 @@ class SMTPObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
-        relation_data: Optional[SmtpRelationData] = self.smtp.get_relation_data()
+        try:
+            relation_data: Optional[SmtpRelationData] = self.smtp.get_relation_data()
+        except ValidationError:
+            # ValidationError happens in the smtp(_legacy)relation_created event, as
+            # the relation databag is empty at that point.
+            return None
+
         if relation_data is None:
             return None
 

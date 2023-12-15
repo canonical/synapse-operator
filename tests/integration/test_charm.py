@@ -385,13 +385,8 @@ async def test_synapse_enable_smtp(
     )
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     await model.add_relation(f"{smtp_integrator_app.name}:{relation_name}", synapse_app.name)
-    # When receiving smtp-relation-joined, and trying to get the
-    # relation data, it fails, as it has not been set by the smtp-integrator yet,
-    # and the relation data is empty. That's is why it should not raise on
-    # error, as that will be fixed automatically.
     await model.wait_for_idle(
         idle_period=30,
-        raise_on_error=False,
         apps=[synapse_app.name, smtp_integrator_app.name],
         status=ACTIVE_STATUS_NAME,
     )
