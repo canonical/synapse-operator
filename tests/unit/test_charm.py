@@ -226,7 +226,7 @@ def test_smtp_integration_container_down(smtp_configured: Harness) -> None:
 def test_smtp_relation_pebble_success(smtp_configured: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set server_name, mock synapse.enable_smtp.
-    act: call enable_smtp from pebble_service.
+    act: emit smtp_data_available
     assert: synapse.enable_smtp is called once and unit is active.
     """
     harness = smtp_configured
