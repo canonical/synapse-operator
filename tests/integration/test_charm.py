@@ -352,68 +352,21 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         assert "Continue to your account" in logged_in_page.text
 
 
-async def test_synapse_enable_smtp_legacy(
-    model: Model,
-    synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-    access_token: str,
-):
-    """
-    arrange: build and deploy the Synapse charm. Create an user and get the access token
-        Deploy, configure and integrate with Synapse the smtp-integrator charm.
-    act:  try to check if a given email address is not already associated.
-    assert: the Synapse application is active and the error returned is the one expected.
-    """
-    smtp_integrator_app = await model.deploy(
-        "smtp-integrator",
-        channel="latest/edge",
-        config={
-            "auth_type": "plain",
-            "host": "127.0.0.1",
-            "password": "SECRET",
-            "user": "username",
-        },
-    )
-    await model.wait_for_idle()
-    await model.add_relation(f"{smtp_integrator_app.name}:smtp-legacy", synapse_app.name)
-    await model.wait_for_idle(
-        idle_period=30,
-        apps=[synapse_app.name, smtp_integrator_app.name],
-        status=ACTIVE_STATUS_NAME,
-    )
-
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    authorization_token = f"Bearer {access_token}"
-    headers = {"Authorization": authorization_token}
-    sample_check = {
-        "client_secret": "this_is_my_secret_string",
-        "email": "example@example.com",
-        "id_server": "id.matrix.org",
-        "send_attempt": "1",
-    }
-    sess = requests.session()
-    res = sess.post(
-        f"http://{synapse_ip}:8080/_matrix/client/r0/register/email/requestToken",
-        json=sample_check,
-        headers=headers,
-        timeout=5,
-    )
-
-    assert res.status_code == 500
-    # If the configuration change fails, will return something like:
-    # "Email-based registration has been disabled on this server".
-    # The expected error confirms that the e-mail is configured but failed since
-    # is not a real SMTP server.
-    assert "error was encountered when sending the email" in res.text
-
-
-@pytest.mark.skip(reason="smtp-integrator does not reply with a password-id. Investigate")
-@pytest.mark.requires_secrets
+@pytest.mark.parametrize(
+    "relation_name",
+    [
+        pytest.param("smtp-legacy"),
+        # Not working. Waiting for the fix in smtp-integrator for secrets.
+        pytest.param("smtp", marks=[pytest.mark.requires_secrets, pytest.mark.xfail]),
+    ],
+)
 async def test_synapse_enable_smtp(
     model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
+    relation_name: str,
+    ops_test: OpsTest,
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -431,11 +384,15 @@ async def test_synapse_enable_smtp(
             "user": "username",
         },
     )
-    await model.wait_for_idle()
-
-    await model.add_relation(f"{smtp_integrator_app.name}:smtp", synapse_app.name)
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.add_relation(f"{smtp_integrator_app.name}:{relation_name}", synapse_app.name)
+    # When receiving smtp-relation-joined, and trying to get the
+    # relation data, it fails, as it has not been set by smtp-integrator yet,
+    # and the relation data is empty. Thats is why it should not raise on
+    # error, as that will be fixed automatically.
     await model.wait_for_idle(
         idle_period=30,
+        raise_on_error=False,
         apps=[synapse_app.name, smtp_integrator_app.name],
         status=ACTIVE_STATUS_NAME,
     )
