@@ -119,17 +119,21 @@ class SMTPObserver(Object):
             return content["password"]
         return relation_data.password
 
-    def _on_smtp_relation_data_available(self, _: SmtpDataAvailableEvent) -> None:
+    def _on_smtp_relation_data_available(self, event: SmtpDataAvailableEvent) -> None:
         """Handle SMTP data available."""
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SMTP integration")
         logger.debug("_on_smtp_data_available: Enabling SMTP")
-        self._enable_smtp()
+        self._enable_smtp(event)
 
-    def _enable_smtp(self) -> None:
+    def _enable_smtp(self, event: SmtpDataAvailableEvent) -> None:
         """Enable  SMTP."""
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            # If this event is not defered, enable_smtp will not be called and
+            # the configuration will not be changed until another event that changes
+            # the configuration is called.
+            event.defer()
             return
         try:
             self._pebble_service.enable_smtp(container)
