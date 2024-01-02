@@ -6,6 +6,7 @@
 """Type definitions for the Synapse charm."""
 
 import typing
+from dataclasses import dataclass
 
 
 class DatasourcePostgreSQL(typing.TypedDict):
@@ -38,6 +39,7 @@ class SAMLConfiguration(typing.TypedDict):
     metadata_url: str
 
 
+@dataclass(frozen=True)
 class SMTPConfiguration(typing.TypedDict):
     """A named tuple representing SMTP configuration.
 

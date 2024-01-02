@@ -120,13 +120,23 @@ class SMTPObserver(Object):
         return relation_data.password
 
     def _on_smtp_relation_data_available(self, event: SmtpDataAvailableEvent) -> None:
-        """Handle SMTP data available."""
+        """Handle SMTP data available.
+
+        Arguments:
+            event: The smtp data available event.
+
+        """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SMTP integration")
         logger.debug("_on_smtp_data_available: Enabling SMTP")
         self._enable_smtp(event)
 
     def _enable_smtp(self, event: SmtpDataAvailableEvent) -> None:
-        """Enable  SMTP."""
+        """Enable  SMTP.
+
+        Arguments:
+            event: The event that triggered enabling smtp.
+
+        """
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
