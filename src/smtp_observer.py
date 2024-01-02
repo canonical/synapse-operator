@@ -130,7 +130,7 @@ class SMTPObserver(Object):
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect() or self._pebble_service is None:
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            # If this event is not defered, enable_smtp will not be called and
+            # If this event is not deferred, enable_smtp will not be called and
             # the configuration will not be changed until another event that changes
             # the configuration is called.
             event.defer()
