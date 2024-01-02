@@ -29,7 +29,6 @@ ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip(reason="error Waiting for pebble will be addressed in a followup PR")
 async def test_synapse_from_refresh_is_up(
     synapse_refresh_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
