@@ -66,6 +66,7 @@ class SMTPObserver(Object):
         except ValidationError:
             # ValidationError happens in the smtp(_legacy)relation_created event, as
             # the relation databag is empty at that point.
+            logger.info("SMTP databag is empty. SMTP information will be set in the next event.")
             return None
 
         if relation_data is None:

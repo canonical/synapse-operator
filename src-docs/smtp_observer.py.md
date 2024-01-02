@@ -14,7 +14,7 @@ The SMTP relation observer.
 
 Attrs:  _pebble_service: instance of pebble service. 
 
-<a href="../src/smtp_observer.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/smtp_observer.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -41,7 +41,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/smtp_observer.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/smtp_observer.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_smtp_conf`
 
