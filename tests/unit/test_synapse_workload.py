@@ -692,7 +692,7 @@ SMTP_CONFIGURATION = SMTPConfiguration(
     host="smtp.example.com",
     port=25,
     user="username",
-    password="SECRET",  # nosec
+    password=token_hex(16),
 )
 
 
@@ -746,7 +746,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
             "smtp_host": "smtp.example.com",
             "smtp_port": 25,
             "smtp_user": "username",
-            "smtp_pass": "SECRET",
+            "smtp_pass": SMTP_CONFIGURATION["password"],
         },
     }
     assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
