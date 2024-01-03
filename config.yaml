@@ -39,7 +39,7 @@ options:
   notif_from:
     type: string
     description: defines the "From" address to use when sending emails.
-      It must be set if email sending is enabled. Defaults to server_name.
+      It must be set if the SMTP integration is enabled. Defaults to server_name.
   public_baseurl:
     type: string
     description: |
