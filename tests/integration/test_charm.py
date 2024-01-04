@@ -356,8 +356,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
     "relation_name",
     [
         pytest.param("smtp-legacy"),
-        # Not working. Waiting for the fix in smtp-integrator for secrets.
-        pytest.param("smtp", marks=[pytest.mark.requires_secrets, pytest.mark.xfail]),
+        pytest.param("smtp", marks=[pytest.mark.requires_secrets]),
     ],
 )
 async def test_synapse_enable_smtp(
@@ -373,6 +372,11 @@ async def test_synapse_enable_smtp(
     act:  try to check if a given email address is not already associated.
     assert: the Synapse application is active and the error returned is the one expected.
     """
+    if "smtp-integrator" in model.applications:
+        await model.remove_application("smtp-integrator")
+        await model.block_until(lambda: "smtp-integrator" not in model.applications, timeout=60)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+
     smtp_integrator_app = await model.deploy(
         "smtp-integrator",
         channel="latest/edge",
