@@ -8,6 +8,10 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
+      pre-run-script: |
+        -c "sudo microk8s config > ${GITHUB_WORKSPACE}/kube-config
+      extra-arguments: |
+        --kube-config ${GITHUB_WORKSPACE}/kube-config
       chaos-app-label: app.kubernetes.io/name=synapse
       chaos-enabled: false
       chaos-experiments: pod-delete
