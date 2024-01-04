@@ -95,7 +95,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     @validator("notif_from", pre=True, always=True)
     @classmethod
-    def set_default_notif_from(
+    def get_default_notif_from(
         cls, notif_from: typing.Optional[str], values: dict
     ) -> typing.Optional[str]:
         """Set server_name as default value to notif_from.
