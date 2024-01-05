@@ -106,12 +106,13 @@ class SynapseCharm(ops.CharmBase):
             return
         self._set_unit_status()
 
-    # This method contains a similar check that the one in mjolnir.py for Synapse
-    # container and service. Until a refactoring is done for a different way of checking
-    # and setting the unit status in a hollistic way, both checks will be in place.
-    # pylint: disable=R0801
     def _set_unit_status(self) -> None:
         """Set unit status depending on Synapse and NGINX state."""
+        # This method contains a similar check that the one in mjolnir.py for Synapse
+        # container and service. Until a refactoring is done for a different way of checking
+        # and setting the unit status in a hollistic way, both checks will be in place.
+        # pylint: disable=R0801
+
         # If the unit is in a blocked state, do not change it, as it
         # was set by a problem or error with the configuration
         if isinstance(self.unit.status, ops.BlockedStatus):
