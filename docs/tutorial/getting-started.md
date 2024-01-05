@@ -3,7 +3,6 @@
 ## What you’ll do
 - Deploy the Synapse charm.
 - Integrate with the PostgreSQL K8s charm.
-- Integrate with the smtp-integrator charm.
 - Expose the Synapse charm by using Traefik K8s charm.
 - Create a user.
 - Access your Synapse instance via Element Desktop.
@@ -61,32 +60,6 @@ synapse                 3.2                           active      1  synapse    
 ```
 
 The deployment is complete when the status is `Active`.
-
-## Integrate with the smtp-integrator charm
-
-For synapse to use smtp, it uses the smtp-integrator charm.
-```
-juju deploy smtp-integrator --channel edge
-juju config smtp-integrator host=smtp.example.com port=25 user=alice password=whatever auth_type=plain transport_security=none domain=example.com
-```
-
-Configure the "From" mail for Synapse with:
-```
-juju config synapse notif_from=no-reply@example.com
-```
-
-You can run it with the legacy integration `smtp-legacy` or with
-the new integration using secrets `smtp`. A Juju version 
-with secrets will be required for the `smtp` integration.
-
-With the old integration without using secrets, run:
-```
-juju integrate smtp-integrator:smtp-legacy synapse:smtp
-```
-For the new integration with secrets, run:
-```
-juju integrate smtp-integrator:smtp synapse:smtp
-```
 
 ## Integrate with Traefik
 
