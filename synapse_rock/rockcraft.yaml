@@ -48,7 +48,7 @@ parts:
             - python3
             - xmlsec1
         stage-snaps:
-            - mjolnir/latest/stable
+            - mjolnir/latest/edge
         plugin: nil
         source: https://github.com/matrix-org/synapse/
         source-type: git
