@@ -478,6 +478,20 @@ def test_nginx_replan_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 
 
+def test_nginx_replan_sets_status_to_active(harness: Harness) -> None:
+    """
+    arrange: start Synapse charm with Synapse container and with pebble service ready.
+    act: Fire that Pebble ready and then NGINX container ready
+    assert: Pebble Service replan NGINX is called but unit is in maintenance waiting for Synapse.
+    """
+    harness.begin()
+    harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
+
+    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+
+    assert harness.model.unit.status == ops.ActiveStatus()
+
+
 def test_nginx_replan_with_synapse_container_down(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
