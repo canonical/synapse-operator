@@ -5,72 +5,87 @@
 
 # pylint: disable=protected-access
 
+from secrets import token_hex
+
 import pytest
 from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.testing import Harness
 
 from charm_types import SMTPConfiguration
 
-RELATION_DATA_TO_SMTP_CONF_PARAMS = [
-    (
-        {
-            "host": "127.0.0.1",
-            "port": "25",
-            "auth_type": AuthType.NONE,
-            "transport_security": TransportSecurity.NONE,
-        },
-        SMTPConfiguration(
-            enable_tls=False,
-            force_tls=False,
-            require_transport_security=False,
-            host="127.0.0.1",
-            port=25,
-            user=None,
-            password=None,
+
+def _test_get_relation_data_to_smtp_conf_parameters():
+    """Generate parameters for the test_get_relation_as_smtp_conf.
+
+    Returns:
+        The tests.
+    """
+    password = token_hex(16)
+    return [
+        pytest.param(
+            {
+                "host": "127.0.0.1",
+                "port": "25",
+                "auth_type": AuthType.NONE,
+                "transport_security": TransportSecurity.NONE,
+            },
+            SMTPConfiguration(
+                enable_tls=False,
+                force_tls=False,
+                require_transport_security=False,
+                host="127.0.0.1",
+                port=25,
+                user=None,
+                password=None,
+            ),
+            id="none auth type",
         ),
-    ),
-    (
-        {
-            "host": "127.0.0.1",
-            "port": "25",
-            "auth_type": AuthType.PLAIN,
-            "transport_security": TransportSecurity.STARTTLS,
-            "user": "username",
-            "password": "SECRET",  # no sec
-        },
-        SMTPConfiguration(
-            enable_tls=True,
-            force_tls=False,
-            require_transport_security=True,
-            host="127.0.0.1",
-            port=25,
-            user="username",
-            password="SECRET",  # nosec
+        pytest.param(
+            {
+                "host": "127.0.0.1",
+                "port": "25",
+                "auth_type": AuthType.PLAIN,
+                "transport_security": TransportSecurity.STARTTLS,
+                "user": "username",
+                "password": password,
+            },
+            SMTPConfiguration(
+                enable_tls=True,
+                force_tls=False,
+                require_transport_security=True,
+                host="127.0.0.1",
+                port=25,
+                user="username",
+                password=password,
+            ),
+            id="plain auth type with starttls",
         ),
-    ),
-    (
-        {
-            "host": "127.0.0.1",
-            "port": "587",
-            "auth_type": AuthType.PLAIN,
-            "transport_security": TransportSecurity.TLS,
-            "user": "username",
-            "password": "SECRET",  # nosec
-        },
-        SMTPConfiguration(
-            enable_tls=True,
-            force_tls=True,
-            require_transport_security=True,
-            host="127.0.0.1",
-            port=587,
-            user="username",
-            password="SECRET",  # nosec
+        pytest.param(
+            {
+                "host": "127.0.0.1",
+                "port": "587",
+                "auth_type": AuthType.PLAIN,
+                "transport_security": TransportSecurity.TLS,
+                "user": "username",
+                "password": password,
+            },
+            SMTPConfiguration(
+                enable_tls=True,
+                force_tls=True,
+                require_transport_security=True,
+                host="127.0.0.1",
+                port=587,
+                user="username",
+                password=password,
+            ),
+            id="plain auth type with tls",
         ),
-    ),
-]
+    ]
 
 
-@pytest.mark.parametrize("relation_data, expected_config", RELATION_DATA_TO_SMTP_CONF_PARAMS)
+@pytest.mark.parametrize(
+    "relation_data, expected_config", _test_get_relation_data_to_smtp_conf_parameters()
+)
 def test_get_relation_as_smtp_conf(harness: Harness, relation_data, expected_config):
     """
     arrange: add relation_data from parameter.
@@ -91,7 +106,8 @@ def test_get_relation_as_smtp_conf_password_from_juju_secret(harness: Harness):
     act: get smtp configuration from smtp observer.
     assert: password in smtp configuration is the same as the original secret.
     """
-    password_id = harness.add_model_secret("smtp-integrator", {"password": "SECRET"})
+    password = token_hex(16)
+    password_id = harness.add_model_secret("smtp-integrator", {"password": password})
     smtp_relation_data = {
         "host": "127.0.0.1",
         "port": "587",
@@ -106,4 +122,4 @@ def test_get_relation_as_smtp_conf_password_from_juju_secret(harness: Harness):
 
     smtp_configuration = harness.charm._smtp.get_relation_as_smtp_conf()
 
-    assert smtp_configuration["password"] == "SECRET"
+    assert smtp_configuration["password"] == password

@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import typing
+from secrets import token_hex
 
 import pytest
 import requests
@@ -383,7 +384,7 @@ async def test_synapse_enable_smtp(
         config={
             "auth_type": "plain",
             "host": "127.0.0.1",
-            "password": "SECRET",
+            "password": token_hex(16),
             "user": "username",
         },
     )
