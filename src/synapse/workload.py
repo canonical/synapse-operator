@@ -31,6 +31,7 @@ SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
+SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
 SYNAPSE_SERVICE_NAME = "synapse"
 
 logger = logging.getLogger(__name__)
