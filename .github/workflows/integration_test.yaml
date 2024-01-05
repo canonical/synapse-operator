@@ -12,7 +12,5 @@ jobs:
       chaos-enabled: false
       chaos-experiments: pod-delete
       trivy-image-config: "trivy.yaml"
-      # self-hosted-runner: true
-      # self-hosted-runner-label: "edge"
       juju-channel: 3.1/stable
       channel: 1.28-strict/stable
