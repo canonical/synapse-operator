@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 class SynapseCharm(ops.CharmBase):
     """Charm the service."""
 
+    # This class has several instance attributes like observers, libraries and state.
+    # Consider refactoring if more attributes are added.
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, *args: typing.Any) -> None:
