@@ -104,11 +104,44 @@ class SynapseCharm(ops.CharmBase):
         except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
+        self._set_unit_status()
+
+    def _set_unit_status(self) -> None:
+        """Set unit status depending on Synapse and NGINX state."""
+        # This method contains a similar check that the one in mjolnir.py for Synapse
+        # container and service. Until a refactoring is done for a different way of checking
+        # and setting the unit status in a hollistic way, both checks will be in place.
+        # pylint: disable=R0801
+
+        # If the unit is in a blocked state, do not change it, as it
+        # was set by a problem or error with the configuration
+        if isinstance(self.unit.status, ops.BlockedStatus):
+            return
+        # Synapse checks
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            return
+        synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
+        synapse_not_active = [
+            service for service in synapse_service.values() if not service.is_running()
+        ]
+        if not synapse_service or synapse_not_active:
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
+            return
+        # NGINX checks
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
-        self.pebble_service.replan_nginx(container)
+        nginx_service = container.get_services(synapse.SYNAPSE_NGINX_SERVICE_NAME)
+        nginx_not_active = [
+            service for service in nginx_service.values() if not service.is_running()
+        ]
+        if not nginx_service or nginx_not_active:
+            self.unit.status = ops.MaintenanceStatus("Waiting for NGINX")
+            return
+        # All checks passed, the unit is active
         self.model.unit.status = ops.ActiveStatus()
 
     def _set_workload_version(self) -> None:
@@ -139,6 +172,7 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
         self.pebble_service.replan_nginx(container)
+        self._set_unit_status()
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.

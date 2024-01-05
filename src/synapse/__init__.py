@@ -45,6 +45,7 @@ from .workload import (  # noqa: F401
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
     SYNAPSE_NGINX_PORT,
+    SYNAPSE_NGINX_SERVICE_NAME,
     SYNAPSE_SERVICE_NAME,
     ExecResult,
     WorkloadError,
