@@ -190,12 +190,12 @@ def smtp_configured_fixture(harness: Harness) -> Harness:
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     password_id = harness.add_model_secret("smtp-integrator", {"password": token_hex(16)})
     smtp_relation_data = {
-        "host": "127.0.0.1",
-        "port": "25",
-        "user": "username",
-        "password_id": password_id,
         "auth_type": AuthType.PLAIN,
-        "transport_security": TransportSecurity.NONE,
+        "host": "127.0.0.1",
+        "password_id": password_id,
+        "port": "25",
+        "transport_security": TransportSecurity.TLS,
+        "user": "username",
     }
     harness.add_relation("smtp", "smtp-integrator", app_data=smtp_relation_data)
     harness.grant_secret(password_id, "synapse")

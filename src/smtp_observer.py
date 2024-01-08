@@ -23,6 +23,7 @@ from ops.framework import Object
 from pydantic import ValidationError
 
 import synapse
+from charm_state import CharmConfigInvalidError
 from charm_types import SMTPConfiguration
 from pebble import PebbleServiceError
 
@@ -60,6 +61,9 @@ class SMTPObserver(Object):
 
         Returns:
             Dict: Information needed for setting environment variables.
+
+        Raises:
+            CharmConfigInvalidError: If the SMTP configurations is not supported.
         """
         try:
             relation_data: Optional[SmtpRelationData] = self.smtp.get_relation_data()
@@ -72,11 +76,14 @@ class SMTPObserver(Object):
         if relation_data is None:
             return None
 
-        user = None
-        password = None
-        if relation_data.auth_type == AuthType.PLAIN:
-            user = relation_data.user
-            password = self._get_password_from_relation_data(relation_data)
+        if relation_data.transport_security == TransportSecurity.NONE:
+            raise CharmConfigInvalidError("Transport security NONE is not supported for SMTP")
+
+        if relation_data.auth_type != AuthType.PLAIN:
+            raise CharmConfigInvalidError("Only PLAIN auth type is supported for SMTP")
+
+        user = relation_data.user
+        password = self._get_password_from_relation_data(relation_data)
 
         # Not all combinations for the next variables are correct. See:
         # https://github.com/matrix-org/synapse/blob/develop/synapse/config/emailconfig.py
