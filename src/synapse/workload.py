@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Helper module used to manage interactions with Synapse."""
@@ -31,6 +31,7 @@ SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
+SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
 SYNAPSE_SERVICE_NAME = "synapse"
 
 logger = logging.getLogger(__name__)
@@ -265,6 +266,27 @@ def execute_migrate_config(container: ops.Container, charm_state: CharmState) ->
         )
 
 
+def validate_config(container: ops.Container) -> None:
+    """Run the Synapse command to validate the configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong running migrate_config.
+    """
+    validate_config_result = _exec(
+        container, ["/usr/bin/python3", "-m", "synapse.config", "-c", SYNAPSE_CONFIG_PATH]
+    )
+    if validate_config_result.exit_code:
+        logger.error(
+            "validate config failed, stdout: %s, stderr: %s",
+            validate_config_result.stdout,
+            validate_config_result.stderr,
+        )
+        raise WorkloadError("Validate config failed, please check the logs")
+
+
 def enable_metrics(container: ops.Container) -> None:
     """Change the Synapse configuration to enable metrics.
 
@@ -307,6 +329,24 @@ def disable_password_config(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def disable_room_list_search(container: ops.Container) -> None:
+    """Change the Synapse configuration to disable room_list_search.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong disabling room_list_search.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["enable_room_list_search"] = False
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def enable_serve_server_wellknown(container: ops.Container) -> None:
     """Change the Synapse configuration to enable server wellknown file.
 
@@ -338,11 +378,35 @@ def enable_federation_domain_whitelist(container: ops.Container, charm_state: Ch
     try:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
-        if charm_state.synapse_config.federation_domain_whitelist is not None:
-            current_yaml["federation_domain_whitelist"] = [
-                item.strip()
-                for item in charm_state.synapse_config.federation_domain_whitelist.split(",")
-            ]
+        federation_domain_whitelist = charm_state.synapse_config.federation_domain_whitelist
+        if federation_domain_whitelist is not None:
+            current_yaml["federation_domain_whitelist"] = _create_tuple_from_string_list(
+                federation_domain_whitelist
+            )
+            container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
+def enable_trusted_key_servers(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to set trusted_key_servers.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        trusted_key_servers = charm_state.synapse_config.trusted_key_servers
+        if trusted_key_servers is not None:
+            current_yaml["trusted_key_servers"] = tuple(
+                {"server_name": f"{item}"}
+                for item in _create_tuple_from_string_list(trusted_key_servers)
+            )
             container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc
@@ -361,6 +425,41 @@ def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
         current_yaml["allow_public_rooms_over_federation"] = True
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
+def _create_tuple_from_string_list(string_list: str) -> tuple[str, ...]:
+    """Format IP range whitelist.
+
+    Args:
+        string_list: comma separated list configuration.
+
+    Returns:
+        Tuple as expected by Synapse.
+    """
+    return tuple(item.strip() for item in string_list.split(","))
+
+
+def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable ip_range_whitelist.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        ip_range_whitelist = charm_state.synapse_config.ip_range_whitelist
+        if ip_range_whitelist is None:
+            logger.warning("enable_ip_range_whitelist called but config is empty")
+            return
+        current_yaml["ip_range_whitelist"] = _create_tuple_from_string_list(ip_range_whitelist)
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc

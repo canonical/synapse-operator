@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse package is used to interact with Synapse instance."""
@@ -45,6 +45,7 @@ from .workload import (  # noqa: F401
     SYNAPSE_CONTAINER_NAME,
     SYNAPSE_NGINX_CONTAINER_NAME,
     SYNAPSE_NGINX_PORT,
+    SYNAPSE_NGINX_SERVICE_NAME,
     SYNAPSE_SERVICE_NAME,
     ExecResult,
     WorkloadError,
@@ -54,14 +55,18 @@ from .workload import (  # noqa: F401
     check_ready,
     create_mjolnir_config,
     disable_password_config,
+    disable_room_list_search,
     enable_allow_public_rooms_over_federation,
     enable_federation_domain_whitelist,
+    enable_ip_range_whitelist,
     enable_metrics,
     enable_saml,
     enable_serve_server_wellknown,
     enable_smtp,
+    enable_trusted_key_servers,
     execute_migrate_config,
     get_environment,
     get_registration_shared_secret,
     reset_instance,
+    validate_config,
 )

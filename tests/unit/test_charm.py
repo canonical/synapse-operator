@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse charm unit tests."""
@@ -161,6 +161,27 @@ def test_saml_integration_container_down(saml_configured: Harness) -> None:
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
     harness.cleanup()
+
+
+def test_saml_integration_pebble_success(
+    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_saml.
+    act: call enable_saml from pebble_service.
+    assert: synapse.enable_saml is called once.
+    """
+    harness = saml_configured
+    harness.begin()
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    enable_saml_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_saml", enable_saml_mock)
+
+    harness.charm._saml._pebble_service.enable_saml(container=container)
+
+    enable_saml_mock.assert_called_once_with(
+        container=container, charm_state=harness.charm._charm_state
+    )
 
 
 def test_saml_integration_pebble_error(
@@ -388,6 +409,7 @@ def test_enable_federation_domain_whitelist_is_called(
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    monkeypatch.setattr(synapse, "validate_config", MagicMock())
     enable_federation_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
@@ -412,6 +434,7 @@ def test_disable_password_config_is_called(
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
+    monkeypatch.setattr(synapse, "validate_config", MagicMock())
     disable_password_config_mock = MagicMock()
     monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
 
@@ -430,6 +453,7 @@ def test_nginx_replan(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None
     replan_nginx_mock = MagicMock()
     monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
 
+    harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
     harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
 
     replan_nginx_mock.assert_called_once()
@@ -437,7 +461,7 @@ def test_nginx_replan(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_nginx_replan_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    arrange: start the Synapse charm, mock replan_nginx call and set the container as down.
+    arrange: start the Synapse charm, mock replan_nginx call and set the NGINX container as down.
     act: fire that NGINX container is ready.
     assert: Pebble Service replan NGINX is not called.
     """
@@ -445,10 +469,65 @@ def test_nginx_replan_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     replan_nginx_mock = MagicMock()
     monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
 
-    harness.set_can_connect(
-        harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME], False
-    )
+    container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
+    harness.set_can_connect(container, False)
+    # harness.container_pebble_ready cannot be used as it sets the set_can_connect to True
+    harness.charm.on[synapse.SYNAPSE_NGINX_CONTAINER_NAME].pebble_ready.emit(container)
+
+    replan_nginx_mock.assert_not_called()
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+
+
+def test_nginx_replan_sets_status_to_active(harness: Harness) -> None:
+    """
+    arrange: start Synapse charm with Synapse container and with pebble service ready.
+    act: Fire that Pebble ready and then NGINX container ready.
+    assert: Pebble Service replan NGINX is called and sets unit to Active.
+    """
+    harness.begin()
+    harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
+
+    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+
+    assert harness.model.unit.status == ops.ActiveStatus()
+
+
+def test_nginx_replan_with_synapse_container_down(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start Synapse charm with Synapse container as down, and mock replan_nginx.
+    act: Fire that NGINX container is ready.
+    assert: Pebble Service replan NGINX is called but unit is in maintenance
+        waiting for Synapse pebble.
+    """
+    harness.begin()
+    replan_nginx_mock = MagicMock()
+    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    harness.set_can_connect(container, False)
+
     harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
 
     replan_nginx_mock.assert_called_once()
-    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+    assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse pebble")
+
+
+def test_nginx_replan_with_synapse_service_not_existing(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start Synapse charm with Synapse container but without synapse service,
+        and mock replan_nginx.
+    act: Fire that NGINX container is ready.
+    assert: Pebble Service replan NGINX is called but unit is in maintenance waiting for Synapse.
+    """
+    harness.begin()
+    replan_nginx_mock = MagicMock()
+    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+
+    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+
+    replan_nginx_mock.assert_called_once()
+    assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse")

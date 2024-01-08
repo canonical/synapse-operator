@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """State of the Charm."""
@@ -23,21 +23,6 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 )
 
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration
-
-KNOWN_CHARM_CONFIG = (
-    "enable_mjolnir",
-    "enable_password_config",
-    "federation_domain_whitelist",
-    "public_baseurl",
-    "report_stats",
-    "server_name",
-    "smtp_enable_tls",
-    "smtp_host",
-    "smtp_notif_from",
-    "smtp_pass",
-    "smtp_port",
-    "smtp_user",
-)
 
 
 class CharmConfigInvalidError(Exception):
@@ -77,7 +62,9 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
+        enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
+        ip_range_whitelist: ip_range_whitelist config.
         public_baseurl: public_baseurl config.
         report_stats: report_stats config.
         server_name: server_name config.
@@ -87,12 +74,15 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         smtp_pass: password to authenticate to SMTP host.
         smtp_port: SMTP port.
         smtp_user: username to authenticate to SMTP host.
+        trusted_key_servers: trusted_key_servers config.
     """
 
     allow_public_rooms_over_federation: bool = False
     enable_mjolnir: bool = False
     enable_password_config: bool = True
+    enable_room_list_search: bool = True
     federation_domain_whitelist: str | None = Field(None)
+    ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
@@ -102,6 +92,9 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     smtp_pass: str | None = Field(None)
     smtp_port: int | None = Field(None)
     smtp_user: str | None = Field(None)
+    trusted_key_servers: str | None = Field(
+        None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"
+    )
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -198,9 +191,10 @@ class CharmState:
         Raises:
             CharmConfigInvalidError: if the charm configuration is invalid.
         """
-        synapse_config = {k: v for k, v in charm.config.items() if k in KNOWN_CHARM_CONFIG}
         try:
-            valid_synapse_config = SynapseConfig(**synapse_config)  # type: ignore
+            # ignoring because mypy fails with:
+            # "has incompatible type "**dict[str, str]"; expected ...""
+            valid_synapse_config = SynapseConfig(**dict(charm.config.items()))  # type: ignore
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())

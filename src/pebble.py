@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Class to interact with pebble."""
@@ -73,7 +73,8 @@ class PebbleService:
         container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
         container.replan()
 
-    def change_config(self, container: ops.model.Container) -> None:
+    # The complexity of this method will be reviewed.
+    def change_config(self, container: ops.model.Container) -> None:  # noqa: C901
         """Change the configuration.
 
         Args:
@@ -99,6 +100,17 @@ class PebbleService:
                 )
             if self._charm_state.synapse_config.allow_public_rooms_over_federation:
                 synapse.enable_allow_public_rooms_over_federation(container=container)
+            if not self._charm_state.synapse_config.enable_room_list_search:
+                synapse.disable_room_list_search(container=container)
+            if self._charm_state.synapse_config.trusted_key_servers:
+                synapse.enable_trusted_key_servers(
+                    container=container, charm_state=self._charm_state
+                )
+            if self._charm_state.synapse_config.ip_range_whitelist:
+                synapse.enable_ip_range_whitelist(
+                    container=container, charm_state=self._charm_state
+                )
+            synapse.validate_config(container=container)
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
@@ -186,7 +198,7 @@ class PebbleService:
             "summary": "Synapse nginx layer",
             "description": "Synapse nginx layer",
             "services": {
-                "synapse-nginx": {
+                synapse.SYNAPSE_NGINX_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Nginx service",
                     "command": "/usr/sbin/nginx",

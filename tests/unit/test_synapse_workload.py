@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse workload unit tests."""
@@ -18,6 +18,7 @@ from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
+from charm_state import CharmState, SynapseConfig
 
 from .conftest import TEST_SERVER_NAME
 
@@ -70,6 +71,200 @@ def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatc
 
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_allow_public_rooms_over_federation(container_mock)
+
+
+@pytest.mark.parametrize(
+    "trusted_key_servers,expected_trusted_key_servers",
+    [
+        pytest.param("", [], id="empty_list", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("ubuntu.com", [{"server_name": "ubuntu.com"}], id="single_item"),
+        pytest.param(
+            "ubuntu.com,canonical.com",
+            [{"server_name": "ubuntu.com"}, {"server_name": "canonical.com"}],
+            id="multiple_items",
+        ),
+        pytest.param(
+            " ubuntu.com",
+            [],
+            id="single_item_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            " ubuntu.com,canonical.com",
+            [],
+            id="multiple_items_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "ubuntu.com ",
+            [],
+            id="single_item_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "ubuntu.com,canonical.com ",
+            [],
+            id="multiple_items_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param("111,222", [], id="numbers", marks=pytest.mark.xfail(strict=True)),
+        pytest.param(",,,", [], id="only_commas", marks=pytest.mark.xfail(strict=True)),
+    ],
+)
+def test_enable_trusted_key_servers_success(
+    trusted_key_servers: str, expected_trusted_key_servers: list[dict[str, str]], harness: Harness
+):
+    """
+    arrange: set mock container with file.
+    act: update trusted_key_servers config and call enable_trusted_key_servers.
+    assert: new configuration file is pushed and trusted_key_servers is enabled.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    harness.update_config({"trusted_key_servers": trusted_key_servers})
+    harness.begin()
+    synapse.enable_trusted_key_servers(container, harness.charm._charm_state)
+
+    content = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "trusted_key_servers": expected_trusted_key_servers,
+    }
+    assert content == expected_config_content
+
+
+@pytest.mark.parametrize(
+    "ip_range_whitelist,expected_ip_range_whitelist",
+    [
+        pytest.param("", [], id="empty_list", marks=pytest.mark.xfail(strict=True)),
+        pytest.param("10.10.10.10", ["10.10.10.10"], id="single_item"),
+        pytest.param(",".join(["10.10.10.10"] * 100), ["10.10.10.10"] * 100, id="multiple_items"),
+        pytest.param(
+            " 10.10.10.10",
+            [],
+            id="single_item_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            " 10.10.10.10,11.11.11.11",
+            [],
+            id="multiple_items_leading_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "10.10.10.10 ",
+            [],
+            id="single_item_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param(
+            "10.10.10.10 ,11.11.11.11",
+            [],
+            id="multiple_items_trailing_whitespace",
+            marks=pytest.mark.xfail(strict=True),
+        ),
+        pytest.param("abc,def", [], id="letters", marks=pytest.mark.xfail(strict=True)),
+        pytest.param(",,,", [], id="only_commas", marks=pytest.mark.xfail(strict=True)),
+    ],
+)
+def test_enable_ip_range_whitelist_success(
+    ip_range_whitelist: str, expected_ip_range_whitelist: list[str], harness: Harness
+):
+    """
+    arrange: set mock container with file.
+    act: update ip_range_whitelist config and call enable_ip_range_whitelist.
+    assert: new configuration file is pushed and ip_range_whitelist is enabled.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    harness.update_config({"ip_range_whitelist": ip_range_whitelist})
+    harness.begin()
+    synapse.enable_ip_range_whitelist(container, harness.charm._charm_state)
+
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        expected_config_content = {
+            "listeners": [
+                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            ],
+            "ip_range_whitelist": expected_ip_range_whitelist,
+        }
+        assert content == expected_config_content
+
+
+def test_enable_ip_range_whitelist_blocked(harness: Harness):
+    """
+    arrange: update the ip_range_whitelist with invalid value.
+    act: start the charm.
+    assert: charm is blocked due invalid configuration.
+    """
+    expected_first_domain = "foo1"
+    expected_second_domain = "foo2"
+    harness.update_config(
+        {"ip_range_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+    )
+
+    harness.begin()
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+
+
+def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: leave ip_range_whitelist config empty and call enable_ip_range_whitelist.
+    assert: configuration file is not changed.
+    """
+    container_mock = MagicMock(spec=ops.Container)
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    harness.begin()
+    config = {"server_name": "foo", "ip_range_whitelist": None}
+    # ignoring setting the other arguments
+    synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
+    synapse.enable_ip_range_whitelist(
+        container_mock,
+        CharmState(datasource=None, saml_config=None, synapse_config=synapse_config),
+    )
+
+    container_mock.pull.assert_called_once()
+    container_mock.push.assert_not_called()
 
 
 def test_enable_federation_domain_whitelist_success(
@@ -127,14 +322,111 @@ def test_enable_federation_domain_whitelist_error(
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
 
+    expected_first_domain = "foo1"
+    expected_second_domain = "foo2"
+    harness.update_config(
+        {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
+    )
+    harness.begin()
     with pytest.raises(synapse.WorkloadError, match=error_message):
-        expected_first_domain = "foo1"
-        expected_second_domain = "foo2"
-        harness.update_config(
-            {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
-        )
-        harness.begin()
         synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
+
+
+def test_enable_trusted_key_servers_no_action(harness: Harness):
+    """
+    arrange: set mock container with file.
+    act: call enable_trusted_key_servers without changing the configuration.
+    assert: configuration is not changed.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    config = {"server_name": "foo"}
+    synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
+
+    synapse.enable_trusted_key_servers(
+        container, CharmState(datasource=None, saml_config=None, synapse_config=synapse_config)
+    )
+
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        expected_config_content = {
+            "listeners": [
+                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            ],
+        }
+        assert content == expected_config_content
+
+
+def test_disable_room_list_search_success(harness: Harness):
+    """
+    arrange: set mock container with file.
+    act: change the configuration file.
+    assert: new configuration file is pushed and room_list_search is disabled.
+    """
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        """
+listeners:
+    - type: http
+      port: 8080
+      bind_addresses:
+        - "::"
+"""
+    )
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+
+    synapse.disable_room_list_search(container)
+
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        expected_config_content = {
+            "listeners": [
+                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            ],
+            "enable_room_list_search": False,
+        }
+        assert content == expected_config_content
+
+
+def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: mock the validation command to fail.
+    act: validate the configuration file.
+    assert: WorkloadError is raised.
+    """
+    monkeypatch.setattr(
+        synapse.workload, "_exec", MagicMock(return_value=synapse.ExecResult(1, "Fail", "Error"))
+    )
+    container_mock = MagicMock(spec=ops.Container)
+
+    with pytest.raises(synapse.WorkloadError, match="Validate config failed"):
+        synapse.validate_config(container_mock)
+
+
+def test_disable_room_list_search_path_error(harness: Harness):
+    """
+    arrange: dont add any configuration file to the container.
+    act: disable room list search.
+    assert: WorkloadError is raised.
+    """
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    with pytest.raises(synapse.WorkloadError, match="not-found"):
+        synapse.disable_room_list_search(container)
 
 
 def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
