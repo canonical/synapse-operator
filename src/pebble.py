@@ -215,7 +215,7 @@ class PebbleService:
             "summary": "Synapse nginx layer",
             "description": "Synapse nginx layer",
             "services": {
-                "synapse-nginx": {
+                synapse.SYNAPSE_NGINX_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Nginx service",
                     "command": "/usr/sbin/nginx",
