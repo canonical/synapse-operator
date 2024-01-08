@@ -53,7 +53,6 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     access_token = get_access_token(synapse_ip, user_username, user_password)
     create_moderators_room(synapse_ip, access_token)
     async with ops_test.fast_forward():
-        # using fast_forward otherwise would wait for model config update-status-hook-interval
         await synapse_charmhub_app.model.wait_for_idle(
             idle_period=30, apps=[synapse_charmhub_app.name], status="active"
         )
@@ -76,8 +75,10 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
 
-    res = requests.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
-    assert res.status_code == 200
+    mjolnir_response = requests.get(
+        f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
+    )
+    assert mjolnir_response.status_code == 200
 
 
 async def test_synapse_is_up(
