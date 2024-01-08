@@ -19,6 +19,7 @@ from ops.testing import Harness
 import synapse
 from charm import SynapseCharm
 from charm_state import CharmState, SynapseConfig
+from charm_types import SMTPConfiguration
 
 from .conftest import TEST_SERVER_NAME
 
@@ -260,7 +261,9 @@ def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pyte
     synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
     synapse.enable_ip_range_whitelist(
         container_mock,
-        CharmState(datasource=None, saml_config=None, synapse_config=synapse_config),
+        CharmState(
+            datasource=None, saml_config=None, smtp_config=None, synapse_config=synapse_config
+        ),
     )
 
     container_mock.pull.assert_called_once()
@@ -313,7 +316,7 @@ def test_enable_federation_domain_whitelist_error(
 ):
     """
     arrange: set mock container with file.
-    act: update federation_domain_whitelist config and call enable_smtp.
+    act: update federation_domain_whitelist config and call enable_federation_domain_whitelist.
     assert: raise WorkloadError in case of error.
     """
     error_message = "Error pulling file"
@@ -356,7 +359,10 @@ listeners:
     synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
 
     synapse.enable_trusted_key_servers(
-        container, CharmState(datasource=None, saml_config=None, synapse_config=synapse_config)
+        container,
+        CharmState(
+            datasource=None, saml_config=None, smtp_config=None, synapse_config=synapse_config
+        ),
     )
 
     with open(config_path, encoding="utf-8") as config_file:
@@ -679,7 +685,18 @@ def test_create_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
     )
 
 
-def test_enable_smtp_success(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+SMTP_CONFIGURATION = SMTPConfiguration(
+    enable_tls=True,
+    force_tls=False,
+    require_transport_security=True,
+    host="smtp.example.com",
+    port=25,
+    user="username",
+    password=token_hex(16),
+)
+
+
+def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
     act: update smtp_host config and call enable_smtp.
@@ -699,27 +716,46 @@ def test_enable_smtp_success(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(container_mock, "pull", pull_mock)
     monkeypatch.setattr(container_mock, "push", push_mock)
 
-    expected_smtp_host = "127.0.0.1"
-    harness.update_config({"smtp_host": expected_smtp_host})
-    harness.begin()
-    synapse.enable_smtp(container_mock, harness.charm._charm_state)
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        synapse_config=SynapseConfig(
+            federation_domain_whitelist=None,
+            ip_range_whitelist=None,
+            notif_from="noreply@example.com",
+            public_baseurl=None,
+            report_stats=None,
+            server_name="example.com",
+            trusted_key_servers=None,
+        ),
+    )
+    synapse.enable_smtp(container_mock, charm_state)
 
     assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    server_name = harness.charm._charm_state.synapse_config.server_name
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
-        "email": {"notif_from": server_name, "smtp_host": expected_smtp_host, "smtp_port": 25},
+        "email": {
+            "enable_tls": True,
+            "force_tls": False,
+            "require_transport_security": True,
+            "notif_from": "noreply@example.com",
+            "smtp_host": "smtp.example.com",
+            "smtp_port": 25,
+            "smtp_user": "username",
+            "smtp_pass": SMTP_CONFIGURATION["password"],
+        },
     }
     assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_smtp_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
-    act: update smtp_host config and call enable_smtp.
+    act: add smtp integration call enable_smtp.
     assert: raise WorkloadError in case of error.
     """
     error_message = "Error pulling file"
@@ -728,17 +764,28 @@ def test_enable_smtp_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "pull", pull_mock)
 
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        synapse_config=SynapseConfig(
+            federation_domain_whitelist=None,
+            ip_range_whitelist=None,
+            notif_from="noreply@example.com",
+            public_baseurl=None,
+            report_stats=None,
+            server_name="example.com",
+            trusted_key_servers=None,
+        ),
+    )
     with pytest.raises(synapse.WorkloadError, match=error_message):
-        expected_smtp_host = "127.0.0.1"
-        harness.update_config({"smtp_host": expected_smtp_host})
-        harness.begin()
-        synapse.enable_smtp(container_mock, harness.charm._charm_state)
+        synapse.enable_smtp(container_mock, charm_state)
 
 
 def test_enable_serve_server_wellknown_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
-    act: update smtp_host config and call enable_serve_server_wellknown.
+    act: call enable_serve_server_wellknown.
     assert: new configuration file is pushed and serve_server_wellknown is enabled.
     """
     config_content = """

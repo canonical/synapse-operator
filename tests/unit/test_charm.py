@@ -194,6 +194,7 @@ def test_saml_integration_pebble_error(
     """
     harness = saml_configured
     harness.begin()
+
     relation = harness.charm.framework.model.get_relation("saml", 0)
     enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
     monkeypatch.setattr(harness.charm._saml._pebble_service, "enable_saml", enable_saml_mock)
@@ -203,6 +204,64 @@ def test_saml_integration_pebble_error(
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "SAML integration failed" in str(harness.model.unit.status)
     harness.cleanup()
+
+
+def test_smtp_integration_container_down(smtp_configured: Harness) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, set Synapse container to be down.
+    act: emit smtp_data_available.
+    assert: Synapse charm should report maintenance status and waiting for pebble.
+    """
+    harness = smtp_configured
+    harness.begin()
+    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
+    relation = harness.charm.framework.model.get_relation("smtp", 0)
+
+    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+    assert "Waiting for" in str(harness.model.unit.status)
+
+
+def test_smtp_relation_pebble_success(smtp_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_smtp.
+    act: emit smtp_data_available
+    assert: synapse.enable_smtp is called once and unit is active.
+    """
+    harness = smtp_configured
+    enable_smtp_mock = MagicMock()
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    monkeypatch.setattr(synapse, "enable_smtp", enable_smtp_mock)
+
+    harness.begin()
+
+    relation = harness.charm.framework.model.get_relation("smtp", 0)
+    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+
+    enable_smtp_mock.assert_called_once_with(
+        container=container, charm_state=harness.charm._charm_state
+    )
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+def test_smtp_relation_pebble_error(smtp_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit smtp_data_available.
+    assert: Synapse charm should submit the correct status (blocked).
+    """
+    harness = smtp_configured
+    harness.begin()
+
+    enable_smtp_mock = MagicMock(side_effect=PebbleServiceError("fail"))
+    monkeypatch.setattr(harness.charm._smtp._pebble_service, "enable_smtp", enable_smtp_mock)
+
+    relation = harness.charm.framework.model.get_relation("smtp", 0)
+    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "SMTP integration failed" in str(harness.model.unit.status)
 
 
 def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:

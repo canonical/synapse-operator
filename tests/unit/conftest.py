@@ -7,10 +7,12 @@
 
 import typing
 import unittest.mock
+from secrets import token_hex
 
 import ops
 import pytest
 import yaml
+from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.pebble import ExecError
 from ops.testing import Harness
 
@@ -177,6 +179,26 @@ def saml_configured_fixture(harness: Harness) -> Harness:
         "metadata_url": "https://login.staging.ubuntu.com/saml/metadata",
     }
     harness.add_relation("saml", "saml-integrator", app_data=saml_relation_data)
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    return harness
+
+
+@pytest.fixture(name="smtp_configured")
+def smtp_configured_fixture(harness: Harness) -> Harness:
+    """Harness fixture with smtp relation configured"""
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    password_id = harness.add_model_secret("smtp-integrator", {"password": token_hex(16)})
+    smtp_relation_data = {
+        "auth_type": AuthType.PLAIN,
+        "host": "127.0.0.1",
+        "password_id": password_id,
+        "port": "25",
+        "transport_security": TransportSecurity.TLS,
+        "user": "username",
+    }
+    harness.add_relation("smtp", "smtp-integrator", app_data=smtp_relation_data)
+    harness.grant_secret(password_id, "synapse")
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     harness.set_leader(True)
     return harness
