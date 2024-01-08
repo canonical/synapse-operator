@@ -10,8 +10,6 @@ from secrets import token_hex
 
 import pytest
 import pytest_asyncio
-import requests
-from juju.action import Action
 from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
@@ -19,6 +17,7 @@ from pytest import Config
 from pytest_operator.plugin import OpsTest
 
 from tests.conftest import SYNAPSE_IMAGE_PARAM, SYNAPSE_NGINX_IMAGE_PARAM
+from tests.integration.helpers import get_access_token, register_user
 
 # caused by pytest fixtures, mark does not work in fixtures
 # pylint: disable=too-many-arguments, unused-argument
@@ -83,17 +82,17 @@ def synapse_app_name_fixture() -> str:
     return "synapse"
 
 
-@pytest_asyncio.fixture(scope="module", name="synapse_app_refresh_name")
-def synapse_app_refresh_name_fixture() -> str:
-    """Get Synapse application name for refresh fixture."""
-    return "synapse-refresh"
+@pytest_asyncio.fixture(scope="module", name="synapse_app_charmhub_name")
+def synapse_app_charmhub_name_fixture() -> str:
+    """Get Synapse application name from Charmhub fixture."""
+    return "synapse-charmhub"
 
 
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
     ops_test: OpsTest,
     synapse_app_name: str,
-    synapse_app_refresh_name: str,
+    synapse_app_charmhub_name: str,
     synapse_image: str,
     synapse_nginx_image: str,
     model: Model,
@@ -107,8 +106,8 @@ async def synapse_app_fixture(
     use_existing = pytestconfig.getoption("--use-existing", default=False)
     if use_existing:
         return model.applications[synapse_app_name]
-    if synapse_app_refresh_name in model.applications:
-        await model.remove_application(synapse_app_refresh_name, block_until_done=True)
+    if synapse_app_charmhub_name in model.applications:
+        await model.remove_application(synapse_app_charmhub_name, block_until_done=True)
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
     resources = {
         "synapse-image": synapse_image,
@@ -128,38 +127,33 @@ async def synapse_app_fixture(
     return app
 
 
-@pytest_asyncio.fixture(scope="module", name="synapse_refresh_app")
-async def synapse_refresh_app_fixture(
+@pytest_asyncio.fixture(scope="module", name="synapse_charmhub_app")
+async def synapse_charmhub_app_fixture(
     ops_test: OpsTest,
     model: Model,
     server_name: str,
-    synapse_app_refresh_name: str,
+    synapse_app_charmhub_name: str,
     postgresql_app: Application,
     postgresql_app_name: str,
     synapse_charm: str,
 ):
     """Remove existing Synapse and deploy synapse from Charmhub so the refresh can be tested."""
     async with ops_test.fast_forward():
-        synapse_app = await model.deploy(
+        app = await model.deploy(
             "synapse",
-            application_name=synapse_app_refresh_name,
+            application_name=synapse_app_charmhub_name,
             trust=True,
             channel="latest/edge",
             series="jammy",
             config={"server_name": server_name},
         )
         await model.wait_for_idle(
-            apps=[synapse_app_refresh_name, postgresql_app_name],
+            apps=[synapse_app_charmhub_name, postgresql_app_name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
-        await model.relate(f"{synapse_app_refresh_name}:database", f"{postgresql_app_name}")
+        await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(idle_period=5)
-        await synapse_app.set_config({"enable_mjolnir": "true"})
-        await model.wait_for_idle(apps=[synapse_app_refresh_name], idle_period=5, status="blocked")
-        app = model.applications[synapse_app_refresh_name]
-        await app.refresh(path=f"./{synapse_charm}")
-        await model.wait_for_idle(apps=[synapse_app_refresh_name], idle_period=5, status="blocked")
     return app
 
 
@@ -320,15 +314,7 @@ async def user_password_fixture(
     synapse_app: Application, user_username: str
 ) -> typing.AsyncGenerator[str, None]:
     """Return the a username to be created for tests."""
-    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "register-user", username=user_username, admin=True
-    )
-    await action_register_user.wait()
-    assert action_register_user.status == "completed"
-    assert action_register_user.results["register-user"]
-    password = action_register_user.results["user-password"]
-    assert password
-    yield password
+    return await register_user(synapse_app, user_username)
 
 
 @pytest_asyncio.fixture(scope="module", name="access_token")
@@ -340,18 +326,4 @@ async def access_token_fixture(
 ) -> typing.AsyncGenerator[str, None]:
     """Return the access token after login with the username and password."""
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    # login
-    sess = requests.session()
-    res = sess.post(
-        f"http://{synapse_ip}:8080/_matrix/client/r0/login",
-        json={
-            "identifier": {"type": "m.id.user", "user": user_username},
-            "password": user_password,
-            "type": "m.login.password",
-        },
-        timeout=5,
-    )
-    res.raise_for_status()
-    access_token = res.json()["access_token"]
-    assert access_token
-    yield access_token
+    return get_access_token(synapse_ip, user_username, user_password)
