@@ -65,7 +65,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     await synapse_charmhub_app.refresh(path=f"./{synapse_charm}", resources=resources)
     await model.wait_for_idle(apps=[synapse_charmhub_app.name], idle_period=5, status="active")
 
-    # Unit ip could change
+    # Unit ip could change because it is a different pod.
     synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
     response = requests.get(
         f"http://{synapse_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
