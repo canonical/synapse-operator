@@ -90,7 +90,7 @@ Note that the smtp-integrator provides two interfaces, `smtp` and `smtp-legacy`.
 Only use the first one if the Juju version used supports secrets. The "From" email
 is set with the Synapse configuration option `notif_from`.
 
-For the smtp-integrator, unsecure configurations with `transport_security=none` or not
+For the smtp-integrator, insecure configurations with `transport_security=none` or not
 authenticated connections with `auth_type=none` are not supported.
 
 See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
