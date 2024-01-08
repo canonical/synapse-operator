@@ -6,6 +6,8 @@ emails. Synapse should be deployed beforehand.
 ## Deploy smtp-integrator charm
 
 For synapse to use SMTP, it uses the smtp-integrator charm. Replace the configuration options with your specific configuration.
+Configuring SMTP without tls or starttls or without authentication is not supported.
+
 ```
 juju deploy smtp-integrator --channel edge
 juju config smtp-integrator host=<smtp host> port=<smtp port> user=<smtp auth user> password=<smtp auth password> auth_type=plain transport_security=tls
