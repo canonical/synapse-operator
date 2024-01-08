@@ -385,6 +385,7 @@ async def test_synapse_enable_smtp(
             "auth_type": "plain",
             "host": "127.0.0.1",
             "password": token_hex(16),
+            "transport_security": "tls",
             "user": "username",
         },
     )
