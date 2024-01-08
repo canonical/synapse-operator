@@ -90,7 +90,8 @@ class PebbleService:
             if self._charm_state.saml_config is not None:
                 logger.debug("pebble.change_config: Enabling SAML")
                 synapse.enable_saml(container=container, charm_state=self._charm_state)
-            if self._charm_state.synapse_config.smtp_host:
+            if self._charm_state.smtp_config is not None:
+                logger.debug("pebble.change_config: Enabling SMTP")
                 synapse.enable_smtp(container=container, charm_state=self._charm_state)
             if not self._charm_state.synapse_config.enable_password_config:
                 synapse.disable_password_config(container=container)
@@ -127,6 +128,22 @@ class PebbleService:
         try:
             logger.debug("pebble.enable_saml: Enabling SAML")
             synapse.enable_saml(container=container, charm_state=self._charm_state)
+            self.restart_synapse(container)
+        except (synapse.WorkloadError, ops.pebble.PathError) as exc:
+            raise PebbleServiceError(str(exc)) from exc
+
+    def enable_smtp(self, container: ops.model.Container) -> None:
+        """Enable SMTP while receiving on_smtp_data_available event.
+
+        Args:
+            container: Charm container.
+
+        Raises:
+            PebbleServiceError: if something goes wrong while interacting with Pebble.
+        """
+        try:
+            logger.debug("pebble.enable_smtp: Enabling SMTP")
+            synapse.enable_smtp(container=container, charm_state=self._charm_state)
             self.restart_synapse(container)
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc

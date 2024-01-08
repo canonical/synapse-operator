@@ -14,7 +14,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -46,6 +46,7 @@ State of the Charm.
  - <b>`synapse_config`</b>:  synapse configuration. 
  - <b>`datasource`</b>:  datasource information. 
  - <b>`saml_config`</b>:  saml configuration. 
+ - <b>`smtp_config`</b>:  smtp configuration. 
  - <b>`proxy`</b>:  proxy information. 
 
 
@@ -64,7 +65,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -72,7 +73,8 @@ Get charm proxy information from juju charm environment.
 from_charm(
     charm: CharmBase,
     datasource: Optional[DatasourcePostgreSQL],
-    saml_config: Optional[SAMLConfiguration]
+    saml_config: Optional[SAMLConfiguration],
+    smtp_config: Optional[SMTPConfiguration]
 ) → CharmState
 ```
 
@@ -85,6 +87,7 @@ Initialize a new instance of the CharmState class from the associated charm.
  - <b>`charm`</b>:  The charm instance associated with this state. 
  - <b>`datasource`</b>:  datasource information to be used by Synapse. 
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
+ - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
 
 Return: The CharmState instance created by the provided charm. 
 
@@ -127,15 +130,10 @@ Represent Synapse builtin configuration values.
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
  - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
+ - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`server_name`</b>:  server_name config. 
- - <b>`smtp_enable_tls`</b>:  enable tls while connecting to SMTP server. 
- - <b>`smtp_host`</b>:  SMTP host. 
- - <b>`smtp_notif_from`</b>:  defines the "From" address to use when sending emails. 
- - <b>`smtp_pass`</b>:  password to authenticate to SMTP host. 
- - <b>`smtp_port`</b>:  SMTP port. 
- - <b>`smtp_user`</b>:  username to authenticate to SMTP host. 
  - <b>`trusted_key_servers`</b>:  trusted_key_servers config. 
 
 
@@ -143,34 +141,31 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>classmethod</kbd> `set_default_smtp_notif_from`
+### <kbd>classmethod</kbd> `get_default_notif_from`
 
 ```python
-set_default_smtp_notif_from(
-    smtp_notif_from: Optional[str],
-    values: dict
-) → Optional[str]
+get_default_notif_from(notif_from: Optional[str], values: dict) → Optional[str]
 ```
 
-Set server_name as default value to smtp_notif_from. 
+Set server_name as default value to notif_from. 
 
 
 
 **Args:**
  
- - <b>`smtp_notif_from`</b>:  the smtp_notif_from current value. 
+ - <b>`notif_from`</b>:  the notif_from current value. 
  - <b>`values`</b>:  values already defined. 
 
 
 
 **Returns:**
- The default value for smtp_notif_from if not defined. 
+ The default value for notif_from if not defined. 
 
 ---
 
-<a href="../src/charm_state.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

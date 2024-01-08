@@ -73,6 +73,10 @@ class EnableSAMLError(WorkloadError):
     """Exception raised when something goes wrong while enabling SAML."""
 
 
+class EnableSMTPError(WorkloadError):
+    """Exception raised when something goes wrong while enabling SMTP."""
+
+
 class ExecResult(typing.NamedTuple):
     """A named tuple representing the result of executing a command.
 
@@ -602,28 +606,35 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
         charm_state: Instance of CharmState.
 
     Raises:
-        WorkloadError: something went wrong enabling SMTP.
+        EnableSMTPError: something went wrong enabling SMTP.
     """
     try:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
         current_yaml["email"] = {}
-        # The following three configurations are mandatory for SMTP.
-        current_yaml["email"]["smtp_host"] = charm_state.synapse_config.smtp_host
-        current_yaml["email"]["smtp_port"] = charm_state.synapse_config.smtp_port
-        current_yaml["email"]["notif_from"] = charm_state.synapse_config.smtp_notif_from
-        if charm_state.synapse_config.smtp_user:
-            current_yaml["email"]["smtp_user"] = charm_state.synapse_config.smtp_user
-        if charm_state.synapse_config.smtp_pass:
-            current_yaml["email"]["smtp_pass"] = charm_state.synapse_config.smtp_pass
-        if not charm_state.synapse_config.smtp_enable_tls:
-            # Only set if the user set as false.
-            # By default, if the server supports TLS, it will be used,
-            # and the server must present a certificate that is valid for 'smtp_host'.
-            current_yaml["email"]["enable_tls"] = charm_state.synapse_config.smtp_enable_tls
+        current_yaml["email"]["notif_from"] = charm_state.synapse_config.notif_from
+
+        if charm_state.smtp_config is None:
+            raise EnableSMTPError(
+                "SMTP Configuration not found. "
+                "Please verify the integration between SMTP Integrator and Synapse."
+            )
+
+        smtp_config = charm_state.smtp_config
+        current_yaml["email"]["smtp_host"] = smtp_config["host"]
+        current_yaml["email"]["smtp_port"] = smtp_config["port"]
+        if charm_state.smtp_config["user"] is not None:
+            current_yaml["email"]["smtp_user"] = smtp_config["user"]
+        if charm_state.smtp_config["password"] is not None:
+            current_yaml["email"]["smtp_pass"] = smtp_config["password"]
+        current_yaml["email"]["enable_tls"] = smtp_config["enable_tls"]
+        current_yaml["email"]["force_tls"] = smtp_config["force_tls"]
+        current_yaml["email"]["require_transport_security"] = smtp_config[
+            "require_transport_security"
+        ]
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
-        raise WorkloadError(str(exc)) from exc
+        raise EnableSMTPError(str(exc)) from exc
 
 
 def reset_instance(container: ops.Container) -> None:

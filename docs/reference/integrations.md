@@ -74,3 +74,23 @@ clients use to access this Homeserver. It's used as `entity_id` if set instead o
 https://server_name.
 
 See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
+
+
+### smtp
+
+_Interface_: smtp
+_Supported charms_: [smtp-integrator](https://charmhub.io/smtp-integrator/)
+
+Integrating Synapse with SMTP Integrator provides SMTP configuration details so
+a smtp server can be used in Synapse.
+
+Example smtp integrate command: `juju integrate synapse smtp-integrator:smtp`
+
+Note that the smtp-integrator provides two interfaces, `smtp` and `smtp-legacy`. 
+Only use the first one if the Juju version used supports secrets. The "From" email
+is set with the Synapse configuration option `notif_from`.
+
+For the smtp-integrator, insecure configurations with `transport_security=none` or not
+authenticated connections with `auth_type=none` are not supported.
+
+See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).

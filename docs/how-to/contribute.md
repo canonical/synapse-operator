@@ -84,7 +84,7 @@ the registry:
     skopeo --insecure-policy copy oci-archive:synapse_1.0_amd64.rock docker-daemon:localhost:32000/synapse:latest
     docker push localhost:32000/synapse:latest
     cd [project_dir]/nginx_rock && rockcraft pack rockcraft.yaml
-    skopeo --insecure-policy copy oci-archive:synapse_nginx_1.0_amd64.rock docker-daemon:localhost:32000/synapse-nginx:latest
+    skopeo --insecure-policy copy oci-archive:synapse-nginx_1.0_amd64.rock docker-daemon:localhost:32000/synapse-nginx:latest
     docker push localhost:32000/synapse-nginx:latest
 
 ### Deploy

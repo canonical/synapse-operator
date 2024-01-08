@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import typing
+from secrets import token_hex
 
 import pytest
 import requests
@@ -352,29 +353,57 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
         assert "Continue to your account" in logged_in_page.text
 
 
+@pytest.mark.parametrize(
+    "relation_name",
+    [
+        pytest.param("smtp-legacy"),
+        pytest.param("smtp", marks=[pytest.mark.requires_secrets]),
+    ],
+)
 async def test_synapse_enable_smtp(
+    model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
+    relation_name: str,
 ):
     """
-    arrange: build and deploy the Synapse charm, create an user, get the access token
-        and enable SMTP.
+    arrange: build and deploy the Synapse charm. Create an user and get the access token
+        Deploy, configure and integrate with Synapse the smtp-integrator charm.
     act:  try to check if a given email address is not already associated.
     assert: the Synapse application is active and the error returned is the one expected.
     """
-    await synapse_app.set_config({"smtp_host": "127.0.0.1"})
-    await synapse_app.model.wait_for_idle(
-        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME
+    if "smtp-integrator" in model.applications:
+        await model.remove_application("smtp-integrator")
+        await model.block_until(lambda: "smtp-integrator" not in model.applications, timeout=60)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+
+    smtp_integrator_app = await model.deploy(
+        "smtp-integrator",
+        channel="latest/edge",
+        config={
+            "auth_type": "plain",
+            "host": "127.0.0.1",
+            "password": token_hex(16),
+            "transport_security": "tls",
+            "user": "username",
+        },
+    )
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.add_relation(f"{smtp_integrator_app.name}:{relation_name}", synapse_app.name)
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, smtp_integrator_app.name],
+        status=ACTIVE_STATUS_NAME,
     )
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
     sample_check = {
-        "id_server": "id.matrix.org",
         "client_secret": "this_is_my_secret_string",
         "email": "example@example.com",
+        "id_server": "id.matrix.org",
         "send_attempt": "1",
     }
     sess = requests.session()
