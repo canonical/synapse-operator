@@ -20,6 +20,7 @@ from pytest_operator.plugin import OpsTest
 from saml_test_helper import SamlK8sTestHelper
 
 import synapse
+from tests.integration.helpers import create_moderators_room, get_access_token, register_user
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -30,22 +31,54 @@ ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip(reason="error Waiting for pebble will be addressed in a followup PR")
-async def test_synapse_from_refresh_is_up(
-    synapse_refresh_app: Application,
+async def test_synapse_with_mjolnir_from_refresh_is_up(
+    ops_test: OpsTest,
+    model: Model,
+    synapse_charmhub_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    synapse_charm: str,
+    synapse_image: str,
+    synapse_nginx_image: str,
 ):
     """
-    arrange: build and deploy the Synapse charm.
-    act: send a request to the Synapse application managed by the Synapse charm.
-    assert: the Synapse application should return a correct response.
+    arrange: build and deploy the Synapse charm from charmhub and enable Mjolnir.
+    act: Refresh the charm with the local one.
+    assert: Synapse and Mjolnir health points should return correct responses.
     """
-    for unit_ip in await get_unit_ips(synapse_refresh_app.name):
-        response = requests.get(
-            f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+    await synapse_charmhub_app.set_config({"enable_mjolnir": "true"})
+    await model.wait_for_idle(apps=[synapse_charmhub_app.name], idle_period=5, status="blocked")
+    synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
+    user_username = token_hex(16)
+    user_password = await register_user(synapse_charmhub_app, user_username)
+    access_token = get_access_token(synapse_ip, user_username, user_password)
+    create_moderators_room(synapse_ip, access_token)
+    async with ops_test.fast_forward():
+        await synapse_charmhub_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_charmhub_app.name], status="active"
         )
-        assert response.status_code == 200
-        assert "Welcome to the Matrix" in response.text
+
+    resources = {
+        "synapse-image": synapse_image,
+        "synapse-nginx-image": synapse_nginx_image,
+    }
+    await synapse_charmhub_app.refresh(path=f"./{synapse_charm}", resources=resources)
+    async with ops_test.fast_forward():
+        await synapse_charmhub_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_charmhub_app.name], status="active"
+        )
+
+    # Unit ip could change because it is a different pod.
+    synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
+    response = requests.get(
+        f"http://{synapse_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+    )
+    assert response.status_code == 200
+    assert "Welcome to the Matrix" in response.text
+
+    mjolnir_response = requests.get(
+        f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
+    )
+    assert mjolnir_response.status_code == 200
 
 
 async def test_synapse_is_up(
@@ -248,31 +281,14 @@ async def test_synapse_enable_mjolnir(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
     )
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    authorization_token = f"Bearer {access_token}"
-    headers = {"Authorization": authorization_token}
-    room_body = {
-        "creation_content": {"m.federate": False},
-        "name": "moderators",
-        "preset": "public_chat",
-        "room_alias_name": "moderators",
-        "room_version": "1",
-        "topic": "moderators",
-    }
-    sess = requests.session()
-    res = sess.post(
-        f"http://{synapse_ip}:8080/_matrix/client/v3/createRoom",
-        json=room_body,
-        headers=headers,
-        timeout=5,
-    )
-    res.raise_for_status()
+    create_moderators_room(synapse_ip, access_token)
     async with ops_test.fast_forward():
         # using fast_forward otherwise would wait for model config update-status-hook-interval
         await synapse_app.model.wait_for_idle(
             idle_period=30, apps=[synapse_app.name], status="active"
         )
 
-    res = sess.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
+    res = requests.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
 
     assert res.status_code == 200
 
