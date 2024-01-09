@@ -60,7 +60,7 @@ def get_access_token(synapse_ip, user_username, user_password) -> str:
         timeout=5,
     )
     res.raise_for_status()
-    access_token = res.json()["access_token"]
+    access_token = res.json().get("access_token")
     assert access_token
     return access_token
 
