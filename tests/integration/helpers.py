@@ -80,7 +80,7 @@ async def register_user(synapse_app: Application, user_username: str) -> str:
     )
     await action_register_user.wait()
     assert action_register_user.status == "completed"
-    assert action_register_user.results["register-user"]
-    password = action_register_user.results["user-password"]
+    assert action_register_user.results.get("register-user")
+    password = action_register_user.results.get("user-password")
     assert password
     return password
