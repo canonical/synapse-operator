@@ -308,7 +308,7 @@ def user_username_fixture() -> typing.Generator[str, None, None]:
 
 @pytest_asyncio.fixture(scope="module", name="user_password")
 async def user_password_fixture(synapse_app: Application, user_username: str) -> str:
-    """Return the a username to be created for tests.
+    """Register a user and return the new password.
 
     Returns:
         The new user password
