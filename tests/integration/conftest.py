@@ -106,9 +106,6 @@ async def synapse_app_fixture(
     use_existing = pytestconfig.getoption("--use-existing", default=False)
     if use_existing:
         return model.applications[synapse_app_name]
-    if synapse_app_charmhub_name in model.applications:
-        await model.remove_application(synapse_app_charmhub_name, block_until_done=True)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
     resources = {
         "synapse-image": synapse_image,
         "synapse-nginx-image": synapse_nginx_image,
@@ -137,7 +134,7 @@ async def synapse_charmhub_app_fixture(
     postgresql_app_name: str,
     synapse_charm: str,
 ):
-    """Remove existing Synapse and deploy synapse from Charmhub so the refresh can be tested."""
+    """Deploy synapse from Charmhub."""
     async with ops_test.fast_forward():
         app = await model.deploy(
             "synapse",
@@ -310,10 +307,12 @@ def user_username_fixture() -> typing.Generator[str, None, None]:
 
 
 @pytest_asyncio.fixture(scope="module", name="user_password")
-async def user_password_fixture(
-    synapse_app: Application, user_username: str
-) -> typing.AsyncGenerator[str, None]:
-    """Return the a username to be created for tests."""
+async def user_password_fixture(synapse_app: Application, user_username: str) -> str:
+    """Return the a username to be created for tests.
+
+    Returns:
+        The new user password
+    """
     return await register_user(synapse_app, user_username)
 
 
@@ -323,7 +322,11 @@ async def access_token_fixture(
     user_password: str,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-) -> typing.AsyncGenerator[str, None]:
-    """Return the access token after login with the username and password."""
+) -> str:
+    """Return the access token after login with the username and password.
+
+    Returns:
+        The access token
+    """
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     return get_access_token(synapse_ip, user_username, user_password)

@@ -3,8 +3,6 @@
 
 """Helper functions for integration tests."""
 
-import typing
-
 import requests
 from juju.action import Action
 from juju.application import Application
@@ -40,7 +38,7 @@ def create_moderators_room(
     res.raise_for_status()
 
 
-def get_access_token(synapse_ip, user_username, user_password):
+def get_access_token(synapse_ip, user_username, user_password) -> str:
     """Get Access Token for Synapse given user and password
 
     Args:
@@ -67,9 +65,7 @@ def get_access_token(synapse_ip, user_username, user_password):
     return access_token
 
 
-async def register_user(
-    synapse_app: Application, user_username: str
-) -> typing.AsyncGenerator[str, None]:
+async def register_user(synapse_app: Application, user_username: str) -> str:
     """Register a new user with admin permissions
 
     Args:
