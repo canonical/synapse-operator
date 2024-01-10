@@ -21,3 +21,47 @@ groups:
 
   - record: synapse_storage_events_persisted_by_origin
     expr: sum without(type) (synapse_storage_events_persisted_events_sep_total)
+###
+### Alerts
+###
+alert: SynapseTargetMissing
+expr: up == 0
+for: 0m
+labels:
+  severity: critical
+annotations:
+  summary: Prometheus target missing (instance {{ $labels.instance }})
+  description: "Synapse target has disappeared. An exporter might be crashed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+alert: SynapseHighCpuUtilization
+expr: rate(process_cpu_seconds_total{juju_charm="synapse"}[5m]) * 100 > 90
+for: 2m
+labels:
+  severity: critical
+annotations:
+  summary: Synapse High CPU utilization (instance {{ $labels.instance }})
+  description: "Synapse CPU utilization is above 90% for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+alert: SynapseHighMemoryUtilization
+expr: process_resident_memory_bytes{juju_charm="synapse"} / 1024 / 1024 > 1024
+for: 2m
+labels:
+  severity: critical
+annotations:
+  summary: Synapse High Memory utilization (instance {{ $labels.instance }})
+  description: "Synapse Memory utilization is above 1GB for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+alert: SynapseTooManyOpenFiles
+expr: process_open_fds{juju_charm="synapse"} > 1024
+for: 2m
+labels:
+  severity: warning
+annotations:
+  summary: Synapse too many open files (instance {{ $labels.instance }})
+  description: "Synapse has more than 1024 open files for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+alert: SynapseHighHttp5xxErrorRate
+expr: ((sum by (juju_charm) (rate(synapse_http_server_responses_total{code=~"5.*"}[5m])) / sum by (juju_charm) (rate(synapse_http_server_responses_total[5m]))) * 100) > 5
+for: 2m
+labels:
+  severity: warning
+annotations:
+  summary: Synapse high HTTP 5xx error rate (instance {{ $labels.instance }})
+  description: "Too many HTTP requests with status 5xx (> 5%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
