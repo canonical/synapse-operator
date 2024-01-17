@@ -4,6 +4,7 @@
 """Synapse package is used to interact with Synapse instance."""
 
 # Exporting methods to be used for another modules
+from .admin import create_admin_user, create_user  # noqa: F401
 from .api import (  # noqa: F401
     ADD_USER_ROOM_URL,
     CREATE_ROOM_URL,
@@ -34,11 +35,14 @@ from .workload import (  # noqa: F401
     CHECK_MJOLNIR_READY_NAME,
     CHECK_NGINX_READY_NAME,
     CHECK_READY_NAME,
+    CHECK_STATS_EXPORTER_READY_NAME,
     COMMAND_MIGRATE_CONFIG,
     MJOLNIR_CONFIG_PATH,
     MJOLNIR_HEALTH_PORT,
     MJOLNIR_SERVICE_NAME,
     PROMETHEUS_TARGET_PORT,
+    STATS_EXPORTER_PORT,
+    STATS_EXPORTER_SERVICE_NAME,
     SYNAPSE_COMMAND_PATH,
     SYNAPSE_CONFIG_DIR,
     SYNAPSE_CONFIG_PATH,
@@ -53,6 +57,7 @@ from .workload import (  # noqa: F401
     check_mjolnir_ready,
     check_nginx_ready,
     check_ready,
+    check_stats_exporter_ready,
     create_mjolnir_config,
     disable_password_config,
     disable_room_list_search,

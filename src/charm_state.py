@@ -57,6 +57,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """Represent Synapse builtin configuration values.
 
     Attributes:
+        admin_access_token: admin_access_token to configure Mjolnir and Stats Exporter.
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
@@ -70,6 +71,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         trusted_key_servers: trusted_key_servers config.
     """
 
+    admin_access_token: str | None = Field(None)
     allow_public_rooms_over_federation: bool = False
     enable_mjolnir: bool = False
     enable_password_config: bool = True

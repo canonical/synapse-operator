@@ -73,6 +73,22 @@ class PebbleService:
         container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
         container.replan()
 
+    def replan_stats_exporter(self, container: ops.model.Container) -> None:
+        """Replan Synapse StatsExporter service.
+
+        Args:
+            container: Charm container.
+        """
+        access_token = self._charm_state.synapse_config.admin_access_token
+        if not access_token:
+            logger.warning("Admin Access Token is none, skipping Stats Exporter start.")
+        layer = self._stats_exporter_pebble_layer
+        layer["services"][synapse.STATS_EXPORTER_SERVICE_NAME]["environment"] = {
+            "PROM_SYNAPSE_ADMIN_TOKEN": str(access_token)
+        }
+        container.add_layer("synapse-stats-exporter", layer, combine=True)
+        container.replan()
+
     # The complexity of this method will be reviewed.
     def change_config(self, container: ops.model.Container) -> None:  # noqa: C901
         """Change the configuration.
@@ -249,6 +265,30 @@ class PebbleService:
             },
             "checks": {
                 synapse.CHECK_MJOLNIR_READY_NAME: synapse.check_mjolnir_ready(),
+            },
+        }
+        return typing.cast(ops.pebble.LayerDict, layer)
+
+    @property
+    def _stats_exporter_pebble_layer(self) -> ops.pebble.LayerDict:
+        """Generate pebble config for the Synapse Stats Exporter service.
+
+        Returns:
+            The pebble configuration for the Synapse Stats Exporter service.
+        """
+        layer = {
+            "summary": "Synapse Stats Exporter layer",
+            "description": "Synapse Stats Exporter",
+            "services": {
+                synapse.STATS_EXPORTER_SERVICE_NAME: {
+                    "override": "replace",
+                    "summary": "Synapse Stats Exporter service",
+                    "command": "synapse-stats-exporter",
+                    "startup": "enabled",
+                }
+            },
+            "checks": {
+                synapse.CHECK_STATS_EXPORTER_READY_NAME: synapse.check_stats_exporter_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

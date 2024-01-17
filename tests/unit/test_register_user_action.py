@@ -26,8 +26,8 @@ def test_register_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     harness.begin_with_initial_hooks()
     get_registration_mock = unittest.mock.Mock(return_value="shared_secret")
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
-    register_user_mock = unittest.mock.MagicMock()
-    monkeypatch.setattr("synapse.register_user", register_user_mock)
+    create_user_mock = unittest.mock.MagicMock()
+    monkeypatch.setattr("synapse.create_user", create_user_mock)
     user = "username"
     event = unittest.mock.MagicMock(spec=ActionEvent)
     event.params = {
@@ -45,43 +45,6 @@ def test_register_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
-def test_register_user_registration_none(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: run register-user action.
-    assert: event fails if registration shared secret is not found.
-    """
-    harness.begin_with_initial_hooks()
-    get_registration_mock = unittest.mock.Mock(return_value=None)
-    monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
-    register_user_mock = unittest.mock.MagicMock()
-    monkeypatch.setattr("synapse.register_user", register_user_mock)
-    user = "username"
-    event = unittest.mock.MagicMock(spec=ActionEvent)
-
-    def event_store_failure(failure_message: str) -> None:
-        """Define a failure message for the event.
-
-        Args:
-            failure_message: failure message content to be defined.
-        """
-        event.fail_message = failure_message
-
-    event.fail = event_store_failure
-    event.params = {
-        "username": user,
-        "admin": "no",
-    }
-
-    # Calling to test the action since is not possible calling via harness
-    harness.charm._on_register_user_action(event)
-
-    assert "registration_shared_secret was not found" in event.fail_message
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
 def test_register_user_action_api_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -93,8 +56,8 @@ def test_register_user_action_api_error(harness: Harness, monkeypatch: pytest.Mo
     monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
     fail_message = "Some fail message"
     synapse_api_error = synapse.APIError(fail_message)
-    register_user_mock = unittest.mock.MagicMock(side_effect=synapse_api_error)
-    monkeypatch.setattr("synapse.register_user", register_user_mock)
+    create_user_mock = unittest.mock.MagicMock(side_effect=synapse_api_error)
+    monkeypatch.setattr("synapse.create_user", create_user_mock)
     user = "username"
     event = unittest.mock.MagicMock(spec=ActionEvent)
 

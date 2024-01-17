@@ -11,7 +11,6 @@ import typing
 
 import ops
 
-import actions
 import synapse
 from charm_state import CharmState
 
@@ -57,11 +56,11 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         Returns:
             admin access token or None if fails.
         """
-        get_admin_access_token = getattr(self._charm, "get_admin_access_token", None)
-        if not get_admin_access_token:
+        access_token = self._charm_state.synapse_config.admin_access_token
+        if not access_token:
             logging.error("Failed to get method get_admin_access_token.")
             return None
-        return get_admin_access_token()
+        return access_token
 
     def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
         """Collect status event handler.
@@ -154,13 +153,16 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
-        mjolnir_user = actions.register_user(
+        mjolnir_user = synapse.create_user(
             container,
             USERNAME,
             True,
             admin_access_token,
             str(self._charm_state.synapse_config.server_name),
         )
+        if mjolnir_user is None:
+            logger.error("Failed to create Mjolnir user. Mjolnir will not be configured")
+            return
         mjolnir_access_token = mjolnir_user.access_token
         room_id = synapse.get_room_id(
             room_name=synapse.MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token

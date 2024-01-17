@@ -59,19 +59,14 @@ def register_user(
         User with password registered.
     """
     try:
-        registration_shared_secret = synapse.get_registration_shared_secret(container=container)
-        if registration_shared_secret is None:
-            raise RegisterUserError(
-                "registration_shared_secret was not found, please check the logs"
-            )
-        user = User(username=username, admin=admin)
-        access_token = synapse.register_user(
-            registration_shared_secret=registration_shared_secret,
-            user=user,
+        user = synapse.create_user(
+            container=container,
+            username=username,
+            admin=admin,
             admin_access_token=admin_access_token,
             server=server,
         )
-        user.access_token = access_token
+        assert user
         return user
     except (ValidationError, synapse.APIError) as exc:
         raise RegisterUserError(str(exc)) from exc

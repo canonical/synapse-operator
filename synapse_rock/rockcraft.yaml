@@ -50,6 +50,7 @@ parts:
         stage-snaps:
             - mjolnir/latest/edge
             - matrix-appservice-irc/latest/edge
+            - synapse-stats-exporter/latest/edge
         plugin: nil
         source: https://github.com/matrix-org/synapse/
         source-type: git

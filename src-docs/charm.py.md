@@ -18,7 +18,11 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
+<<<<<<< HEAD
 <a href="../src/charm.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+=======
+<a href="../src/charm.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+>>>>>>> 86f7b4b (Add Synapse Stats Exporter)
 
 ### <kbd>function</kbd> `__init__`
 
@@ -87,7 +91,11 @@ Change configuration.
 
 ---
 
+<<<<<<< HEAD
 <a href="../src/charm.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+=======
+<a href="../src/charm.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+>>>>>>> 86f7b4b (Add Synapse Stats Exporter)
 
 ### <kbd>function</kbd> `get_admin_access_token`
 

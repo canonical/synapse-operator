@@ -111,6 +111,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.set_model_name("testmodel")  # needed for testing Traefik

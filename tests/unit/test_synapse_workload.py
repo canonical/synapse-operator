@@ -728,6 +728,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
             report_stats=None,
             server_name="example.com",
             trusted_key_servers=None,
+            admin_access_token=None,
         ),
     )
     synapse.enable_smtp(container_mock, charm_state)
@@ -776,6 +777,7 @@ def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
             report_stats=None,
             server_name="example.com",
             trusted_key_servers=None,
+            admin_access_token=None,
         ),
     )
     with pytest.raises(synapse.WorkloadError, match=error_message):

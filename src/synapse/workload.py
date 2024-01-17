@@ -20,12 +20,16 @@ CHECK_ALIVE_NAME = "synapse-alive"
 CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
 CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
 CHECK_READY_NAME = "synapse-ready"
+CHECK_STATS_EXPORTER_READY_NAME = "synapse-stats-exporter-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
 SYNAPSE_CONFIG_DIR = "/data"
 MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
 MJOLNIR_HEALTH_PORT = 7777
 MJOLNIR_SERVICE_NAME = "mjolnir"
 PROMETHEUS_TARGET_PORT = "9000"
+START_SYNAPSE_STATS_EXPORTER = True
+STATS_EXPORTER_SERVICE_NAME = "stats-exporter"
+STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
@@ -140,6 +144,19 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     check.override = "replace"
     check.level = "ready"
     check.http = {"url": f"http://localhost:{MJOLNIR_HEALTH_PORT}/healthz"}
+    return check.to_dict()
+
+
+def check_stats_exporter_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse Stats Exporter service check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_STATS_EXPORTER_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": f"http://localhost:{STATS_EXPORTER_PORT}/metrics"}
     return check.to_dict()
 
 
