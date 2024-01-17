@@ -94,3 +94,17 @@ For the smtp-integrator, insecure configurations with `transport_security=none` 
 authenticated connections with `auth_type=none` are not supported.
 
 See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
+
+
+### s3-backup-parameters
+
+_Interface_: s3
+_Supported charms_: [s3-integrator](https://charmhub.io/s3-integrator/)
+
+In order to perform backups, Synapse has to be integrated with the s3-integrator charm using the
+endpoint s3-backup-parameters. Backups will be stored, listed and recovered from the location
+indicated in the S3 compatible object storage provider configuration provided by the integration.
+
+Example s3-backup-parameters integrate command: `juju integrate synapse:s3-backup-parameters s3-integrator`
+
+See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
