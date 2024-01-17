@@ -18,6 +18,7 @@ from ops.main import main
 
 import actions
 import synapse
+from backup import SynapseBackup
 from charm_state import CharmConfigInvalidError, CharmState
 from database_observer import DatabaseObserver
 from mjolnir import Mjolnir
@@ -87,6 +88,7 @@ class SynapseCharm(ops.CharmBase):
         # See https://github.com/matrix-org/mjolnir/ for more details about it.
         if self._charm_state.synapse_config.enable_mjolnir:
             self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
+        self._backup = SynapseBackup(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
