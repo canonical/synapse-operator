@@ -8,6 +8,7 @@ from typing import Any, Optional
 import boto3
 import ops
 from botocore.exceptions import BotoCoreError, ClientError
+from botocore.exceptions import ConnectionError as BotoConnectionError
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
 from ops.framework import Object
 from pydantic import BaseModel, Field, validator
@@ -91,6 +92,7 @@ class SynapseBackup(Object):
 
         if not s3_bucket_exists(s3_parameters):
             self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
+        logger.info("S3 backup correctly configured")
 
     def _on_s3_credential_gone(self, _: CredentialsChangedEvent) -> None:
         """Handle s3 credentials gone to reset unit status if it is now correct."""
@@ -123,7 +125,7 @@ def s3_bucket_exists(s3_parameters: S3Parameters) -> bool:
     bucket = s3.Bucket(s3_parameters.bucket)
     try:
         bucket.meta.client.head_bucket(Bucket=s3_parameters.bucket)
-    except ClientError:
+    except (ClientError, BotoConnectionError):
         logger.exception(
             "Bucket %s doesn't exist or you don't have access to it.", s3_parameters.bucket
         )

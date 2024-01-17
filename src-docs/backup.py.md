@@ -13,7 +13,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `s3_bucket_exists`
 
@@ -57,7 +57,7 @@ Configuration for accessing S3 bucket.
 
 ---
 
-<a href="../src/backup.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_region_or_endpoint_set`
 
@@ -91,7 +91,7 @@ Validate that eather that region or endpoint are set.
 ## <kbd>class</kbd> `SynapseBackup`
 Class to manage Synapse backups over S3. 
 
-<a href="../src/backup.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

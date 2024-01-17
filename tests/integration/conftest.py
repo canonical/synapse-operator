@@ -330,3 +330,12 @@ async def access_token_fixture(
     """
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     return get_access_token(synapse_ip, user_username, user_password)
+
+
+@pytest.fixture(scope="module")
+def localstack_address(pytestconfig: Config):
+    """Provides localstack IP address to be used in the integration test"""
+    address = pytestconfig.getoption("--localstack-address")
+    if not address:
+        raise ValueError("--localstack-address argument is required for selected test cases")
+    yield address

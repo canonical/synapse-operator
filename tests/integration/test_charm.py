@@ -11,6 +11,8 @@ from secrets import token_hex
 
 import pytest
 import requests
+from boto3 import client
+from botocore.config import Config
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -543,3 +545,109 @@ async def test_anonymize_user(
             timeout=5,
         )
     assert res.status_code == 403
+
+
+async def test_synapse_enable_s3_backup_integration_success(
+    model: Model, synapse_app: Application, localstack_address: str
+):
+    """
+    arrange: Synapse App deployed and s3-integrator deployed with bucket created.
+    act:  integrate s3-integrator with Synapse.
+    assert: Synapse gets into active status.
+    """
+    access_key = token_hex(16)  # Anyone will work with localstack
+    secret_key = token_hex(16)  # Anyone will work with localstack
+    region = "us-east-1"
+    bucket = "backups-bucket"
+
+    s3_client_config = Config(
+        region_name=region,
+        s3={
+            "addressing_style": "virtual",
+        },
+    )
+
+    s3_client = client(
+        "s3",
+        region,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        endpoint_url=f"http://{localstack_address}:4566",
+        use_ssl=False,
+        config=s3_client_config,
+    )
+    s3_client.create_bucket(Bucket=bucket)
+
+    s3_integrator_app = await model.deploy(
+        "s3-integrator",
+        channel="latest/edge",
+        config={
+            "endpoint": f"http://{localstack_address}:4566",
+            "bucket": bucket,
+            "path": "/synapse",
+            "region": region,
+            "s3-uri-style": "path",
+        },
+    )
+    await model.wait_for_idle(apps=[s3_integrator_app.name], idle_period=5, status="blocked")
+    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
+        "sync-s3-credentials",
+        **{
+            "access-key": access_key,
+            "secret-key": secret_key,
+        },
+    )
+    await action_sync_s3_credentials.wait()
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:s3-backup-parameters")
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    # Clean it for next tests
+    s3_client.delete_bucket(Bucket=bucket)
+    await model.remove_application("s3-integrator")
+    await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
+
+
+async def test_synapse_enable_s3_backup_integration_no_bucket(
+    model: Model, synapse_app: Application, localstack_address: str
+):
+    """
+    arrange: Synapse App deployed and s3-integrator deployed.
+    act:  integrate s3-integrator with Synapse.
+    assert: Synapse gets into blocked status because the bucket does not exist.
+    """
+    access_key = token_hex(16)  # Anyone will work with localstack
+    secret_key = token_hex(16)  # Anyone will work with localstack
+    region = "us-east-1"
+    bucket = "backups-bucket"
+
+    s3_integrator_app = await model.deploy(
+        "s3-integrator",
+        channel="latest/edge",
+        config={
+            "endpoint": f"http://{localstack_address}:4566",
+            "bucket": bucket,
+            "path": "/synapse",
+            "region": region,
+            "s3-uri-style": "path",
+        },
+    )
+    await model.wait_for_idle(apps=[s3_integrator_app.name], idle_period=5, status="blocked")
+    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
+        "sync-s3-credentials",
+        **{
+            "access-key": access_key,
+            "secret-key": secret_key,
+        },
+    )
+    await action_sync_s3_credentials.wait()
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:s3-backup-parameters")
+    await model.wait_for_idle(apps=[s3_integrator_app.name], status=ACTIVE_STATUS_NAME)
+    await model.wait_for_idle(apps=[synapse_app.name], idle_period=5, status="blocked")
+    assert synapse_app.units[0].workload_status == "blocked"
+    assert "Bucket does not exist" in synapse_app.units[0].workload_status_message
