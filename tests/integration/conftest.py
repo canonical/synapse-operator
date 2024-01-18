@@ -10,6 +10,8 @@ from secrets import token_hex
 
 import pytest
 import pytest_asyncio
+from boto3 import client
+from botocore.config import Config as BotoConfig
 from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
@@ -332,10 +334,53 @@ async def access_token_fixture(
     return get_access_token(synapse_ip, user_username, user_password)
 
 
-@pytest.fixture(scope="module")
-def localstack_address(pytestconfig: Config):
-    """Provides localstack IP address to be used in the integration test"""
+@pytest.fixture(scope="module", name="localstack_address")
+def localstack_address_fixture(pytestconfig: Config):
+    """Provides localstack IP address to be used in the integration test."""
     address = pytestconfig.getoption("--localstack-address")
     if not address:
         raise ValueError("--localstack-address argument is required for selected test cases")
     yield address
+
+
+@pytest.fixture(scope="module", name="s3_backup_configuration")
+def s3_backup_configuration_fixture(localstack_address: str) -> dict:
+    """Return the S3 configuration to use for backups
+
+    Returns:
+        The S3 configuration as a dict
+    """
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+        "endpoint": f"http://{localstack_address}:4566",
+        "bucket": "backups-bucket",
+        "path": "/synapse",
+        "region": "us-east-1",
+        "s3-uri-style": "path",
+    }
+
+
+@pytest.fixture(scope="function")
+def s3_backup_bucket(s3_backup_configuration: dict):
+    """Creates a bucket using S3 configuration."""
+    bucket_name = s3_backup_configuration["bucket"]
+    s3_client_config = BotoConfig(
+        region_name=s3_backup_configuration["region"],
+        s3={
+            "addressing_style": "virtual",
+        },
+    )
+
+    s3_client = client(
+        "s3",
+        s3_backup_configuration["region"],
+        aws_access_key_id=s3_backup_configuration["access-key"],
+        aws_secret_access_key=s3_backup_configuration["secret-key"],
+        endpoint_url=s3_backup_configuration["endpoint"],
+        use_ssl=False,
+        config=s3_client_config,
+    )
+    s3_client.create_bucket(Bucket=bucket_name)
+    yield
+    s3_client.delete_bucket(Bucket=bucket_name)

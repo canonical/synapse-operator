@@ -15,10 +15,10 @@ Provides backup functionality for Synapse.
 
 <a href="../src/backup.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `s3_bucket_exists`
+## <kbd>function</kbd> `can_use_bucket`
 
 ```python
-s3_bucket_exists(s3_parameters: S3Parameters) → bool
+can_use_bucket(s3_parameters: S3Parameters) → bool
 ```
 
 Check if a bucket exists and is accessible in an S3 compatible object store. 

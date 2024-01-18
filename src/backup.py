@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, validator
 
 logger = logging.getLogger(__name__)
 
-S3_CANNOT_ACCESS_BUCKET = "Backup: S3 Bucket does not exist or cannot be accessed"
+S3_CANNOT_ACCESS_BUCKET = "Backup: S3 bucket does not exist or cannot be accessed"
 S3_INVALID_CONFIGURATION = "Backup: S3 configuration is invalid"
 BACK_UP_STATUS_MESSAGES = (S3_INVALID_CONFIGURATION, S3_CANNOT_ACCESS_BUCKET)
 
@@ -57,7 +57,7 @@ class S3Parameters(BaseModel):
             ValueError: if the configuration is invalid.
         """
         endpoint = values.get("endpoint")
-        if region is None and endpoint is None:
+        if not region and not endpoint:
             raise ValueError('one of "region" or "endpoint" needs to be set')
         return region
 
@@ -90,7 +90,7 @@ class SynapseBackup(Object):
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
-        if not s3_bucket_exists(s3_parameters):
+        if not can_use_bucket(s3_parameters):
             self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
         logger.info("S3 backup correctly configured")
 
@@ -103,7 +103,7 @@ class SynapseBackup(Object):
             self._charm.unit.status = ops.ActiveStatus()
 
 
-def s3_bucket_exists(s3_parameters: S3Parameters) -> bool:
+def can_use_bucket(s3_parameters: S3Parameters) -> bool:
     """Check if a bucket exists and is accessible in an S3 compatible object store.
 
     Args:
