@@ -11,10 +11,8 @@ jobs:
       chaos-app-label: app.kubernetes.io/name=synapse
       chaos-enabled: false
       chaos-experiments: pod-delete
-      extra-arguments: --localstack-address 172.17.0.1 -m "not (requires_secrets)"
+      extra-arguments: --localstack-address 172.17.0.1
       pre-run-script: localstack-installation.sh
       trivy-image-config: "trivy.yaml"
-      self-hosted-runner: true
-      self-hosted-runner-label: "edge"
       juju-channel: 3.1/stable
       channel: 1.28-strict/stable

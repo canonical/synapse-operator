@@ -28,6 +28,7 @@ def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
         "path": "/synapse-backups",
         "s3-uri-style": "path",
     }
+
     with pytest.raises(ValueError):
         backup.S3Parameters(**s3_relation_data)
 
@@ -66,7 +67,9 @@ def test_on_s3_credentials_changed_wrong_s3_parameters(harness: Harness):
         "secret-key": token_hex(16),
     }
     harness.begin_with_initial_hooks()
+
     harness.add_relation("s3-backup-parameters", "s3-integrator", app_data=s3_relation_data)
+
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "S3 configuration is invalid" in str(harness.model.unit.status)
 
@@ -89,8 +92,10 @@ def test_on_s3_credentials_changed_cannot_access_bucket(
         "path": "/synapse-backups",
         "s3-uri-style": "path",
     }
-    harness.add_relation("s3-backup-parameters", "s3-integrator", app_data=s3_relation_data)
     harness.begin_with_initial_hooks()
+
+    harness.add_relation("s3-backup-parameters", "s3-integrator", app_data=s3_relation_data)
+
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "bucket does not exist" in str(harness.model.unit.status)
 
@@ -110,7 +115,9 @@ def test_on_s3_credentials_gone_set_active(harness: Harness):
         "s3-backup-parameters", "s3-integrator", app_data=s3_relation_data
     )
     harness.begin_with_initial_hooks()
+
     harness.remove_relation(relation_id)
+
     assert harness.model.unit.status == ops.ActiveStatus()
 
 
@@ -150,6 +157,7 @@ def test_can_use_bucket_wrong_boto3_resource(monkeypatch: pytest.MonkeyPatch):
     session = MagicMock()
     session.resource = MagicMock(side_effect=BotoCoreError())
     monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
+
     assert backup.can_use_bucket(s3_parameters) is False
 
 
@@ -170,4 +178,5 @@ def test_can_use_bucket_bucket_error_checking_bucket(monkeypatch: pytest.MonkeyP
     session = MagicMock()
     session.resource().Bucket().meta.client.head_bucket.side_effect = ClientError({}, "HeadBucket")
     monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
+
     assert backup.can_use_bucket(s3_parameters) is False
