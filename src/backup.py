@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 S3_CANNOT_ACCESS_BUCKET = "Backup: S3 bucket does not exist or cannot be accessed"
 S3_INVALID_CONFIGURATION = "Backup: S3 configuration is invalid"
-BACK_UP_STATUS_MESSAGES = (S3_INVALID_CONFIGURATION, S3_CANNOT_ACCESS_BUCKET)
+BACKUP_STATUS_MESSAGES = (S3_INVALID_CONFIGURATION, S3_CANNOT_ACCESS_BUCKET)
 
 
 class S3Parameters(BaseModel):
@@ -98,7 +98,7 @@ class SynapseBackup(Object):
         """Handle s3 credentials gone to reset unit status if it is now correct."""
         if (
             isinstance(self._charm.unit.status, ops.BlockedStatus)
-            and self._charm.unit.status.message in BACK_UP_STATUS_MESSAGES
+            and self._charm.unit.status.message in BACKUP_STATUS_MESSAGES
         ):
             self._charm.unit.status = ops.ActiveStatus()
 

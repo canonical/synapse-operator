@@ -9,7 +9,7 @@ Provides backup functionality for Synapse.
 ---------------
 - **S3_CANNOT_ACCESS_BUCKET**
 - **S3_INVALID_CONFIGURATION**
-- **BACK_UP_STATUS_MESSAGES**
+- **BACKUP_STATUS_MESSAGES**
 
 ---
 
