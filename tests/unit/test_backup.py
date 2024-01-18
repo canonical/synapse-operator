@@ -13,6 +13,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from ops.testing import Harness
 
 import backup
+import backup_observer
 
 
 def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
@@ -39,7 +40,7 @@ def test_on_s3_credentials_changed_correct(harness: Harness, monkeypatch: pytest
     act: Add integration with s3-integrator with correct data.
     assert: The unit should be in active status.
     """
-    monkeypatch.setattr(backup, "can_use_bucket", MagicMock(return_value=True))
+    monkeypatch.setattr(backup_observer, "can_use_bucket", MagicMock(return_value=True))
     s3_relation_data = {
         "access-key": token_hex(16),
         "secret-key": token_hex(16),
@@ -82,7 +83,7 @@ def test_on_s3_credentials_changed_cannot_access_bucket(
     act: Add integration with s3-integrator.
     assert: The unit should be blocked because of bucket does not exist.
     """
-    monkeypatch.setattr(backup, "can_use_bucket", MagicMock(return_value=False))
+    monkeypatch.setattr(backup_observer, "can_use_bucket", MagicMock(return_value=False))
     s3_relation_data = {
         "access-key": token_hex(16),
         "secret-key": token_hex(16),
@@ -125,7 +126,7 @@ def test_can_use_bucket_correct(monkeypatch: pytest.MonkeyPatch):
     act: Run can_use_bucket.
     assert: Check that the function returns True.
     """
-    s3_parameters = backup.S3Parameters(
+    s3_parameters = backup_observer.S3Parameters(
         **{
             "access-key": token_hex(16),
             "secret-key": token_hex(16),
@@ -135,12 +136,12 @@ def test_can_use_bucket_correct(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(boto3.session, "Session", MagicMock())
 
-    assert backup.can_use_bucket(s3_parameters) is True
+    assert backup_observer.can_use_bucket(s3_parameters) is True
 
 
 def test_can_use_bucket_wrong_boto3_resource(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create S3Parameters and mock boto3 library so raises on accessing S3 resource.
+    arrange: Create S3Parameters and mock boto3 library so it raises on accessing S3 resource.
     act: Run can_use_bucket.
     assert: Check that the function returns False.
     """
@@ -161,7 +162,7 @@ def test_can_use_bucket_wrong_boto3_resource(monkeypatch: pytest.MonkeyPatch):
 
 def test_can_use_bucket_bucket_error_checking_bucket(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create S3Parameters and mock boto3 library so fails when checking the bucket.
+    arrange: Create S3Parameters and mock boto3 library so it fails when checking the bucket.
     act: Run can_use_bucket.
     assert: Check that the function returns False.
     """

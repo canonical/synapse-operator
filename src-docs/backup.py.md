@@ -5,15 +5,10 @@
 # <kbd>module</kbd> `backup.py`
 Provides backup functionality for Synapse. 
 
-**Global Variables**
----------------
-- **S3_CANNOT_ACCESS_BUCKET**
-- **S3_INVALID_CONFIGURATION**
-- **BACKUP_STATUS_MESSAGES**
 
 ---
 
-<a href="../src/backup.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `can_use_bucket`
 
@@ -57,7 +52,7 @@ Configuration for accessing S3 bucket.
 
 ---
 
-<a href="../src/backup.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_region_or_endpoint_set`
 
@@ -84,36 +79,5 @@ Validate that either that region or endpoint is set.
 **Raises:**
  
  - <b>`ValueError`</b>:  if the configuration is invalid. 
-
-
----
-
-## <kbd>class</kbd> `SynapseBackup`
-Class to manage Synapse backups over S3. 
-
-<a href="../src/backup.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `__init__`
-
-```python
-__init__(charm: CharmBase)
-```
-
-Initialize the backup object. 
-
-
-
-**Args:**
- 
- - <b>`charm`</b>:  The parent charm the backups are made for. 
-
-
----
-
-#### <kbd>property</kbd> model
-
-Shortcut for more simple access the model. 
-
-
 
 
