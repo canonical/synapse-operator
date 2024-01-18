@@ -18,7 +18,7 @@ import backup
 def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
     """
     arrange: Create s3 relation data without region nor endpoint.
-    act: Create S3Paramaters pydantic BaseModel from relation data.
+    act: Create S3Parameters pydantic BaseModel from relation data.
     assert: Raises ValueError as one of those two fields should be set.
     """
     s3_relation_data = {
