@@ -361,8 +361,8 @@ def s3_backup_configuration_fixture(localstack_address: str) -> dict:
     }
 
 
-@pytest.fixture(scope="function")
-def s3_backup_bucket(s3_backup_configuration: dict):
+@pytest.fixture(scope="function", name="s3_backup_bucket")
+def s3_backup_bucket_fixture(s3_backup_configuration: dict):
     """Creates a bucket using S3 configuration."""
     bucket_name = s3_backup_configuration["bucket"]
     s3_client_config = BotoConfig(
