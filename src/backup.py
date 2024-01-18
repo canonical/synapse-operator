@@ -44,7 +44,7 @@ class S3Parameters(BaseModel):
     @validator("region", always=True)
     @classmethod
     def check_region_or_endpoint_set(cls, region: str, values: dict[str, Any]) -> str:
-        """Validate that eather that region or endpoint are set.
+        """Validate that either that region or endpoint is set.
 
         Args:
             region: region attribute
