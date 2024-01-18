@@ -578,7 +578,7 @@ async def test_synapse_enable_s3_backup_integration_success(
     await action_sync_s3_credentials.wait()
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
-    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:s3-backup-parameters")
+    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:s3-backup")
     await model.wait_for_idle(apps=[s3_integrator_app.name], status=ACTIVE_STATUS_NAME)
 
     await model.wait_for_idle(
@@ -622,7 +622,7 @@ async def test_synapse_enable_s3_backup_integration_no_bucket(
     await action_sync_s3_credentials.wait()
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
-    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:s3-backup-parameters")
+    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:s3-backup")
     await model.wait_for_idle(apps=[s3_integrator_app.name], status=ACTIVE_STATUS_NAME)
 
     await model.wait_for_idle(apps=[synapse_app.name], idle_period=5, status="blocked")

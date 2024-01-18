@@ -65,7 +65,7 @@ requires:
         interface: smtp
         limit: 1
         optional: true
-    s3-backup-parameters:
+    s3-backup:
         interface: s3
         limit: 1
         optional: true

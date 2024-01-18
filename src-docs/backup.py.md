@@ -65,7 +65,7 @@ Configuration for accessing S3 bucket.
 check_region_or_endpoint_set(region: str, values: dict[str, Any]) → str
 ```
 
-Validate that eather that region or endpoint are set. 
+Validate that either that region or endpoint is set. 
 
 
 

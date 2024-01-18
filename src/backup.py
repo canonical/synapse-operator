@@ -65,7 +65,7 @@ class S3Parameters(BaseModel):
 class SynapseBackup(Object):
     """Class to manage Synapse backups over S3."""
 
-    _S3_RELATION_NAME = "s3-backup-parameters"
+    _S3_RELATION_NAME = "s3-backup"
 
     def __init__(self, charm: ops.CharmBase):
         """Initialize the backup object.
