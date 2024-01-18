@@ -49,6 +49,7 @@ parts:
             - xmlsec1
         stage-snaps:
             - mjolnir/latest/edge
+            - matrix-appservice-irc/latest/edge
         plugin: nil
         source: https://github.com/matrix-org/synapse/
         source-type: git
