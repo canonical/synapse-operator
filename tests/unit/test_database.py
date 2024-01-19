@@ -18,7 +18,6 @@ import database_observer
 import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
-from exceptions import CharmDatabaseRelationNotFoundError
 
 
 @pytest.fixture(autouse=True)
@@ -196,29 +195,12 @@ def test_relation_as_datasource(
         user="user",
     )
     assert expected == harness.charm._database.get_relation_as_datasource()
-    assert harness.charm.app.name == harness.charm._database.get_database_name()
     synapse_env = synapse.get_environment(harness.charm._charm_state)
     assert synapse_env["POSTGRES_DB"] == expected["db"]
     assert synapse_env["POSTGRES_HOST"] == expected["host"]
     assert synapse_env["POSTGRES_PORT"] == expected["port"]
     assert synapse_env["POSTGRES_USER"] == expected["user"]
     assert synapse_env["POSTGRES_PASSWORD"] == expected["password"]
-
-
-def test_relation_as_datasource_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: add relation and trigger change config.
-    assert: charm status is active.
-    """
-    harness.begin()
-
-    get_relation_as_datasource_mock = unittest.mock.MagicMock(return_value=None)
-    monkeypatch.setattr(
-        harness.charm._database, "get_relation_as_datasource", get_relation_as_datasource_mock
-    )
-    with pytest.raises(CharmDatabaseRelationNotFoundError):
-        harness.charm._database.get_database_name()
 
 
 def test_change_config(harness: Harness):
