@@ -3,8 +3,8 @@
 
 """Synapse backup observer unit tests."""
 
-
 from secrets import token_hex
+from typing import Type
 from unittest.mock import MagicMock
 
 import boto3
@@ -15,71 +15,70 @@ from ops.testing import Harness
 import backup_observer
 
 
-def test_on_s3_credentials_changed_correct(harness: Harness, monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: start the Synapse charm.
-    act: Add integration with s3-integrator with correct data.
-    assert: The unit should be in active status.
-    """
-    monkeypatch.setattr(backup_observer, "can_use_bucket", MagicMock(return_value=True))
-    s3_relation_data = {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
-        "region": "eu-west-1",
-        "bucket": "synapse-backup-bucket",
-        "endpoint": "https://example.com",
-        "path": "/synapse-backups",
-        "s3-uri-style": "path",
-    }
-    harness.begin_with_initial_hooks()
-
-    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data)
-
-    assert harness.model.unit.status == ops.ActiveStatus()
-
-
-def test_on_s3_credentials_changed_wrong_s3_parameters(harness: Harness):
-    """
-    arrange: start the Synapse charm.
-    act: Add integration with s3-integrator with missing fields.
-    assert: The unit should be blocked because of S3 invalid configuration.
-    """
-    s3_relation_data = {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
-    }
-    harness.begin_with_initial_hooks()
-
-    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data)
-
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "S3 configuration is invalid" in str(harness.model.unit.status)
-
-
-def test_on_s3_credentials_changed_cannot_access_bucket(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "relation_data, can_use_bucket, expected_status_cls, expected_str_in_status",
+    [
+        pytest.param(
+            {
+                "access-key": token_hex(16),
+                "secret-key": token_hex(16),
+                "region": "eu-west-1",
+                "bucket": "synapse-backup-bucket",
+                "endpoint": "https://example.com",
+                "path": "/synapse-backups",
+                "s3-uri-style": "path",
+            },
+            True,
+            ops.ActiveStatus,
+            "",
+            id="Correct S3 configuration",
+        ),
+        pytest.param(
+            {
+                "access-key": token_hex(16),
+                "secret-key": token_hex(16),
+            },
+            True,
+            ops.BlockedStatus,
+            "S3 configuration is invalid",
+            id="Invalid S3 configuration",
+        ),
+        pytest.param(
+            {
+                "access-key": token_hex(16),
+                "secret-key": token_hex(16),
+                "region": "eu-west-1",
+                "bucket": "synapse-backup-bucket",
+                "s3-uri-style": "path",
+            },
+            False,
+            ops.BlockedStatus,
+            "bucket does not exist",
+            id="Bucket does not exist or not accessible",
+        ),
+    ],
+)
+def test_on_s3_credentials_changed(
+    harness: Harness,
+    monkeypatch: pytest.MonkeyPatch,
+    relation_data: dict,
+    can_use_bucket: bool,
+    expected_status_cls: Type,
+    expected_str_in_status: str,
 ):
     """
-    arrange: start the Synapse charm. Mock function can_use_bucket as if bucket does not exist.
+    arrange: start the Synapse charm. Mock function can_use_bucket as the pytest param.
     act: Add integration with s3-integrator.
-    assert: The unit should be blocked because of bucket does not exist.
+    assert: The unit should be in the expected state with the expected message.
     """
-    monkeypatch.setattr(backup_observer, "can_use_bucket", MagicMock(return_value=False))
-    s3_relation_data = {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
-        "region": "eu-west-1",
-        "bucket": "synapse-backup-bucket",
-        "endpoint": "https://example.com",
-        "path": "/synapse-backups",
-        "s3-uri-style": "path",
-    }
+    # pylint: disable=too-many-arguments
+    monkeypatch.setattr(backup_observer, "can_use_bucket", MagicMock(return_value=can_use_bucket))
     harness.begin_with_initial_hooks()
 
-    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data)
+    harness.add_relation("backup", "s3-integrator", app_data=relation_data)
 
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "bucket does not exist" in str(harness.model.unit.status)
+    assert isinstance(harness.model.unit.status, expected_status_cls)
+    assert expected_str_in_status in str(harness.model.unit.status)
 
 
 def test_on_s3_credentials_gone_set_active(harness: Harness):
