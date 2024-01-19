@@ -21,7 +21,7 @@ BACKUP_STATUS_MESSAGES = (S3_INVALID_CONFIGURATION, S3_CANNOT_ACCESS_BUCKET)
 class BackupObserver(Object):
     """The S3 backup relation observer."""
 
-    _S3_RELATION_NAME = "s3-backup"
+    _S3_RELATION_NAME = "backup"
 
     def __init__(self, charm: ops.CharmBase):
         """Initialize the backup object.

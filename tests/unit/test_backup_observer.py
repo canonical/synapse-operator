@@ -33,7 +33,7 @@ def test_on_s3_credentials_changed_correct(harness: Harness, monkeypatch: pytest
     }
     harness.begin_with_initial_hooks()
 
-    harness.add_relation("s3-backup", "s3-integrator", app_data=s3_relation_data)
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data)
 
     assert harness.model.unit.status == ops.ActiveStatus()
 
@@ -50,7 +50,7 @@ def test_on_s3_credentials_changed_wrong_s3_parameters(harness: Harness):
     }
     harness.begin_with_initial_hooks()
 
-    harness.add_relation("s3-backup", "s3-integrator", app_data=s3_relation_data)
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data)
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "S3 configuration is invalid" in str(harness.model.unit.status)
@@ -76,7 +76,7 @@ def test_on_s3_credentials_changed_cannot_access_bucket(
     }
     harness.begin_with_initial_hooks()
 
-    harness.add_relation("s3-backup", "s3-integrator", app_data=s3_relation_data)
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data)
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "bucket does not exist" in str(harness.model.unit.status)
@@ -93,7 +93,7 @@ def test_on_s3_credentials_gone_set_active(harness: Harness):
         "access-key": token_hex(16),
         "secret-key": token_hex(16),
     }
-    relation_id = harness.add_relation("s3-backup", "s3-integrator", app_data=s3_relation_data)
+    relation_id = harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data)
     harness.begin_with_initial_hooks()
 
     harness.remove_relation(relation_id)
