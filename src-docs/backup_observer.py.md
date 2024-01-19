@@ -9,7 +9,6 @@ S3 Backup relation observer for Synapse.
 ---------------
 - **S3_CANNOT_ACCESS_BUCKET**
 - **S3_INVALID_CONFIGURATION**
-- **BACKUP_STATUS_MESSAGES**
 
 
 ---
@@ -17,7 +16,7 @@ S3 Backup relation observer for Synapse.
 ## <kbd>class</kbd> `BackupObserver`
 The S3 backup relation observer. 
 
-<a href="../src/backup_observer.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup_observer.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

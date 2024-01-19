@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 S3_CANNOT_ACCESS_BUCKET = "Backup: S3 bucket does not exist or cannot be accessed"
 S3_INVALID_CONFIGURATION = "Backup: S3 configuration is invalid"
-BACKUP_STATUS_MESSAGES = (S3_INVALID_CONFIGURATION, S3_CANNOT_ACCESS_BUCKET)
 
 
 class BackupObserver(Object):
