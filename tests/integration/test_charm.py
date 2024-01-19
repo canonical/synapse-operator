@@ -549,86 +549,36 @@ async def test_anonymize_user(
 async def test_synapse_enable_s3_backup_integration_success(
     model: Model,
     synapse_app: Application,
-    s3_backup_configuration: dict,
+    s3_integrator_app_backup: Application,
 ):
     """
     arrange: Synapse App deployed and s3-integrator deployed with bucket created.
     act:  integrate s3-integrator with Synapse.
     assert: Synapse gets into active status.
     """
-    s3_integrator_app = await model.deploy(
-        "s3-integrator",
-        channel="latest/edge",
-        config={
-            "endpoint": s3_backup_configuration["endpoint"],
-            "bucket": s3_backup_configuration["bucket"],
-            "path": s3_backup_configuration["path"],
-            "region": s3_backup_configuration["region"],
-            "s3-uri-style": s3_backup_configuration["s3-uri-style"],
-        },
-    )
-    await model.wait_for_idle(apps=[s3_integrator_app.name], idle_period=5, status="blocked")
-    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
-        "sync-s3-credentials",
-        **{
-            "access-key": s3_backup_configuration["access-key"],
-            "secret-key": s3_backup_configuration["secret-key"],
-        },
-    )
-    await action_sync_s3_credentials.wait()
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-
-    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:backup")
-    await model.wait_for_idle(apps=[s3_integrator_app.name], status=ACTIVE_STATUS_NAME)
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    await model.wait_for_idle(apps=[s3_integrator_app_backup.name], status=ACTIVE_STATUS_NAME)
 
     await model.wait_for_idle(
         idle_period=30,
-        apps=[synapse_app.name, s3_integrator_app.name],
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
         status=ACTIVE_STATUS_NAME,
     )
 
-    # Test cleanup
-    await model.remove_application("s3-integrator")
-    await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
-
 
 async def test_synapse_enable_s3_backup_integration_no_bucket(
-    model: Model, synapse_app: Application, s3_backup_configuration: dict
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
 ):
     """
     arrange: Synapse App deployed and s3-integrator deployed.
     act:  integrate s3-integrator with Synapse.
     assert: Synapse gets into blocked status because the bucket does not exist.
     """
-    s3_integrator_app = await model.deploy(
-        "s3-integrator",
-        channel="latest/edge",
-        config={
-            "endpoint": s3_backup_configuration["endpoint"],
-            "bucket": s3_backup_configuration["bucket"],
-            "path": s3_backup_configuration["path"],
-            "region": s3_backup_configuration["region"],
-            "s3-uri-style": s3_backup_configuration["s3-uri-style"],
-        },
-    )
-    await model.wait_for_idle(apps=[s3_integrator_app.name], idle_period=5, status="blocked")
-    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
-        "sync-s3-credentials",
-        **{
-            "access-key": s3_backup_configuration["access-key"],
-            "secret-key": s3_backup_configuration["secret-key"],
-        },
-    )
-    await action_sync_s3_credentials.wait()
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-
-    await model.add_relation(s3_integrator_app.name, f"{synapse_app.name}:backup")
-    await model.wait_for_idle(apps=[s3_integrator_app.name], status=ACTIVE_STATUS_NAME)
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    await model.wait_for_idle(apps=[s3_integrator_app_backup.name], status=ACTIVE_STATUS_NAME)
 
     await model.wait_for_idle(apps=[synapse_app.name], idle_period=5, status="blocked")
     assert synapse_app.units[0].workload_status == "blocked"
     assert "bucket does not exist" in synapse_app.units[0].workload_status_message
-
-    # Test cleanup
-    await model.remove_application("s3-integrator")
-    await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)

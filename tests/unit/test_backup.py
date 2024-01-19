@@ -49,7 +49,7 @@ def test_can_use_bucket_wrong_boto3_resource(monkeypatch: pytest.MonkeyPatch):
     session.resource = MagicMock(side_effect=BotoCoreError())
     monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
 
-    assert backup.can_use_bucket(s3_parameters) is False
+    assert not backup.can_use_bucket(s3_parameters)
 
 
 def test_can_use_bucket_bucket_error_checking_bucket(monkeypatch: pytest.MonkeyPatch):
@@ -70,4 +70,4 @@ def test_can_use_bucket_bucket_error_checking_bucket(monkeypatch: pytest.MonkeyP
     session.resource().Bucket().meta.client.head_bucket.side_effect = ClientError({}, "HeadBucket")
     monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
 
-    assert backup.can_use_bucket(s3_parameters) is False
+    assert not backup.can_use_bucket(s3_parameters)

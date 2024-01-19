@@ -12,6 +12,7 @@ import pytest
 import pytest_asyncio
 from boto3 import client
 from botocore.config import Config as BotoConfig
+from juju.action import Action
 from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
@@ -351,8 +352,6 @@ def s3_backup_configuration_fixture(localstack_address: str) -> dict:
         The S3 configuration as a dict
     """
     return {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
         "endpoint": f"http://{localstack_address}:4566",
         "bucket": "backups-bucket",
         "path": "/synapse",
@@ -361,8 +360,21 @@ def s3_backup_configuration_fixture(localstack_address: str) -> dict:
     }
 
 
+@pytest.fixture(scope="module", name="s3_backup_credentials")
+def s3_backup_credentials_fixture(localstack_address: str) -> dict:
+    """Return the S3 AWS credentials to use for backups
+
+    Returns:
+        The S3 credentials as a dict
+    """
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+    }
+
+
 @pytest.fixture(scope="function", name="s3_backup_bucket")
-def s3_backup_bucket_fixture(s3_backup_configuration: dict):
+def s3_backup_bucket_fixture(s3_backup_configuration: dict, s3_backup_credentials: dict):
     """Creates a bucket using S3 configuration."""
     bucket_name = s3_backup_configuration["bucket"]
     s3_client_config = BotoConfig(
@@ -375,8 +387,8 @@ def s3_backup_bucket_fixture(s3_backup_configuration: dict):
     s3_client = client(
         "s3",
         s3_backup_configuration["region"],
-        aws_access_key_id=s3_backup_configuration["access-key"],
-        aws_secret_access_key=s3_backup_configuration["secret-key"],
+        aws_access_key_id=s3_backup_credentials["access-key"],
+        aws_secret_access_key=s3_backup_credentials["secret-key"],
         endpoint_url=s3_backup_configuration["endpoint"],
         use_ssl=False,
         config=s3_client_config,
@@ -384,3 +396,27 @@ def s3_backup_bucket_fixture(s3_backup_configuration: dict):
     s3_client.create_bucket(Bucket=bucket_name)
     yield
     s3_client.delete_bucket(Bucket=bucket_name)
+
+
+@pytest_asyncio.fixture(scope="function", name="s3_integrator_app_backup")
+async def s3_integrator_app_backup_fixture(
+    model: Model, s3_backup_configuration: dict, s3_backup_credentials: dict
+):
+    """Returns a s3-integrator app configured with backup parameters."""
+    s3_integrator_app_name = "s3-integrator-backup"
+    s3_integrator_app = await model.deploy(
+        "s3-integrator",
+        application_name=s3_integrator_app_name,
+        channel="latest/edge",
+        config=s3_backup_configuration,
+    )
+    await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
+    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
+        "sync-s3-credentials",
+        **s3_backup_credentials,
+    )
+    await action_sync_s3_credentials.wait()
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    yield s3_integrator_app
+    await model.remove_application(s3_integrator_app_name)
+    await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)

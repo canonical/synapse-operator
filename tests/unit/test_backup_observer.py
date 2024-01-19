@@ -117,4 +117,4 @@ def test_can_use_bucket_correct(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(boto3.session, "Session", MagicMock())
 
-    assert backup_observer.can_use_bucket(s3_parameters) is True
+    assert backup_observer.can_use_bucket(s3_parameters)
