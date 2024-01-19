@@ -29,31 +29,31 @@ class S3Parameters(BaseModel):
 
     access_key: str = Field(alias="access-key")
     secret_key: str = Field(alias="secret-key")
-    region: Optional[str] = Field(default=None)
+    region: Optional[str]
     bucket: str
     endpoint: Optional[str]
     path: str = Field(default="")
     s3_uri_style: str = Field(alias="s3-uri-style", default="host")
 
-    @validator("region", always=True)
+    @validator("endpoint", always=True)
     @classmethod
-    def check_region_or_endpoint_set(cls, region: str, values: dict[str, Any]) -> str:
-        """Validate that either that region or endpoint is set.
+    def check_endpoint_or_region_set(cls, endpoint: str, values: dict[str, Any]) -> str:
+        """Validate that either region or endpoint is set.
 
         Args:
-            region: region attribute
+            endpoint: endpoint attribute
             values: all attributes in S3 configuration
 
         Returns:
-            value of the region attribute
+            value of the endpoint attribute
 
         Raises:
             ValueError: if the configuration is invalid.
         """
-        endpoint = values.get("endpoint")
+        region = values.get("region")
         if not region and not endpoint:
             raise ValueError('one of "region" or "endpoint" needs to be set')
-        return region
+        return endpoint
 
 
 def can_use_bucket(s3_parameters: S3Parameters) -> bool:

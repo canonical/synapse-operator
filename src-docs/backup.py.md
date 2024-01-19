@@ -54,25 +54,25 @@ Configuration for accessing S3 bucket.
 
 <a href="../src/backup.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>classmethod</kbd> `check_region_or_endpoint_set`
+### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
 
 ```python
-check_region_or_endpoint_set(region: str, values: dict[str, Any]) → str
+check_endpoint_or_region_set(endpoint: str, values: dict[str, Any]) → str
 ```
 
-Validate that either that region or endpoint is set. 
+Validate that either region or endpoint is set. 
 
 
 
 **Args:**
  
- - <b>`region`</b>:  region attribute 
+ - <b>`endpoint`</b>:  endpoint attribute 
  - <b>`values`</b>:  all attributes in S3 configuration 
 
 
 
 **Returns:**
- value of the region attribute 
+ value of the endpoint attribute 
 
 
 
