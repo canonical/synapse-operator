@@ -50,18 +50,8 @@ class BackupObserver(Object):
             self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
             return
 
-        # At this point the S3 configuration is correct.
-        if (
-            isinstance(self._charm.unit.status, ops.BlockedStatus)
-            and self._charm.unit.status.message in BACKUP_STATUS_MESSAGES
-        ):
-            self._charm.unit.status = ops.ActiveStatus()
-        logger.info("S3 backup correctly configured")
+        self._charm.unit.status = ops.ActiveStatus()
 
     def _on_s3_credential_gone(self, _: CredentialsChangedEvent) -> None:
-        """Handle s3 credentials gone to reset unit status if it is now correct."""
-        if (
-            isinstance(self._charm.unit.status, ops.BlockedStatus)
-            and self._charm.unit.status.message in BACKUP_STATUS_MESSAGES
-        ):
-            self._charm.unit.status = ops.ActiveStatus()
+        """Handle s3 credentials gone. Set unit status to active."""
+        self._charm.unit.status = ops.ActiveStatus()
