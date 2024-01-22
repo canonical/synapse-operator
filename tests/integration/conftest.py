@@ -382,6 +382,8 @@ def s3_backup_bucket_fixture(s3_backup_configuration: dict, s3_backup_credential
         s3={
             "addressing_style": "virtual",
         },
+        # no_proxy env variable is not read by boto3, so
+        # this is needed for the tests to avoid hitting the proxy.
         proxies={},
     )
 
