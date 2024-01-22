@@ -14,7 +14,7 @@ The Database relation observer.
 
 Attrs:  _pebble_service: instance of pebble service. 
 
-<a href="../src/database_observer.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -41,31 +41,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/database_observer.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `get_database_name`
-
-```python
-get_database_name() → str
-```
-
-Get database name. 
-
-
-
-**Raises:**
- 
- - <b>`CharmDatabaseRelationNotFoundError`</b>:  if there is no relation. 
-
-
-
-**Returns:**
- 
- - <b>`str`</b>:  database name. 
-
----
-
-<a href="../src/database_observer.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_datasource`
 
