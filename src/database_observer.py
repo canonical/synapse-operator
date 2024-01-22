@@ -17,7 +17,6 @@ from ops.framework import Object
 import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
-from exceptions import CharmDatabaseRelationNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -108,17 +107,3 @@ class DatabaseObserver(Object):
             port=endpoint.split(":")[1],
             db=self._charm.app.name,
         )
-
-    def get_database_name(self) -> str:
-        """Get database name.
-
-        Raises:
-            CharmDatabaseRelationNotFoundError: if there is no relation.
-
-        Returns:
-            str: database name.
-        """
-        datasource = self.get_relation_as_datasource()
-        if datasource is None:
-            raise CharmDatabaseRelationNotFoundError("No database relation was found.")
-        return datasource["db"]
