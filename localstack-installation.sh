@@ -12,7 +12,7 @@ localstack wait -t 30 # to become ready before timing out
 echo "Startup complete"
 docker network ls
 docker network inspect bridge
-curl -vvv -k https://172.17.0.1
-curl -vvv http://172.17.0.1
-sudo iptables -L
-docker version
+echo $no_proxy
+echo $https_proxy
+curl -vvv -k https://172.17.0.1 || true
+curl -vvv http://172.17.0.1 || true
