@@ -543,3 +543,42 @@ async def test_anonymize_user(
             timeout=5,
         )
     assert res.status_code == 403
+
+
+@pytest.mark.usefixtures("s3_backup_bucket")
+async def test_synapse_enable_s3_backup_integration_success(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+):
+    """
+    arrange: Synapse App deployed and s3-integrator deployed with bucket created.
+    act:  integrate s3-integrator with Synapse.
+    assert: Synapse gets into active status.
+    """
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    await model.wait_for_idle(apps=[s3_integrator_app_backup.name], status=ACTIVE_STATUS_NAME)
+
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+
+async def test_synapse_enable_s3_backup_integration_no_bucket(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+):
+    """
+    arrange: Synapse App deployed and s3-integrator deployed.
+    act:  integrate s3-integrator with Synapse.
+    assert: Synapse gets into blocked status because the bucket does not exist.
+    """
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    await model.wait_for_idle(apps=[s3_integrator_app_backup.name], status=ACTIVE_STATUS_NAME)
+
+    await model.wait_for_idle(apps=[synapse_app.name], idle_period=5, status="blocked")
+    assert synapse_app.units[0].workload_status == "blocked"
+    assert "bucket does not exist" in synapse_app.units[0].workload_status_message

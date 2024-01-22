@@ -18,6 +18,7 @@ from ops.main import main
 
 import actions
 import synapse
+from backup_observer import BackupObserver
 from charm_state import CharmConfigInvalidError, CharmState
 from database_observer import DatabaseObserver
 from mjolnir import Mjolnir
@@ -50,6 +51,7 @@ class SynapseCharm(ops.CharmBase):
             args: class arguments.
         """
         super().__init__(*args)
+        self._backup = BackupObserver(self)
         self._database = DatabaseObserver(self)
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
