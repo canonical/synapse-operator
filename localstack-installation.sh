@@ -15,3 +15,4 @@ docker network inspect bridge
 curl -vvv -k https://172.17.0.1
 curl -vvv http://172.17.0.1
 sudo iptables -L
+docker version
