@@ -382,6 +382,7 @@ def s3_backup_bucket_fixture(s3_backup_configuration: dict, s3_backup_credential
         s3={
             "addressing_style": "virtual",
         },
+        proxies={},
     )
 
     s3_client = client(
