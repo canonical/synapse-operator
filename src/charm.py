@@ -189,8 +189,7 @@ class SynapseCharm(ops.CharmBase):
         Returns:
             Relation or not if is not found.
         """
-        peer_relation = self.model.get_relation(PEER_RELATION_NAME)
-        return peer_relation
+        return self.model.get_relation(PEER_RELATION_NAME)
 
     def get_admin_access_token(self) -> typing.Optional[str]:
         """Get admin access token.
