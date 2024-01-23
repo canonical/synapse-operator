@@ -8,7 +8,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `can_use_bucket`
 
@@ -45,14 +45,21 @@ Configuration for accessing S3 bucket.
  - <b>`bucket`</b>:  The bucket name. 
  - <b>`endpoint`</b>:  The endpoint used to connect to the object storage. 
  - <b>`path`</b>:  The path inside the bucket to store objects. 
- - <b>`s3_uri_style`</b>:  The S3 protocol specific bucket path lookup type. 
+ - <b>`s3_uri_style`</b>:  The S3 protocol specific bucket path lookup type. Can be "path" or "host". 
+ - <b>`addressing_style`</b>:  S3 protocol addressing style, can be "path" or "virtual". 
 
+
+---
+
+#### <kbd>property</kbd> addressing_style
+
+Translates s3_uri_style to AWS addressing_style. 
 
 
 
 ---
 
-<a href="../src/backup.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
 

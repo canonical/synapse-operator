@@ -6,7 +6,6 @@
 from secrets import token_hex
 from unittest.mock import MagicMock
 
-import boto3
 import pytest
 from botocore.exceptions import BotoCoreError, ClientError
 
@@ -76,9 +75,28 @@ def test_s3_relation_validation_correct(s3_relation_data):
     assert s3_parameters.region == s3_relation_data.get("region")
 
 
-def test_can_use_bucket_wrong_boto3_resource(monkeypatch: pytest.MonkeyPatch):
+def test_can_use_bucket_correct(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create S3Parameters and mock boto3 library so it raises on accessing S3 resource.
+    arrange: Create S3Parameters and mock boto3 library so it does not fail.
+    act: Run can_use_bucket.
+    assert: Check that the function returns True.
+    """
+    s3_parameters = backup.S3Parameters(
+        **{
+            "access-key": token_hex(16),
+            "secret-key": token_hex(16),
+            "region": "eu-west-1",
+            "bucket": "bucket_name",
+        }
+    )
+    monkeypatch.setattr(backup, "client", MagicMock())
+
+    assert backup.can_use_bucket(s3_parameters)
+
+
+def test_can_use_bucket_wrong_boto3_client(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create S3Parameters and mock boto3 library so it raises on creating S3 client.
     act: Run can_use_bucket.
     assert: Check that the function returns False.
     """
@@ -90,9 +108,7 @@ def test_can_use_bucket_wrong_boto3_resource(monkeypatch: pytest.MonkeyPatch):
             "bucket": "bucket_name",
         }
     )
-    session = MagicMock()
-    session.resource = MagicMock(side_effect=BotoCoreError())
-    monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
+    monkeypatch.setattr(backup, "client", MagicMock(side_effect=BotoCoreError()))
 
     assert not backup.can_use_bucket(s3_parameters)
 
@@ -111,8 +127,8 @@ def test_can_use_bucket_bucket_error_checking_bucket(monkeypatch: pytest.MonkeyP
             "bucket": "bucket_name",
         }
     )
-    session = MagicMock()
-    session.resource().Bucket().meta.client.head_bucket.side_effect = ClientError({}, "HeadBucket")
-    monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
+    s3_client = MagicMock()
+    s3_client.head_bucket = MagicMock(side_effect=ClientError({}, "HeadBucket"))
+    monkeypatch.setattr(backup, "client", MagicMock(return_value=s3_client))
 
     assert not backup.can_use_bucket(s3_parameters)

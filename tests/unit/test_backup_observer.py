@@ -7,7 +7,6 @@ from secrets import token_hex
 from typing import Type
 from unittest.mock import MagicMock
 
-import boto3
 import ops
 import pytest
 from ops.testing import Harness
@@ -98,22 +97,3 @@ def test_on_s3_credentials_gone_set_active(harness: Harness):
     harness.remove_relation(relation_id)
 
     assert harness.model.unit.status == ops.ActiveStatus()
-
-
-def test_can_use_bucket_correct(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: Create S3Parameters and mock boto3 library so it does not fail.
-    act: Run can_use_bucket.
-    assert: Check that the function returns True.
-    """
-    s3_parameters = backup_observer.S3Parameters(
-        **{
-            "access-key": token_hex(16),
-            "secret-key": token_hex(16),
-            "region": "eu-west-1",
-            "bucket": "bucket_name",
-        }
-    )
-    monkeypatch.setattr(boto3.session, "Session", MagicMock())
-
-    assert backup_observer.can_use_bucket(s3_parameters)
