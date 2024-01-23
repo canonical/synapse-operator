@@ -38,7 +38,7 @@ def create_admin_user(container: ops.Container) -> typing.Optional[User]:
     # please check the docs:
     # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
     username = token_hex(16)
-    return create_user(container, username=username, admin=True)
+    return create_user(container=container, username=username, admin=True)
 
 
 def create_user(
