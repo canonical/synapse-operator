@@ -99,7 +99,6 @@ class SynapseCharm(ops.CharmBase):
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
-        self.framework.observe(self.on.start, self._on_start)
 
     def change_config(self) -> None:
         """Change configuration."""
@@ -170,19 +169,6 @@ class SynapseCharm(ops.CharmBase):
         self.change_config()
         self._set_workload_version()
 
-    def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle synapse pebble ready event."""
-        self.change_config()
-
-    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle synapse nginx pebble ready event."""
-        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
-            return
-        self.pebble_service.replan_nginx(container)
-        self._set_unit_status()
-
     def _get_peer_relation(self) -> typing.Optional[ops.Relation]:
         """Get peer relation.
 
@@ -251,8 +237,9 @@ class SynapseCharm(ops.CharmBase):
             logger.debug("Adding peer data")
             peer_relation.data[self.app].update({SECRET_KEY: access_token})
 
-    def _on_start(self, _: ops.HookEvent) -> None:
-        """Handle start event."""
+    def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse pebble ready event."""
+        self.change_config()
         if self.get_admin_access_token():
             self._start_synapse_stats_exporter()
             return
@@ -269,6 +256,15 @@ class SynapseCharm(ops.CharmBase):
         self._charm_state.synapse_config.admin_access_token = admin_user.access_token
         # Stats exporter needs access token so the charm will start it here
         self._start_synapse_stats_exporter()
+
+    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse nginx pebble ready event."""
+        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
+            return
+        self.pebble_service.replan_nginx(container)
+        self._set_unit_status()
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:
         """Reset instance and report action result.
