@@ -673,8 +673,10 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         A dictionary representing the Synapse environment variables.
     """
     environment = {
-        "SYNAPSE_SERVER_NAME": f"{charm_state.synapse_config.server_name}",
+        "SYNAPSE_CONFIG_DIR": SYNAPSE_CONFIG_DIR,
+        "SYNAPSE_CONFIG_PATH": SYNAPSE_CONFIG_PATH,
         "SYNAPSE_REPORT_STATS": f"{charm_state.synapse_config.report_stats}",
+        "SYNAPSE_SERVER_NAME": f"{charm_state.synapse_config.server_name}",
         # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
         # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
         "SYNAPSE_NO_TLS": str(True),
