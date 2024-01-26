@@ -80,11 +80,7 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring IRC bridge")
-        actions.create_irc_app_registration(
-            container=container
-        )
-        synapse.create_irc_config(
-            container=container
-        )
+        actions.create_irc_app_registration(container=container)
+        synapse.create_irc_config(container=container)
         self._pebble_service.replan_irc(container)
         self._charm.model.unit.status = ops.ActiveStatus()
