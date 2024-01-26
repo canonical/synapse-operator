@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 IRC_SERVICE_NAME = "irc"
 
+
 class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
     """A class representing the IRC bridge plugin for Synapse application.
 
@@ -87,3 +88,4 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         )
         self._pebble_service.replan_irc(container)
         self._charm.model.unit.status = ops.ActiveStatus()
+
