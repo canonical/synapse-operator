@@ -82,8 +82,51 @@ class S3Parameters(BaseModel):
         return "virtual"
 
 
+class _S3MultipartUpload:
+    """S3 Multipart Upload helper class.
+
+    Do not instantiate directly, created by S3Client.create_multipart_upload.
+    """
+
+    def __init__(self, boto_s3_client: Any, bucket_name: str, key: str, upload_id: str):
+        """Initialise _S3MultipartUpload."""
+        self._client = boto_s3_client
+        self._bucket_name = bucket_name
+        self._key = key
+        self._upload_id = upload_id
+        self._part_number: int = 1
+        self._all_parts: List = []
+
+    def upload_part(self, b: bytes) -> None:
+        """Upload a part of the Multipart Upload."""
+        # TODO TRY EXCEPT
+        part = self._client.upload_part(
+            Bucket=self._bucket_name,
+            Key=self._key,
+            PartNumber=self._part_number,
+            UploadId=self._upload_id,
+            Body=b,
+        )
+        self._all_parts.append({"PartNumber": self._part_number, "ETag": part["ETag"]})
+        self._part_number += 1
+
+    def complete_multipart_upload(self) -> None:
+        """Completes the multipart upload."""
+        # TODO TRY EXCEPT
+        part_info = {"Parts": self._all_parts}
+        self._client.complete_multipart_upload(
+            Bucket=self._bucket_name,
+            Key=self._key,
+            UploadId=self._upload_id,
+            MultipartUpload=part_info,
+        )
+
+
 class S3Client:
     """S3 Client Wrapper around boto3 library."""
+
+    # min size in AWS in 5 * 2^20. Setting it to a smaller number will fail.
+    MIN_MULTIPART_SIZE = 1e7
 
     # pylint: disable=too-few-public-methods
     def __init__(self, s3_parameters: S3Parameters):
@@ -141,6 +184,27 @@ class S3Client:
             )
             return False
         return True
+
+    def create_multipart_upload(self, key: str) -> _S3MultipartUpload:
+        """Create a Multipart upload."""
+        mpu = self._client.create_multipart_upload(Bucket=self._s3_parameters.bucket, Key=key)
+        return _S3MultipartUpload(self._client, self._s3_parameters.bucket, key, mpu["UploadId"])
+
+    def stream_to_object(self, inputstream: Iterable[bytes], key: str) -> None:
+        """Streams an iterable to a S3 bucket using multipart upload."""
+        s3_multipart_upload = self.create_multipart_upload(key)
+        to_send = bytearray()
+        for input_buffer in inputstream:
+            to_send += input_buffer
+            if len(to_send) > self.MIN_MULTIPART_SIZE:
+                # without this it can fail, as the upload will create
+                # views of the buffer. Better copy it.
+                sending = bytes(to_send)
+                s3_multipart_upload.upload_part(sending)
+                to_send.clear()
+        # Send possible remaining data
+        s3_multipart_upload.upload_part(bytes(to_send))
+        s3_multipart_upload.complete_multipart_upload()
 
 
 class StaticRandomMasterKeyProvider(RawMasterKeyProvider):

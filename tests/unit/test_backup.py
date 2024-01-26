@@ -8,7 +8,7 @@
 import io
 import tarfile
 from secrets import token_hex
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock, call
 
 import pytest
 from botocore.exceptions import ClientError
@@ -102,6 +102,89 @@ def test_s3_client_create_error(s3_parameters_backup):
     with pytest.raises(backup.S3Error) as err:
         backup.S3Client(s3_parameters_backup)
     assert "Error creating S3 client" in str(err.value)
+
+
+def test_s3_client_multipart_upload(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3 Client.
+    act: Send a new multipart upload with two parts.
+    assert: After each part, the part number is correctly sent.
+    """
+    # TODO Clean this a bit or refactor
+    boto_client_mock = MagicMock()
+    monkeypatch.setattr(backup, "client", boto_client_mock)
+    s3_client = backup.S3Client(s3_parameters_backup)
+    object_name = "object_name"
+    upload_id = "26"
+    boto_client_mock().create_multipart_upload.return_value.__getitem__.return_value = upload_id
+
+    mpupload = s3_client.create_multipart_upload(object_name)
+    boto_client_mock().create_multipart_upload.assert_called_with(
+        Bucket=s3_parameters_backup.bucket,
+        Key=object_name,
+    )
+
+    boto_client_mock().upload_part.return_value.__getitem__.return_value = "ETag1"
+    mpupload.upload_part(b"abcde")
+    boto_client_mock().upload_part.assert_called_with(
+        Bucket=s3_parameters_backup.bucket,
+        Key=object_name,
+        PartNumber=1,
+        UploadId=upload_id,
+        Body=b"abcde",
+    )
+
+    boto_client_mock().upload_part.return_value.__getitem__.return_value = "ETag2"
+    mpupload.upload_part(b"fghij")
+    boto_client_mock().upload_part.assert_called_with(
+        Bucket=s3_parameters_backup.bucket,
+        Key=object_name,
+        PartNumber=2,
+        UploadId=upload_id,
+        Body=b"fghij",
+    )
+
+    mpupload.complete_multipart_upload()
+    boto_client_mock().complete_multipart_upload.assert_called_with(
+        Bucket=s3_parameters_backup.bucket,
+        Key=object_name,
+        UploadId=upload_id,
+        MultipartUpload={
+            "Parts": [
+                {"PartNumber": 1, "ETag": "ETag1"},
+                {"PartNumber": 2, "ETag": "ETag2"},
+            ]
+        },
+    )
+    assert boto_client_mock().upload_part.call_count == 2
+
+
+def test_s3_stream_object(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Prepare a S3Client, mock the boto3 client
+       and set the limit multipart size to 5 bytes.
+    act: Stream a list of bytes.
+    assert: Two calls should be made to upload parts, one
+       when there at least 6 bytes and the last one.
+    """
+    # TODO Clean this a bit or refactor
+    # pylint: disable=unnecessary-dunder-call
+    boto_client_mock = MagicMock()
+    monkeypatch.setattr(backup, "client", boto_client_mock)
+    s3_client = backup.S3Client(s3_parameters_backup)
+    s3_client.MIN_MULTIPART_SIZE = 5
+
+    object_name = "object_name"
+    to_stream = [b"abcde", b"fg", b"hi", b"j"]
+    s3_client.stream_to_object(to_stream, object_name)
+    assert boto_client_mock().upload_part.call_count == 2
+    calls = [
+        call(Body=b"abcdefg", Key=ANY, PartNumber=1, UploadId=ANY, Bucket=ANY),
+        call().__getitem__("ETag"),  # type: ignore[call-overload]
+        call(Body=b"hij", Key=ANY, PartNumber=2, UploadId=ANY, Bucket=ANY),
+        call().__getitem__("ETag"),  # type: ignore[call-overload]
+    ]
+    boto_client_mock().upload_part.assert_has_calls(calls)
 
 
 def test_can_use_bucket_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
