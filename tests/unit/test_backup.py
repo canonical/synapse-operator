@@ -162,3 +162,21 @@ def test_create_tar_from_files(tmp_path):
         assert tar.getmember(str(f2.relative_to(base_dir))).isfile()
         f2tarobj = tar.extractfile(str(f2.relative_to(base_dir)))
         assert f2tarobj and f2tarobj.read() == f2.open("rb").read()
+
+
+def test_encrypt():
+    """
+    arrange: Given some plain text (binary) to encrypt and a password, split it so it is an
+        iterable.
+    act: Encrypt with the encrypt_generator.
+    assert: Check that the encrypted text is different from the plain. Also
+        decrypt and check that it is equal to the plain text.
+    """
+    plain_text = b"some text to encrypt\n with several\n lines"
+    plain_text_split = plain_text.splitlines(keepends=True)
+    password = token_hex(16)
+
+    encrypted_text = b"".join(backup.encrypt_generator(plain_text_split, password))
+
+    decrypted_text = b"".join(backup.decrypt_generator([encrypted_text], password))
+    assert decrypted_text == plain_text

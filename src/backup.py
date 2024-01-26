@@ -3,12 +3,22 @@
 
 """Provides backup functionality for Synapse."""
 
+import hashlib
 import io
 import logging
 import os
 import tarfile
-from typing import Any, Generator, List, Optional
+from typing import Any, Generator, Iterable, List, Optional
 
+from aws_encryption_sdk import EncryptionSDKClient
+from aws_encryption_sdk.identifiers import (
+    Algorithm,
+    CommitmentPolicy,
+    EncryptionKeyType,
+    WrappingAlgorithm,
+)
+from aws_encryption_sdk.internal.crypto.wrapping_keys import WrappingKey
+from aws_encryption_sdk.key_providers.raw import RawMasterKeyProvider
 from boto3 import client
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
@@ -131,6 +141,104 @@ class S3Client:
             )
             return False
         return True
+
+
+class StaticRandomMasterKeyProvider(RawMasterKeyProvider):
+    """KeyProvider to store the password to use for encryption/decryption."""
+
+    master_key = b"master_key"
+    provider_id = "static-random"
+
+    def __init__(self, **kwargs: dict):  # pylint: disable=unused-argument
+        """Initialize empty map of keys."""
+        self._static_keys: dict = {}
+
+    def _get_raw_key(self, key_id: bytes) -> WrappingKey:
+        """Return the password after hashing it with sha256."""
+        static_key = self._static_keys[key_id]
+        static_key = hashlib.sha256(static_key.encode("utf-8")).digest()
+        return WrappingKey(
+            wrapping_algorithm=WrappingAlgorithm.AES_256_GCM_IV12_TAG16_NO_PADDING,
+            wrapping_key=static_key,
+            wrapping_key_type=EncryptionKeyType.SYMMETRIC,
+        )
+
+    def add_static_password(self, password: str) -> None:
+        """Add the password to use for the encryption/decryption."""
+        self._static_keys[self.master_key] = password
+        self.add_master_key(self.master_key)
+
+
+class BytesIOIterable(io.BufferedIOBase):
+    """Class that created a file like object from an iterable."""
+
+    def __init__(self, iterable: Iterable[bytes]):
+        """Initialize the object with the iterable."""
+        self._input_iter = iter(iterable)
+        self._buffer = bytearray()
+
+    def read(self, size: int | None = -1, /) -> bytes:
+        """Return up to size bytes from the input iterable."""
+        if size == -1 or size is None:
+            size = int(1e7)  # for simplicity and memory efficiency
+
+        # Just return up to size. Do not get more elements
+        # as it implies using more memory.
+        if len(self._buffer) > size:
+            response = bytes(self._buffer[0:size])
+            del self._buffer[0:size]
+            return response
+
+        try:
+            while len(self._buffer) < size:
+                self._buffer += next(self._input_iter)
+        except StopIteration:
+            pass
+
+        response = bytes(self._buffer[0:size])
+        del self._buffer[0:size]
+        return response
+
+
+def encrypt_generator(inputstream: Iterable[bytes], password: str) -> Generator[bytes, None, None]:
+    """Encrypt an inputstream (iterator) and return another iterator.
+
+    https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/python-example-code.html#python-example-streams
+    """
+    master_key_provider = StaticRandomMasterKeyProvider()
+    master_key_provider.add_static_password(password)
+    input_file = BytesIOIterable(inputstream)
+    encryption_client = EncryptionSDKClient(
+        commitment_policy=CommitmentPolicy.REQUIRE_ENCRYPT_REQUIRE_DECRYPT
+    )
+    with encryption_client.stream(
+        algorithm=Algorithm.AES_256_GCM_HKDF_SHA512_COMMIT_KEY,
+        mode="e",
+        source=input_file,
+        key_provider=master_key_provider,
+    ) as encryptor:
+        for chunk in encryptor:
+            yield chunk
+
+
+def decrypt_generator(inputstream: Iterable[bytes], password: str) -> Generator[bytes, None, None]:
+    """Decrypt an inputstream (iterator) and return another iterator.
+
+    https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/python-example-code.html#python-example-streams
+    """
+    master_key_provider = StaticRandomMasterKeyProvider()
+    master_key_provider.add_static_password(password)
+    input_file = BytesIOIterable(inputstream)
+    decryption_client = EncryptionSDKClient(
+        commitment_policy=CommitmentPolicy.REQUIRE_ENCRYPT_REQUIRE_DECRYPT
+    )
+    with decryption_client.stream(
+        mode="decrypt-unsigned",
+        source=input_file,
+        key_provider=master_key_provider,
+    ) as decryptor:
+        for chunk in decryptor:
+            yield chunk
 
 
 def tar_file_generator(
