@@ -11,7 +11,7 @@ import ops
 import pytest
 from ops.testing import Harness
 
-import backup_observer
+import backup
 
 
 @pytest.mark.parametrize(
@@ -71,7 +71,7 @@ def test_on_s3_credentials_changed(
     assert: The unit should be in the expected state with the expected message.
     """
     # pylint: disable=too-many-arguments
-    monkeypatch.setattr(backup_observer, "can_use_bucket", MagicMock(return_value=can_use_bucket))
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=can_use_bucket))
     harness.begin_with_initial_hooks()
 
     harness.add_relation("backup", "s3-integrator", app_data=relation_data)

@@ -3,13 +3,15 @@
 
 """S3 Backup relation observer for Synapse."""
 
+import datetime
 import logging
 
 import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
+from ops.charm import ActionEvent
 from ops.framework import Object
 
-from backup import S3Parameters, can_use_bucket
+import backup
 
 logger = logging.getLogger(__name__)
 
@@ -36,16 +38,23 @@ class BackupObserver(Object):
             self._s3_client.on.credentials_changed, self._on_s3_credential_changed
         )
         self.framework.observe(self._s3_client.on.credentials_gone, self._on_s3_credential_gone)
+        self.framework.observe(self._charm.on.create_backup_action, self._on_create_backup_action)
 
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Check new S3 credentials set the unit to blocked if they are wrong."""
         try:
-            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
+            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
-        if not can_use_bucket(s3_parameters):
+        try:
+            s3_client = backup.S3Client(s3_parameters)
+        except backup.S3Error:
+            self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
+            return
+
+        if not s3_client.can_use_bucket():
             self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
             return
 
@@ -54,3 +63,23 @@ class BackupObserver(Object):
     def _on_s3_credential_gone(self, _: CredentialsChangedEvent) -> None:
         """Handle s3 credentials gone. Set unit status to active."""
         self._charm.unit.status = ops.ActiveStatus()
+
+    def _on_create_backup_action(self, event: ActionEvent) -> None:
+        """Create new backup of Synapse data.
+
+        Args:
+            event: Event triggering the create backup action.
+        """
+        try:
+            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+        except ValueError:
+            event.fail("Wrong S3 configuration on create backup action")
+            return
+
+        backup_key = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        try:
+            backup.create_backup(s3_parameters, backup_key)
+        except backup.S3Error:
+            logger.exception("Error Creating Backup")
+            event.fail("Error Creating Backup")
+            return

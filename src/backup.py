@@ -15,6 +15,10 @@ from pydantic import BaseModel, Field, validator
 logger = logging.getLogger(__name__)
 
 
+class S3Error(Exception):
+    """Generic S3 Exception."""
+
+
 class S3Parameters(BaseModel):
     """Configuration for accessing S3 bucket.
 
@@ -65,39 +69,72 @@ class S3Parameters(BaseModel):
         return "virtual"
 
 
-def can_use_bucket(s3_parameters: S3Parameters) -> bool:
-    """Check if a bucket exists and is accessible in an S3 compatible object store.
+class S3Client:
+    """S3 Client Wrapper around boto3 library."""
+
+    # pylint: disable=too-few-public-methods
+    def __init__(self, s3_parameters: S3Parameters):
+        """Initialize the S3 client.
+
+        Args:
+            s3_parameters: Parameter to configure the S3 connection.
+        """
+        self._s3_parameters = s3_parameters
+        self._client = self._create_client()
+
+    def _create_client(self) -> Any:
+        """Create new boto3 S3 client.
+
+        Creating the client does not connect to the server.
+
+        Returns:
+            New instantiated boto3 S3 client.
+
+        Raises:
+            S3Error: If it was not possible to create the client.
+        """
+        try:
+            s3_client_config = Config(
+                region_name=self._s3_parameters.region,
+                s3={
+                    "addressing_style": self._s3_parameters.addressing_style,
+                },
+            )
+            s3_client = client(
+                "s3",
+                self._s3_parameters.region,
+                aws_access_key_id=self._s3_parameters.access_key,
+                aws_secret_access_key=self._s3_parameters.secret_key,
+                endpoint_url=self._s3_parameters.endpoint,
+                config=s3_client_config,
+            )
+        except (TypeError, BotoCoreError) as exc:
+            logger.exception("Error creating S3 client")
+            raise S3Error("Error creating S3 client") from exc
+        return s3_client
+
+    def can_use_bucket(self) -> bool:
+        """Check if a bucket exists and is accessible in an S3 compatible object store.
+
+        Returns:
+            True if the bucket exists and is accessible
+        """
+        try:
+            self._client.head_bucket(Bucket=self._s3_parameters.bucket)
+        except (ClientError, BotoConnectionError):
+            logger.exception(
+                "Bucket %s doesn't exist or you don't have access to it.",
+                self._s3_parameters.bucket,
+            )
+            return False
+        return True
+
+
+# pylint: disable=unused-argument
+def create_backup(s3_parameters: S3Parameters, backup_name: str) -> None:
+    """Create a new back up for Synapse.
 
     Args:
-        s3_parameters: S3 connection parameters
-
-    Returns:
-       True if the bucket exists and is accessible
+        s3_parameters: S3 parameters for the bucket to create the backup.
+        backup_name: Name for the backup.
     """
-    try:
-        s3_client_config = Config(
-            region_name=s3_parameters.region,
-            s3={
-                "addressing_style": s3_parameters.addressing_style,
-            },
-        )
-        s3_client = client(
-            "s3",
-            s3_parameters.region,
-            aws_access_key_id=s3_parameters.access_key,
-            aws_secret_access_key=s3_parameters.secret_key,
-            endpoint_url=s3_parameters.endpoint,
-            config=s3_client_config,
-        )
-    except (TypeError, BotoCoreError):
-        logger.exception("Failed to create S3 client")
-        return False
-
-    try:
-        s3_client.head_bucket(Bucket=s3_parameters.bucket)
-    except (ClientError, BotoConnectionError):
-        logger.exception(
-            "Bucket %s doesn't exist or you don't have access to it.", s3_parameters.bucket
-        )
-        return False
-    return True
