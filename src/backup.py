@@ -3,8 +3,11 @@
 
 """Provides backup functionality for Synapse."""
 
+import io
 import logging
-from typing import Any, Optional
+import os
+import tarfile
+from typing import Any, Generator, List, Optional
 
 from boto3 import client
 from botocore.config import Config
@@ -128,6 +131,32 @@ class S3Client:
             )
             return False
         return True
+
+
+def tar_file_generator(
+    files_to_tar: List[str], base_dir: str, open_func: Any = open
+) -> Generator[bytes, None, None]:
+    """Create a tar file with input files and yields the bytes.
+
+    TODO files_to_tar relative to base_dir
+    TODO should we get the files from pebble, using another open/stat/whatever
+    """
+    output_file = io.BytesIO()
+    with tarfile.open(fileobj=output_file, mode="w|") as tar:
+        for filename in files_to_tar:
+            absolute_filename = os.path.join(base_dir, filename)
+            tarinfo = tar.gettarinfo(name=absolute_filename, arcname=filename)
+            if tarinfo.isreg():
+                with open_func(absolute_filename, "rb") as f:
+                    tar.addfile(tarinfo, f)
+            elif tarinfo.isdir():
+                tar.addfile(tarinfo)
+            yield output_file.getvalue()
+            output_file.seek(0)
+            output_file.truncate(0)
+    pending_bytes = output_file.getvalue()
+    if len(pending_bytes) > 0:
+        yield pending_bytes
 
 
 # pylint: disable=unused-argument

@@ -129,7 +129,9 @@ def test_create_backup_failed(
     assert: Backup should end correctly, returning correct and the backup name.
     """
     monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
-    monkeypatch.setattr(backup, "create_backup", MagicMock(side_effect=backup.S3Error("Generic Error")))
+    monkeypatch.setattr(
+        backup, "create_backup", MagicMock(side_effect=backup.S3Error("Generic Error"))
+    )
 
     harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
     harness.begin_with_initial_hooks()

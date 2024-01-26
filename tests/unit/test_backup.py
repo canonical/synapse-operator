@@ -5,6 +5,8 @@
 
 # pylint: disable=protected-access
 
+import io
+import tarfile
 from secrets import token_hex
 from unittest.mock import MagicMock
 
@@ -126,3 +128,37 @@ def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.M
     )
 
     assert not s3_client.can_use_bucket()
+
+
+def test_create_tar_from_files(tmp_path):
+    """
+    arrange: Create two files inside a directory with data.
+    act: Call tar_file_generator with the directory and the two files.
+    assert: Check that all the files and dir are in the tar. In the case
+       of the files, check that the files have the correct content.
+    """
+    base_dir = tmp_path
+    media = base_dir / "media"
+    media.mkdir()
+    f1 = media / "f1.txt"
+    f1.write_text("Text 1" * 1000, encoding="utf-8")
+    f2 = media / "f2.txt"
+    f2.write_bytes(b"\x00\x00" * 5000)
+    files_to_tar = [
+        media.relative_to(base_dir),
+        f1.relative_to(base_dir),
+        f2.relative_to(base_dir),
+    ]
+
+    gen = backup.tar_file_generator(files_to_tar, base_dir)
+
+    tarfileobj = io.BytesIO(b"".join(gen))
+    with tarfile.open(fileobj=tarfileobj) as tar:
+        assert len(tar.getmembers()) == 3
+        assert tar.getmember(str(media.relative_to(base_dir))).isdir()
+        assert tar.getmember(str(f1.relative_to(base_dir))).isfile()
+        f1tarobj = tar.extractfile(str(f1.relative_to(base_dir)))
+        assert f1tarobj and f1tarobj.read() == f1.open("rb").read()
+        assert tar.getmember(str(f2.relative_to(base_dir))).isfile()
+        f2tarobj = tar.extractfile(str(f2.relative_to(base_dir)))
+        assert f2tarobj and f2tarobj.read() == f2.open("rb").read()
