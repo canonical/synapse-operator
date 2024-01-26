@@ -7,6 +7,7 @@ import hashlib
 import io
 import logging
 import os
+import pathlib
 import tarfile
 from typing import Any, Generator, Iterable, List, Optional
 
@@ -27,6 +28,8 @@ from pydantic import BaseModel, Field, validator
 
 logger = logging.getLogger(__name__)
 
+
+TAR_ENCRYPTED_EXTENSION = ".tar.enc"
 
 class S3Error(Exception):
     """Generic S3 Exception."""
@@ -331,13 +334,38 @@ def tar_file_generator(
         yield pending_bytes
 
 
-# pylint: disable=unused-argument
-# flake8: noqa
-def create_backup(s3_parameters: S3Parameters, backup_name: str) -> None:
+FILE_PATTERNS_TO_BACKUP = [
+    "*key",
+    "homeserver.db",
+    "media/local_*/**/*",
+    # TODO or maybe backup all /media except /media/(remote_|url_cache)* as said here: https://jo-so.de/2018-03/Matrix.html#datensicherung
+    # see also https://matrix-org.github.io/synapse/latest/media_repository.html
+    # TODO check that we do not have to backup synapse.MJOLNIR_CONFIG_PATH. let's see... I believe we don't
+]
+def default_filenames_to_backup(base_dir: str):
+    p = pathlib.Path(base_dir)
+    for pattern in FILE_PATTERNS_TO_BACKUP:
+        for filename in p.glob(pattern):
+            yield filename.relative_to(base_dir)
+
+
+def create_backup(
+        s3_parameters: S3Parameters,
+        base_dir: str,
+        backup_name: str,
+        password: str
+) -> None:
     """Create a new back up for Synapse.
 
     Args:
         s3_parameters: S3 parameters for the bucket to create the backup.
-        backup_name: Name for the backup.
+        base_dir: Base directory (data directory).
+        backup_name: Name for the backup. The uploaded file will have an extension appended.
+        password: Password to use for the encrypted file.
     """
-    raise NotImplementedError
+    s3_client = S3Client(s3_parameters)
+
+    files_to_backup = default_filenames_to_backup(base_dir)
+    tar_gen = tar_file_generator(files_to_backup, base_dir)
+    encrypt_gen = encrypt_generator(tar_gen, password)
+    s3_client.stream_to_object(encrypt_gen, backup_name + TAR_ENCRYPTED_EXTENSION)
