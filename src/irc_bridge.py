@@ -88,4 +88,3 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         )
         self._pebble_service.replan_irc(container)
         self._charm.model.unit.status = ops.ActiveStatus()
-
