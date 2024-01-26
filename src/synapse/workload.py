@@ -577,9 +577,11 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         updated_listeners = [
             {
                 **item,
-                "x_forwarded": True
-                if "x_forwarded" in item and not item["x_forwarded"]
-                else item.get("x_forwarded", False),
+                "x_forwarded": (
+                    True
+                    if "x_forwarded" in item and not item["x_forwarded"]
+                    else item.get("x_forwarded", False)
+                ),
             }
             for item in current_listeners
         ]
