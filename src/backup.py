@@ -131,6 +131,7 @@ class S3Client:
 
 
 # pylint: disable=unused-argument
+# flake8: noqa
 def create_backup(s3_parameters: S3Parameters, backup_name: str) -> None:
     """Create a new back up for Synapse.
 
@@ -138,3 +139,4 @@ def create_backup(s3_parameters: S3Parameters, backup_name: str) -> None:
         s3_parameters: S3 parameters for the bucket to create the backup.
         backup_name: Name for the backup.
     """
+    raise NotImplementedError

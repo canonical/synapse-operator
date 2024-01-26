@@ -77,50 +77,50 @@ def test_s3_relation_validation_correct(s3_relation_data):
     assert s3_parameters.region == s3_relation_data.get("region")
 
 
-def test_s3_client_create_correct(s3_parameters):
+def test_s3_client_create_correct(s3_parameters_backup):
     """
     arrange: Create S3Parameters for the new client.
     act: Create the new client.
     assert: The client gets created correctly.
     """
-    s3_client = backup.S3Client(s3_parameters)
+    s3_client = backup.S3Client(s3_parameters_backup)
 
     assert s3_client._client
 
 
-def test_s3_client_create_error(s3_parameters):
+def test_s3_client_create_error(s3_parameters_backup):
     """
     arrange: Create S3Parameters for the new client.
         Put access_key for the boto3 client to fail.
     act: Create the new client.
     assert: Raises S3Error.
     """
-    s3_parameters.access_key = None
+    s3_parameters_backup.access_key = None
 
     with pytest.raises(backup.S3Error) as err:
-        backup.S3Client(s3_parameters)
+        backup.S3Client(s3_parameters_backup)
     assert "Error creating S3 client" in str(err.value)
 
 
-def test_can_use_bucket_correct(s3_parameters, monkeypatch: pytest.MonkeyPatch):
+def test_can_use_bucket_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create S3Parameters and mock boto3 client so it does not raise on head_bucket.
     act: Run S3Client.can_use_bucket.
     assert: Check that the function returns True.
     """
-    s3_client = backup.S3Client(s3_parameters)
+    s3_client = backup.S3Client(s3_parameters_backup)
     monkeypatch.setattr(s3_client._client, "head_bucket", MagicMock())
 
     assert s3_client.can_use_bucket()
 
 
-def test_can_use_bucket_bucket_error(s3_parameters, monkeypatch: pytest.MonkeyPatch):
+def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create S3Parameters and mock boto3 library so it fails when checking the bucket.
     act: Run can_use_bucket.
     assert: Check that the function returns False.
     """
-    s3_client = backup.S3Client(s3_parameters)
+    s3_client = backup.S3Client(s3_parameters_backup)
     monkeypatch.setattr(
         s3_client._client, "head_bucket", MagicMock(side_effect=ClientError({}, "HeadBucket"))
     )

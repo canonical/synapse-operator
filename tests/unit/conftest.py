@@ -241,16 +241,20 @@ def container_with_path_error_pass_fixture(
     return container_mocked
 
 
-@pytest.fixture(name="s3_parameters")
-def s3_parameters_fixture() -> backup.S3Parameters:
+@pytest.fixture(name="s3_relation_data_backup")
+def s3_relation_data_backup_fixture() -> dict:
+    """Returns valid S3 relation data."""
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+        "bucket": "synapse-backup-bucket",
+        "path": "/synapse-backups",
+        "s3-uri-style": "path",
+        "endpoint": "https://s3.example.com",
+    }
+
+
+@pytest.fixture(name="s3_parameters_backup")
+def s3_parameters_backup_fixture(s3_relation_data_backup) -> backup.S3Parameters:
     """Returns valid S3 Parameters."""
-    return backup.S3Parameters(
-        **{
-            "access-key": token_hex(16),
-            "secret-key": token_hex(16),
-            "bucket": "synapse-backup-bucket",
-            "path": "/synapse-backups",
-            "s3-uri-style": "path",
-            "endpoint": "https://s3.example.com",
-        }
-    )
+    return backup.S3Parameters(**s3_relation_data_backup)

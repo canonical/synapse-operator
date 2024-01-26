@@ -83,3 +83,5 @@ class BackupObserver(Object):
             logger.exception("Error Creating Backup")
             event.fail("Error Creating Backup")
             return
+
+        event.set_results({"result": "correct", "backup-id": backup_key})
