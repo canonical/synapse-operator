@@ -28,9 +28,6 @@ parts:
             - libxslt1-dev
             - openssl
             - pkg-config
-            - python3-dev
-            - python3-pip
-            - python3-setuptools
             - zlib1g-dev
         stage-packages:
             - bash
@@ -45,8 +42,8 @@ parts:
             - libssl-dev
             - libwebp7
             - openssl
-            - python3
             - xmlsec1
+            - python3
         stage-snaps:
             - mjolnir/latest/edge
             - matrix-appservice-irc/latest/edge
@@ -64,10 +61,10 @@ parts:
             mkdir -p /rust /cargo /synapse /install
             curl -m 30 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal
             /rust/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc -V > $CRAFT_PART_INSTALL/rust-version
-            pip3 install -U pip setuptools
+            export PYTHONPATH=/usr/lib/python310.zip:/usr/lib/python3.10:/usr/lib/python3.10/lib-dynload:/root/parts/synapse/install/lib/python3.10/site-packages
             pip3 install --root-user-action=ignore "poetry==1.3.2"
             cp pyproject.toml poetry.lock /synapse/
-            /usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
+            /root/parts/synapse/install/usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
             pip3 install --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
             cp -r synapse /synapse/
             cp -r rust /synapse/
@@ -81,6 +78,7 @@ parts:
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
             mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
+            rm -f $CRAFT_PART_INSTALL/bin/pip $CRAFT_PART_INSTALL/bin/pip3 $CRAFT_PART_INSTALL/bin/python3 $CRAFT_PART_INSTALL/bin/pip3.10 $CRAFT_PART_INSTALL/bin/python3.10
         overlay-packages:
             - ca-certificates
     synapse-conf:
