@@ -11,7 +11,6 @@ import typing
 
 import ops
 
-import actions
 import synapse
 from charm_state import CharmState
 
@@ -53,6 +52,7 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         Args:
             event: Collect status event.
         """
+        # pylint:disable=duplicate-code
         if not self._charm_state.synapse_config.enable_irc_bridge:
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
@@ -80,7 +80,8 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring IRC bridge")
+        server_name = self._charm_state.synapse_config.server_name
         synapse.create_irc_bridge_app_registration(container=container)
-        synapse.create_irc_bridge_config(container=container)
+        synapse.create_irc_bridge_config(container=container, server_name=server_name)
         self._pebble_service.replan_irc_bridge(container)
         self._charm.model.unit.status = ops.ActiveStatus()

@@ -533,8 +533,12 @@ def create_mjolnir_config(container: ops.Container, access_token: str, room_id: 
     except ops.pebble.PathError as exc:
         raise CreateMjolnirConfigError(str(exc)) from exc
 
-def _get_irc_bridge_config() -> typing.Dict:
+
+def _get_irc_bridge_config(server_name: str) -> typing.Dict:
     """Create config as expected by irc bridge.
+
+    Args:
+        server_name: server name of the Synapse instance.
 
     Returns:
         IRC Bridge configuration
@@ -542,33 +546,57 @@ def _get_irc_bridge_config() -> typing.Dict:
     with open("templates/irc_bridge_production.yaml", encoding="utf-8") as irc_config_file:
         config = yaml.safe_load(irc_config_file)
         config["homeserver"]["url"] = SYNAPSE_URL
-        config["homeserver"]["domain"] = self._charm.config["server_name"]
+        config["homeserver"]["domain"] = server_name
         return config
 
 
-def create_irc_bridge_config(container: ops.Container) -> None:
+def create_irc_bridge_config(container: ops.Container, server_name: str) -> None:
     """Create irc bridge configuration.
 
     Args:
         container: Container of the charm.
+        server_name: server name of the Synapse instance.
+
     Raises:
         CreateIRCBridgeConfigError: something went wrong creating irc bridge config.
     """
     try:
-        config = _get_irc_bridge_config()
+        config = _get_irc_bridge_config(server_name=server_name)
         container.push(IRC_BRIDGE_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
     except ops.pebble.PathError as exc:
         raise CreateIRCBridgeConfigError(str(exc)) from exc
 
+
 def _get_irc_bridge_app_registration(container: ops.Container) -> typing.Dict:
     """Create registration file as expected by irc bridge.
 
+    Args:
+        container: Container of the charm.
+
     Returns:
         IRC Bridge registration
+
+    Raises:
+        WorkloadError: something went wrong creating irc bridge registration.
     """
     registration_result = _exec(
-        container, ["node", "app.js", "-r", "-f", "appservice-registration-irc.yaml", "-u", "http://localhost:", SYNAPSE_PORT, "-c", IRC_BRIDGE_CONFIG_PATH, "-l", "my_bot"
- "-c", SYNAPSE_CONFIG_PATH]
+        container,
+        [
+            "node",
+            "app.js",
+            "-r",
+            "-f",
+            "appservice-registration-irc.yaml",
+            "-u",
+            "http://localhost:",
+            str(SYNAPSE_PORT),
+            "-c",
+            IRC_BRIDGE_CONFIG_PATH,
+            "-l",
+            "my_bot",
+            "-c",
+            SYNAPSE_CONFIG_PATH,
+        ],
     )
     if registration_result.exit_code:
         logger.error(
@@ -581,16 +609,18 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> typing.Dict:
         config = yaml.safe_load(irc_reg_file)
         return config
 
+
 def create_irc_bridge_app_registration(container: ops.Container) -> None:
     """Create irc bridge app registration.
 
     Args:
         container: Container of the charm.
+
     Raises:
-        CreateIRCBridgeRegistrationError: something went wrong creating irc bridge app registration.
+        CreateIRCBridgeRegistrationError: error creating irc bridge app registration.
     """
     try:
-        config = _get_irc_bridge_app_registration()
+        config = _get_irc_bridge_app_registration(container=container)
         container.push(IRC_BRIDGE_REGISTRATION_PATH, yaml.safe_dump(config), make_dirs=True)
     # add it to homeserver.yaml TODO
     except ops.pebble.PathError as exc:

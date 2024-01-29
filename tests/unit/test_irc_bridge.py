@@ -6,20 +6,26 @@
 # pylint: disable=protected-access
 
 from unittest import mock
-from unittest.mock import ANY, MagicMock, PropertyMock
+from unittest.mock import ANY, MagicMock
 
 import ops
 import pytest
+import yaml
 from ops.testing import Harness
 
-import actions
 import synapse
 import synapse.workload
 from irc_bridge import IRCBridge
-from synapse.workload import create_irc_bridge_config, CreateIRCBridgeConfigError, _get_irc_bridge_config
-from synapse.workload import create_irc_bridge_app_registration, _get_irc_bridge_app_registration, CreateIRCBridgeRegistrationError, WorkloadError
-from synapse.workload import IRC_BRIDGE_CONFIG_PATH, IRC_BRIDGE_REGISTRATION_PATH
-import yaml
+from synapse.workload import (
+    IRC_BRIDGE_CONFIG_PATH,
+    IRC_BRIDGE_REGISTRATION_PATH,
+    CreateIRCBridgeConfigError,
+    CreateIRCBridgeRegistrationError,
+    WorkloadError,
+    _get_irc_bridge_app_registration,
+    create_irc_bridge_app_registration,
+    create_irc_bridge_config,
+)
 
 
 def test_on_collect_status_service_exists(
@@ -110,6 +116,7 @@ def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPa
     enable_irc_bridge_mock.assert_called_once()
     event_mock.add_status.assert_called_once_with(ops.ActiveStatus())
 
+
 def test_enable_irc_bridge(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock calls to validate args.
@@ -119,15 +126,15 @@ def test_enable_irc_bridge(harness: Harness, monkeypatch: pytest.MonkeyPatch) ->
     harness.update_config({"enable_irc_bridge": True})
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
-    create_irc_bridge_config = MagicMock()
-    monkeypatch.setattr(synapse, "create_irc_bridge_config", create_irc_bridge_config)
-    create_irc_bridge_app_registration = MagicMock()
+    create_irc_bridge_config_mock = MagicMock()
+    monkeypatch.setattr(synapse, "create_irc_bridge_config", create_irc_bridge_config_mock)
+    create_irc_bridge_app_registration_mock = MagicMock()
     monkeypatch.setattr(
-        synapse, "create_irc_bridge_app_registration", create_irc_bridge_app_registration
+        synapse, "create_irc_bridge_app_registration", create_irc_bridge_app_registration_mock
     )
     harness.charm._irc_bridge.enable_irc_bridge()
-    create_irc_bridge_config.assert_called_once_with(container=ANY)
-    create_irc_bridge_app_registration.assert_called_once_with(container=ANY)
+    create_irc_bridge_config_mock.assert_called_once_with(container=ANY, server_name=ANY)
+    create_irc_bridge_app_registration_mock.assert_called_once_with(container=ANY)
     assert harness.model.unit.status == ops.ActiveStatus()
 
 
@@ -138,14 +145,16 @@ def test_create_irc_bridge_config_success(monkeypatch: pytest.MonkeyPatch):
     assert: container.push is called with the correct arguments.
     """
     container_mock = MagicMock()
+    server_name = "server_name"
     _get_irc_bridge_config_mock = MagicMock(return_value={"key": "value"})
 
-    monkeypatch.setattr(synapse.workload,"_get_irc_bridge_config", _get_irc_bridge_config_mock)
-    create_irc_bridge_config(container_mock)
+    monkeypatch.setattr(synapse.workload, "_get_irc_bridge_config", _get_irc_bridge_config_mock)
+    create_irc_bridge_config(container_mock, server_name=server_name)
 
     container_mock.push.assert_called_once_with(
         IRC_BRIDGE_CONFIG_PATH, yaml.safe_dump({"key": "value"}), make_dirs=True
     )
+
 
 def test_create_irc_bridge_config_path_error(monkeypatch: pytest.MonkeyPatch):
     """
@@ -154,11 +163,15 @@ def test_create_irc_bridge_config_path_error(monkeypatch: pytest.MonkeyPatch):
     assert: CreateIRCBridgeConfigError is raised.
     """
     container_mock = MagicMock()
-    _get_irc_bridge_config_mock = MagicMock(side_effect=ops.pebble.PathError(kind="not-found", message="Path not found"))
+    server_name = "server_name"
+    _get_irc_bridge_config_mock = MagicMock(
+        side_effect=ops.pebble.PathError(kind="not-found", message="Path not found")
+    )
 
-    monkeypatch.setattr(synapse.workload,"_get_irc_bridge_config", _get_irc_bridge_config_mock)
+    monkeypatch.setattr(synapse.workload, "_get_irc_bridge_config", _get_irc_bridge_config_mock)
     with pytest.raises(CreateIRCBridgeConfigError):
-        create_irc_bridge_config(container_mock)
+        create_irc_bridge_config(container_mock, server_name=server_name)
+
 
 def test_create_irc_bridge_app_registration_success(monkeypatch: pytest.MonkeyPatch):
     """
@@ -170,8 +183,7 @@ def test_create_irc_bridge_app_registration_success(monkeypatch: pytest.MonkeyPa
     _get_irc_bridge_app_registration_mock = MagicMock(return_value={"key": "value"})
 
     monkeypatch.setattr(
-        "synapse.workload._get_irc_bridge_app_registration",
-        _get_irc_bridge_app_registration_mock
+        "synapse.workload._get_irc_bridge_app_registration", _get_irc_bridge_app_registration_mock
     )
     create_irc_bridge_app_registration(container_mock)
 
@@ -179,9 +191,10 @@ def test_create_irc_bridge_app_registration_success(monkeypatch: pytest.MonkeyPa
         IRC_BRIDGE_REGISTRATION_PATH, yaml.safe_dump({"key": "value"}), make_dirs=True
     )
 
+
 def test_create_irc_bridge_app_registration_path_error(monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: create a mock container and mock _get_irc_bridge_app_registration function to raise PathError.
+    arrange: create a mock container and app registration function to raise PathError.
     act: call create_irc_bridge_app_registration.
     assert: CreateIRCBridgeRegistrationError is raised.
     """
@@ -191,8 +204,7 @@ def test_create_irc_bridge_app_registration_path_error(monkeypatch: pytest.Monke
     )
 
     monkeypatch.setattr(
-        "synapse.workload._get_irc_bridge_app_registration",
-        _get_irc_bridge_app_registration_mock
+        "synapse.workload._get_irc_bridge_app_registration", _get_irc_bridge_app_registration_mock
     )
     with pytest.raises(CreateIRCBridgeRegistrationError):
         create_irc_bridge_app_registration(container_mock)
@@ -208,10 +220,10 @@ def test_get_irc_bridge_app_registration_success():
     container_mock = MagicMock()
     mock_exec = mock.Mock(return_value=mock.Mock(exit_code=0))
     mock_open = mock.mock_open(read_data="key: value")
-    with mock.patch("synapse.workload._exec", mock_exec), \
-         mock.patch("builtins.open", mock_open):
+    with mock.patch("synapse.workload._exec", mock_exec), mock.patch("builtins.open", mock_open):
         config = _get_irc_bridge_app_registration(container_mock)
     assert config == expected_config
+
 
 def test_get_irc_bridge_app_registration_failure():
     """

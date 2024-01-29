@@ -261,6 +261,7 @@ class PebbleService:
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)
+
     @property
     def _irc_bridge_pebble_layer(self) -> ops.pebble.LayerDict:
         """Generate pebble config for the irc bridge service.
@@ -268,7 +269,11 @@ class PebbleService:
         Returns:
             The pebble configuration for the irc bridge service.
         """
-        command_params = f"-c {synapse.IRC_BRIDGE_CONFIG_PATH}/config.yaml -f {synapse.IRC_BRIDGE_CONFIG_PATH}/appservice-registration-irc.yaml -p {synapse.IRC_BRIDGE_HEALTH_PORT}"
+        command_params = (
+            f"-c {synapse.IRC_BRIDGE_CONFIG_PATH}/config.yaml"
+            + f" -f {synapse.IRC_BRIDGE_CONFIG_PATH}/appservice-registration-irc.yaml"
+            + f" -p {synapse.IRC_BRIDGE_HEALTH_PORT}"
+        )
         layer = {
             "summary": "Synapse irc layer",
             "description": "Synapse irc layer",

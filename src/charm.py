@@ -21,8 +21,8 @@ import synapse
 from backup_observer import BackupObserver
 from charm_state import CharmConfigInvalidError, CharmState
 from database_observer import DatabaseObserver
-from mjolnir import Mjolnir
 from irc_bridge import IRCBridge
+from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
 from saml_observer import SAMLObserver
