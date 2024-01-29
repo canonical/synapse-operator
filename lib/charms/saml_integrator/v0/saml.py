@@ -28,7 +28,7 @@ class SamlRequirerCharm(ops.CharmBase):
 
 ```
 
-As shown above, the library provides a custom event to handle the sceneario in
+As shown above, the library provides a custom event to handle the scenario in
 which new SAML data has been added or updated.
 
 ### Provider Charm
@@ -66,7 +66,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 3
+LIBPATCH = 4
 
 # pylint: disable=wrong-import-position
 import re
@@ -137,9 +137,11 @@ class SamlEndpoint(BaseModel):
             name=name,
             url=parse_obj_as(AnyHttpUrl, relation_data[f"{prefix}url"]),
             binding=relation_data[f"{prefix}binding"],
-            response_url=parse_obj_as(AnyHttpUrl, relation_data[f"{prefix}response_url"])
-            if f"{prefix}response_url" in relation_data
-            else None,
+            response_url=(
+                parse_obj_as(AnyHttpUrl, relation_data[f"{prefix}response_url"])
+                if f"{prefix}response_url" in relation_data
+                else None
+            ),
         )
 
 
