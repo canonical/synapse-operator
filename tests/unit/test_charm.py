@@ -37,6 +37,9 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
         "summary": "Synapse application service",
         "command": synapse.SYNAPSE_COMMAND_PATH,
         "environment": {
+            "SYNAPSE_CONFIG_DIR": synapse.SYNAPSE_CONFIG_DIR,
+            "SYNAPSE_CONFIG_PATH": synapse.SYNAPSE_CONFIG_PATH,
+            "SYNAPSE_DATA_DIR": synapse.SYNAPSE_DATA_DIR,
             "SYNAPSE_NO_TLS": "True",
             "SYNAPSE_REPORT_STATS": "no",
             "SYNAPSE_SERVER_NAME": TEST_SERVER_NAME,

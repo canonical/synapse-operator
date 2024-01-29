@@ -16,13 +16,14 @@ from charm_state import CharmState
 
 from .api import SYNAPSE_PORT, SYNAPSE_URL, VERSION_URL
 
+SYNAPSE_CONFIG_DIR = "/data"
+
 CHECK_ALIVE_NAME = "synapse-alive"
 CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
 CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
 CHECK_READY_NAME = "synapse-ready"
 CHECK_STATS_EXPORTER_READY_NAME = "synapse-stats-exporter-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
-SYNAPSE_CONFIG_DIR = "/data"
 MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
 MJOLNIR_HEALTH_PORT = 7777
 MJOLNIR_SERVICE_NAME = "mjolnir"
@@ -33,6 +34,7 @@ STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
+SYNAPSE_DATA_DIR = "/data"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
@@ -592,9 +594,11 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         updated_listeners = [
             {
                 **item,
-                "x_forwarded": True
-                if "x_forwarded" in item and not item["x_forwarded"]
-                else item.get("x_forwarded", False),
+                "x_forwarded": (
+                    True
+                    if "x_forwarded" in item and not item["x_forwarded"]
+                    else item.get("x_forwarded", False)
+                ),
             }
             for item in current_listeners
         ]
@@ -690,8 +694,11 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         A dictionary representing the Synapse environment variables.
     """
     environment = {
-        "SYNAPSE_SERVER_NAME": f"{charm_state.synapse_config.server_name}",
+        "SYNAPSE_CONFIG_DIR": SYNAPSE_CONFIG_DIR,
+        "SYNAPSE_CONFIG_PATH": SYNAPSE_CONFIG_PATH,
+        "SYNAPSE_DATA_DIR": SYNAPSE_DATA_DIR,
         "SYNAPSE_REPORT_STATS": f"{charm_state.synapse_config.report_stats}",
+        "SYNAPSE_SERVER_NAME": f"{charm_state.synapse_config.server_name}",
         # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
         # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
         "SYNAPSE_NO_TLS": str(True),
