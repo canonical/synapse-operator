@@ -33,7 +33,7 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
             charm: The charm object that the IRC bridge instance belongs to.
             charm_state: Instance of CharmState.
         """
-        super().__init__(charm, "mjolnir")
+        super().__init__(charm, "irc-bridge")
         self._charm = charm
         self._charm_state = charm_state
         self.framework.observe(charm.on.collect_unit_status, self._on_collect_status)
@@ -80,7 +80,7 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring IRC bridge")
-        actions.create_irc_app_registration(container=container)
-        synapse.create_irc_config(container=container)
-        self._pebble_service.replan_irc(container)
+        synapse.create_irc_bridge_app_registration(container=container)
+        synapse.create_irc_bridge_config(container=container)
+        self._pebble_service.replan_irc_bridge(container)
         self._charm.model.unit.status = ops.ActiveStatus()
