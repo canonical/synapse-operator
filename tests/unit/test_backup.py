@@ -3,12 +3,13 @@
 
 """Synapse backup unit tests."""
 
+# pylint: disable=protected-access
+
 from secrets import token_hex
 from unittest.mock import MagicMock
 
-import boto3
 import pytest
-from botocore.exceptions import BotoCoreError, ClientError
+from botocore.exceptions import ClientError
 
 import backup
 
@@ -22,7 +23,7 @@ def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
     s3_relation_data = {
         "access-key": token_hex(16),
         "secret-key": token_hex(16),
-        "bucket": "synapse-backup-bucket",
+        "bucket": "backup-bucket",
         "path": "/synapse-backups",
         "s3-uri-style": "path",
     }
@@ -38,7 +39,7 @@ def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
             {
                 "access-key": token_hex(16),
                 "secret-key": token_hex(16),
-                "bucket": "synapse-backup-bucket",
+                "bucket": "backup-bucket",
                 "region": "us-west-2",
             },
             id="region defined but not endpoint",
@@ -47,8 +48,8 @@ def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
             {
                 "access-key": token_hex(16),
                 "secret-key": token_hex(16),
-                "bucket": "synapse-backup-bucket",
-                "endpoint": "https://example.com",
+                "bucket": "backup-bucket",
+                "endpoint": "https://s3.example.com",
             },
             id="endpoint defined but not region",
         ),
@@ -56,9 +57,9 @@ def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
             {
                 "access-key": token_hex(16),
                 "secret-key": token_hex(16),
-                "bucket": "synapse-backup-bucket",
+                "bucket": "backup-bucket",
                 "region": "us-west-2",
-                "endpoint": "https://example.com",
+                "endpoint": "https://s3.example.com",
             },
             id="both region and endpoint defined",
         ),
@@ -76,43 +77,52 @@ def test_s3_relation_validation_correct(s3_relation_data):
     assert s3_parameters.region == s3_relation_data.get("region")
 
 
-def test_can_use_bucket_wrong_boto3_resource(monkeypatch: pytest.MonkeyPatch):
+def test_s3_client_create_correct(s3_parameters_backup):
     """
-    arrange: Create S3Parameters and mock boto3 library so it raises on accessing S3 resource.
-    act: Run can_use_bucket.
-    assert: Check that the function returns False.
+    arrange: Create S3Parameters for the new client.
+    act: Create the new client.
+    assert: The client gets created correctly.
     """
-    s3_parameters = backup.S3Parameters(
-        **{
-            "access-key": token_hex(16),
-            "secret-key": token_hex(16),
-            "region": "eu-west-1",
-            "bucket": "bucket_name",
-        }
-    )
-    session = MagicMock()
-    session.resource = MagicMock(side_effect=BotoCoreError())
-    monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
+    s3_client = backup.S3Client(s3_parameters_backup)
 
-    assert not backup.can_use_bucket(s3_parameters)
+    assert s3_client._client
 
 
-def test_can_use_bucket_bucket_error_checking_bucket(monkeypatch: pytest.MonkeyPatch):
+def test_s3_client_create_error(s3_parameters_backup):
+    """
+    arrange: Create S3Parameters for the new client.
+        Put access_key for the boto3 client to fail.
+    act: Create the new client.
+    assert: Raises S3Error.
+    """
+    s3_parameters_backup.access_key = None
+
+    with pytest.raises(backup.S3Error) as err:
+        backup.S3Client(s3_parameters_backup)
+    assert "Error creating S3 client" in str(err.value)
+
+
+def test_can_use_bucket_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create S3Parameters and mock boto3 client so it does not raise on head_bucket.
+    act: Run S3Client.can_use_bucket.
+    assert: Check that the function returns True.
+    """
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(s3_client._client, "head_bucket", MagicMock())
+
+    assert s3_client.can_use_bucket()
+
+
+def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create S3Parameters and mock boto3 library so it fails when checking the bucket.
     act: Run can_use_bucket.
     assert: Check that the function returns False.
     """
-    s3_parameters = backup.S3Parameters(
-        **{
-            "access-key": token_hex(16),
-            "secret-key": token_hex(16),
-            "region": "eu-west-1",
-            "bucket": "bucket_name",
-        }
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(
+        s3_client._client, "head_bucket", MagicMock(side_effect=ClientError({}, "HeadBucket"))
     )
-    session = MagicMock()
-    session.resource().Bucket().meta.client.head_bucket.side_effect = ClientError({}, "HeadBucket")
-    monkeypatch.setattr(boto3.session, "Session", MagicMock(return_value=session))
 
-    assert not backup.can_use_bucket(s3_parameters)
+    assert not s3_client.can_use_bucket()

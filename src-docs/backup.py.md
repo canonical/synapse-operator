@@ -6,28 +6,56 @@
 Provides backup functionality for Synapse. 
 
 
+
 ---
 
-<a href="../src/backup.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+## <kbd>class</kbd> `S3Client`
+S3 Client Wrapper around boto3 library. 
 
-## <kbd>function</kbd> `can_use_bucket`
+<a href="../src/backup.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `__init__`
 
 ```python
-can_use_bucket(s3_parameters: S3Parameters) → bool
+__init__(s3_parameters: S3Parameters)
+```
+
+Initialize the S3 client. 
+
+
+
+**Args:**
+ 
+ - <b>`s3_parameters`</b>:  Parameter to configure the S3 connection. 
+
+
+
+
+---
+
+<a href="../src/backup.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `can_use_bucket`
+
+```python
+can_use_bucket() → bool
 ```
 
 Check if a bucket exists and is accessible in an S3 compatible object store. 
 
 
 
-**Args:**
- 
- - <b>`s3_parameters`</b>:  S3 connection parameters 
-
-
-
 **Returns:**
- True if the bucket exists and is accessible 
+  True if the bucket exists and is accessible 
+
+
+---
+
+## <kbd>class</kbd> `S3Error`
+Generic S3 Exception. 
+
+
+
 
 
 ---
@@ -45,14 +73,21 @@ Configuration for accessing S3 bucket.
  - <b>`bucket`</b>:  The bucket name. 
  - <b>`endpoint`</b>:  The endpoint used to connect to the object storage. 
  - <b>`path`</b>:  The path inside the bucket to store objects. 
- - <b>`s3_uri_style`</b>:  The S3 protocol specific bucket path lookup type. 
+ - <b>`s3_uri_style`</b>:  The S3 protocol specific bucket path lookup type. Can be "path" or "host". 
+ - <b>`addressing_style`</b>:  S3 protocol addressing style, can be "path" or "virtual". 
 
+
+---
+
+#### <kbd>property</kbd> addressing_style
+
+Translates s3_uri_style to AWS addressing_style. 
 
 
 
 ---
 
-<a href="../src/backup.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
 
