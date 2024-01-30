@@ -53,7 +53,7 @@ class PebbleService:
         """
         logger.debug("Restarting the Synapse container")
         container.add_layer(synapse.SYNAPSE_SERVICE_NAME, self._pebble_layer, combine=True)
-        container.add_layer("synapse-cron", self._cron_pebble_layer, combine=True)
+        container.add_layer(synapse.SYNAPSE_CRON_SERVICE_NAME, self._cron_pebble_layer, combine=True)
         container.restart(synapse.SYNAPSE_SERVICE_NAME)
 
     def replan_nginx(self, container: ops.model.Container) -> None:
