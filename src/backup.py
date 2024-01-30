@@ -24,9 +24,10 @@ import synapse
 AWS_COMMAND = "/aws/dist/aws"
 BACKUP_FILE_PATTERNS = ["*.key", "homeserver.db*"]
 LOCAL_DIR_PATTERN = "local_*"
+S3_MAX_CONCURRENT_REQUESTS = 1
 MEDIA_DIR = "media"
 PASSPHRASE_FILE = "/root/.gpg_passphrase"
-
+BASH_COMMAND = "bash"
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +199,7 @@ def build_backup_command(
     aws_command += f"'s3://{s3_parameters.bucket}/{s3_parameters.path}/{backup_key}'"
     full_command = bash_strict_command + " | ".join((tar_command, gpg_command, aws_command))
     # sh does not accept "set -o pipefail". Better use bash.
-    return ["bash", "-c", full_command]
+    return [BASH_COMMAND, "-c", full_command]
 
 
 def calculate_size(container: ops.Container, paths: Iterable[str]) -> int:
@@ -212,12 +213,56 @@ def calculate_size(container: ops.Container, paths: Iterable[str]) -> int:
         Total size in bytes.
     """
     command = "set -euxo pipefail; du -bsc " + " ".join(paths) + " | tail -n1 | cut -f 1"
-    exec_process = container.exec(["bash", "-c", command])
+    exec_process = container.exec([BASH_COMMAND, "-c", command])
     stdout, stderr = exec_process.wait_output()
     logger.info(
         "Calculating size of paths. Command: %s. stdout: %s. stderr: %s", command, stdout, stderr
     )
     return int(stdout)
+
+
+def prepare_container(
+    container: ops.Container, s3_parameters: S3Parameters, passphrase: str
+) -> None:
+    """Prepare container for create or restore backup.
+
+    This means preparing the required aws configuration and gpg passphrase file.
+
+    Args:
+        container: Synapse Container.
+        s3_parameters: S3 parameters for the backup.
+        passphrase: Passphrase for the backup (used for gpg).
+
+    Raises:
+       BackupError: if there was an error preparing the configuration.
+    """
+    aws_set_addressing_style = [
+        AWS_COMMAND,
+        "configure",
+        "set",
+        "default.s3.addressing_style",
+        s3_parameters.addressing_style,
+    ]
+
+    # To minimise memory comsupmtion. A bigger value could increase speed.
+    aws_set_concurrent_requests = [
+        AWS_COMMAND,
+        "configure",
+        "set",
+        "default.s3.max_concurrent_requests",
+        str(S3_MAX_CONCURRENT_REQUESTS),
+    ]
+
+    try:
+        process = container.exec(aws_set_addressing_style)
+        process.wait()
+        process = container.exec(aws_set_concurrent_requests)
+        process.wait()
+    except ExecError as exc:
+        logger.exception(exc)
+        raise BackupError("Backup Failed. Error configuring AWS.") from exc
+
+    container.push(PASSPHRASE_FILE, passphrase)
 
 
 def create_backup(
@@ -237,38 +282,11 @@ def create_backup(
     Raises:
        BackupError: If there was an error creating the backup.
     """
-    aws_set_addressing_style = [
-        AWS_COMMAND,
-        "configure",
-        "set",
-        "default.s3.addressing_style",
-        s3_parameters.addressing_style,
-    ]
-
-    # To minimise memory comsupmtion. A bigger value could increase speed.
-    aws_set_concurrent_requests = [
-        AWS_COMMAND,
-        "configure",
-        "set",
-        "default.s3.max_concurrent_requests",
-        str(1),
-    ]
-
-    try:
-        process = container.exec(aws_set_addressing_style)
-        process.wait()
-        process = container.exec(aws_set_concurrent_requests)
-        process.wait()
-    except ExecError as exc:
-        logger.exception(exc)
-        raise BackupError("Backup Failed. Error configuring AWS.") from exc
-
-    container.push(PASSPHRASE_FILE, passphrase)
-
+    prepare_container(container, s3_parameters, passphrase)
     paths_to_backup = get_paths_to_backup(container)
     logger.info("paths to backup: %s", list(paths_to_backup))
     if not paths_to_backup:
-        raise BackupError("Backup Failed. No files to backup")
+        raise BackupError("Backup Failed. No files to back up")
 
     expected_size = calculate_size(container, paths_to_backup)
     backup_command = build_backup_command(
@@ -282,7 +300,7 @@ def create_backup(
         stdout, stderr = exec_process.wait_output()
     except ExecError as exc:
         logger.exception(exc)
-        raise BackupError("Backup Failed") from exc
+        raise BackupError("Backup Command Failed") from exc
 
     logger.info("Backup command output: %s. %s.", stdout, stderr)
 

@@ -10,12 +10,14 @@ Provides backup functionality for Synapse.
 - **AWS_COMMAND**
 - **BACKUP_FILE_PATTERNS**
 - **LOCAL_DIR_PATTERN**
+- **S3_MAX_CONCURRENT_REQUESTS**
 - **MEDIA_DIR**
 - **PASSPHRASE_FILE**
+- **BASH_COMMAND**
 
 ---
 
-<a href="../src/backup.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_paths_to_backup`
 
@@ -39,7 +41,7 @@ Get the list of paths that should be in a backup for Synapse.
 
 ---
 
-<a href="../src/backup.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_backup_command`
 
@@ -73,7 +75,7 @@ Build the command to execute the backup.
 
 ---
 
-<a href="../src/backup.py#L204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `calculate_size`
 
@@ -98,7 +100,40 @@ Return the combined size of all the paths given.
 
 ---
 
-<a href="../src/backup.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `prepare_container`
+
+```python
+prepare_container(
+    container: Container,
+    s3_parameters: S3Parameters,
+    passphrase: str
+) → None
+```
+
+Prepare container for create or restore backup. 
+
+This means preparing the required aws configuration and gpg passphrase file. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Synapse Container. 
+ - <b>`s3_parameters`</b>:  S3 parameters for the backup. 
+ - <b>`passphrase`</b>:  Passphrase for the backup (used for gpg). 
+
+
+
+**Raises:**
+ 
+ - <b>`BackupError`</b>:  if there was an error preparing the configuration. 
+
+
+---
+
+<a href="../src/backup.py#L268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -131,7 +166,7 @@ Create a backup for Synapse running it in the workload.
 
 ---
 
-<a href="../src/backup.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_environment`
 
@@ -167,7 +202,7 @@ Generic backup Exception.
 ## <kbd>class</kbd> `S3Client`
 S3 Client Wrapper around boto3 library. 
 
-<a href="../src/backup.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -188,7 +223,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -242,7 +277,7 @@ Translates s3_uri_style to AWS addressing_style.
 
 ---
 
-<a href="../src/backup.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L65"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
 
