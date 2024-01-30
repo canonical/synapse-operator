@@ -11,10 +11,9 @@ from secrets import token_hex
 
 import ops
 
-from user import User
-
 import synapse.api
 import synapse.workload
+from user import User
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +59,9 @@ def create_user(
     Returns:
         User or none if the creation fails.
     """
-    registration_shared_secret = synapse.workload.get_registration_shared_secret(container=container)
+    registration_shared_secret = synapse.workload.get_registration_shared_secret(
+        container=container
+    )
     if registration_shared_secret is None:
         logger.error("registration_shared_secret was not found, please check the logs")
         return None

@@ -3,7 +3,7 @@
 
 """pytest fixtures for the unit test."""
 
-# pylint: disable=too-few-public-methods, protected-access
+# pylint: disable=too-few-public-methods, protected-access, duplicate-code
 
 import typing
 import unittest.mock

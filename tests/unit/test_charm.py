@@ -7,7 +7,7 @@
 
 import json
 from secrets import token_hex
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import ANY, MagicMock, patch
 
 import ops
 import pytest
