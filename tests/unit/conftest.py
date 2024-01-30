@@ -8,6 +8,7 @@
 import typing
 import unittest.mock
 from secrets import token_hex
+from unittest.mock import MagicMock
 
 import ops
 import pytest
@@ -111,8 +112,13 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
+    admin_user_mock = MagicMock()
+    admin_access_token = token_hex(16)
+    admin_user_mock.access_token = admin_access_token
+    create_admin_user_mock = MagicMock(return_value=admin_user_mock)
+    monkeypatch.setattr(synapse, "create_admin_user", create_admin_user_mock)
     harness = Harness(SynapseCharm)
+    harness.set_leader(True)
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(
