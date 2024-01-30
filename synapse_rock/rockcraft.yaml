@@ -37,6 +37,8 @@ parts:
             - coreutils
             - curl
             - gosu
+            - gpg
+            - gpg-agent
             - libffi-dev
             - libicu70
             - libjemalloc2
@@ -48,6 +50,7 @@ parts:
             - python3
             - xmlsec1
         stage-snaps:
+            - aws-cli
             - mjolnir/latest/edge
             - matrix-appservice-irc/latest/edge
         plugin: nil

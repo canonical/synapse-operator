@@ -5,13 +5,17 @@
 
 # pylint: disable=protected-access
 
+import os
+import pathlib
 from secrets import token_hex
 from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import ClientError
+from ops.testing import Harness
 
 import backup
+import synapse
 
 
 def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
@@ -126,3 +130,68 @@ def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.M
     )
 
     assert not s3_client.can_use_bucket()
+
+
+def test_get_paths_to_backup_correct(harness: Harness):
+    """
+    arrange: Create a container filesystem like the one in Synapse, with data and config.
+    act: Run get_paths_to_backup.
+    assert: Check that sqlite homeserver db, the signing key and the local media paths are
+        in the paths to backup, and nothing else.
+    """
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    synapse_root = harness.get_filesystem_root(container)
+    config_dir = synapse_root / pathlib.Path(synapse.SYNAPSE_CONFIG_DIR).relative_to("/")
+    (config_dir / "example.com.signing.key").open("w").write("backup")
+    (config_dir / "log.config").open("w").write("do not backup")
+    (config_dir / "homeserver.yaml").open("w").write("do not backup")
+    data_dir = synapse_root / pathlib.Path(synapse.SYNAPSE_DATA_DIR).relative_to("/")
+    (data_dir / "homeserver.db").open("w").write("backup")
+    media_dir = data_dir / "media"
+    media_dir.mkdir()
+    local_content_dir = media_dir / "local_content"
+    local_content_dir.mkdir()
+    (local_content_dir / "onefile").open("w").write("backup")
+    remote_content_dir = media_dir / "remote_content"
+    remote_content_dir.mkdir()
+    (remote_content_dir / "onefile").open("w").write("do not backup")
+
+    paths_to_backup = list(backup.get_paths_to_backup(container))
+
+    assert len(paths_to_backup) == 3
+    assert os.path.join(synapse.SYNAPSE_CONFIG_DIR, "example.com.signing.key") in paths_to_backup
+    assert os.path.join(synapse.SYNAPSE_DATA_DIR, "homeserver.db") in paths_to_backup
+    assert os.path.join(synapse.SYNAPSE_DATA_DIR, "media", "local_content") in paths_to_backup
+
+
+def test_get_paths_to_backup_empty(harness: Harness):
+    """
+    arrange: Create an empty container filesystem.
+    act: Call get_paths_to_backup
+    assert: The paths to backup should be empty.
+    """
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+
+    paths_to_backup = list(backup.get_paths_to_backup(container))
+
+    assert len(paths_to_backup) == 0
+
+
+def test_build_backup_command_correct(s3_parameters_backup):
+    """
+    arrange: TODO
+    act: TODO
+    assert: TODO
+    """
+    # pylint: disable=line-too-long
+    paths_to_backup = ["/data/homeserver.db", "/data/example.com.signing.key"]
+
+    command = backup.build_backup_command(
+        s3_parameters_backup, "20230101231200", paths_to_backup, "/root/.gpg_password"
+    )
+
+    assert list(command) == [
+        "bash",
+        "-c",
+        f"set -euxo pipefail; tar -c /data/homeserver.db /data/example.com.signing.key | gpg --batch --no-symkey-cache --passphrase-file /root/.gpg_password --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=10000000000 - 's3://synapse-backup-bucket//synapse-backups/20230101231200'",  # noqa: E501
+    ]
