@@ -74,15 +74,6 @@ class PebbleService:
         container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
         container.replan()
 
-    def replan_cron(self, container: ops.model.Container) -> None:
-        """Replan Synapse Cron service.
-
-        Args:
-            container: Charm container.
-        """
-        container.add_layer("synapse-cron", self._cron_pebble_layer, combine=True)
-        container.replan()
-
     # The complexity of this method will be reviewed.
     def change_config(self, container: ops.model.Container) -> None:  # noqa: C901
         """Change the configuration.
