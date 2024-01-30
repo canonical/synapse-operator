@@ -5,6 +5,117 @@
 # <kbd>module</kbd> `backup.py`
 Provides backup functionality for Synapse. 
 
+**Global Variables**
+---------------
+- **AWS_COMMAND**
+
+---
+
+<a href="../src/backup.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_paths_to_backup`
+
+```python
+get_paths_to_backup(container: Container) → Iterable[str]
+```
+
+Get the list of paths that should be in a backup for Synapse. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Synapse Container. 
+
+
+
+**Returns:**
+ Iterable with the list of paths to backup. 
+
+
+---
+
+<a href="../src/backup.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `build_backup_command`
+
+```python
+build_backup_command(
+    s3_parameters: S3Parameters,
+    backup_key: str,
+    backup_paths: Iterable[str],
+    passphrase_file: str,
+    expected_size: int = 10000000000
+) → List[str]
+```
+
+TODO. 
+
+
+
+**Args:**
+ 
+ - <b>`s3_parameters`</b>:  S3Parameters 
+ - <b>`backup_key`</b>:  str 
+ - <b>`backup_paths`</b>:  Iterable[str] 
+ - <b>`passphrase_file`</b>:  str 
+ - <b>`expected_size`</b>:  int = int(1e10) 
+
+
+
+**Returns:**
+ TODO 
+
+
+---
+
+<a href="../src/backup.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `create_backup`
+
+```python
+create_backup(
+    container: Container,
+    s3_parameters: S3Parameters,
+    backup_key: str,
+    passphrase: str
+) → None
+```
+
+TODO. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  ops.Container 
+ - <b>`s3_parameters`</b>:  S3Parameters 
+ - <b>`backup_key`</b>:  str 
+ - <b>`passphrase`</b>:  str 
+
+
+---
+
+<a href="../src/backup.py#L250"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_environment`
+
+```python
+get_environment(s3_parameters: S3Parameters) → Dict[str, str]
+```
+
+TODO. 
+
+
+
+**Args:**
+ 
+ - <b>`s3_parameters`</b>:  S3Parameters 
+
+
+
+**Returns:**
+ TODO 
 
 
 ---
@@ -12,7 +123,7 @@ Provides backup functionality for Synapse.
 ## <kbd>class</kbd> `S3Client`
 S3 Client Wrapper around boto3 library. 
 
-<a href="../src/backup.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -33,7 +144,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -87,7 +198,7 @@ Translates s3_uri_style to AWS addressing_style.
 
 ---
 
-<a href="../src/backup.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
 
