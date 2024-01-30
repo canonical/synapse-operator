@@ -137,6 +137,7 @@ class CharmState:
     Attributes:
         synapse_config: synapse configuration.
         datasource: datasource information.
+        irc_bridge_datasource: irc bridge datasource information.
         saml_config: saml configuration.
         smtp_config: smtp configuration.
         proxy: proxy information.
@@ -144,6 +145,7 @@ class CharmState:
 
     synapse_config: SynapseConfig
     datasource: typing.Optional[DatasourcePostgreSQL]
+    irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL]
     saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
 
@@ -168,6 +170,7 @@ class CharmState:
         cls,
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],
+        irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL],
         saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
     ) -> "CharmState":
@@ -176,6 +179,7 @@ class CharmState:
         Args:
             charm: The charm instance associated with this state.
             datasource: datasource information to be used by Synapse.
+            irc_bridge_datasource: irc bridge datasource information to be used by Synapse.
             saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
 
@@ -198,6 +202,7 @@ class CharmState:
         return cls(
             synapse_config=valid_synapse_config,
             datasource=datasource,
+            irc_bridge_datasource=irc_bridge_datasource,
             saml_config=saml_config,
             smtp_config=smtp_config,
         )
