@@ -129,7 +129,7 @@ async def test_prometheus_integration(
     arrange: after Synapse charm has been deployed.
     act: establish relations established with prometheus charm.
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
-        targets.
+        targets (one for Synapse and another for Synapse Stats Exporter)
     """
     await model.add_relation(prometheus_app_name, synapse_app_name)
     await model.wait_for_idle(
@@ -138,7 +138,7 @@ async def test_prometheus_integration(
 
     for unit_ip in await get_unit_ips(prometheus_app_name):
         query_targets = requests.get(f"http://{unit_ip}:9090/api/v1/targets", timeout=10).json()
-        assert len(query_targets["data"]["activeTargets"])
+        assert len(query_targets["data"]["activeTargets"]) == 2
 
 
 @pytest.mark.cos

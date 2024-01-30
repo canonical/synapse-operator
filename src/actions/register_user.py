@@ -66,7 +66,8 @@ def register_user(
             admin_access_token=admin_access_token,
             server=server,
         )
-        assert user
+        if not user:
+            raise RegisterUserError(f"Failed to register user {username}")
         return user
     except (ValidationError, synapse.APIError) as exc:
         raise RegisterUserError(str(exc)) from exc

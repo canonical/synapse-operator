@@ -18,11 +18,7 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
-<<<<<<< HEAD
-<a href="../src/charm.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-=======
-<a href="../src/charm.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
->>>>>>> 86f7b4b (Add Synapse Stats Exporter)
+<a href="../src/charm.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -79,7 +75,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -91,11 +87,7 @@ Change configuration.
 
 ---
 
-<<<<<<< HEAD
-<a href="../src/charm.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-=======
-<a href="../src/charm.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
->>>>>>> 86f7b4b (Add Synapse Stats Exporter)
+<a href="../src/charm.py#L180"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_admin_access_token`
 
