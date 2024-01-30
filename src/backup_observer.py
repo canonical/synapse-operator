@@ -76,9 +76,17 @@ class BackupObserver(Object):
             event.fail("Wrong S3 configuration on create backup action")
             return
 
+        backup_passphrase = self._charm.config.get("backup_passphrase")
+        if not backup_passphrase:
+            event.fail("Missing backup passphrase config")
+            return
+
         backup_key = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+        # container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+
         try:
-            backup.create_backup(s3_parameters, backup_key)
+            backup.create_backup(s3_parameters, backup_key, backup_passphrase)
         except backup.S3Error:
             logger.exception("Error Creating Backup")
             event.fail("Error Creating Backup")

@@ -12,7 +12,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `encrypt_generator`
 
@@ -28,9 +28,21 @@ Encrypt an inputstream (iterator) and return another iterator.
 https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/python-example-code.html#python-example-streams 
 
 
+
+**Args:**
+ 
+ - <b>`inputstream`</b>:  Input iterable to write bytes from 
+ - <b>`password`</b>:  Password to use to encrypt 
+
+
+
+**Yields:**
+ Encrypted bytes 
+
+
 ---
 
-<a href="../src/backup.py#L291"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L358"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `decrypt_generator`
 
@@ -46,9 +58,21 @@ Decrypt an inputstream (iterator) and return another iterator.
 https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/python-example-code.html#python-example-streams 
 
 
+
+**Args:**
+ 
+ - <b>`inputstream`</b>:  Input iterable to write bytes from 
+ - <b>`password`</b>:  Password to use to decrypt 
+
+
+
+**Yields:**
+ Decrypted bytes 
+
+
 ---
 
-<a href="../src/backup.py#L311"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L385"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tar_file_generator`
 
@@ -62,34 +86,53 @@ tar_file_generator(
 
 Create a tar file with input files and yields the bytes. 
 
-TODO files_to_tar relative to base_dir TODO should we get the files from pebble, using another open/stat/whatever 
+
+
+**Args:**
+ 
+ - <b>`files_to_tar`</b>:  List of file to include in the tar 
+ - <b>`base_dir`</b>:  working directory for the tar 
+ - <b>`open_func`</b>:  Alternative open function 
+
+
+
+**Yields:**
+ tar content 
 
 
 ---
 
-<a href="../src/backup.py#L345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `default_filenames_to_backup`
 
 ```python
-default_filenames_to_backup(base_dir: str)
+default_filenames_to_backup(base_dir: str) → Any
 ```
 
+Get a list of the filenames to backup in Synapse. 
 
 
 
+**Args:**
+ 
+ - <b>`base_dir`</b>:  Synapse data dir 
+
+
+
+**Yields:**
+ Name of the files to backup. 
 
 
 ---
 
-<a href="../src/backup.py#L352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L442"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
 ```python
 create_backup(
     s3_parameters: S3Parameters,
-    base_dir: str,
     backup_name: str,
     password: str
 ) → None
@@ -102,7 +145,6 @@ Create a new back up for Synapse.
 **Args:**
  
  - <b>`s3_parameters`</b>:  S3 parameters for the bucket to create the backup. 
- - <b>`base_dir`</b>:  Base directory (data directory). 
  - <b>`backup_name`</b>:  Name for the backup. The uploaded file will have an extension appended. 
  - <b>`password`</b>:  Password to use for the encrypted file. 
 
@@ -112,7 +154,7 @@ Create a new back up for Synapse.
 ## <kbd>class</kbd> `BytesIOIterable`
 Class that created a file like object from an iterable. 
 
-<a href="../src/backup.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L291"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -124,10 +166,16 @@ Initialize the object with the iterable.
 
 
 
+**Args:**
+ 
+ - <b>`iterable`</b>:  Iterable to get the bytes from. 
+
+
+
 
 ---
 
-<a href="../src/backup.py#L247"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `read`
 
@@ -138,12 +186,29 @@ read(size: int | None = -1) → bytes
 Return up to size bytes from the input iterable. 
 
 
+
+**Args:**
+ 
+ - <b>`size`</b>:  Up to the number of bytes to read. 
+
+
+
+**Returns:**
+ bytes read or empty for EOF. 
+
+
 ---
 
 ## <kbd>class</kbd> `S3Client`
 S3 Client Wrapper around boto3 library. 
 
-<a href="../src/backup.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+
+**Attributes:**
+ 
+ - <b>`MIN_MULTIPART_SIZE`</b>:  minimum multipart size for S3 Multi part upload. 
+
+<a href="../src/backup.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -164,7 +229,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -181,7 +246,7 @@ Check if a bucket exists and is accessible in an S3 compatible object store.
 
 ---
 
-<a href="../src/backup.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `create_multipart_upload`
 
@@ -191,9 +256,20 @@ create_multipart_upload(key: str) → _S3MultipartUpload
 
 Create a Multipart upload. 
 
+
+
+**Args:**
+ 
+ - <b>`key`</b>:  object name. 
+
+
+
+**Returns:**
+ New multi part upload object. 
+
 ---
 
-<a href="../src/backup.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `stream_to_object`
 
@@ -202,6 +278,13 @@ stream_to_object(inputstream: Iterable[bytes], key: str) → None
 ```
 
 Streams an iterable to a S3 bucket using multipart upload. 
+
+
+
+**Args:**
+ 
+ - <b>`inputstream`</b>:  Input iterable to get bytes from. 
+ - <b>`key`</b>:  S3 Object name. 
 
 
 ---
@@ -242,7 +325,7 @@ Translates s3_uri_style to AWS addressing_style.
 
 ---
 
-<a href="../src/backup.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
 
@@ -276,7 +359,14 @@ Validate that either region or endpoint is set.
 ## <kbd>class</kbd> `StaticRandomMasterKeyProvider`
 KeyProvider to store the password to use for encryption/decryption. 
 
-<a href="../src/backup.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+
+**Attributes:**
+ 
+ - <b>`master_key`</b>:  Only master key that has the password. 
+ - <b>`provider_id`</b>:  Provider ID. 
+
+<a href="../src/backup.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -288,10 +378,16 @@ Initialize empty map of keys.
 
 
 
+**Args:**
+ 
+ - <b>`kwargs`</b>:  dict 
+
+
+
 
 ---
 
-<a href="../src/backup.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `add_static_password`
 
@@ -300,5 +396,11 @@ add_static_password(password: str) → None
 ```
 
 Add the password to use for the encryption/decryption. 
+
+
+
+**Args:**
+ 
+ - <b>`password`</b>:  Password to use for the encryption. 
 
 

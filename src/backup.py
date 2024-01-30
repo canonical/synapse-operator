@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 TAR_ENCRYPTED_EXTENSION = ".tar.enc"
 
+
 class S3Error(Exception):
     """Generic S3 Exception."""
 
@@ -92,7 +93,14 @@ class _S3MultipartUpload:
     """
 
     def __init__(self, boto_s3_client: Any, bucket_name: str, key: str, upload_id: str):
-        """Initialise _S3MultipartUpload."""
+        """Initialise _S3MultipartUpload.
+
+        Args:
+            boto_s3_client: Any
+            bucket_name: str
+            key: str
+            upload_id: str
+        """
         self._client = boto_s3_client
         self._bucket_name = bucket_name
         self._key = key
@@ -101,8 +109,12 @@ class _S3MultipartUpload:
         self._all_parts: List = []
 
     def upload_part(self, b: bytes) -> None:
-        """Upload a part of the Multipart Upload."""
-        # TODO TRY EXCEPT
+        """Upload a part of the Multipart Upload.
+
+        Args:
+            b: bytes to upload.
+        """
+        # Use try catch
         part = self._client.upload_part(
             Bucket=self._bucket_name,
             Key=self._key,
@@ -115,7 +127,7 @@ class _S3MultipartUpload:
 
     def complete_multipart_upload(self) -> None:
         """Completes the multipart upload."""
-        # TODO TRY EXCEPT
+        # Use try catch
         part_info = {"Parts": self._all_parts}
         self._client.complete_multipart_upload(
             Bucket=self._bucket_name,
@@ -126,7 +138,11 @@ class _S3MultipartUpload:
 
 
 class S3Client:
-    """S3 Client Wrapper around boto3 library."""
+    """S3 Client Wrapper around boto3 library.
+
+    Attributes:
+        MIN_MULTIPART_SIZE: minimum multipart size for S3 Multi part upload.
+    """
 
     # min size in AWS in 5 * 2^20. Setting it to a smaller number will fail.
     MIN_MULTIPART_SIZE = 1e7
@@ -167,7 +183,7 @@ class S3Client:
                 endpoint_url=self._s3_parameters.endpoint,
                 config=s3_client_config,
             )
-        except (TypeError, BotoCoreError) as exc:
+        except (TypeError, ValueError, BotoCoreError) as exc:
             logger.exception("Error creating S3 client")
             raise S3Error("Error creating S3 client") from exc
         return s3_client
@@ -189,12 +205,25 @@ class S3Client:
         return True
 
     def create_multipart_upload(self, key: str) -> _S3MultipartUpload:
-        """Create a Multipart upload."""
+        """Create a Multipart upload.
+
+        Args:
+            key: object name.
+
+        Returns:
+            New multi part upload object.
+        """
+        # Use try catch
         mpu = self._client.create_multipart_upload(Bucket=self._s3_parameters.bucket, Key=key)
         return _S3MultipartUpload(self._client, self._s3_parameters.bucket, key, mpu["UploadId"])
 
     def stream_to_object(self, inputstream: Iterable[bytes], key: str) -> None:
-        """Streams an iterable to a S3 bucket using multipart upload."""
+        """Streams an iterable to a S3 bucket using multipart upload.
+
+        Args:
+            inputstream: Input iterable to get bytes from.
+            key: S3 Object name.
+        """
         s3_multipart_upload = self.create_multipart_upload(key)
         to_send = bytearray()
         for input_buffer in inputstream:
@@ -211,17 +240,33 @@ class S3Client:
 
 
 class StaticRandomMasterKeyProvider(RawMasterKeyProvider):
-    """KeyProvider to store the password to use for encryption/decryption."""
+    """KeyProvider to store the password to use for encryption/decryption.
+
+    Attributes:
+        master_key: Only master key that has the password.
+        provider_id: Provider ID.
+    """
 
     master_key = b"master_key"
     provider_id = "static-random"
 
     def __init__(self, **kwargs: dict):  # pylint: disable=unused-argument
-        """Initialize empty map of keys."""
+        """Initialize empty map of keys.
+
+        Args:
+            kwargs: dict
+        """
         self._static_keys: dict = {}
 
     def _get_raw_key(self, key_id: bytes) -> WrappingKey:
-        """Return the password after hashing it with sha256."""
+        """Return the password after hashing it with sha256.
+
+        Args:
+            key_id: Name of the key to use.
+
+        Returns:
+            WrappingKey with the encryption key.
+        """
         static_key = self._static_keys[key_id]
         static_key = hashlib.sha256(static_key.encode("utf-8")).digest()
         return WrappingKey(
@@ -231,7 +276,11 @@ class StaticRandomMasterKeyProvider(RawMasterKeyProvider):
         )
 
     def add_static_password(self, password: str) -> None:
-        """Add the password to use for the encryption/decryption."""
+        """Add the password to use for the encryption/decryption.
+
+        Args:
+            password: Password to use for the encryption.
+        """
         self._static_keys[self.master_key] = password
         self.add_master_key(self.master_key)
 
@@ -240,12 +289,23 @@ class BytesIOIterable(io.BufferedIOBase):
     """Class that created a file like object from an iterable."""
 
     def __init__(self, iterable: Iterable[bytes]):
-        """Initialize the object with the iterable."""
+        """Initialize the object with the iterable.
+
+        Args:
+            iterable: Iterable to get the bytes from.
+        """
         self._input_iter = iter(iterable)
         self._buffer = bytearray()
 
     def read(self, size: int | None = -1, /) -> bytes:
-        """Return up to size bytes from the input iterable."""
+        """Return up to size bytes from the input iterable.
+
+        Args:
+            size: Up to the number of bytes to read.
+
+        Returns:
+            bytes read or empty for EOF.
+        """
         if size == -1 or size is None:
             size = int(1e7)  # for simplicity and memory efficiency
 
@@ -271,6 +331,13 @@ def encrypt_generator(inputstream: Iterable[bytes], password: str) -> Generator[
     """Encrypt an inputstream (iterator) and return another iterator.
 
     https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/python-example-code.html#python-example-streams
+
+    Args:
+        inputstream: Input iterable to write bytes from
+        password: Password to use to encrypt
+
+    Yields:
+        Encrypted bytes
     """
     master_key_provider = StaticRandomMasterKeyProvider()
     master_key_provider.add_static_password(password)
@@ -292,6 +359,13 @@ def decrypt_generator(inputstream: Iterable[bytes], password: str) -> Generator[
     """Decrypt an inputstream (iterator) and return another iterator.
 
     https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/python-example-code.html#python-example-streams
+
+    Args:
+        inputstream: Input iterable to write bytes from
+        password: Password to use to decrypt
+
+    Yields:
+        Decrypted bytes
     """
     master_key_provider = StaticRandomMasterKeyProvider()
     master_key_provider.add_static_password(password)
@@ -313,8 +387,13 @@ def tar_file_generator(
 ) -> Generator[bytes, None, None]:
     """Create a tar file with input files and yields the bytes.
 
-    TODO files_to_tar relative to base_dir
-    TODO should we get the files from pebble, using another open/stat/whatever
+    Args:
+        files_to_tar: List of file to include in the tar
+        base_dir: working directory for the tar
+        open_func: Alternative open function
+
+    Yields:
+        tar content
     """
     output_file = io.BytesIO()
     with tarfile.open(fileobj=output_file, mode="w|") as tar:
@@ -338,33 +417,39 @@ FILE_PATTERNS_TO_BACKUP = [
     "*key",
     "homeserver.db",
     "media/local_*/**/*",
-    # TODO or maybe backup all /media except /media/(remote_|url_cache)* as said here: https://jo-so.de/2018-03/Matrix.html#datensicherung
+    # Maybe backup all /media except /media/(remote_|url_cache)* as
+    # said here: https://jo-so.de/2018-03/Matrix.html#datensicherung
     # see also https://matrix-org.github.io/synapse/latest/media_repository.html
-    # TODO check that we do not have to backup synapse.MJOLNIR_CONFIG_PATH. let's see... I believe we don't
+    # Check that we do not have to backup synapse.MJOLNIR_CONFIG_PATH.
 ]
-def default_filenames_to_backup(base_dir: str):
+
+
+def default_filenames_to_backup(base_dir: str) -> Any:
+    """Get a list of the filenames to backup in Synapse.
+
+    Args:
+         base_dir: Synapse data dir
+
+    Yields:
+         Name of the files to backup.
+    """
     p = pathlib.Path(base_dir)
     for pattern in FILE_PATTERNS_TO_BACKUP:
         for filename in p.glob(pattern):
-            yield filename.relative_to(base_dir)
+            yield str(filename.relative_to(base_dir))
 
 
-def create_backup(
-        s3_parameters: S3Parameters,
-        base_dir: str,
-        backup_name: str,
-        password: str
-) -> None:
+def create_backup(s3_parameters: S3Parameters, backup_name: str, password: str) -> None:
     """Create a new back up for Synapse.
 
     Args:
         s3_parameters: S3 parameters for the bucket to create the backup.
-        base_dir: Base directory (data directory).
         backup_name: Name for the backup. The uploaded file will have an extension appended.
         password: Password to use for the encrypted file.
     """
     s3_client = S3Client(s3_parameters)
 
+    base_dir = "/data"
     files_to_backup = default_filenames_to_backup(base_dir)
     tar_gen = tar_file_generator(files_to_backup, base_dir)
     encrypt_gen = encrypt_generator(tar_gen, password)

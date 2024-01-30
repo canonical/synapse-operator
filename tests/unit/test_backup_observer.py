@@ -111,6 +111,7 @@ def test_create_backup_correct(
     monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
     monkeypatch.setattr(backup, "create_backup", MagicMock())
 
+    harness.update_config({"backup_passphrase": token_hex(16)})
     harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
     harness.begin_with_initial_hooks()
 

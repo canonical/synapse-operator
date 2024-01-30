@@ -110,7 +110,7 @@ def test_s3_client_multipart_upload(s3_parameters_backup, monkeypatch: pytest.Mo
     act: Send a new multipart upload with two parts.
     assert: After each part, the part number is correctly sent.
     """
-    # TODO Clean this a bit or refactor
+    # Clean this a bit or refactor
     boto_client_mock = MagicMock()
     monkeypatch.setattr(backup, "client", boto_client_mock)
     s3_client = backup.S3Client(s3_parameters_backup)
@@ -167,12 +167,12 @@ def test_s3_stream_object(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch)
     assert: Two calls should be made to upload parts, one
        when there at least 6 bytes and the last one.
     """
-    # TODO Clean this a bit or refactor
+    # Clean this a bit or refactor
     # pylint: disable=unnecessary-dunder-call
     boto_client_mock = MagicMock()
     monkeypatch.setattr(backup, "client", boto_client_mock)
     s3_client = backup.S3Client(s3_parameters_backup)
-    s3_client.MIN_MULTIPART_SIZE = 5
+    s3_client.MIN_MULTIPART_SIZE = 5  # pylint: disable=C0103
 
     object_name = "object_name"
     to_stream = [b"abcde", b"fg", b"hi", b"j"]

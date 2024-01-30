@@ -8,6 +8,9 @@ options:
     description: |
       Allows any other homeserver to fetch the server's public rooms directory
       via federation.
+  backup_passphrase:
+    type: string
+    description: Passphrase used to encrypt a backup using gpg with symmetric key.
   enable_mjolnir:
     type: boolean
     default: false
