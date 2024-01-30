@@ -13,8 +13,8 @@ import ops
 
 from user import User
 
-from .api import register_user
-from .workload import get_registration_shared_secret
+import synapse.api
+import synapse.workload
 
 logger = logging.getLogger(__name__)
 
@@ -60,12 +60,12 @@ def create_user(
     Returns:
         User or none if the creation fails.
     """
-    registration_shared_secret = get_registration_shared_secret(container=container)
+    registration_shared_secret = synapse.workload.get_registration_shared_secret(container=container)
     if registration_shared_secret is None:
         logger.error("registration_shared_secret was not found, please check the logs")
         return None
     user = User(username=username, admin=admin)
-    user.access_token = register_user(
+    user.access_token = synapse.api.register_user(
         registration_shared_secret=registration_shared_secret,
         user=user,
         admin_access_token=admin_access_token,
