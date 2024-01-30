@@ -26,7 +26,10 @@ parts:
     plugin: dump
     source: cron
     organize:
-      "*": /etc/
+      "cron.hourly/*": /etc/cron.hourly
+      "cron.daily/*": /etc/cron.daily
+      "cron.weekly/*": /etc/cron.weekly
+      "cron.monthly/*": /etc/cron.monthly
     override-prime: |
       craftctl default
       chmod -R +x /etc/cron.*
