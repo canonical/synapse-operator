@@ -26,7 +26,7 @@ BACKUP_FILE_PATTERNS = ["*.key", "homeserver.db*"]
 LOCAL_DIR_PATTERN = "local_*"
 S3_MAX_CONCURRENT_REQUESTS = 1
 MEDIA_DIR = "media"
-PASSPHRASE_FILE = "/root/.gpg_passphrase"
+PASSPHRASE_FILE = "/root/.gpg_passphrase"  # nosec
 BASH_COMMAND = "bash"
 
 logger = logging.getLogger(__name__)
