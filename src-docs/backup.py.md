@@ -96,7 +96,7 @@ Return the combined size of all the paths given.
 
 ---
 
-<a href="../src/backup.py#L307"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 

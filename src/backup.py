@@ -193,11 +193,8 @@ def calculate_size(container: ops.Container, paths: Iterable[str]) -> int:
         BackupError: If there was a problem calculating the size.
     """
     command = "set -euxo pipefail; du -bsc " + paths_to_args(paths) + " | tail -n1 | cut -f 1"
-    try:
-        exec_process = container.exec([BASH_COMMAND, "-c", command])
-        stdout, stderr = exec_process.wait_output()
-    except (APIError, ExecError) as exc:
-        raise BackupError("Cannot calculate size of paths") from exc
+    exec_process = container.exec([BASH_COMMAND, "-c", command])
+    stdout, stderr = exec_process.wait_output()
 
     logger.info(
         "Calculating size of paths. Command: %s. stdout: %s. stderr: %s", command, stdout, stderr
@@ -323,7 +320,7 @@ def create_backup(
     """
     _prepare_container(container, s3_parameters, passphrase)
     paths_to_backup = get_paths_to_backup(container)
-    logger.info("paths to backup: %s.", list(paths_to_backup))
+    logger.info("Paths to back up: %s.", list(paths_to_backup))
     if not paths_to_backup:
         raise BackupError("Backup Failed. No paths to back up.")
 
@@ -332,7 +329,7 @@ def create_backup(
         s3_parameters, backup_key, paths_to_backup, PASSPHRASE_FILE, expected_size
     )
 
-    logger.info("backup command: %s", backup_command)
+    logger.info("Backup command: %s", backup_command)
     environment = _get_environment(s3_parameters)
     try:
         exec_process = container.exec(backup_command, environment=environment)

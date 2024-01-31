@@ -10,6 +10,7 @@ import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
 from ops.charm import ActionEvent
 from ops.framework import Object
+from ops.pebble import APIError, ExecError
 
 import backup
 import synapse
@@ -89,9 +90,9 @@ class BackupObserver(Object):
 
         try:
             backup.create_backup(container, s3_parameters, backup_key, backup_passphrase)
-        except backup.BackupError:
-            logger.exception("Error Creating Backup")
-            event.fail("Error Creating Backup")
+        except (backup.BackupError, APIError, ExecError):
+            logger.exception("Error Creating Backup.")
+            event.fail("Error Creating Backup.")
             return
 
         event.set_results({"result": "correct", "backup-id": backup_key})
