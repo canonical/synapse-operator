@@ -646,4 +646,4 @@ async def test_synapse_create_backup_no_passphrase(
 
     assert backup_action.status == "failed"
     assert "backup-id" not in backup_action.results
-    assert "backup-id" in backup_action.message
+    assert "Missing backup_passphrase" in backup_action.message
