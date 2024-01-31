@@ -18,11 +18,20 @@ from pydantic import BaseModel, Field, validator
 import synapse
 
 AWS_COMMAND = "/aws/dist/aws"
+
+# The configuration files to back up consist in the signing keys
+# plus the sqlite db if it exists.
 BACKUP_FILE_PATTERNS = ["*.key", "homeserver.db*"]
+
+# For the data directory, inside the "media" directory, all
+# directories starting with local_ will be backed up. The directories
+# starting with "remote_" are from other server and is it not necessary
+# to back them up.
+MEDIA_DIR = "media"
 LOCAL_DIR_PATTERN = "local_*"
+
 # A smaller value will minimise memory requirements. A bigger value can make the transfer faster.
 S3_MAX_CONCURRENT_REQUESTS = 1
-MEDIA_DIR = "media"
 PASSPHRASE_FILE = "/root/.gpg_passphrase"  # nosec
 BASH_COMMAND = "bash"
 
