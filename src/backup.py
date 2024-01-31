@@ -23,10 +23,9 @@ AWS_COMMAND = "/aws/dist/aws"
 # plus the sqlite db if it exists.
 BACKUP_FILE_PATTERNS = ["*.key", "homeserver.db*"]
 
-# For the data directory, inside the "media" directory, all
-# directories starting with local_ will be backed up. The directories
-# starting with "remote_" are from other server and is it not necessary
-# to back them up.
+# For the data directory, inside the "media" directory, all directories starting
+# with local_ will be backed up. The directories starting with "remote_" are from
+# other server and is it not necessary to back them up.
 MEDIA_DIR = "media"
 LOCAL_DIR_PATTERN = "local_*"
 
