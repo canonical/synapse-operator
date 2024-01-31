@@ -68,10 +68,6 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
                 stderr=self._stderr,
             )
 
-        def wait(self):
-            """Simulate the wait method of the container object."""
-            self.wait_output()
-
     def exec_stub(command: list[str], **_kwargs):
         """A mock implementation of the `exec` method of the container object.
 
