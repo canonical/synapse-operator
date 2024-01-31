@@ -1,6 +1,6 @@
 name: Matrix Deployment Enhancement
 description: Suggest a feature for the chat.ubuntu.com deployment
-labels: ["Type: Enhancement", "Status: Triage", "deployment"]
+labels: ["Type: Enhancement", "Status: Triage", "Context: Deployment"]
 body:
   - type: markdown
     attributes:
