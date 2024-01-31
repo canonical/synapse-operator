@@ -108,7 +108,7 @@ def test_s3_relation_data_addressing_style(s3_relation_data, addressing_style):
     """
     arrange: Create s3 relation data with correct data.
     act: Create S3Parameters pydantic BaseModel from relation data.
-    assert: Check that the addressing style correspond to the expected ont.
+    assert: Check that the addressing style correspond to the expected value.
     """
     s3_parameters = backup.S3Parameters(**s3_relation_data)
     assert s3_parameters.addressing_style == addressing_style
