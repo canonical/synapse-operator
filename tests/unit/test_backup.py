@@ -3,6 +3,7 @@
 
 """Synapse backup unit tests."""
 
+# pylint: disable=protected-access
 
 import os
 import pathlib
