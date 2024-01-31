@@ -12,18 +12,15 @@ import ops
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.exceptions import ConnectionError as BotoConnectionError
-from ops.pebble import ExecError
+from ops.pebble import APIError, ExecError
 from pydantic import BaseModel, Field, validator
 
 import synapse
 
-# It looks stage-snaps is broken, as it
-# does put /usb/bin/aws but it points to ../aws/dist/aws
-# which does not exists. Check again and
-# open issue if appropriate
 AWS_COMMAND = "/aws/dist/aws"
 BACKUP_FILE_PATTERNS = ["*.key", "homeserver.db*"]
 LOCAL_DIR_PATTERN = "local_*"
+# A smaller value will minimise memory requirements. A bigger value can make the transfer faster.
 S3_MAX_CONCURRENT_REQUESTS = 1
 MEDIA_DIR = "media"
 PASSPHRASE_FILE = "/root/.gpg_passphrase"  # nosec
@@ -131,7 +128,6 @@ class S3Client:
                 config=s3_client_config,
             )
         except (TypeError, ValueError, BotoCoreError) as exc:
-            logger.exception("Error creating S3 client")
             raise S3Error("Error creating S3 client") from exc
         return s3_client
 
@@ -150,6 +146,18 @@ class S3Client:
             )
             return False
         return True
+
+
+def paths_to_args(paths: Iterable[str]) -> str:
+    """Given a list of paths, quote and concatenate them for use as cli arguments.
+
+    Args:
+        paths: List of paths
+
+    Returns:
+        paths concatenated and quoted
+    """
+    return " ".join(f"'{path}'" for path in paths)
 
 
 def get_paths_to_backup(container: ops.Container) -> Iterable[str]:
@@ -171,7 +179,102 @@ def get_paths_to_backup(container: ops.Container) -> Iterable[str]:
     return [path.path for path in paths]
 
 
-def build_backup_command(
+def calculate_size(container: ops.Container, paths: Iterable[str]) -> int:
+    """Return the combined size of all the paths given.
+
+    Args:
+        container: Container where to check the size of the paths.
+        paths: Paths to check.
+
+    Returns:
+        Total size in bytes.
+
+    Raises:
+        BackupError: If there was a problem calculating the size.
+    """
+    command = "set -euxo pipefail; du -bsc " + paths_to_args(paths) + " | tail -n1 | cut -f 1"
+    try:
+        exec_process = container.exec([BASH_COMMAND, "-c", command])
+        stdout, stderr = exec_process.wait_output()
+    except (APIError, ExecError) as exc:
+        raise BackupError("Cannot calculate size of paths") from exc
+
+    logger.info(
+        "Calculating size of paths. Command: %s. stdout: %s. stderr: %s", command, stdout, stderr
+    )
+
+    try:
+        return int(stdout)
+    except ValueError as exc:
+        raise BackupError("Cannot calculate size of paths. Wrong stdout.") from exc
+
+
+def _prepare_container(
+    container: ops.Container, s3_parameters: S3Parameters, passphrase: str
+) -> None:
+    """Prepare container for create or restore backup.
+
+    This means preparing the required aws configuration and the gpg passphrase file.
+
+    Args:
+        container: Synapse Container.
+        s3_parameters: S3 parameters for the backup.
+        passphrase: Passphrase for the backup (used for gpg).
+
+    Raises:
+       BackupError: if there was an error preparing the configuration.
+    """
+    aws_set_addressing_style = [
+        AWS_COMMAND,
+        "configure",
+        "set",
+        "default.s3.addressing_style",
+        s3_parameters.addressing_style,
+    ]
+
+    aws_set_concurrent_requests = [
+        AWS_COMMAND,
+        "configure",
+        "set",
+        "default.s3.max_concurrent_requests",
+        str(S3_MAX_CONCURRENT_REQUESTS),
+    ]
+
+    try:
+        process = container.exec(aws_set_addressing_style)
+        process.wait()
+        process = container.exec(aws_set_concurrent_requests)
+        process.wait()
+    except (APIError, ExecError) as exc:
+        raise BackupError("Backup Failed. Error configuring AWS.") from exc
+
+    try:
+        container.push(PASSPHRASE_FILE, passphrase)
+    except ops.pebble.PathError as exc:
+        raise BackupError("Backup Failed. Error configuring GPG passphrase.") from exc
+
+
+def _get_environment(s3_parameters: S3Parameters) -> Dict[str, str]:
+    """Get the environment variables for backup that configure aws S3 cli.
+
+    Args:
+        s3_parameters: S3 parameters.
+
+    Returns:
+        A dictionary with aws s3 configuration variables.
+    """
+    environment = {
+        "AWS_ACCESS_KEY_ID": s3_parameters.access_key,
+        "AWS_SECRET_ACCESS_KEY": s3_parameters.secret_key,
+    }
+    if s3_parameters.endpoint:
+        environment["AWS_ENDPOINT_URL"] = s3_parameters.endpoint
+    if s3_parameters.region:
+        environment["AWS_DEFAULT_REGION"] = s3_parameters.region
+    return environment
+
+
+def _build_backup_command(
     s3_parameters: S3Parameters,
     backup_key: str,
     backup_paths: Iterable[str],
@@ -192,77 +295,13 @@ def build_backup_command(
         The backup command to execute.
     """
     bash_strict_command = "set -euxo pipefail; "
-    paths = " ".join(backup_paths)
+    paths = paths_to_args(backup_paths)
     tar_command = f"tar -c {paths}"
     gpg_command = f"gpg --batch --no-symkey-cache --passphrase-file {passphrase_file} --symmetric"
     aws_command = f"{AWS_COMMAND} s3 cp --expected-size={expected_size} - "
     aws_command += f"'s3://{s3_parameters.bucket}/{s3_parameters.path}/{backup_key}'"
     full_command = bash_strict_command + " | ".join((tar_command, gpg_command, aws_command))
-    # sh does not accept "set -o pipefail". Better use bash.
     return [BASH_COMMAND, "-c", full_command]
-
-
-def calculate_size(container: ops.Container, paths: Iterable[str]) -> int:
-    """Return the combined size of all the paths given.
-
-    Args:
-        container: Container where to check the size of the paths.
-        paths: Paths to check.
-
-    Returns:
-        Total size in bytes.
-    """
-    command = "set -euxo pipefail; du -bsc " + " ".join(paths) + " | tail -n1 | cut -f 1"
-    exec_process = container.exec([BASH_COMMAND, "-c", command])
-    stdout, stderr = exec_process.wait_output()
-    logger.info(
-        "Calculating size of paths. Command: %s. stdout: %s. stderr: %s", command, stdout, stderr
-    )
-    return int(stdout)
-
-
-def prepare_container(
-    container: ops.Container, s3_parameters: S3Parameters, passphrase: str
-) -> None:
-    """Prepare container for create or restore backup.
-
-    This means preparing the required aws configuration and gpg passphrase file.
-
-    Args:
-        container: Synapse Container.
-        s3_parameters: S3 parameters for the backup.
-        passphrase: Passphrase for the backup (used for gpg).
-
-    Raises:
-       BackupError: if there was an error preparing the configuration.
-    """
-    aws_set_addressing_style = [
-        AWS_COMMAND,
-        "configure",
-        "set",
-        "default.s3.addressing_style",
-        s3_parameters.addressing_style,
-    ]
-
-    # To minimise memory comsupmtion. A bigger value could increase speed.
-    aws_set_concurrent_requests = [
-        AWS_COMMAND,
-        "configure",
-        "set",
-        "default.s3.max_concurrent_requests",
-        str(S3_MAX_CONCURRENT_REQUESTS),
-    ]
-
-    try:
-        process = container.exec(aws_set_addressing_style)
-        process.wait()
-        process = container.exec(aws_set_concurrent_requests)
-        process.wait()
-    except ExecError as exc:
-        logger.exception(exc)
-        raise BackupError("Backup Failed. Error configuring AWS.") from exc
-
-    container.push(PASSPHRASE_FILE, passphrase)
 
 
 def create_backup(
@@ -282,44 +321,23 @@ def create_backup(
     Raises:
        BackupError: If there was an error creating the backup.
     """
-    prepare_container(container, s3_parameters, passphrase)
+    _prepare_container(container, s3_parameters, passphrase)
     paths_to_backup = get_paths_to_backup(container)
-    logger.info("paths to backup: %s", list(paths_to_backup))
+    logger.info("paths to backup: %s.", list(paths_to_backup))
     if not paths_to_backup:
-        raise BackupError("Backup Failed. No files to back up")
+        raise BackupError("Backup Failed. No paths to back up.")
 
     expected_size = calculate_size(container, paths_to_backup)
-    backup_command = build_backup_command(
+    backup_command = _build_backup_command(
         s3_parameters, backup_key, paths_to_backup, PASSPHRASE_FILE, expected_size
     )
 
     logger.info("backup command: %s", backup_command)
-    environment = get_environment(s3_parameters)
+    environment = _get_environment(s3_parameters)
     try:
         exec_process = container.exec(backup_command, environment=environment)
         stdout, stderr = exec_process.wait_output()
-    except ExecError as exc:
-        logger.exception(exc)
-        raise BackupError("Backup Command Failed") from exc
+    except (APIError, ExecError) as exc:
+        raise BackupError("Backup Command Failed.") from exc
 
     logger.info("Backup command output: %s. %s.", stdout, stderr)
-
-
-def get_environment(s3_parameters: S3Parameters) -> Dict[str, str]:
-    """Get the environment variables for backup that configure aws S3 cli.
-
-    Args:
-        s3_parameters: S3 parameters.
-
-    Returns:
-        A dictionary with aws s3 configuration variables.
-    """
-    environment = {
-        "AWS_ACCESS_KEY_ID": s3_parameters.access_key,
-        "AWS_SECRET_ACCESS_KEY": s3_parameters.secret_key,
-    }
-    if s3_parameters.endpoint:
-        environment["AWS_ENDPOINT_URL"] = s3_parameters.endpoint
-    if s3_parameters.region:
-        environment["AWS_DEFAULT_REGION"] = s3_parameters.region
-    return environment

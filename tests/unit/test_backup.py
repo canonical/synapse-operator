@@ -214,27 +214,6 @@ def test_get_paths_to_backup_empty(harness: Harness):
     assert len(paths_to_backup) == 0
 
 
-def test_build_backup_command_correct(s3_parameters_backup):
-    """
-    arrange: Given some s3 parameters for backup, a name for the key in the bucket,
-         paths, passphrase file location and passphrase file
-    act: run build_backup_command
-    assert: the command is the correct calling bash with pipes.
-    """
-    # pylint: disable=line-too-long
-    paths_to_backup = ["/data/homeserver.db", "/data/example.com.signing.key"]
-
-    command = backup.build_backup_command(
-        s3_parameters_backup, "20230101231200", paths_to_backup, "/root/.gpg_passphrase"
-    )
-
-    assert list(command) == [
-        backup.BASH_COMMAND,
-        "-c",
-        f"set -euxo pipefail; tar -c /data/homeserver.db /data/example.com.signing.key | gpg --batch --no-symkey-cache --passphrase-file /root/.gpg_passphrase --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=10000000000 - 's3://synapse-backup-bucket//synapse-backups/20230101231200'",  # noqa: E501
-    ]
-
-
 def test_calculate_size(harness: Harness):
     """
     arrange: given a container and a list of paths
@@ -256,7 +235,7 @@ def test_calculate_size(harness: Harness):
         assert argv == [
             "bash",
             "-c",
-            "set -euxo pipefail; du -bsc " + " ".join(paths) + " | tail -n1 | cut -f 1",
+            "set -euxo pipefail; du -bsc 'path1' 'path2' | tail -n1 | cut -f 1",
         ]
         return synapse.ExecResult(0, "1000", "")
 
@@ -276,7 +255,7 @@ def test_calculate_size(harness: Harness):
 def test_prepare_container_correct(harness: Harness, s3_parameters_backup):
     """
     arrange: Given the Synapse container, s3parameters, passphrase and its location
-    act: Call prepare_container
+    act: Call _prepare_container
     assert: The file with the passphare is in the container. AWS commands did not fail.
     """
     passphrase = token_hex(16)
@@ -303,15 +282,13 @@ def test_prepare_container_correct(harness: Harness, s3_parameters_backup):
         # let the rest of checks for the integration tests.
         return synapse.ExecResult(0, "", "")
 
-    # A better option would be to use run harness.handle_exec,
-    # but the harness is monkey patched in conftest.py
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=container,
         executable=backup.AWS_COMMAND,
         handler=aws_command_handler,
     )
 
-    backup.prepare_container(container, s3_parameters_backup, passphrase)
+    backup._prepare_container(container, s3_parameters_backup, passphrase)
 
     assert container.pull(backup.PASSPHRASE_FILE).read() == passphrase
 
@@ -339,8 +316,6 @@ def test_prepare_container_error_aws(harness: Harness, s3_parameters_backup):
         # let the rest of checks for the integration tests.
         return synapse.ExecResult(1, "", "error")
 
-    # A better option would be to use run harness.handle_exec,
-    # but the harness is monkey patched in conftest.py
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=container,
         executable=backup.AWS_COMMAND,
@@ -348,8 +323,29 @@ def test_prepare_container_error_aws(harness: Harness, s3_parameters_backup):
     )
 
     with pytest.raises(backup.BackupError) as err:
-        backup.prepare_container(container, s3_parameters_backup, passphrase)
+        backup._prepare_container(container, s3_parameters_backup, passphrase)
     assert "Error configuring AWS" in str(err.value)
+
+
+def test_build_backup_command_correct(s3_parameters_backup):
+    """
+    arrange: Given some s3 parameters for backup, a name for the key in the bucket,
+         paths, passphrase file location and passphrase file
+    act: run _build_backup_command
+    assert: the command is the correct calling bash with pipes.
+    """
+    # pylint: disable=line-too-long
+    paths_to_backup = ["/data/homeserver.db", "/data/example.com.signing.key"]
+
+    command = backup._build_backup_command(
+        s3_parameters_backup, "20230101231200", paths_to_backup, "/root/.gpg_passphrase"
+    )
+
+    assert list(command) == [
+        backup.BASH_COMMAND,
+        "-c",
+        f"set -euxo pipefail; tar -c '/data/homeserver.db' '/data/example.com.signing.key' | gpg --batch --no-symkey-cache --passphrase-file /root/.gpg_passphrase --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=10000000000 - 's3://synapse-backup-bucket//synapse-backups/20230101231200'",  # noqa: E501
+    ]
 
 
 def test_create_backup_correct(
@@ -364,7 +360,7 @@ def test_create_backup_correct(
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     passphrase = token_hex(16)
     backup_key = token_hex(16)
-    monkeypatch.setattr(backup, "prepare_container", MagicMock())
+    monkeypatch.setattr(backup, "_prepare_container", MagicMock())
     monkeypatch.setattr(backup, "calculate_size", MagicMock(return_value=1000))
     monkeypatch.setattr(backup, "get_paths_to_backup", MagicMock(return_value=["file1", "dir1"]))
 
@@ -378,12 +374,10 @@ def test_create_backup_correct(
             tuple with status_code, stdout and stderr.
         """
         # simple check to see that at least the files are in the command
-        assert any(("file1" in arg for arg in args))
-        assert any(("dir1" in arg for arg in args))
+        assert any(("'file1'" in arg for arg in args))
+        assert any(("'dir1'" in arg for arg in args))
         return synapse.ExecResult(0, "", "")
 
-    # A better option would be to use run harness.handle_exec,
-    # but the harness is monkey patched in conftest.py
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=container,
         executable=backup.BASH_COMMAND,
@@ -398,19 +392,19 @@ def test_create_backup_no_files(
 ):
     """
     arrange: Given the Synapse container, s3parameters, passphrase, the backup key and its location
-        mock prepare_container, calculate_size and get paths. get paths is empty
-    act: Call prepare_container
+        mock _prepare_container, calculate_size and get paths. get paths is empty
+    act: Call create_backup
     assert: BackupError exception because there is nothing to back up
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     passphrase = token_hex(16)
     backup_key = token_hex(16)
-    monkeypatch.setattr(backup, "prepare_container", MagicMock())
+    monkeypatch.setattr(backup, "_prepare_container", MagicMock())
     monkeypatch.setattr(backup, "calculate_size", MagicMock(return_value=1000))
     monkeypatch.setattr(backup, "get_paths_to_backup", MagicMock(return_value=[]))
     with pytest.raises(backup.BackupError) as err:
         backup.create_backup(container, s3_parameters_backup, backup_key, passphrase)
-    assert "No files to back up" in str(err.value)
+    assert "No paths to back up" in str(err.value)
 
 
 def test_create_backup_failure(
@@ -419,13 +413,13 @@ def test_create_backup_failure(
     """
     arrange: Given the Synapse container, s3parameters, passphrase, the backup key and its location
         mock prepare_container, calculate_size and get paths. Mock the backup command to fail
-    act: Call prepare_container
+    act: Call create_backup
     assert: BackupError exception because the back up failed
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     passphrase = token_hex(16)
     backup_key = token_hex(16)
-    monkeypatch.setattr(backup, "prepare_container", MagicMock())
+    monkeypatch.setattr(backup, "_prepare_container", MagicMock())
     monkeypatch.setattr(backup, "calculate_size", MagicMock(return_value=1000))
     monkeypatch.setattr(backup, "get_paths_to_backup", MagicMock(return_value=["file1", "dir1"]))
 
@@ -438,8 +432,6 @@ def test_create_backup_failure(
         # simple check to see that at least the files are in the command
         return synapse.ExecResult(1, "", "")
 
-    # A better option would be to use run harness.handle_exec,
-    # but the harness is monkey patched in conftest.py
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=container,
         executable=backup.BASH_COMMAND,

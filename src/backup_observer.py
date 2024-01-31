@@ -52,6 +52,7 @@ class BackupObserver(Object):
         try:
             s3_client = backup.S3Client(s3_parameters)
         except backup.S3Error:
+            logger.exception("Error creating S3Client.")
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
@@ -74,6 +75,7 @@ class BackupObserver(Object):
         try:
             s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
+            logger.exception("Wrong S3 configuration in backup action")
             event.fail("Wrong S3 configuration on create backup action. Check S3 integration.")
             return
 
