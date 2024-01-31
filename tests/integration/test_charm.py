@@ -9,6 +9,7 @@ import re
 import typing
 from secrets import token_hex
 
+import magic
 import pytest
 import requests
 from juju.action import Action
@@ -582,3 +583,67 @@ async def test_synapse_enable_s3_backup_integration_no_bucket(
     await model.wait_for_idle(apps=[synapse_app.name], idle_period=5, status="blocked")
     assert synapse_app.units[0].workload_status == "blocked"
     assert "bucket does not exist" in synapse_app.units[0].workload_status_message
+
+
+@pytest.mark.usefixtures("s3_backup_bucket")
+async def test_synapse_create_backup_correct(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+    s3_backup_configuration: dict,
+    boto_s3_client: typing.Any,
+):
+    """
+    arrange: Synapse app with s3_integrator. Set backup_passphrase
+    act: Run create-backup action
+    assert: Correct response from the action that includes the backup-id.
+       An encrypted object was created in S3 with the correct name.
+    """
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    passphrase = token_hex(16)
+    await synapse_app.set_config({"backup_passphrase": passphrase})
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    backup_action: Action = await synapse_unit.run_action("create-backup")
+    await backup_action.wait()
+
+    assert backup_action.status == "completed"
+    assert "backup-id" in backup_action.results
+    bucket_name = s3_backup_configuration["bucket"]
+    object_key = s3_backup_configuration["path"] + "/" + backup_action.results["backup-id"]
+    s3objresp = boto_s3_client.get_object(Bucket=bucket_name, Key=object_key)
+    objbuf = s3objresp["Body"].read()
+    assert "GPG symmetrically encrypted data (AES256 cipher)" in magic.from_buffer(objbuf)
+
+
+@pytest.mark.usefixtures("s3_backup_bucket")
+async def test_synapse_create_backup_no_passphrase(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+):
+    """
+    arrange: Synapse app with s3_integrator.
+    act: Run create-backup action
+    assert: The action fails because there is no passphrase.
+    """
+    await synapse_app.reset_config(["backup_passphrase"])
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    backup_action: Action = await synapse_unit.run_action("create-backup")
+    await backup_action.wait()
+
+    assert backup_action.status == "failed"
+    assert "backup-id" not in backup_action.results
+    assert "backup-id" in backup_action.message
