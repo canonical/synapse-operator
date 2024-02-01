@@ -35,4 +35,6 @@ header:
     - 'zap_rules.tsv'
     - 'lib/**'
     - 'templates/**'
+    - 'synapse_rock/cron/**'
+    - 'synapse_rock/scripts/**'
   comment: on-failure
