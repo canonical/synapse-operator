@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
 
 """
 Synapse does not purge empty directories from its media content storage locations.

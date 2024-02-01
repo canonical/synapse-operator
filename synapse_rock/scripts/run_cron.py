@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
 
 """
 The goal of this script is to serialize the environment passed by pebble to a file
