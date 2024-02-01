@@ -3,7 +3,6 @@
 
 """S3 Backup relation observer for Synapse."""
 
-import datetime
 import logging
 
 import ops
@@ -85,11 +84,10 @@ class BackupObserver(Object):
             event.fail("Missing backup_passphrase config option.")
             return
 
-        backup_key = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
 
         try:
-            backup.create_backup(container, s3_parameters, backup_key, backup_passphrase)
+            backup_key = backup.create_backup(container, s3_parameters, backup_passphrase)
         except (backup.BackupError, APIError, ExecError):
             logger.exception("Error Creating Backup.")
             event.fail("Error Creating Backup.")
