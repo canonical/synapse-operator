@@ -87,10 +87,10 @@ class BackupObserver(Object):
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
 
         try:
-            backup_key = backup.create_backup(container, s3_parameters, backup_passphrase)
+            backup_id = backup.create_backup(container, s3_parameters, backup_passphrase)
         except (backup.BackupError, APIError, ExecError):
             logger.exception("Error Creating Backup.")
             event.fail("Error Creating Backup.")
             return
 
-        event.set_results({"result": "correct", "backup-id": backup_key})
+        event.set_results({"result": "correct", "backup-id": backup_id})
