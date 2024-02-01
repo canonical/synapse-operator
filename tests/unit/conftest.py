@@ -17,6 +17,7 @@ from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.pebble import ExecError
 from ops.testing import Harness
 
+import backup
 import synapse
 from charm import SynapseCharm
 
@@ -245,3 +246,22 @@ def container_with_path_error_pass_fixture(
     remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
     monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
     return container_mocked
+
+
+@pytest.fixture(name="s3_relation_data_backup")
+def s3_relation_data_backup_fixture() -> dict:
+    """Returns valid S3 relation data."""
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+        "bucket": "synapse-backup-bucket",
+        "path": "/synapse-backups",
+        "s3-uri-style": "path",
+        "endpoint": "https://s3.example.com",
+    }
+
+
+@pytest.fixture(name="s3_parameters_backup")
+def s3_parameters_backup_fixture(s3_relation_data_backup) -> backup.S3Parameters:
+    """Returns valid S3 Parameters."""
+    return backup.S3Parameters(**s3_relation_data_backup)
