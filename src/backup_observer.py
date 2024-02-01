@@ -9,7 +9,7 @@ import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
 from ops.framework import Object
 
-from backup import S3Parameters, can_use_bucket
+import backup
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +40,19 @@ class BackupObserver(Object):
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Check new S3 credentials set the unit to blocked if they are wrong."""
         try:
-            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
+            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
-        if not can_use_bucket(s3_parameters):
+        try:
+            s3_client = backup.S3Client(s3_parameters)
+        except backup.S3Error:
+            logger.exception("Error creating S3Client.")
+            self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
+            return
+
+        if not s3_client.can_use_bucket():
             self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
             return
 
