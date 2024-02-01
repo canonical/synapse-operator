@@ -7,11 +7,16 @@ import logging
 from typing import Any, Optional
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.exceptions import ConnectionError as BotoConnectionError
 from pydantic import BaseModel, Field, validator
 
 logger = logging.getLogger(__name__)
+
+
+class S3Error(Exception):
+    """Generic S3 Exception."""
 
 
 class S3Parameters(BaseModel):
@@ -24,7 +29,8 @@ class S3Parameters(BaseModel):
         bucket: The bucket name.
         endpoint: The endpoint used to connect to the object storage.
         path: The path inside the bucket to store objects.
-        s3_uri_style: The S3 protocol specific bucket path lookup type.
+        s3_uri_style: The S3 protocol specific bucket path lookup type. Can be "path" or "host".
+        addressing_style: S3 protocol addressing style, can be "path" or "virtual".
     """
 
     access_key: str = Field(alias="access-key")
@@ -55,32 +61,70 @@ class S3Parameters(BaseModel):
             raise ValueError('one of "region" or "endpoint" needs to be set')
         return endpoint
 
+    @property
+    def addressing_style(self) -> str:
+        """Translates s3_uri_style to AWS addressing_style."""
+        if self.s3_uri_style == "path":
+            return "path"
+        return "virtual"
 
-def can_use_bucket(s3_parameters: S3Parameters) -> bool:
-    """Check if a bucket exists and is accessible in an S3 compatible object store.
 
-    Args:
-        s3_parameters: S3 connection parameters
+class S3Client:
+    """S3 Client Wrapper around boto3 library."""
 
-    Returns:
-       True if the bucket exists and is accessible
-    """
-    session = boto3.session.Session(
-        aws_access_key_id=s3_parameters.access_key,
-        aws_secret_access_key=s3_parameters.secret_key,
-        region_name=s3_parameters.region,
-    )
-    try:
-        s3 = session.resource("s3", endpoint_url=s3_parameters.endpoint)
-    except BotoCoreError:
-        logger.exception("Failed to create S3 session")
-        return False
-    bucket = s3.Bucket(s3_parameters.bucket)
-    try:
-        bucket.meta.client.head_bucket(Bucket=s3_parameters.bucket)
-    except (ClientError, BotoConnectionError):
-        logger.exception(
-            "Bucket %s doesn't exist or you don't have access to it.", s3_parameters.bucket
-        )
-        return False
-    return True
+    # New methods will be needed to at least list, check and delete backups
+    # pylint: disable=too-few-public-methods
+    def __init__(self, s3_parameters: S3Parameters):
+        """Initialize the S3 client.
+
+        Args:
+            s3_parameters: Parameter to configure the S3 connection.
+        """
+        self._s3_parameters = s3_parameters
+        self._client = self._create_client()
+
+    def _create_client(self) -> Any:
+        """Create new boto3 S3 client.
+
+        Creating the client does not connect to the server.
+
+        Returns:
+            New instantiated boto3 S3 client.
+
+        Raises:
+            S3Error: If it was not possible to create the client.
+        """
+        try:
+            s3_client_config = Config(
+                region_name=self._s3_parameters.region,
+                s3={
+                    "addressing_style": self._s3_parameters.addressing_style,
+                },
+            )
+            s3_client = boto3.client(
+                "s3",
+                self._s3_parameters.region,
+                aws_access_key_id=self._s3_parameters.access_key,
+                aws_secret_access_key=self._s3_parameters.secret_key,
+                endpoint_url=self._s3_parameters.endpoint,
+                config=s3_client_config,
+            )
+        except (TypeError, ValueError, BotoCoreError) as exc:
+            raise S3Error("Error creating S3 client") from exc
+        return s3_client
+
+    def can_use_bucket(self) -> bool:
+        """Check if a bucket exists and is accessible in an S3 compatible object store.
+
+        Returns:
+            True if the bucket exists and is accessible
+        """
+        try:
+            self._client.head_bucket(Bucket=self._s3_parameters.bucket)
+        except (ClientError, BotoConnectionError):
+            logger.exception(
+                "Bucket %s doesn't exist or you don't have access to it.",
+                self._s3_parameters.bucket,
+            )
+            return False
+        return True
