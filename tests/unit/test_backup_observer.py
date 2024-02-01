@@ -207,7 +207,7 @@ def test_list_backups_correct(
     monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
     backups = [
         backup.S3Backup(
-            backup_key="202301311259",
+            backup_id="202301311259",
             etag="",
             last_modified=datetime.datetime(2024, 1, 1, 0, 0, 0),
             prefix="",
@@ -215,7 +215,7 @@ def test_list_backups_correct(
             size=1_000_000_000_000,
         ),
         backup.S3Backup(
-            backup_key="202401311259",
+            backup_id="202401311259",
             etag="",
             last_modified=datetime.datetime(2024, 2, 1, 0, 0, 0),
             prefix="",

@@ -89,13 +89,13 @@ class BackupObserver(Object):
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
 
         try:
-            backup_key = backup.create_backup(container, s3_parameters, backup_passphrase)
+            backup_id = backup.create_backup(container, s3_parameters, backup_passphrase)
         except (backup.BackupError, APIError, ExecError):
             logger.exception("Error Creating Backup.")
             event.fail("Error Creating Backup.")
             return
 
-        event.set_results({"result": "correct", "backup-id": backup_key})
+        event.set_results({"result": "correct", "backup-id": backup_id})
 
     def _generate_backup_list_formatted(self, backup_list: typing.List[backup.S3Backup]) -> str:
         """Generate a formatted string for the backups.
@@ -110,9 +110,9 @@ class BackupObserver(Object):
         output.append("-" * len(output[0]))
         for cur_backup in backup_list:
             output.append(
-                f"{cur_backup.backup_key:<21s}"
-                f"| {cur_backup.last_modified!s:<28s}"
-                f"| {cur_backup.size:>15d}"
+                f"{cur_backup.backup_id:<21s}"
+                f" | {cur_backup.last_modified!s:<28s}"
+                f" | {cur_backup.size:>15d}"
             )
         return "\n".join(output)
 
@@ -141,7 +141,7 @@ class BackupObserver(Object):
             {
                 "formatted": self._generate_backup_list_formatted(backups),
                 "backups": {
-                    backup.backup_key: {
+                    backup.backup_id: {
                         "last-modified": str(backup.last_modified),
                         "size": str(backup.size),
                     }
