@@ -317,6 +317,24 @@ def enable_metrics(container: ops.Container) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
+def enable_forgotten_room_retention(container: ops.Container) -> None:
+    """Change the Synapse configuration to enable forgotten_room_retention_period.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong enabling forgotten_room_retention_period.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["forgotten_room_retention_period"] = "28d"
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def disable_password_config(container: ops.Container) -> None:
     """Change the Synapse configuration to disable password config.
 
