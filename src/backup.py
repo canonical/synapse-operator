@@ -6,7 +6,7 @@
 import datetime
 import logging
 import os
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional
 
 import boto3
 import ops
@@ -98,6 +98,26 @@ class S3Parameters(BaseModel):
         return "virtual"
 
 
+class S3Backup(NamedTuple):
+    """Information about a backup file from S3.
+
+    Attributes:
+        backup_key: backup key
+        etag: etag in S3
+        last_modified: last modified date in S3
+        prefix: prefix of the object ky
+        s3_object_key: full object key
+        size: size in bytes
+    """
+
+    backup_key: str
+    etag: str
+    last_modified: datetime.datetime
+    prefix: str
+    s3_object_key: str
+    size: int
+
+
 class S3Client:
     """S3 Client Wrapper around boto3 library."""
 
@@ -157,6 +177,37 @@ class S3Client:
             )
             return False
         return True
+
+    def list_backups(self) -> List[S3Backup]:
+        """List the backups stored in S3 in the current s3 configuration.
+
+        Returns:
+            list of backups.
+
+        Raises:
+            S3Error: if listing the objects in S3 fails.
+        """
+        # Pagination is not taken into account, only up to 1000 elements will be returned
+        prefix = self._s3_parameters.path.strip("/")
+        try:
+            resp = self._client.list_objects_v2(Bucket=self._s3_parameters.bucket, Prefix=prefix)
+        except ClientError as exc:
+            raise S3Error("Error listing objects in bucket") from exc
+        backups = []
+        if "Contents" in resp:
+            for s3obj in resp["Contents"]:
+                s3_object_key = s3obj["Key"]
+                backup_key = ("/" / s3_object_key).relative_to(self._s3_parameters.path)
+                backup = S3Backup(
+                    backup_key=backup_key,
+                    s3_object_key=s3_object_key,
+                    prefix=self._s3_parameters.path,
+                    last_modified=s3obj["LastModified"],
+                    size=s3obj["Size"],
+                    etag=s3obj["ETag"],
+                )
+                backups.append(backup)
+        return backups
 
 
 def paths_to_args(paths: Iterable[str]) -> str:

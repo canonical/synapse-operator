@@ -44,3 +44,6 @@ promote-user-admin:
 create-backup:
   description: |
     Creates a backup to s3 storage.
+list-backups:
+  description: |
+    Lists backups in s3 storage.

@@ -4,6 +4,7 @@
 """S3 Backup relation observer for Synapse."""
 
 import logging
+import typing
 
 import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
@@ -40,6 +41,7 @@ class BackupObserver(Object):
         )
         self.framework.observe(self._s3_client.on.credentials_gone, self._on_s3_credential_gone)
         self.framework.observe(self._charm.on.create_backup_action, self._on_create_backup_action)
+        self.framework.observe(self._charm.on.list_backups_action, self._on_list_backups_action)
 
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Check new S3 credentials set the unit to blocked if they are wrong."""
@@ -94,3 +96,56 @@ class BackupObserver(Object):
             return
 
         event.set_results({"result": "correct", "backup-id": backup_key})
+
+    def _generate_backup_list_formatted(self, backup_list: typing.List[backup.S3Backup]) -> str:
+        """Generate a formatted string for the backups.
+
+        Args:
+            backup_list: List of backups to create a formatted string for
+
+        Returns:
+            The formatted string of the backups
+        """
+        output = [f"{'backup-id':<21s} | {'last-modified':<28s} | {'size':>15s}"]
+        output.append("-" * len(output[0]))
+        for cur_backup in backup_list:
+            output.append(
+                f"{cur_backup.backup_key:<21s}"
+                f"| {cur_backup.last_modified!s:<28s}"
+                f"| {cur_backup.size:>15d}"
+            )
+        return "\n".join(output)
+
+    def _on_list_backups_action(self, event: ActionEvent) -> None:
+        """List backups in S3 configured storage.
+
+        Args:
+            event: Event triggering the list backups action.
+        """
+        try:
+            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+        except ValueError:
+            logger.exception("Wrong S3 configuration in list backups action")
+            event.fail("Wrong S3 configuration on list backups action. Check S3 integration.")
+            return
+
+        try:
+            s3_client = backup.S3Client(s3_parameters)
+            backups = s3_client.list_backups()
+        except backup.S3Error:
+            logger.exception("Error while trying looking for backups.")
+            self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
+            return
+
+        event.set_results(
+            {
+                "formatted": self._generate_backup_list_formatted(backups),
+                "backups": {
+                    backup.backup_key: {
+                        "last-modified": str(backup.last_modified),
+                        "size": str(backup.size),
+                    }
+                    for backup in backups
+                },
+            }
+        )
