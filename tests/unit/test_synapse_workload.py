@@ -507,15 +507,16 @@ def test_enable_forgotten_room_success(monkeypatch: pytest.MonkeyPatch):
 
     synapse.enable_forgotten_room_retention(container_mock)
 
-    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
         "forgotten_room_retention_period": "28d",
     }
-    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+    pull_mock.assert_called_with(synapse.SYNAPSE_CONFIG_PATH)
+    push_mock.assert_called_with(
+        synapse.SYNAPSE_CONFIG_PATH, yaml.safe_dump(expected_config_content)
+    )
 
 
 def test_enable_forgotten_room_error(monkeypatch: pytest.MonkeyPatch):
