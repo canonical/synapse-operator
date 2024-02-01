@@ -5,6 +5,7 @@
 
 # pylint: disable=protected-access
 
+import datetime
 import os
 import pathlib
 from secrets import token_hex
@@ -12,6 +13,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import ClientError
+from dateutil.tz import tzutc  # type: ignore
 from ops.testing import Harness
 
 import backup
@@ -167,6 +169,80 @@ def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.M
     )
 
     assert not s3_client.can_use_bucket()
+
+
+def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. Mock response to return a real one in list_backups.
+    act: run list_backups.
+    assert: The expected list of backups is correctly parsed.
+    """
+    s3_client = backup.S3Client(s3_parameters_backup)
+    s3_example_response = {
+        "ResponseMetadata": {
+            "RequestId": "17AFBDF4A3306A4F",
+            "HostId": "dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8",
+            "HTTPStatusCode": 200,
+        },
+        "IsTruncated": False,
+        "Contents": [
+            {
+                "Key": "synapse-backups/20240201122721",
+                "LastModified": datetime.datetime(2024, 2, 1, 12, 27, 23, 749000, tzinfo=tzutc()),
+                "ETag": '"ed4a010045db523f7adc1ddc19e26971"',
+                "Size": 38296,
+            },
+            {
+                "Key": "synapse-backups/20240201122942",
+                "LastModified": datetime.datetime(2024, 2, 1, 12, 29, 43, 804000, tzinfo=tzutc()),
+                "ETag": '"200e44b3b6e4c1e98b1a902e5260b9be"',
+                "Size": 50000,
+            },
+        ],
+        "Name": "backups-bucket",
+        "Prefix": "synapse/",
+        "MaxKeys": 1000,
+        "EncodingType": "url",
+        "KeyCount": 2,
+    }
+    list_objects_v2_mock = MagicMock(return_value=s3_example_response)
+    monkeypatch.setattr(s3_client._client, "list_objects_v2", list_objects_v2_mock)
+
+    backups = s3_client.list_backups()
+
+    assert backups == [
+        backup.S3Backup(
+            backup_id="20240201122721",
+            etag='"ed4a010045db523f7adc1ddc19e26971"',
+            last_modified=datetime.datetime(2024, 2, 1, 12, 27, 23, 749000, tzinfo=tzutc()),
+            prefix="/synapse-backups",
+            s3_object_key="synapse-backups/20240201122721",
+            size=38296,
+        ),
+        backup.S3Backup(
+            backup_id="20240201122942",
+            etag='"200e44b3b6e4c1e98b1a902e5260b9be"',
+            last_modified=datetime.datetime(2024, 2, 1, 12, 29, 43, 804000, tzinfo=tzutc()),
+            prefix="/synapse-backups",
+            s3_object_key="synapse-backups/20240201122942",
+            size=50000,
+        ),
+    ]
+
+
+def test_list_backups_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. Mock response to raise a ClienError Exception.
+    act: run list_backups.
+    assert: A S3Error should be raised.
+    """
+    s3_client = backup.S3Client(s3_parameters_backup)
+    list_objects_v2_mock = MagicMock(side_effect=ClientError({}, "No Such Bucket"))
+    monkeypatch.setattr(s3_client._client, "list_objects_v2", list_objects_v2_mock)
+
+    with pytest.raises(backup.S3Error) as err:
+        s3_client.list_backups()
+    assert "Error listing" in str(err.value)
 
 
 def test_get_paths_to_backup_correct(harness: Harness):

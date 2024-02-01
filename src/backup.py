@@ -6,6 +6,7 @@
 import datetime
 import logging
 import os
+import pathlib
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional
 
 import boto3
@@ -196,11 +197,11 @@ class S3Client:
         backups = []
         if "Contents" in resp:
             for s3obj in resp["Contents"]:
-                s3_object_key = s3obj["Key"]
+                s3_object_key = pathlib.Path(s3obj["Key"])
                 backup_id = ("/" / s3_object_key).relative_to(self._s3_parameters.path)
                 backup = S3Backup(
-                    backup_id=backup_id,
-                    s3_object_key=s3_object_key,
+                    backup_id=str(backup_id),
+                    s3_object_key=str(s3_object_key),
                     prefix=self._s3_parameters.path,
                     last_modified=s3obj["LastModified"],
                     size=s3obj["Size"],

@@ -18,7 +18,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `paths_to_args`
 
@@ -42,7 +42,7 @@ Given a list of paths, quote and concatenate them for use as cli arguments.
 
 ---
 
-<a href="../src/backup.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L226"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_paths_to_backup`
 
@@ -66,7 +66,7 @@ Get the list of paths that should be in a backup for Synapse.
 
 ---
 
-<a href="../src/backup.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `calculate_size`
 
@@ -97,7 +97,7 @@ Return the combined size of all the paths given.
 
 ---
 
-<a href="../src/backup.py#L366"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L367"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -167,7 +167,7 @@ Information about a backup file from S3.
 ## <kbd>class</kbd> `S3Client`
 S3 Client Wrapper around boto3 library. 
 
-<a href="../src/backup.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -188,7 +188,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L166"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -205,7 +205,7 @@ Check if a bucket exists and is accessible in an S3 compatible object store.
 
 ---
 
-<a href="../src/backup.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L182"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `list_backups`
 
@@ -265,7 +265,7 @@ Translates s3_uri_style to AWS addressing_style.
 
 ---
 
-<a href="../src/backup.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
 
