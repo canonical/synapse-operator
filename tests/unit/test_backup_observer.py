@@ -7,17 +7,31 @@ from secrets import token_hex
 from typing import Type
 from unittest.mock import MagicMock
 
-import boto3
 import ops
 import pytest
 from ops.testing import Harness
 
-import backup_observer
+import backup
 
 
 @pytest.mark.parametrize(
     "relation_data, can_use_bucket, expected_status_cls, expected_str_in_status",
     [
+        pytest.param(
+            {
+                "access-key": token_hex(16),
+                "secret-key": token_hex(16),
+                "region": "eu-west-1",
+                "bucket": "synapse-backup-bucket",
+                "endpoint": "https:/example.com",
+                "path": "/synapse-backups",
+                "s3-uri-style": "path",
+            },
+            True,
+            ops.BlockedStatus,
+            "configuration is invalid",
+            id="Correct S3 configuration",
+        ),
         pytest.param(
             {
                 "access-key": token_hex(16),
@@ -31,7 +45,7 @@ import backup_observer
             True,
             ops.ActiveStatus,
             "",
-            id="Correct S3 configuration",
+            id="Invalid S3 endpoint",
         ),
         pytest.param(
             {
@@ -72,7 +86,7 @@ def test_on_s3_credentials_changed(
     assert: The unit should be in the expected state with the expected message.
     """
     # pylint: disable=too-many-arguments
-    monkeypatch.setattr(backup_observer, "can_use_bucket", MagicMock(return_value=can_use_bucket))
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=can_use_bucket))
     harness.begin_with_initial_hooks()
 
     harness.add_relation("backup", "s3-integrator", app_data=relation_data)
@@ -98,22 +112,3 @@ def test_on_s3_credentials_gone_set_active(harness: Harness):
     harness.remove_relation(relation_id)
 
     assert harness.model.unit.status == ops.ActiveStatus()
-
-
-def test_can_use_bucket_correct(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: Create S3Parameters and mock boto3 library so it does not fail.
-    act: Run can_use_bucket.
-    assert: Check that the function returns True.
-    """
-    s3_parameters = backup_observer.S3Parameters(
-        **{
-            "access-key": token_hex(16),
-            "secret-key": token_hex(16),
-            "region": "eu-west-1",
-            "bucket": "bucket_name",
-        }
-    )
-    monkeypatch.setattr(boto3.session, "Session", MagicMock())
-
-    assert backup_observer.can_use_bucket(s3_parameters)
