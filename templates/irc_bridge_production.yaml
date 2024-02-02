@@ -105,9 +105,9 @@ ircService:
     rules:
       userIds:
         exempt:
-          - "@doubleagent:badguys.com"
+          - "@doubleagent:example.com"
         conflict:
-          - "@.*:badguys.com"
+          - "@.*:example.com"
     roomLimit: 50
     http:
       port: 7700
