@@ -230,6 +230,34 @@ def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPa
     ]
 
 
+def test_list_backups_empty(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. Mock response to return a real one in list_backups without backups.
+    act: run list_backups.
+    assert: The expected list of backups is correctly parsed.
+    """
+    s3_client = backup.S3Client(s3_parameters_backup)
+    s3_example_response = {
+        "ResponseMetadata": {
+            "RequestId": "17AFBDF4A3306A4F",
+            "HostId": "dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8",
+            "HTTPStatusCode": 200,
+        },
+        "IsTruncated": False,
+        "Name": "backups-bucket",
+        "Prefix": "synapse",
+        "MaxKeys": 1000,
+        "EncodingType": "url",
+        "KeyCount": 2,
+    }
+    list_objects_v2_mock = MagicMock(return_value=s3_example_response)
+    monkeypatch.setattr(s3_client._client, "list_objects_v2", list_objects_v2_mock)
+
+    backups = s3_client.list_backups()
+
+    assert backups == []
+
+
 def test_list_backups_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create a S3Client. Mock response to raise a ClienError Exception.
