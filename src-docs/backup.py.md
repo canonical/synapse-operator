@@ -18,7 +18,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `paths_to_args`
 
@@ -42,7 +42,7 @@ Given a list of paths, quote and concatenate them for use as cli arguments.
 
 ---
 
-<a href="../src/backup.py#L226"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_paths_to_backup`
 
@@ -66,7 +66,7 @@ Get the list of paths that should be in a backup for Synapse.
 
 ---
 
-<a href="../src/backup.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L247"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `calculate_size`
 
@@ -97,7 +97,7 @@ Return the combined size of all the paths given.
 
 ---
 
-<a href="../src/backup.py#L367"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 

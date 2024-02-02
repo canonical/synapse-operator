@@ -215,7 +215,7 @@ def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPa
             backup_id="20240201122721",
             etag='"ed4a010045db523f7adc1ddc19e26971"',
             last_modified=datetime.datetime(2024, 2, 1, 12, 27, 23, 749000, tzinfo=tzutc()),
-            prefix="/synapse-backups",
+            prefix="synapse-backups",
             s3_object_key="synapse-backups/20240201122721",
             size=38296,
         ),
@@ -223,7 +223,7 @@ def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPa
             backup_id="20240201122942",
             etag='"200e44b3b6e4c1e98b1a902e5260b9be"',
             last_modified=datetime.datetime(2024, 2, 1, 12, 29, 43, 804000, tzinfo=tzutc()),
-            prefix="/synapse-backups",
+            prefix="synapse-backups",
             s3_object_key="synapse-backups/20240201122942",
             size=50000,
         ),
@@ -420,7 +420,7 @@ def test_build_backup_command_correct(s3_parameters_backup):
     assert list(command) == [
         backup.BASH_COMMAND,
         "-c",
-        f"set -euxo pipefail; tar -c '/data/homeserver.db' '/data/example.com.signing.key' | gpg --batch --no-symkey-cache --passphrase-file /root/.gpg_passphrase --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=10000000000 - 's3://synapse-backup-bucket//synapse-backups/20230101231200'",  # noqa: E501
+        f"set -euxo pipefail; tar -c '/data/homeserver.db' '/data/example.com.signing.key' | gpg --batch --no-symkey-cache --passphrase-file /root/.gpg_passphrase --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=10000000000 - 's3://synapse-backup-bucket/synapse-backups/20230101231200'",  # noqa: E501
     ]
 
 

@@ -35,7 +35,7 @@ LOCAL_DIR_PATTERN = "local_*"
 S3_MAX_CONCURRENT_REQUESTS = 1
 PASSPHRASE_FILE = os.path.join(synapse.SYNAPSE_CONFIG_DIR, ".gpg_backup_passphrase")  # nosec
 BASH_COMMAND = "bash"
-BACKUP_ID_FORMAT = "%Y%m%d%H%M%S"
+BACKUP_ID_FORMAT = "%Y%m%d%H%M%S%f"
 
 
 logger = logging.getLogger(__name__)
@@ -189,8 +189,10 @@ class S3Client:
             S3Error: if listing the objects in S3 fails.
         """
         # Pagination is not taken into account, only up to 1000 elements will be returned
-        prefix = self._s3_parameters.path.strip("/")
+        prefix = str(pathlib.Path(self._s3_parameters.path.lstrip("/")))
         try:
+            resp = self._client.list_objects_v2(Bucket=self._s3_parameters.bucket)
+            logger.info("resp without prefix: %s", resp)
             resp = self._client.list_objects_v2(Bucket=self._s3_parameters.bucket, Prefix=prefix)
         except ClientError as exc:
             raise S3Error("Error listing objects in bucket") from exc
@@ -202,7 +204,7 @@ class S3Client:
                 backup = S3Backup(
                     backup_id=str(backup_id),
                     s3_object_key=str(s3_object_key),
-                    prefix=self._s3_parameters.path,
+                    prefix=prefix,
                     last_modified=s3obj["LastModified"],
                     size=s3obj["Size"],
                     etag=s3obj["ETag"],
@@ -359,7 +361,12 @@ def _build_backup_command(
     tar_command = f"tar -c {paths}"
     gpg_command = f"gpg --batch --no-symkey-cache --passphrase-file {passphrase_file} --symmetric"
     aws_command = f"{AWS_COMMAND} s3 cp --expected-size={expected_size} - "
-    aws_command += f"'s3://{s3_parameters.bucket}/{s3_parameters.path}/{backup_id}'"
+
+    # A s3 url is not really a path. However, starting the S3 key with a / makes
+    # MinIO and localstack work differently. As a workaround, remove extra / as if
+    # it was a filesystem path.
+    aws_path = pathlib.Path(f"{s3_parameters.bucket}/{s3_parameters.path}/{backup_id}")
+    aws_command += f"'s3://{aws_path}'"
     full_command = bash_strict_command + " | ".join((tar_command, gpg_command, aws_command))
     return [BASH_COMMAND, "-c", full_command]
 
