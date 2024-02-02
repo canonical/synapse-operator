@@ -33,7 +33,7 @@ LOCAL_DIR_PATTERN = "local_*"
 
 # A smaller value will minimise memory requirements. A bigger value can make the transfer faster.
 S3_MAX_CONCURRENT_REQUESTS = 1
-PASSPHRASE_FILE = "/root/.gpg_passphrase"  # nosec
+PASSPHRASE_FILE = os.path.join(synapse.SYNAPSE_CONFIG_DIR, ".gpg_backup_passphrase")  # nosec
 BASH_COMMAND = "bash"
 BACKUP_ID_FORMAT = "%Y%m%d%H%M%S"
 

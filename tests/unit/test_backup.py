@@ -339,7 +339,7 @@ def test_prepare_container_correct(harness: Harness, s3_parameters_backup):
     synapse_root = harness.get_filesystem_root(container)
     passphrase_relative_dir = pathlib.Path(backup.PASSPHRASE_FILE).relative_to("/").parent
     passphrase_dir = synapse_root / passphrase_relative_dir
-    passphrase_dir.mkdir()
+    passphrase_dir.mkdir(exist_ok=True)
 
     def aws_command_handler(argv: list[str]) -> synapse.ExecResult:
         """Handler for the exec of the aws command.
@@ -381,7 +381,7 @@ def test_prepare_container_error_aws(harness: Harness, s3_parameters_backup):
     synapse_root = harness.get_filesystem_root(container)
     passphrase_relative_dir = pathlib.Path(backup.PASSPHRASE_FILE).relative_to("/").parent
     passphrase_dir = synapse_root / passphrase_relative_dir
-    passphrase_dir.mkdir()
+    passphrase_dir.mkdir(exist_ok=True)
 
     def aws_command_handler(_: list[str]) -> synapse.ExecResult:
         """Handler for the exec of the aws command.
