@@ -189,13 +189,16 @@ class S3Client:
             S3Error: if listing the objects in S3 fails.
         """
         # Pagination is not taken into account, only up to 1000 elements will be returned
+        # IsTruncated shows if all the elements were returned.
         prefix = str(pathlib.Path(self._s3_parameters.path.lstrip("/")))
         try:
-            resp = self._client.list_objects_v2(Bucket=self._s3_parameters.bucket)
-            logger.info("resp without prefix: %s", resp)
             resp = self._client.list_objects_v2(Bucket=self._s3_parameters.bucket, Prefix=prefix)
         except ClientError as exc:
             raise S3Error("Error listing objects in bucket") from exc
+
+        if resp['IsTruncated']:
+            logger.warning("Not all the backups are returned.")
+
         backups = []
         if "Contents" in resp:
             for s3obj in resp["Contents"]:

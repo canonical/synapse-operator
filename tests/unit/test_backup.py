@@ -248,7 +248,7 @@ def test_list_backups_empty(s3_parameters_backup, monkeypatch: pytest.MonkeyPatc
         "Prefix": "synapse",
         "MaxKeys": 1000,
         "EncodingType": "url",
-        "KeyCount": 2,
+        "KeyCount": 0,
     }
     list_objects_v2_mock = MagicMock(return_value=s3_example_response)
     monkeypatch.setattr(s3_client._client, "list_objects_v2", list_objects_v2_mock)
