@@ -18,6 +18,9 @@ parts:
     source: scripts
     organize:
       "*": usr/local/bin/
+    override-prime: |
+      craftctl default
+      chmod -R +x /usr/local/bin/*
   cron:
     after:
       - scripts
