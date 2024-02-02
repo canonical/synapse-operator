@@ -679,8 +679,8 @@ async def test_synapse_list_backups(
     await list_backups_action.wait()
 
     assert list_backups_action.status == "completed"
-    assert 'backups' in list_backups_action.results
-    backups = list_backups_action.results['backups']
+    assert "backups" in list_backups_action.results
+    backups = list_backups_action.results["backups"]
     assert len(backups) == 2
-    assert backup_action_1.results['backup-id'] in backups
-    assert backup_action_2.results['backup-id'] in backups
+    assert backup_action_1.results["backup-id"] in backups
+    assert backup_action_2.results["backup-id"] in backups

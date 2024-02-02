@@ -255,7 +255,7 @@ def test_list_backups_empty(s3_parameters_backup, monkeypatch: pytest.MonkeyPatc
 
     backups = s3_client.list_backups()
 
-    assert backups == []
+    assert not backups
 
 
 def test_list_backups_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
