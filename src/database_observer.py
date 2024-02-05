@@ -94,7 +94,7 @@ class DatabaseObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
-        if self.model.get_relation(self.relation_name) is None:
+        if self.model.get_relation(self.database.relation_name) is None:
             return None
 
         relation_id = self.database.relations[0].id

@@ -19,9 +19,11 @@ from irc_bridge import IRCBridge
 from synapse.workload import (
     IRC_BRIDGE_CONFIG_PATH,
     IRC_BRIDGE_REGISTRATION_PATH,
+    SYNAPSE_CONFIG_PATH,
     CreateIRCBridgeConfigError,
     CreateIRCBridgeRegistrationError,
     WorkloadError,
+    _add_app_service_config_field,
     _get_irc_bridge_app_registration,
     create_irc_bridge_app_registration,
     create_irc_bridge_config,
@@ -132,8 +134,15 @@ def test_enable_irc_bridge(harness: Harness, monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(
         synapse, "create_irc_bridge_app_registration", create_irc_bridge_app_registration_mock
     )
+    monkeypatch.setattr(
+        harness.charm._irc_bridge,
+        "_get_db_connection",
+        MagicMock(return_value="db_connect_string"),
+    )
     harness.charm._irc_bridge.enable_irc_bridge()
-    create_irc_bridge_config_mock.assert_called_once_with(container=ANY, server_name=ANY)
+    create_irc_bridge_config_mock.assert_called_once_with(
+        container=ANY, server_name=ANY, db_connect_string=ANY
+    )
     create_irc_bridge_app_registration_mock.assert_called_once_with(container=ANY)
     assert harness.model.unit.status == ops.ActiveStatus()
 
@@ -146,10 +155,13 @@ def test_create_irc_bridge_config_success(monkeypatch: pytest.MonkeyPatch):
     """
     container_mock = MagicMock()
     server_name = "server_name"
+    db_connect_string = "db_connect_string"
     _get_irc_bridge_config_mock = MagicMock(return_value={"key": "value"})
 
     monkeypatch.setattr(synapse.workload, "_get_irc_bridge_config", _get_irc_bridge_config_mock)
-    create_irc_bridge_config(container_mock, server_name=server_name)
+    create_irc_bridge_config(
+        container_mock, server_name=server_name, db_connect_string=db_connect_string
+    )
 
     container_mock.push.assert_called_once_with(
         IRC_BRIDGE_CONFIG_PATH, yaml.safe_dump({"key": "value"}), make_dirs=True
@@ -164,13 +176,16 @@ def test_create_irc_bridge_config_path_error(monkeypatch: pytest.MonkeyPatch):
     """
     container_mock = MagicMock()
     server_name = "server_name"
+    db_connect_string = "db_connect_string"
     _get_irc_bridge_config_mock = MagicMock(
         side_effect=ops.pebble.PathError(kind="not-found", message="Path not found")
     )
 
     monkeypatch.setattr(synapse.workload, "_get_irc_bridge_config", _get_irc_bridge_config_mock)
     with pytest.raises(CreateIRCBridgeConfigError):
-        create_irc_bridge_config(container_mock, server_name=server_name)
+        create_irc_bridge_config(
+            container_mock, server_name=server_name, db_connect_string=db_connect_string
+        )
 
 
 def test_create_irc_bridge_app_registration_success(monkeypatch: pytest.MonkeyPatch):
@@ -185,6 +200,7 @@ def test_create_irc_bridge_app_registration_success(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(
         "synapse.workload._get_irc_bridge_app_registration", _get_irc_bridge_app_registration_mock
     )
+    monkeypatch.setattr("synapse.workload._add_app_service_config_field", MagicMock())
     create_irc_bridge_app_registration(container_mock)
 
     container_mock.push.assert_called_once_with(
@@ -206,6 +222,7 @@ def test_create_irc_bridge_app_registration_path_error(monkeypatch: pytest.Monke
     monkeypatch.setattr(
         "synapse.workload._get_irc_bridge_app_registration", _get_irc_bridge_app_registration_mock
     )
+    monkeypatch.setattr("synapse.workload._add_app_service_config_field", MagicMock())
     with pytest.raises(CreateIRCBridgeRegistrationError):
         create_irc_bridge_app_registration(container_mock)
 
@@ -236,3 +253,38 @@ def test_get_irc_bridge_app_registration_failure():
     with mock.patch("synapse.workload._exec", mock_exec):
         with pytest.raises(WorkloadError):
             _get_irc_bridge_app_registration(container_mock)
+
+
+def test_add_app_service_config_field_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: create a mock container and mock the necessary functions.
+    act: call _add_app_service_config_field.
+    assert: container.push is called with the correct arguments.
+    """
+    container_mock = MagicMock()
+    pull_mock = MagicMock(return_value=mock.Mock(read=mock.Mock(return_value=b"key: value")))
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", MagicMock())
+    monkeypatch.setattr(yaml, "safe_load", MagicMock(return_value={"key": "value"}))
+    monkeypatch.setattr(yaml, "safe_dump", MagicMock(return_value="key: value"))
+
+    _add_app_service_config_field(container_mock)
+
+    container_mock.pull.assert_called_once_with(SYNAPSE_CONFIG_PATH)
+    container_mock.push.assert_called_once_with(SYNAPSE_CONFIG_PATH, "key: value")
+
+
+def test_add_app_service_config_field_path_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: create a mock container and mock the necessary functions to raise PathError.
+    act: call _add_app_service_config_field.
+    assert: WorkloadError is raised.
+    """
+    container_mock = MagicMock()
+    pull_mock = MagicMock(
+        side_effect=ops.pebble.PathError(kind="not-found", message="Path not found")
+    )
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    with pytest.raises(WorkloadError):
+        _add_app_service_config_field(container_mock)

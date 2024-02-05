@@ -81,7 +81,26 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring IRC bridge")
         server_name = self._charm_state.synapse_config.server_name
+        db_connect_string = self._get_db_connection()
+        synapse.create_irc_bridge_config(
+            container=container, server_name=server_name, db_connect_string=db_connect_string
+        )
         synapse.create_irc_bridge_app_registration(container=container)
-        synapse.create_irc_bridge_config(container=container, server_name=server_name)
         self._pebble_service.replan_irc_bridge(container)
         self._charm.model.unit.status = ops.ActiveStatus()
+
+    def _get_db_connection(self) -> str:
+        """Get the database connection string.
+
+        Returns:
+            The database connection string.
+        """
+        db_connect_string = (
+            "postgres://"
+            + f"{self._charm_state.irc_bridge_datasource['user']}"  # type: ignore
+            + f":{self._charm_state.irc_bridge_datasource['password']}"  # type: ignore
+            + f"@{self._charm_state.irc_bridge_datasource['host']}"  # type: ignore
+            + f":{self._charm_state.irc_bridge_datasource['port']}"  # type: ignore
+            + f"/{self._charm_state.irc_bridge_datasource['db']}"  # type: ignore
+        )
+        return db_connect_string

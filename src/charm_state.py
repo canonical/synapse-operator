@@ -165,6 +165,7 @@ class CharmState:
             no_proxy=no_proxy,
         )
 
+    # pylint: disable=too-many-arguments
     @classmethod
     def from_charm(
         cls,
