@@ -586,6 +586,7 @@ async def test_synapse_enable_s3_backup_integration_no_bucket(
 
 async def test_synapse_irc_bridge_is_up(
     ops_test: OpsTest,
+    model: Model,
     synapse_app: Application,
     irc_postgresql_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],

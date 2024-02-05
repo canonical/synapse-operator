@@ -256,7 +256,7 @@ def irc_postgresql_app_name_app_name_fixture() -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="irc_postgresql_app")
-async def postgresql_app_fixture(
+async def irc_postgresql_app_fixture(
     ops_test: OpsTest, model: Model, irc_postgresql_app_name: str, pytestconfig: Config
 ):
     """Deploy postgresql."""
