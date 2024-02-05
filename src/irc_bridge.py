@@ -55,13 +55,16 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         # pylint:disable=duplicate-code
         if not self._charm_state.synapse_config.enable_irc_bridge:
             return
+        if self._charm_state.irc_bridge_datasource is None:
+            ops.MaintenanceStatus("Waiting for irc bridge db relation")
+            return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         irc_service = container.get_services(IRC_SERVICE_NAME)
         if irc_service:
-            logger.debug("%s service already exists, skipping", IRC_SERVICE_NAME)
+            logger.debug("%s service asealready exists, skipping", IRC_SERVICE_NAME)
             return
         self.enable_irc_bridge()
         event.add_status(ops.ActiveStatus())
