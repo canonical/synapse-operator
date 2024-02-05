@@ -249,6 +249,22 @@ async def postgresql_app_fixture(
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
 
 
+@pytest.fixture(scope="module", name="irc_postgresql_app_name")
+def irc_postgresql_app_name_app_name_fixture() -> str:
+    """Return the name of the postgresql application deployed for irc bridge tests."""
+    return "irc-postgresql-k8s"
+
+
+@pytest_asyncio.fixture(scope="module", name="irc_postgresql_app")
+async def postgresql_app_fixture(
+    ops_test: OpsTest, model: Model, irc_postgresql_app_name: str, pytestconfig: Config
+):
+    """Deploy postgresql."""
+    async with ops_test.fast_forward():
+        await model.deploy(irc_postgresql_app_name, channel="14/stable", trust=True)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+
+
 @pytest.fixture(scope="module", name="grafana_app_name")
 def grafana_app_name_fixture() -> str:
     """Return the name of the grafana application deployed for tests."""
