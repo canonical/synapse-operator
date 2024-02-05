@@ -589,8 +589,7 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> typing.Dict:
     registration_result = _exec(
         container,
         [
-            "node",
-            "app.js",
+            "matrix-appservice-irc",
             "-r",
             "-f",
             "appservice-registration-irc.yaml",

@@ -281,7 +281,7 @@ class PebbleService:
                 synapse.IRC_BRIDGE_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "IRC service",
-                    "command": f"node app.js {command_params}",
+                    "command": f"matrix-appservice-irc {command_params}",
                     "startup": "enabled",
                 },
             },
