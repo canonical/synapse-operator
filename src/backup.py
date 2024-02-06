@@ -37,7 +37,7 @@ S3_MAX_CONCURRENT_REQUESTS = 1
 
 
 PASSPHRASE_FILE = os.path.join(synapse.SYNAPSE_CONFIG_DIR, ".gpg_backup_passphrase")  # nosec
-BASH_COMMAND = "bash"
+BASH_COMMAND = "/usr/bin/bash"
 BACKUP_ID_FORMAT = "%Y%m%d%H%M%S%f"
 
 
