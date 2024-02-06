@@ -393,6 +393,8 @@ def _s3_path(prefix: str, object_name: Optional[str] = None, bucket: Optional[st
     # and if the file was uploaded with one, it gets removed.
     path = prefix.strip("/")
     if object_name:
+        # Use pathlib to remove possible extra slashes in paths, as MinIO may work
+        # incorrectly. See https://github.com/minio/minio/issues/5958
         path = str(pathlib.Path(f"{path}/{object_name}"))
     if bucket:
         path = f"s3://{bucket}/{path}"
