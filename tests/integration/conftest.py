@@ -265,13 +265,14 @@ async def irc_postgresql_app_fixture(
 ):
     """Deploy postgresql."""
     async with ops_test.fast_forward():
-        await model.deploy(
+        app = await model.deploy(
             postgresql_app_name,
             application_name=irc_postgresql_app_name,
             channel="14/stable",
             trust=True,
         )
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    return app
 
 
 @pytest.fixture(scope="module", name="grafana_app_name")
