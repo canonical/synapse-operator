@@ -273,18 +273,6 @@ def _prepare_container(
         raise BackupError("Backup Failed. Error configuring GPG passphrase.") from exc
 
 
-def _paths_to_args(paths: Iterable[str]) -> str:
-    """Given a list of paths, quote and concatenate them for use as cli arguments.
-
-    Args:
-        paths: List of paths
-
-    Returns:
-        paths concatenated and quoted
-    """
-    return " ".join(f"'{path}'" for path in paths)
-
-
 def _get_paths_to_backup(container: ops.Container) -> Iterable[str]:
     """Get the list of paths that should be in a backup for Synapse.
 
@@ -338,26 +326,6 @@ def _calculate_size(container: ops.Container, paths: Iterable[str]) -> int:
         raise BackupError("Cannot calculate size of paths. Wrong stdout.") from exc
 
 
-def _get_environment(s3_parameters: S3Parameters) -> Dict[str, str]:
-    """Get the environment variables for backup that configure aws S3 cli.
-
-    Args:
-        s3_parameters: S3 parameters.
-
-    Returns:
-        A dictionary with aws s3 configuration variables.
-    """
-    environment = {
-        "AWS_ACCESS_KEY_ID": s3_parameters.access_key,
-        "AWS_SECRET_ACCESS_KEY": s3_parameters.secret_key,
-    }
-    if s3_parameters.endpoint:
-        environment["AWS_ENDPOINT_URL"] = s3_parameters.endpoint
-    if s3_parameters.region:
-        environment["AWS_DEFAULT_REGION"] = s3_parameters.region
-    return environment
-
-
 def _build_backup_command(
     s3_parameters: S3Parameters,
     backup_id: str,
@@ -393,6 +361,26 @@ def _build_backup_command(
     return [BASH_COMMAND, "-c", full_command]
 
 
+def _get_environment(s3_parameters: S3Parameters) -> Dict[str, str]:
+    """Get the environment variables for backup that configure aws S3 cli.
+
+    Args:
+        s3_parameters: S3 parameters.
+
+    Returns:
+        A dictionary with aws s3 configuration variables.
+    """
+    environment = {
+        "AWS_ACCESS_KEY_ID": s3_parameters.access_key,
+        "AWS_SECRET_ACCESS_KEY": s3_parameters.secret_key,
+    }
+    if s3_parameters.endpoint:
+        environment["AWS_ENDPOINT_URL"] = s3_parameters.endpoint
+    if s3_parameters.region:
+        environment["AWS_DEFAULT_REGION"] = s3_parameters.region
+    return environment
+
+
 def _s3_path(prefix: str, object_name: Optional[str] = None, bucket: Optional[str] = None) -> str:
     """Create a S3 paths compatible with S3 and Minio for backup purposes.
 
@@ -413,3 +401,15 @@ def _s3_path(prefix: str, object_name: Optional[str] = None, bucket: Optional[st
     if bucket:
         path = f"s3://{bucket}/{path}"
     return path
+
+
+def _paths_to_args(paths: Iterable[str]) -> str:
+    """Given a list of paths, quote and concatenate them for use as cli arguments.
+
+    Args:
+        paths: List of paths
+
+    Returns:
+        paths concatenated and quoted
+    """
+    return " ".join(f"'{path}'" for path in paths)
