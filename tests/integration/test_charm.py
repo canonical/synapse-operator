@@ -546,6 +546,7 @@ async def test_anonymize_user(
     assert res.status_code == 403
 
 
+@pytest.mark.s3
 @pytest.mark.usefixtures("s3_backup_bucket")
 async def test_synapse_enable_s3_backup_integration_success(
     model: Model,
