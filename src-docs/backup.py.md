@@ -18,7 +18,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L166"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -56,61 +56,8 @@ Create a backup for Synapse running it in the workload.
 
 ---
 
-<a href="../src/backup.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `restore_backup`
-
-```python
-restore_backup(
-    container: Container,
-    s3_parameters: S3Parameters,
-    passphrase: str,
-    backup_id: str
-) → None
-```
-
-Restore a backup for Synapse overwriting the current data. 
-
-
-
-**Args:**
- 
- - <b>`container`</b>:  Synapse Container 
- - <b>`s3_parameters`</b>:  S3 parameters for the backup. 
- - <b>`passphrase`</b>:  Passphrase use to decrypt the backup. 
- - <b>`backup_id`</b>:  Name of the object in the backup. 
-
-
-
-**Raises:**
- 
- - <b>`BackupError`</b>:  If there was an error restoring the backup. 
-
-
----
-
 ## <kbd>class</kbd> `BackupError`
 Generic backup Exception. 
-
-
-
-
-
----
-
-## <kbd>class</kbd> `S3Backup`
-Information about a backup file from S3. 
-
-
-
-**Attributes:**
- 
- - <b>`backup_id`</b>:  backup id 
- - <b>`etag`</b>:  etag in S3 
- - <b>`last_modified`</b>:  last modified date in S3 
- - <b>`prefix`</b>:  prefix of the object ky 
- - <b>`s3_object_key`</b>:  full object key 
- - <b>`size`</b>:  size in bytes 
 
 
 
@@ -121,7 +68,7 @@ Information about a backup file from S3.
 ## <kbd>class</kbd> `S3Client`
 S3 Client Wrapper around boto3 library. 
 
-<a href="../src/backup.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -142,7 +89,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -156,29 +103,6 @@ Check if a bucket exists and is accessible in an S3 compatible object store.
 
 **Returns:**
   True if the bucket exists and is accessible 
-
----
-
-<a href="../src/backup.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `list_backups`
-
-```python
-list_backups() → List[S3Backup]
-```
-
-List the backups stored in S3 in the current s3 configuration. 
-
-
-
-**Returns:**
-  list of backups. 
-
-
-
-**Raises:**
- 
- - <b>`S3Error`</b>:  if listing the objects in S3 fails. 
 
 
 ---
