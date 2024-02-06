@@ -266,9 +266,7 @@ async def grafana_app_fixture(
         app = await model.deploy(
             grafana_app_name,
             application_name=grafana_app_name,
-            channel="stable",
-            series="focal",
-            revision=82,  # last one compatible with Juju 2
+            channel="latest/edge",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
@@ -293,9 +291,7 @@ async def deploy_prometheus_fixture(
         app = await model.deploy(
             prometheus_app_name,
             application_name=prometheus_app_name,
-            channel="stable",
-            series="focal",
-            revision=129,  # last one compatible with Juju 2
+            channel="latest/edge",
             trust=True,
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
