@@ -316,10 +316,7 @@ def _calculate_size(container: ops.Container, paths: Iterable[str]) -> int:
         "Calculating size of paths. Command: %s. stdout: %s. stderr: %s", command, stdout, stderr
     )
 
-    try:
-        return int(stdout)
-    except ValueError as exc:
-        raise BackupError("Cannot calculate size of paths. Wrong stdout.") from exc
+    return int(stdout)
 
 
 def _build_backup_command(
