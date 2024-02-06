@@ -18,7 +18,12 @@ show_missing = true
 [tool.pytest.ini_options]
 minversion = "6.0"
 log_cli_level = "INFO"
-markers = ["requires_secrets: mark tests that require external secrets"]
+markers = [
+    "requires_secrets: mark tests that require external secrets",
+    "cos: mark tests that require a COS integration",
+    "nginx: mark tests that require an nginx integration",
+    "s3: mark tests that require an s3 integration (via localstack)"
+]
 
 [tool.pylint.'MESSAGES CONTROL']
 extension-pkg-whitelist = "pydantic"
