@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import boto3
 import ops
