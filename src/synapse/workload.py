@@ -190,6 +190,18 @@ def get_registration_shared_secret(container: ops.Container) -> typing.Optional[
     return _get_configuration_field(container=container, fieldname="registration_shared_secret")
 
 
+def get_media_store_path(container: ops.Container) -> typing.Optional[str]:
+    """Get media_store_path from configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Returns:
+        media_store_path value.
+    """
+    return _get_configuration_field(container=container, fieldname="media_store_path")
+
+
 def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:
     """Check server_name.
 

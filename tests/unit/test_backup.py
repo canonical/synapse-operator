@@ -11,6 +11,7 @@ from secrets import token_hex
 from unittest.mock import MagicMock
 
 import pytest
+import yaml
 from botocore.exceptions import ClientError
 from ops.testing import Harness
 
@@ -364,10 +365,7 @@ def test_get_paths_to_backup_correct(harness: Harness):
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     synapse_root = harness.get_filesystem_root(container)
-    config_dir = synapse_root / pathlib.Path(synapse.SYNAPSE_CONFIG_DIR).relative_to("/")
-    (config_dir / "example.com.signing.key").open("w").write("backup")
-    (config_dir / "log.config").open("w").write("do not backup")
-    (config_dir / "homeserver.yaml").open("w").write("do not backup")
+
     data_dir = synapse_root / pathlib.Path(synapse.SYNAPSE_DATA_DIR).relative_to("/")
     (data_dir / "homeserver.db").open("w").write("backup")
     media_dir = data_dir / "media"
@@ -378,6 +376,13 @@ def test_get_paths_to_backup_correct(harness: Harness):
     remote_content_dir = media_dir / "remote_content"
     remote_content_dir.mkdir()
     (remote_content_dir / "onefile").open("w").write("do not backup")
+
+    config_dir = synapse_root / pathlib.Path(synapse.SYNAPSE_CONFIG_DIR).relative_to("/")
+    (config_dir / "example.com.signing.key").open("w").write("backup")
+    (config_dir / "log.config").open("w").write("do not backup")
+    media_storage_path = "/" / media_dir.relative_to(synapse_root)
+    homeserver = yaml.safe_dump({"media_store_path": str(media_storage_path)})
+    (config_dir / "homeserver.yaml").open("w").write(homeserver)
 
     paths_to_backup = list(backup._get_paths_to_backup(container))
 

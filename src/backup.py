@@ -28,8 +28,7 @@ BACKUP_FILE_PATTERNS = ["*.key", "homeserver.db*"]
 # For the data directory, inside the "media" directory, all directories starting
 # with local_ will be backed up. The directories starting with "remote_" are from
 # other server and is it not necessary to back them up.
-MEDIA_DIR = "media"
-LOCAL_DIR_PATTERN = "local_*"
+MEDIA_LOCAL_DIR_PATTERN = "local_*"
 
 # A smaller value will minimise memory requirements. A bigger value can make the transfer faster.
 # As an alternative the option max_bandwidth could be used to limit speed.
@@ -282,9 +281,9 @@ def _get_paths_to_backup(container: ops.Container) -> Iterable[str]:
     for pattern in BACKUP_FILE_PATTERNS:
         paths += container.list_files(synapse.SYNAPSE_CONFIG_DIR, pattern=pattern)
     # Local media if it exists
-    media_dir = os.path.join(synapse.SYNAPSE_DATA_DIR, MEDIA_DIR)
-    if container.exists(media_dir):
-        paths += container.list_files(media_dir, pattern=LOCAL_DIR_PATTERN)
+    media_dir = synapse.get_media_store_path(container)
+    if media_dir:
+        paths += container.list_files(media_dir, pattern=MEDIA_LOCAL_DIR_PATTERN)
     return [path.path for path in paths]
 
 
