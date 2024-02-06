@@ -180,7 +180,6 @@ def test_create_backup_correct(
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     passphrase = token_hex(16)
-    backup_id = token_hex(16)
     monkeypatch.setattr(backup, "_prepare_container", MagicMock())
     monkeypatch.setattr(backup, "_calculate_size", MagicMock(return_value=1000))
     monkeypatch.setattr(backup, "_get_paths_to_backup", MagicMock(return_value=["file1", "dir1"]))
@@ -205,7 +204,7 @@ def test_create_backup_correct(
         handler=backup_command_handler,
     )
 
-    backup.create_backup(container, s3_parameters_backup, backup_id, passphrase)
+    backup.create_backup(container, s3_parameters_backup, passphrase)
 
 
 def test_create_backup_no_files(
@@ -219,12 +218,11 @@ def test_create_backup_no_files(
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     passphrase = token_hex(16)
-    backup_id = token_hex(16)
     monkeypatch.setattr(backup, "_prepare_container", MagicMock())
     monkeypatch.setattr(backup, "_calculate_size", MagicMock(return_value=1000))
     monkeypatch.setattr(backup, "_get_paths_to_backup", MagicMock(return_value=[]))
     with pytest.raises(backup.BackupError) as err:
-        backup.create_backup(container, s3_parameters_backup, backup_id, passphrase)
+        backup.create_backup(container, s3_parameters_backup, passphrase)
     assert "No paths to back up" in str(err.value)
 
 
@@ -239,7 +237,6 @@ def test_create_backup_failure(
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     passphrase = token_hex(16)
-    backup_id = token_hex(16)
     monkeypatch.setattr(backup, "_prepare_container", MagicMock())
     monkeypatch.setattr(backup, "_calculate_size", MagicMock(return_value=1000))
     monkeypatch.setattr(backup, "_get_paths_to_backup", MagicMock(return_value=["file1", "dir1"]))
@@ -258,7 +255,7 @@ def test_create_backup_failure(
         handler=backup_command_handler,
     )
     with pytest.raises(backup.BackupError) as err:
-        backup.create_backup(container, s3_parameters_backup, backup_id, passphrase)
+        backup.create_backup(container, s3_parameters_backup, passphrase)
     assert "Backup Command Failed" in str(err.value)
 
 
