@@ -16,8 +16,6 @@ parts:
     add-user:
         plugin: nil
         overlay-script: |
-          mkdir -p $CRAFT_OVERLAY/var
-          chmod 755 $CRAFT_OVERLAY/var
           groupadd -R $CRAFT_OVERLAY --gid 991 synapse
           useradd -R $CRAFT_OVERLAY --system --gid 991 --uid 991 --home /srv/synapse -m synapse
     synapse:
