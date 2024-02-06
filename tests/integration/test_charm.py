@@ -586,6 +586,7 @@ async def test_synapse_enable_s3_backup_integration_no_bucket(
     assert "bucket does not exist" in synapse_app.units[0].workload_status_message
 
 
+@pytest.mark.s3
 @pytest.mark.usefixtures("s3_backup_bucket")
 async def test_synapse_create_backup_correct(
     model: Model,
@@ -623,6 +624,7 @@ async def test_synapse_create_backup_correct(
     assert "GPG symmetrically encrypted data (AES256 cipher)" in magic.from_buffer(objbuf)
 
 
+@pytest.mark.s3
 @pytest.mark.usefixtures("s3_backup_bucket")
 async def test_synapse_create_backup_no_passphrase(
     model: Model,
