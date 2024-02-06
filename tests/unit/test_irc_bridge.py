@@ -57,7 +57,7 @@ def test_on_collect_status_no_service(harness: Harness, monkeypatch: pytest.Monk
     """
     arrange: start the Synapse charm, set server_name, mock get_services to return a empty dict.
     act: call _on_collect_status.
-    assert: action is taken because the IRC bridge service can start before Synapse.
+    assert: no action is taken because the IRC bridge service should not start before Synapse.
     """
     harness.update_config({"enable_irc_bridge": True})
     harness.begin_with_initial_hooks()
@@ -71,7 +71,7 @@ def test_on_collect_status_no_service(harness: Harness, monkeypatch: pytest.Monk
     harness.charm._irc_bridge._on_collect_status(event_mock)
 
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-    enable_irc_bridge_mock.assert_called_once()
+    enable_irc_bridge_mock.assert_not_called()
 
 
 def test_on_collect_status_container_off(

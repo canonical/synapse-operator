@@ -596,7 +596,7 @@ async def test_synapse_irc_bridge_is_up(
     act: Enable the IRC bridge.
     assert: Synapse and IRC bridge health points should return correct responses.
     """
-    await model.add_relation(irc_postgresql_app.name, f"{synapse_app.name}:irc-bridge-databasi")
+    await model.add_relation(irc_postgresql_app.name, f"{synapse_app.name}:irc-bridge-database")
     await model.wait_for_idle(apps=[irc_postgresql_app.name], status=ACTIVE_STATUS_NAME)
     await synapse_app.set_config({"enable_irc_bridge": "true"})
     await synapse_app.model.wait_for_idle(
