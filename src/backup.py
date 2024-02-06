@@ -324,7 +324,7 @@ def _build_backup_command(
     backup_id: str,
     backup_paths: Iterable[str],
     passphrase_file: str,
-    expected_size: int = int(1e10),
+    expected_size: int
 ) -> List[str]:
     """Build the command to execute the backup.
 
