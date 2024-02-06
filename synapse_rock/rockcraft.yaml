@@ -13,6 +13,13 @@ license: Apache-2.0
 platforms:
   amd64:
 parts:
+    add-user:
+        plugin: nil
+        overlay-script: |
+          mkdir -p $CRAFT_OVERLAY/var
+          chmod 755 $CRAFT_OVERLAY/var
+          groupadd -R $CRAFT_OVERLAY --gid 991 synapse
+          useradd -R $CRAFT_OVERLAY --system --gid 991 --uid 991 --home /srv/synapse -m synapse
     synapse:
         build-packages:
             - build-essential
@@ -37,6 +44,8 @@ parts:
             - coreutils
             - curl
             - gosu
+            - gpg
+            - gpg-agent
             - libffi-dev
             - libicu70
             - libjemalloc2
@@ -48,6 +57,7 @@ parts:
             - python3
             - xmlsec1
         stage-snaps:
+            - aws-cli
             - mjolnir/latest/edge
             - matrix-appservice-irc/latest/edge
         plugin: nil
