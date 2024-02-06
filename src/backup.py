@@ -32,7 +32,7 @@ MEDIA_DIR = "media"
 LOCAL_DIR_PATTERN = "local_*"
 
 # A smaller value will minimise memory requirements. A bigger value can make the transfer faster.
-# As an alternative max_bandwidth to limit speed.
+# As an alternative the option max_bandwidth could be used to limit speed.
 S3_MAX_CONCURRENT_REQUESTS = 1
 
 
