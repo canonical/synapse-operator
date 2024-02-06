@@ -216,7 +216,7 @@ def _prepare_container(
 ) -> None:
     """Prepare container for create or restore backup.
 
-    This means preparing the required aws configuration and the gpg passphrase file.
+    This means configuring the aws client and the gpg passphrase file.
 
     Args:
         container: Synapse Container.
