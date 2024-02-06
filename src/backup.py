@@ -324,7 +324,7 @@ def _build_backup_command(
     backup_id: str,
     backup_paths: Iterable[str],
     passphrase_file: str,
-    expected_size: int
+    expected_size: int,
 ) -> List[str]:
     """Build the command to execute the backup.
 
@@ -342,14 +342,13 @@ def _build_backup_command(
     bash_strict_command = "set -euxo pipefail; "
     paths = _paths_to_args(backup_paths)
     tar_command = f"tar -c {paths}"
-    gpg_command = f"gpg --batch --no-symkey-cache --passphrase-file '{passphrase_file}'"
-    gpg_command += " --symmetric"
-    aws_command = f"{AWS_COMMAND} s3 cp --expected-size={expected_size} - "
-
+    gpg_command = (
+        f"gpg --batch --no-symkey-cache --passphrase-file '{passphrase_file}' --symmetric"
+    )
     s3_url = _s3_path(
         prefix=s3_parameters.path, object_name=backup_id, bucket=s3_parameters.bucket
     )
-    aws_command += f"'{s3_url}'"
+    aws_command = f"{AWS_COMMAND} s3 cp --expected-size={expected_size} - '{s3_url}'"
     full_command = bash_strict_command + " | ".join((tar_command, gpg_command, aws_command))
     return [BASH_COMMAND, "-c", full_command]
 

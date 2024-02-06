@@ -419,7 +419,7 @@ def test_calculate_size(harness: Harness):
             tuple with status_code, stdout and stderr.
         """
         assert argv == [
-            "bash",
+            "/usr/bin/bash",
             "-c",
             "set -euxo pipefail; du -bsc 'path1' 'path2' | tail -n1 | cut -f 1",
         ]
@@ -429,7 +429,7 @@ def test_calculate_size(harness: Harness):
     # but the harness is monkey patched in conftest.py
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=container,
-        executable="bash",
+        executable="/usr/bin/bash",
         handler=du_handler,
     )
 
