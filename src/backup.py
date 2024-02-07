@@ -106,18 +106,12 @@ class S3Backup(NamedTuple):
 
     Attributes:
         backup_id: backup id
-        etag: etag in S3
         last_modified: last modified date in S3
-        prefix: prefix of the object ky
-        s3_object_key: full object key
         size: size in bytes
     """
 
     backup_id: str
-    etag: str
     last_modified: datetime.datetime
-    prefix: str
-    s3_object_key: str
     size: int
 
 
@@ -194,11 +188,8 @@ class S3Client:
             backup_id = (s3_object_key).relative_to(self._prefix)
             backup = S3Backup(
                 backup_id=str(backup_id),
-                s3_object_key=str(s3_object_key),
-                prefix=self._prefix,
                 last_modified=item["LastModified"],
                 size=item["Size"],
-                etag=item["ETag"],
             )
             backups.append(backup)
         return backups

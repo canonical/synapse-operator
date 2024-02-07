@@ -211,18 +211,12 @@ def test_list_backups_correct(
     backups = [
         backup.S3Backup(
             backup_id="202301311259",
-            etag="",
             last_modified=datetime.datetime(2024, 1, 1, 0, 0, 0),
-            prefix="",
-            s3_object_key="",
             size=1_000_000_000_000,
         ),
         backup.S3Backup(
             backup_id="202401311259",
-            etag="",
             last_modified=datetime.datetime(2024, 2, 1, 0, 0, 0),
-            prefix="",
-            s3_object_key="",
             size=20_000_000_000_000,
         ),
     ]
