@@ -601,8 +601,6 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> typing.Dict:
             IRC_BRIDGE_CONFIG_PATH,
             "-l",
             "my_bot",
-            "-c",
-            SYNAPSE_CONFIG_PATH,
         ],
     )
     if registration_result.exit_code:
