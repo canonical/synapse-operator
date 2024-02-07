@@ -183,9 +183,9 @@ class S3Client:
             list of backups.
         """
         backups = []
-        for item in self._iterate_objects():
+        for item in self._list_s3_objects():
             s3_object_key = pathlib.Path(item["Key"])
-            backup_id = (s3_object_key).relative_to(self._prefix)
+            backup_id = s3_object_key.relative_to(self._prefix)
             backup = S3Backup(
                 backup_id=str(backup_id),
                 last_modified=item["LastModified"],
@@ -194,7 +194,7 @@ class S3Client:
             backups.append(backup)
         return backups
 
-    def _iterate_objects(self) -> Generator[dict, None, None]:
+    def _list_s3_objects(self) -> Generator[dict, None, None]:
         """List the backups stored in S3 in the current s3 configuration.
 
         A paginator is used over `list_objects_v2` because there can
