@@ -174,8 +174,8 @@ def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.M
 
 def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create a S3Client. Mock response to return a real one in list_backups.
-    act: run list_backups.
+    arrange: Create a S3Client. Mock response to return a real response in list_objects_v2.
+    act: Run list_backups.
     assert: The expected list of backups is correctly parsed.
     """
     s3_client = backup.S3Client(s3_parameters_backup)
@@ -227,9 +227,9 @@ def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPa
 
 def test_list_backups_correct_no_root_slash(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create a S3Client. Mock response to return a real one in list_backups with Keys
-        without root slash as returned by MinIO even when created with them.
-    act: run list_backups.
+    arrange: Create a S3Client. Mock response to return a real response in list_objects_v2 with
+        Keys without root slash as returned by MinIO even when created with them.
+    act: Run list_backups.
     assert: The expected list of backups is correctly parsed.
     """
     s3_parameters_backup.path = s3_parameters_backup.path.strip("/")
@@ -271,8 +271,8 @@ def test_list_backups_correct_no_root_slash(s3_parameters_backup, monkeypatch: p
 
 def test_list_backups_empty(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create a S3Client. Mock response to return a real one in list_backups without backups.
-    act: run list_backups.
+    arrange: Create a S3Client. Mock response to return a real empty response in list_objects_v2.
+    act: Run list_backups.
     assert: The expected list of backups is correctly parsed.
     """
     s3_client = backup.S3Client(s3_parameters_backup)
@@ -299,8 +299,8 @@ def test_list_backups_empty(s3_parameters_backup, monkeypatch: pytest.MonkeyPatc
 
 def test_list_backups_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create a S3Client. Mock response to raise a ClienError Exception.
-    act: run list_backups.
+    arrange: Create a S3Client. Mock response to raise a ClientError Exception.
+    act: Run list_backups.
     assert: A S3Error should be raised.
     """
     s3_client = backup.S3Client(s3_parameters_backup)
