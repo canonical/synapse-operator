@@ -20,7 +20,7 @@ parts:
         "*": usr/local/bin/
       override-prime: |
         craftctl default
-        chmod -R +x /usr/local/bin/*
+        chmod -R +x usr/local/bin/*
     cron:
       after:
         - scripts
@@ -35,7 +35,7 @@ parts:
         "cron.monthly/*": /etc/cron.monthly
       override-prime: |
         craftctl default
-        chmod -R +x /etc/cron.*
+        chmod -R +x etc/cron.*
     add-user:
         plugin: nil
         overlay-script: |
