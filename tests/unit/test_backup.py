@@ -318,7 +318,7 @@ def test_list_backups_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatc
 
     with pytest.raises(backup.S3Error) as err:
         s3_client.list_backups()
-    assert "Error listing" in str(err.value)
+    assert "Error iterating" in str(err.value)
 
 
 def test_create_backup_correct(

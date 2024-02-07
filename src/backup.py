@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional
+from typing import Any, Dict, Generator, Iterable, List, NamedTuple, Optional
 
 import boto3
 import ops
@@ -134,6 +134,7 @@ class S3Client:
         """
         self._s3_parameters = s3_parameters
         self._client = self._create_client()
+        self._prefix = _s3_path(self._s3_parameters.path)
 
     def _create_client(self) -> Any:
         """Create new boto3 S3 client.
@@ -186,37 +187,43 @@ class S3Client:
 
         Returns:
             list of backups.
+        """
+        backups = []
+        for item in self._iterate_objects():
+            s3_object_key = pathlib.Path(item["Key"])
+            backup_id = (s3_object_key).relative_to(self._prefix)
+            backup = S3Backup(
+                backup_id=str(backup_id),
+                s3_object_key=str(s3_object_key),
+                prefix=self._prefix,
+                last_modified=item["LastModified"],
+                size=item["Size"],
+                etag=item["ETag"],
+            )
+            backups.append(backup)
+        return backups
+
+    def _iterate_objects(self) -> Generator[dict, None, None]:
+        """List the backups stored in S3 in the current s3 configuration.
+
+        A paginator is used over `list_objects_v2` because there can
+        be more than 1000 elements.
+
+        Yield:
+            Element from list_objects_v2.
 
         Raises:
             S3Error: if listing the objects in S3 fails.
         """
-        # Pagination is not taken into account, only up to 1000 elements will be returned
-        # IsTruncated shows if all the elements were returned.
-
-        prefix = _s3_path(self._s3_parameters.path)
+        paginator = self._client.get_paginator("list_objects_v2")
+        page_iterator = paginator.paginate(Bucket=self._s3_parameters.bucket, Prefix=self._prefix)
         try:
-            resp = self._client.list_objects_v2(Bucket=self._s3_parameters.bucket, Prefix=prefix)
+            for page in page_iterator:
+                if page["KeyCount"] > 0:
+                    for item in page["Contents"]:
+                        yield item
         except ClientError as exc:
-            raise S3Error("Error listing objects in bucket") from exc
-
-        if resp["IsTruncated"]:
-            logger.warning("Not all the backups are returned.")
-
-        backups = []
-        if "Contents" in resp:
-            for s3obj in resp["Contents"]:
-                s3_object_key = pathlib.Path(s3obj["Key"])
-                backup_id = (s3_object_key).relative_to(prefix)
-                backup = S3Backup(
-                    backup_id=str(backup_id),
-                    s3_object_key=str(s3_object_key),
-                    prefix=prefix,
-                    last_modified=s3obj["LastModified"],
-                    size=s3obj["Size"],
-                    etag=s3obj["ETag"],
-                )
-                backups.append(backup)
-        return backups
+            raise S3Error("Error iterating over objects in bucket") from exc
 
 
 def create_backup(

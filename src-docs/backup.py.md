@@ -17,7 +17,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -106,7 +106,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -123,7 +123,7 @@ Check if a bucket exists and is accessible in an S3 compatible object store.
 
 ---
 
-<a href="../src/backup.py#L184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `list_backups`
 
@@ -137,12 +137,6 @@ List the backups stored in S3 in the current s3 configuration.
 
 **Returns:**
   list of backups. 
-
-
-
-**Raises:**
- 
- - <b>`S3Error`</b>:  if listing the objects in S3 fails. 
 
 
 ---
