@@ -17,7 +17,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -62,10 +62,27 @@ Generic backup Exception.
 
 ---
 
+## <kbd>class</kbd> `S3Backup`
+Information about a backup file from S3. 
+
+
+
+**Attributes:**
+ 
+ - <b>`backup_id`</b>:  backup id 
+ - <b>`last_modified`</b>:  last modified date in S3 
+ - <b>`size`</b>:  size in bytes 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `S3Client`
 S3 Client Wrapper around boto3 library. 
 
-<a href="../src/backup.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -86,7 +103,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -100,6 +117,23 @@ Check if a bucket exists and is accessible in an S3 compatible object store.
 
 **Returns:**
   True if the bucket exists and is accessible 
+
+---
+
+<a href="../src/backup.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `list_backups`
+
+```python
+list_backups() → list[S3Backup]
+```
+
+List the backups stored in S3 in the current s3 configuration. 
+
+
+
+**Returns:**
+  list of backups. 
 
 
 ---
