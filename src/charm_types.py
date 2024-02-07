@@ -9,6 +9,7 @@ import typing
 from dataclasses import dataclass
 
 
+@dataclass(frozen=True)
 class DatasourcePostgreSQL(typing.TypedDict):
     """A named tuple representing a Datasource PostgreSQL.
 
@@ -27,6 +28,7 @@ class DatasourcePostgreSQL(typing.TypedDict):
     db: str
 
 
+@dataclass(frozen=True)
 class SAMLConfiguration(typing.TypedDict):
     """A named tuple representing a SAML configuration.
 

@@ -52,7 +52,7 @@ class PebbleService:
             container: Synapse container.
         """
         logger.debug("Restarting the Synapse container")
-        container.add_layer(synapse.SYNAPSE_CONTAINER_NAME, self._pebble_layer, combine=True)
+        container.add_layer(synapse.SYNAPSE_SERVICE_NAME, self._pebble_layer, combine=True)
         container.restart(synapse.SYNAPSE_SERVICE_NAME)
 
     def replan_nginx(self, container: ops.model.Container) -> None:
@@ -86,6 +86,7 @@ class PebbleService:
         try:
             synapse.execute_migrate_config(container=container, charm_state=self._charm_state)
             synapse.enable_metrics(container=container)
+            synapse.enable_forgotten_room_retention(container=container)
             synapse.enable_serve_server_wellknown(container=container)
             if self._charm_state.saml_config is not None:
                 logger.debug("pebble.change_config: Enabling SAML")

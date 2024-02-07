@@ -24,7 +24,7 @@ displayReports: true
 web:
   enabled: true
   port: 9999
-  address: localhost
+  address: "0.0.0.0"
   # A web API designed to intercept Matrix API
   # POST /_matrix/client/r0/rooms/{roomId}/report/{eventId}
   # and display readable abuse reports in the moderation room.
