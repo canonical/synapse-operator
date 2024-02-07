@@ -4,7 +4,6 @@
 """S3 Backup relation observer for Synapse."""
 
 import logging
-import typing
 
 import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer

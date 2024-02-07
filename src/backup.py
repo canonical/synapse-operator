@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Any, Dict, Generator, Iterable, List, NamedTuple, Optional
+from typing import Any, Dict, Generator, Iterable, NamedTuple, Optional
 
 import boto3
 import ops
@@ -379,7 +379,7 @@ def _build_backup_command(
     backup_paths: Iterable[str],
     passphrase_file: str,
     expected_size: int,
-) -> List[str]:
+) -> list[str]:
     """Build the command to execute the backup.
 
     Args:

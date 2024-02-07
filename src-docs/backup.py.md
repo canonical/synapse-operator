@@ -125,7 +125,7 @@ Check if a bucket exists and is accessible in an S3 compatible object store.
 ### <kbd>function</kbd> `list_backups`
 
 ```python
-list_backups() → List[S3Backup]
+list_backups() → list[S3Backup]
 ```
 
 List the backups stored in S3 in the current s3 configuration. 
