@@ -402,6 +402,98 @@ def test_create_backup_failure(
     assert "Backup Command Failed" in str(err.value)
 
 
+def test_restore_backup_correct(
+    harness: Harness, s3_parameters_backup, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Given the Synapse container, s3parameters, passphrase, the backup key and its location
+        mock prepare_container and stop container (but retaining previous functionality).
+    act: Call restore_backup.
+    assert: The container is stopped, a command is executed to backup and has some test
+        like "decrypt" and the the container is started again.
+    """
+    # start it so synapse service is in the container.
+    harness.begin_with_initial_hooks()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    passphrase = token_hex(16)
+    backup_id = token_hex(16)
+    monkeypatch.setattr(backup, "_prepare_container", MagicMock())
+    stop_mock = MagicMock(side_effect=container.stop)
+    monkeypatch.setattr(container, "stop", stop_mock)
+    monkeypatch.setattr(synapse, "get_media_store_path", MagicMock(return_value="/data/media"))
+    remove_path_mock = MagicMock(side_effect=container.remove_path)
+    monkeypatch.setattr(container, "remove_path", remove_path_mock)
+
+    def backup_command_handler(args: list[str]) -> synapse.ExecResult:
+        """Handler for the exec of the backup command.
+
+        Args:
+            args: argument given to the container.exec.
+
+        Returns:
+            tuple with status_code, stdout and stderr.
+        """
+        # simple check to see that the correct command was called
+        assert any(("--decrypt" in arg for arg in args))
+        return synapse.ExecResult(0, "", "")
+
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=container,
+        executable=backup.BASH_COMMAND,
+        handler=backup_command_handler,
+    )
+
+    backup.restore_backup(container, s3_parameters_backup, backup_id, passphrase)
+
+    stop_mock.assert_called_once()
+    remove_path_mock.assert_called_once_with("/data/media", recursive=True)
+    assert container.get_service(synapse.SYNAPSE_SERVICE_NAME).is_running()
+
+
+def test_restore_backup_failure(
+    harness: Harness, s3_parameters_backup, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Given the Synapse container, s3parameters, passphrase, the backup key and its location
+        mock prepare_container, and mock fail on the command to backup.
+    act: Call restore_backup.
+    assert: Check that BackupError was raises and that the service is stopped.
+    """
+    # start it so synapse service is in the container.
+    harness.begin_with_initial_hooks()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    passphrase = token_hex(16)
+    backup_id = token_hex(16)
+    monkeypatch.setattr(backup, "_prepare_container", MagicMock())
+    stop_mock = MagicMock(side_effect=container.stop)
+    monkeypatch.setattr(container, "stop", stop_mock)
+    monkeypatch.setattr(synapse, "get_media_store_path", MagicMock(return_value="/data/media"))
+    remove_path_mock = MagicMock(side_effect=container.remove_path)
+    monkeypatch.setattr(container, "remove_path", remove_path_mock)
+
+    def backup_command_handler(_: list[str]) -> synapse.ExecResult:
+        """Handler for the exec of the backup command.
+
+        Returns:
+            tuple with status_code, stdout and stderr.
+        """
+        return synapse.ExecResult(1, "", "")
+
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=container,
+        executable=backup.BASH_COMMAND,
+        handler=backup_command_handler,
+    )
+
+    with pytest.raises(backup.BackupError) as err:
+        backup.restore_backup(container, s3_parameters_backup, backup_id, passphrase)
+    assert "Backup restore failed" in str(err.value)
+    stop_mock.assert_called_once()
+    # Everything can be in an incorrect state now.
+    remove_path_mock.assert_called_once_with("/data/media", recursive=True)
+    assert not container.get_service(synapse.SYNAPSE_SERVICE_NAME).is_running()
+
+
 def test_prepare_container_correct(harness: Harness, s3_parameters_backup):
     """
     arrange: Given the Synapse container, s3parameters, passphrase and its location
@@ -583,3 +675,23 @@ def test_calculate_size(harness: Harness):
     size = backup._calculate_size(container, paths)
 
     assert size == 1000
+
+
+def test_build_restore_command_correct(s3_parameters_backup):
+    """
+    arrange: Given some s3 parameters for backup, a name for the key in the bucket,
+         and passphrase file location
+    act: run _build_restore_command
+    assert: the command is the correct calling bash with pipes.
+    """
+    # pylint: disable=line-too-long
+
+    command = backup._build_restore_command(
+        s3_parameters_backup, "20230101231200", "/root/.gpg_passphrase"
+    )
+
+    assert list(command) == [
+        backup.BASH_COMMAND,
+        "-c",
+        f"set -euxo pipefail; {backup.AWS_COMMAND} s3 cp 's3://synapse-backup-bucket/synapse-backups/20230101231200' - | gpg --batch --no-symkey-cache --decrypt --passphrase-file '/root/.gpg_passphrase' | tar -x -C /",  # noqa: E501
+    ]
