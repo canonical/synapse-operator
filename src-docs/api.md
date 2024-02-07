@@ -21,11 +21,10 @@ Helper module used to manage interactions with Synapse API.
 - **REGISTER_URL**
 - **SYNAPSE_VERSION_REGEX**
 - **VERSION_URL**
-- **HEALTH_URL**
 
 ---
 
-<a href="../src/synapse/api.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `register_user`
 
@@ -63,7 +62,7 @@ Register user.
 
 ---
 
-<a href="../src/synapse/api.py#L277"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_version`
 
@@ -92,7 +91,7 @@ We're using retry here because after the config change, Synapse is restarted.
 
 ---
 
-<a href="../src/synapse/api.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_access_token`
 
@@ -126,7 +125,7 @@ This is a way to do actions on behalf of a user.
 
 ---
 
-<a href="../src/synapse/api.py#L338"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L337"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `override_rate_limit`
 
@@ -151,7 +150,7 @@ Override user's rate limit.
 
 ---
 
-<a href="../src/synapse/api.py#L354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_room_id`
 
@@ -182,7 +181,7 @@ Get room id.
 
 ---
 
-<a href="../src/synapse/api.py#L390"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `deactivate_user`
 
@@ -203,7 +202,7 @@ Deactivate user.
 
 ---
 
-<a href="../src/synapse/api.py#L410"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_management_room`
 
@@ -233,7 +232,7 @@ Create the management room to be used by Mjolnir.
 
 ---
 
-<a href="../src/synapse/api.py#L462"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L461"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `make_room_admin`
 
@@ -260,7 +259,7 @@ Make user a room's admin.
 
 ---
 
-<a href="../src/synapse/api.py#L477"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L476"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `promote_user_admin`
 
@@ -281,32 +280,14 @@ Promote user to admin.
 
 ---
 
-<a href="../src/synapse/api.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `is_ready`
-
-```python
-is_ready()
-```
-
-Check if Synapse is ready. 
-
-
-
-**Returns:**
-  True if Synapse is ready, False otherwise. 
-
-
----
-
-<a href="../src/synapse/api.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `APIError`
 Exception raised when something fails while calling the API. 
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -328,12 +309,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `NetworkError`
 Exception raised when requesting API fails due network issues. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -355,12 +336,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L65"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GetNonceError`
 Exception raised when getting nonce fails. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -382,12 +363,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GetVersionError`
 Exception raised when getting version fails. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -409,12 +390,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `VersionUnexpectedContentError`
 Exception raised when output of getting version is unexpected. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -436,12 +417,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GetRoomIDError`
 Exception raised when getting room id fails. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -463,12 +444,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GetUserIDError`
 Exception raised when getting user id fails. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -490,12 +471,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `UserExistsError`
 Exception raised when checking if user exists fails. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -517,12 +498,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GetAccessTokenError`
 Exception raised when getting access token fails. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -544,12 +525,12 @@ Initialize a new instance of the APIError exception.
 
 ---
 
-<a href="../src/synapse/api.py#L94"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `RegisterUserError`
 Exception raised when registering user fails. 
 
-<a href="../src/synapse/api.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 

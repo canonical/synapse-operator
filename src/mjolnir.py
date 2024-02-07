@@ -63,26 +63,6 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             return None
         return get_admin_access_token()
 
-    def _is_synapse_ready(self) -> bool:
-        """Check if Synapse is ready.
-
-        Returns:
-            True if Synapse is ready, False otherwise.
-        """
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
-        synapse_not_active = [
-            service for service in synapse_service.values() if not service.is_running()
-        ]
-        if not synapse_service or synapse_not_active:
-            # The get_membership_room_id does a call to Synapse API in order to get the
-            # membership room id. This only works if Synapse is running so that's why
-            # the service status is checked here.
-            return False
-
-        return synapse.is_ready()
-
-
     def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
         """Collect status event handler.
 
@@ -99,17 +79,21 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         if mjolnir_service:
             logger.debug("%s service already exists, skipping", MJOLNIR_SERVICE_NAME)
             return
-
-        if not self._is_synapse_ready():
+        synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
+        synapse_not_active = [
+            service for service in synapse_service.values() if not service.is_running()
+        ]
+        if not synapse_service or synapse_not_active:
+            # The get_membership_room_id does a call to Synapse API in order to get the
+            # membership room id. This only works if Synapse is running so that's why
+            # the service status is checked here.
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
-
         if not self._admin_access_token:
             self._charm.unit.status = ops.MaintenanceStatus(
                 "Failed to get admin access token. Please, check the logs."
             )
             return
-
         try:
             if self.get_membership_room_id(self._admin_access_token) is None:
                 status = ops.BlockedStatus(

@@ -40,7 +40,6 @@ MJOLNIR_MEMBERSHIP_ROOM = "moderators"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
-HEALTH_URL = f"{SYNAPSE_URL}/health"
 
 
 class APIError(Exception):
@@ -492,16 +491,3 @@ def promote_user_admin(
     user_id = f"@{user.username}:{server}"
     url = PROMOTE_USER_ADMIN_URL.replace("user_id", user_id)
     _do_request("PUT", url, admin_access_token=admin_access_token, json=data)
-
-
-def is_ready():
-    """Check if Synapse is ready.
-
-    Returns:
-        True if Synapse is ready, False otherwise.
-    """
-    try:
-        resp = _do_request("GET", HEALTH_URL)
-        return resp.status_code // 100 == 2
-    except NetworkError:
-        return False
