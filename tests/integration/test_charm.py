@@ -663,7 +663,7 @@ async def test_synapse_list_backups(
     """
     arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
         and create two backups.
-    act: $un action list-backups
+    act: Run action list-backups
     assert: There should be two backups, with the same keys as the ones created.
     """
     await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
