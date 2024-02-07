@@ -265,7 +265,7 @@ class PebbleService:
             The pebble configuration for the cron service.
         """
         layer = {
-            "summary": "Synapse ncron layer",
+            "summary": "Synapse cron layer",
             "description": "Synapse cron layer",
             "services": {
                 synapse.SYNAPSE_CRON_SERVICE_NAME: {
