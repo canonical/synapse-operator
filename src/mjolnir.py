@@ -91,13 +91,12 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
         try:
-            if not self._admin_access_token:
-                self._charm.unit.status = ops.MaintenanceStatus(
-                    "Failed to get admin access token. Please, check the logs."
-                )
-                return
+            admin_access_token = self._admin_access_token
         except RegisterUserError:
             logger.exception("Failed to get admin access token.")
+            admin_access_token = None
+
+        if not admin_access_token:
             self._charm.unit.status = ops.MaintenanceStatus(
                 "Failed to get admin access token. Please, check the logs."
             )
