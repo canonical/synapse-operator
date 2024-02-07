@@ -651,3 +651,41 @@ async def test_synapse_create_backup_no_passphrase(
     assert backup_action.status == "failed"
     assert "backup-id" not in backup_action.results
     assert "Missing backup_passphrase" in backup_action.message
+
+
+@pytest.mark.s3
+@pytest.mark.usefixtures("s3_backup_bucket")
+async def test_synapse_list_backups(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+):
+    """
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create two backups.
+    act: $un action list-backups
+    assert: There should be two backups, with the same keys as the ones created.
+    """
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    passphrase = token_hex(16)
+    await synapse_app.set_config({"backup_passphrase": passphrase})
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    backup_action_1: Action = await synapse_unit.run_action("create-backup")
+    await backup_action_1.wait()
+    backup_action_2: Action = await synapse_unit.run_action("create-backup")
+    await backup_action_2.wait()
+
+    list_backups_action: Action = await synapse_unit.run_action("list-backups")
+    await list_backups_action.wait()
+
+    assert list_backups_action.status == "completed"
+    assert "backups" in list_backups_action.results
+    backups = list_backups_action.results["backups"]
+    assert len(backups) == 2
+    assert backup_action_1.results["backup-id"] in backups
+    assert backup_action_2.results["backup-id"] in backups

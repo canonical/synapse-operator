@@ -3,6 +3,7 @@
 
 """Synapse backup observer unit tests."""
 
+import datetime
 from secrets import token_hex
 from typing import Type
 from unittest.mock import MagicMock
@@ -194,3 +195,51 @@ def test_create_backup_wrong_s3_parameters(harness: Harness):
     with pytest.raises(ActionFailed) as err:
         harness.run_action("create-backup")
     assert "Wrong S3 configuration" in str(err.value.message)
+
+
+def test_list_backups_correct(
+    s3_relation_data_backup: dict, harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Start the Synapse charm. Integrate with S3. Mock can_use_bucket and
+        backup.list_backups to return backups.
+    act: Run action list-backups.
+    assert: Check that the backups and the formatted output is correct.
+    """
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+    backups = [
+        backup.S3Backup(
+            backup_id="202301311259",
+            etag="",
+            last_modified=datetime.datetime(2024, 1, 1, 0, 0, 0),
+            prefix="",
+            s3_object_key="",
+            size=1_000_000_000_000,
+        ),
+        backup.S3Backup(
+            backup_id="202401311259",
+            etag="",
+            last_modified=datetime.datetime(2024, 2, 1, 0, 0, 0),
+            prefix="",
+            s3_object_key="",
+            size=20_000_000_000_000,
+        ),
+    ]
+
+    monkeypatch.setattr(backup.S3Client, "list_backups", MagicMock(return_value=backups))
+
+    harness.begin_with_initial_hooks()
+    action = harness.run_action("list-backups")
+    results = action.results
+    assert results["backups"] == {
+        "202301311259": {"last-modified": "2024-01-01 00:00:00", "size": "1000000000000"},
+        "202401311259": {"last-modified": "2024-02-01 00:00:00", "size": "20000000000000"},
+    }
+
+    expected_formatted_output = """
+backup-id                     | last-modified                |            size
+------------------------------------------------------------------------------
+202301311259                  | 2024-01-01 00:00:00          |   1000000000000
+202401311259                  | 2024-02-01 00:00:00          |  20000000000000"""
+    assert "\n" + results["formatted"] == expected_formatted_output

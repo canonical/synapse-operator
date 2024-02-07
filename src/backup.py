@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional
 
 import boto3
 import ops
@@ -101,6 +101,26 @@ class S3Parameters(BaseModel):
         return "virtual"
 
 
+class S3Backup(NamedTuple):
+    """Information about a backup file from S3.
+
+    Attributes:
+        backup_id: backup id
+        etag: etag in S3
+        last_modified: last modified date in S3
+        prefix: prefix of the object ky
+        s3_object_key: full object key
+        size: size in bytes
+    """
+
+    backup_id: str
+    etag: str
+    last_modified: datetime.datetime
+    prefix: str
+    s3_object_key: str
+    size: int
+
+
 class S3Client:
     """S3 Client Wrapper around boto3 library."""
 
@@ -160,6 +180,43 @@ class S3Client:
             )
             return False
         return True
+
+    def list_backups(self) -> List[S3Backup]:
+        """List the backups stored in S3 in the current s3 configuration.
+
+        Returns:
+            list of backups.
+
+        Raises:
+            S3Error: if listing the objects in S3 fails.
+        """
+        # Pagination is not taken into account, only up to 1000 elements will be returned
+        # IsTruncated shows if all the elements were returned.
+
+        prefix = _s3_path(self._s3_parameters.path)
+        try:
+            resp = self._client.list_objects_v2(Bucket=self._s3_parameters.bucket, Prefix=prefix)
+        except ClientError as exc:
+            raise S3Error("Error listing objects in bucket") from exc
+
+        if resp["IsTruncated"]:
+            logger.warning("Not all the backups are returned.")
+
+        backups = []
+        if "Contents" in resp:
+            for s3obj in resp["Contents"]:
+                s3_object_key = pathlib.Path(s3obj["Key"])
+                backup_id = (s3_object_key).relative_to(prefix)
+                backup = S3Backup(
+                    backup_id=str(backup_id),
+                    s3_object_key=str(s3_object_key),
+                    prefix=prefix,
+                    last_modified=s3obj["LastModified"],
+                    size=s3obj["Size"],
+                    etag=s3obj["ETag"],
+                )
+                backups.append(backup)
+        return backups
 
 
 def create_backup(
