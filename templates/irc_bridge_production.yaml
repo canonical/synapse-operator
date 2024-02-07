@@ -53,7 +53,6 @@ ircService:
           enabled: false
           idleForHours: 720
           exclude: "foobar"
-      mappings:
       matrixClients:
         userTemplate: "@libera_$NICK"
         displayName: "$NICK"
