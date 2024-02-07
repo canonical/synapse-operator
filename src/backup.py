@@ -176,7 +176,7 @@ class S3Client:
             return False
         return True
 
-    def list_backups(self) -> List[S3Backup]:
+    def list_backups(self) -> list[S3Backup]:
         """List the backups stored in S3 in the current s3 configuration.
 
         Returns:

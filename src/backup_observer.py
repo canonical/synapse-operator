@@ -97,7 +97,7 @@ class BackupObserver(Object):
 
         event.set_results({"result": "correct", "backup-id": backup_id})
 
-    def _generate_backup_list_formatted(self, backup_list: typing.List[backup.S3Backup]) -> str:
+    def _generate_backup_list_formatted(self, backup_list: list[backup.S3Backup]) -> str:
         """Generate a formatted string for the backups.
 
         Args:
