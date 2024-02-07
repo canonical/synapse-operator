@@ -32,10 +32,12 @@ SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
 SYNAPSE_CRON_SERVICE_NAME = "synapse-cron"
 SYNAPSE_DATA_DIR = "/data"
+SYNAPSE_GROUP = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
 SYNAPSE_SERVICE_NAME = "synapse"
+SYNAPSE_USER = "synapse"
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +189,18 @@ def get_registration_shared_secret(container: ops.Container) -> typing.Optional[
         registration_shared_secret value.
     """
     return _get_configuration_field(container=container, fieldname="registration_shared_secret")
+
+
+def get_media_store_path(container: ops.Container) -> typing.Optional[str]:
+    """Get media_store_path from configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Returns:
+        media_store_path value.
+    """
+    return _get_configuration_field(container=container, fieldname="media_store_path")
 
 
 def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:

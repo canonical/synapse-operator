@@ -36,30 +36,37 @@ parts:
     override-prime: |
       craftctl default
       chmod -R +x /etc/cron.*
+  add-user:
+    plugin: nil
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY --gid 991 synapse
+      useradd -R $CRAFT_OVERLAY --system --gid 991 --uid 991 --home /srv/synapse -m synapse
   synapse:
     build-packages:
-    - build-essential
-    - curl
-    - git
-    - libffi-dev
-    - libicu-dev
-    - libjpeg-dev
-    - libpq-dev
-    - libssl-dev
-    - libwebp-dev
-    - libxml++2.6-dev
-    - libxslt1-dev
-    - openssl
-    - pkg-config
-    - python3-dev
-    - python3-pip
-    - python3-setuptools
-    - zlib1g-dev
+      - build-essential
+      - curl
+      - git
+      - libffi-dev
+      - libicu-dev
+      - libjpeg-dev
+      - libpq-dev
+      - libssl-dev
+      - libwebp-dev
+      - libxml++2.6-dev
+      - libxslt1-dev
+      - openssl
+      - pkg-config
+      - python3-dev
+      - python3-pip
+      - python3-setuptools
+      - zlib1g-dev
     stage-packages:
       - bash
       - coreutils
       - curl
       - gosu
+      - gpg
+      - gpg-agent
       - libffi-dev
       - libicu70
       - libjemalloc2
@@ -71,6 +78,7 @@ parts:
       - python3
       - xmlsec1
     stage-snaps:
+      - aws-cli
       - mjolnir/latest/edge
       - matrix-appservice-irc/latest/edge
     plugin: nil
