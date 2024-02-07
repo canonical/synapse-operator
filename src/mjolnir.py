@@ -13,6 +13,7 @@ import ops
 
 import actions
 import synapse
+from actions import RegisterUserError
 from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
@@ -89,11 +90,19 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             # the service status is checked here.
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
-        if not self._admin_access_token:
+        try:
+            if not self._admin_access_token:
+                self._charm.unit.status = ops.MaintenanceStatus(
+                    "Failed to get admin access token. Please, check the logs."
+                )
+                return
+        except RegisterUserError:
+            logger.exception("Failed to get admin access token.")
             self._charm.unit.status = ops.MaintenanceStatus(
                 "Failed to get admin access token. Please, check the logs."
             )
             return
+
         try:
             if self.get_membership_room_id(self._admin_access_token) is None:
                 status = ops.BlockedStatus(
