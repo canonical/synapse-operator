@@ -228,7 +228,7 @@ def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPa
 def test_list_backups_correct_no_root_slash(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create a S3Client. Mock response to return a real response in list_objects_v2 with
-        Keys without root slash as returned by MinIO even when created with them.
+        Keys without root slash as returned by MinIO even when created with root slash.
     act: Run list_backups.
     assert: The expected list of backups is correctly parsed.
     """

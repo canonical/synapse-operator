@@ -101,10 +101,10 @@ class BackupObserver(Object):
         """Generate a formatted string for the backups.
 
         Args:
-            backup_list: List of backups to create a formatted string for
+            backup_list: List of backups to create a formatted string for.
 
         Returns:
-            The formatted string of the backups
+            The formatted string of the backups.
         """
         output = [f"{'backup-id':<29s} | {'last-modified':<28s} | {'size':>15s}"]
         output.append("-" * len(output[0]))
