@@ -133,8 +133,8 @@ class BackupObserver(Object):
             s3_client = backup.S3Client(s3_parameters)
             backups = s3_client.list_backups()
         except backup.S3Error:
-            logger.exception("Error while trying looking for backups.")
-            self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
+            logger.exception("Error listing backups.")
+            event.fail("Error listing backups.")
             return
 
         event.set_results(
