@@ -15,6 +15,9 @@ from pytest_operator.plugin import OpsTest
 import synapse
 from tests.integration.helpers import create_moderators_room, get_access_token, register_user
 
+# caused by pytest fixtures
+# pylint: disable=too-many-arguments
+
 
 async def test_synapse_with_mjolnir_from_refresh_is_up(
     ops_test: OpsTest,
