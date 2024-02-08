@@ -41,3 +41,9 @@ promote-user-admin:
       description: |
         User name to be promoted to admin.
       type: string
+create-backup:
+  description: |
+    Creates a backup to s3 storage.
+list-backups:
+  description: |
+    Lists backups in s3 storage.
