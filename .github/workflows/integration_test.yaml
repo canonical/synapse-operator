@@ -4,7 +4,8 @@ on:
   pull_request:
 
 jobs:
-  integration-tests:
+  integration-tests-charm:
+    name: Integration test with juju 3.1
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
@@ -21,6 +22,7 @@ jobs:
       tmate-debug: true
       modules: '["test_charm"]'
   integration-tests-refresh:
+    name: Integration test with juju 3.1 for refresh
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
@@ -35,4 +37,3 @@ jobs:
       self-hosted-runner-label: "edge"
       tmate-debug: true
       modules: '["test_refresh"]'
-
