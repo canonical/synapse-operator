@@ -53,6 +53,9 @@ class PebbleService:
         """
         logger.debug("Restarting the Synapse container")
         container.add_layer(synapse.SYNAPSE_SERVICE_NAME, self._pebble_layer, combine=True)
+        container.add_layer(
+            synapse.SYNAPSE_CRON_SERVICE_NAME, self._cron_pebble_layer, combine=True
+        )
         container.restart(synapse.SYNAPSE_SERVICE_NAME)
 
     def replan_nginx(self, container: ops.model.Container) -> None:
@@ -289,6 +292,28 @@ class PebbleService:
             },
             "checks": {
                 synapse.CHECK_STATS_EXPORTER_READY_NAME: synapse.check_stats_exporter_ready(),
+            },
+        }
+        return typing.cast(ops.pebble.LayerDict, layer)
+
+    @property
+    def _cron_pebble_layer(self) -> ops.pebble.LayerDict:
+        """Generate pebble config for the cron service.
+
+        Returns:
+            The pebble configuration for the cron service.
+        """
+        layer = {
+            "summary": "Synapse cron layer",
+            "description": "Synapse cron layer",
+            "services": {
+                synapse.SYNAPSE_CRON_SERVICE_NAME: {
+                    "override": "replace",
+                    "summary": "Cron service",
+                    "command": "/usr/local/bin/run_cron.py",
+                    "environment": synapse.get_environment(self._charm_state),
+                    "startup": "enabled",
+                },
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

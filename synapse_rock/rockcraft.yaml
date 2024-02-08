@@ -13,6 +13,29 @@ license: Apache-2.0
 platforms:
   amd64:
 parts:
+    scripts:
+      plugin: dump
+      source: scripts
+      organize:
+        "*": usr/local/bin/
+      override-prime: |
+        craftctl default
+        chmod -R +x usr/local/bin/*
+    cron:
+      after:
+        - scripts
+      stage-packages:
+        - cron
+      plugin: dump
+      source: cron
+      organize:
+        "cron.hourly/*": /etc/cron.hourly
+        "cron.daily/*": /etc/cron.daily
+        "cron.weekly/*": /etc/cron.weekly
+        "cron.monthly/*": /etc/cron.monthly
+      override-prime: |
+        craftctl default
+        chmod -R +x etc/cron.*
     add-user:
         plugin: nil
         overlay-script: |
