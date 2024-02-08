@@ -701,10 +701,10 @@ async def test_synapse_backup_restore(
     """
     arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
         and create a backup.
-    act: $un action restore-backup
+    act: Run action restore-backup
     assert: Should not fail. Synapse should be started.
     """
-    # This is just a kind of smoke test as internals of the restored files are not checked.
+    # This is just a smoke test as internals of the restored files are not checked.
     await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
     passphrase = token_hex(16)
     await synapse_app.set_config({"backup_passphrase": passphrase})

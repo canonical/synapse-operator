@@ -48,8 +48,11 @@ list-backups:
   description: |
     Lists backups in s3 storage.
 restore-backup:
-  description: Restore a Synapse backup.
+  description:  |
+    Restore a Synapse backup.
     S3 credentials are retrieved from a relation with the S3 integrator charm.
+    The filesystem configuration for the application should be identical of the
+    original application.
   params:
     backup-id:
       type: string

@@ -285,8 +285,8 @@ def restore_backup(
     _prepare_container(container, s3_parameters, passphrase)
     container.stop(synapse.SYNAPSE_SERVICE_NAME)
 
-    # Delete the media directory. The rest of file will
-    # be overwritten.
+    # Delete the media directory.
+    # Other files to back up will be just overwritten.
     media_dir = synapse.get_media_store_path(container)
     if media_dir:
         container.remove_path(media_dir, recursive=True)
@@ -306,8 +306,6 @@ def restore_backup(
         raise BackupError("Backup restore failed.") from exc
     logger.info("Backup command output: %s. %s.", stdout, stderr)
 
-    # At this point, in the Synapse peer relation, there could be a broken
-    # secret id that is an authentication token. Review.
     container.start(synapse.SYNAPSE_SERVICE_NAME)
 
 
