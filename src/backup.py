@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Generator, Iterable, NamedTuple, Optional
 
 import boto3
 import ops
@@ -101,6 +101,20 @@ class S3Parameters(BaseModel):
         return "virtual"
 
 
+class S3Backup(NamedTuple):
+    """Information about a backup file from S3.
+
+    Attributes:
+        backup_id: backup id
+        last_modified: last modified date in S3
+        size: size in bytes
+    """
+
+    backup_id: str
+    last_modified: datetime.datetime
+    size: int
+
+
 class S3Client:
     """S3 Client Wrapper around boto3 library."""
 
@@ -114,6 +128,7 @@ class S3Client:
         """
         self._s3_parameters = s3_parameters
         self._client = self._create_client()
+        self._prefix = _s3_path(self._s3_parameters.path)
 
     def _create_client(self) -> Any:
         """Create new boto3 S3 client.
@@ -160,6 +175,46 @@ class S3Client:
             )
             return False
         return True
+
+    def list_backups(self) -> list[S3Backup]:
+        """List the backups stored in S3 in the current s3 configuration.
+
+        Returns:
+            list of backups.
+        """
+        backups = []
+        for item in self._list_s3_objects():
+            s3_object_key = pathlib.Path(item["Key"])
+            backup_id = s3_object_key.relative_to(self._prefix)
+            backup = S3Backup(
+                backup_id=str(backup_id),
+                last_modified=item["LastModified"],
+                size=item["Size"],
+            )
+            backups.append(backup)
+        return backups
+
+    def _list_s3_objects(self) -> Generator[dict, None, None]:
+        """List the backups stored in S3 in the current s3 configuration.
+
+        A paginator is used over `list_objects_v2` because there can
+        be more than 1000 elements.
+
+        Yield:
+            Element from list_objects_v2.
+
+        Raises:
+            S3Error: if listing the objects in S3 fails.
+        """
+        paginator = self._client.get_paginator("list_objects_v2")
+        page_iterator = paginator.paginate(Bucket=self._s3_parameters.bucket, Prefix=self._prefix)
+        try:
+            for page in page_iterator:
+                if page["KeyCount"] > 0:
+                    for item in page["Contents"]:
+                        yield item
+        except ClientError as exc:
+            raise S3Error("Error iterating over objects in bucket") from exc
 
 
 def create_backup(
@@ -324,7 +379,7 @@ def _build_backup_command(
     backup_paths: Iterable[str],
     passphrase_file: str,
     expected_size: int,
-) -> List[str]:
+) -> list[str]:
     """Build the command to execute the backup.
 
     Args:
