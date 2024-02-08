@@ -2,13 +2,13 @@
 
 This document shows how to back up and restore Synapse.
 
-Backup strategy is an integral part of disaster and recovery, and should be
-planned accordingly. The main goal of backups is the possibility of being
+A backup strategy is an integral part of disaster and recovery, and should be
+planned accordingly. The main goal of a backup is the possibility of being
 restored and the backup and restore process should be tested as part of
 normal operations.
 
 The process of backing up and restoring depends on whether an external database
-is used, so the step to run the backup for the PostgreSQL must be done only if PostgreSQL
+is used, so the step to run the backup for PostgreSQL must be done only if PostgreSQL
 is used in the original Synapse application.
 
 ## Back up Synapse
@@ -17,7 +17,7 @@ is used in the original Synapse application.
 
 Synapse gets backed up to a S3 compatible object storage. The bucket for the backup should be provisioned before the backup.
 
-To get the credentials, the `s3-integrator` is used. Refer to [s3-integrator](https://charmhub.io/s3-integrator/) for specific configuration options. 
+For Synapse to get the credentials, the `s3-integrator` is used. Refer to [s3-integrator](https://charmhub.io/s3-integrator/) for specific configuration options. 
 
 ```
 juju deploy s3-integrator --channel edge
@@ -68,14 +68,13 @@ to also back up the cluster passwords. See:
 ## Restore
 
 The recommendation is to first restore PostgreSQL if necessary. Then deploying,
-configuring Synapse and integrating Synapse with other charms as in a normal deployment
+configuring and integrating Synapse with other charms as in a normal deployment
 and finally restoring Synapse. 
 
-The revisions used PostgreSQL and Synapse should be the same ones as the ones used
+The revisions used PostgreSQL and Synapse charms should be the same ones as the ones used
 for the backup. The configuration for Synapse before restoring the backup should also
-match the configuration of the original application. This is specially important for 
-the configuration option `server_name` and anything related
-to the filesystem configuration.
+match the configuration in the original application. This is specially important for 
+the configuration option `server_name` and anything related to the filesystem configuration.
 
 
 ### Restore PostgreSQL
@@ -117,7 +116,7 @@ Integrate with Synapse with:
 
 `juju integrate synapse:backup s3-integrator`
 
-List the backups and notice the desired `backup-id`
+List the backups and take note of the desired `backup-id`
 ```
 juju run synapse/leader list-backups
 ```
