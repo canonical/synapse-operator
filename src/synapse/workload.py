@@ -574,14 +574,11 @@ def create_irc_bridge_config(
         raise CreateIRCBridgeConfigError(str(exc)) from exc
 
 
-def _get_irc_bridge_app_registration(container: ops.Container) -> typing.Dict:
+def _get_irc_bridge_app_registration(container: ops.Container) -> None:
     """Create registration file as expected by irc bridge.
 
     Args:
         container: Container of the charm.
-
-    Returns:
-        IRC Bridge registration
 
     Raises:
         WorkloadError: something went wrong creating irc bridge registration.
@@ -593,7 +590,7 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> typing.Dict:
             "/app/app.js",
             "-r",
             "-f",
-            "appservice-registration-irc.yaml",
+            IRC_BRIDGE_REGISTRATION_PATH,
             "-u",
             "http://localhost:",
             str(SYNAPSE_PORT),
@@ -610,9 +607,6 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> typing.Dict:
             registration_result.stderr,
         )
         raise WorkloadError("Creating irc app registration failed, please check the logs")
-    with open("appservice-registration-irc.yaml", encoding="utf-8") as irc_reg_file:
-        config = yaml.safe_load(irc_reg_file)
-        return config
 
 
 def create_irc_bridge_app_registration(container: ops.Container) -> None:
@@ -625,8 +619,7 @@ def create_irc_bridge_app_registration(container: ops.Container) -> None:
         CreateIRCBridgeRegistrationError: error creating irc bridge app registration.
     """
     try:
-        config = _get_irc_bridge_app_registration(container=container)
-        container.push(IRC_BRIDGE_REGISTRATION_PATH, yaml.safe_dump(config), make_dirs=True)
+        _get_irc_bridge_app_registration(container=container)
         _add_app_service_config_field(container=container)
     except ops.pebble.PathError as exc:
         raise CreateIRCBridgeRegistrationError(str(exc)) from exc
@@ -645,7 +638,7 @@ def _add_app_service_config_field(container: ops.Container) -> None:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
 
-        current_yaml["app_service_config_files"] = ["appservice-registration-irc.yaml"]
+        current_yaml["app_service_config_files"] = [f"{IRC_BRIDGE_REGISTRATION_PATH}"]
 
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:

@@ -18,7 +18,6 @@ import synapse.workload
 from irc_bridge import IRCBridge
 from synapse.workload import (
     IRC_BRIDGE_CONFIG_PATH,
-    IRC_BRIDGE_REGISTRATION_PATH,
     SYNAPSE_CONFIG_PATH,
     CreateIRCBridgeConfigError,
     CreateIRCBridgeRegistrationError,
@@ -188,24 +187,16 @@ def test_create_irc_bridge_config_path_error(monkeypatch: pytest.MonkeyPatch):
         )
 
 
-def test_create_irc_bridge_app_registration_success(monkeypatch: pytest.MonkeyPatch):
+def test_get_irc_bridge_app_registration_success():
     """
-    arrange: create a mock container and mock _get_irc_bridge_app_registration function.
-    act: call create_irc_bridge_app_registration.
-    assert: container.push is called with the correct arguments.
+    arrange: mock the _exec function to return a zero exit code
+    act: call _get_irc_bridge_app_registration
+    assert: no exception is raised
     """
+    mock_exec = mock.Mock(return_value=mock.Mock(exit_code=0, stdout="stdout", stderr="stderr"))
     container_mock = MagicMock()
-    _get_irc_bridge_app_registration_mock = MagicMock(return_value={"key": "value"})
-
-    monkeypatch.setattr(
-        "synapse.workload._get_irc_bridge_app_registration", _get_irc_bridge_app_registration_mock
-    )
-    monkeypatch.setattr("synapse.workload._add_app_service_config_field", MagicMock())
-    create_irc_bridge_app_registration(container_mock)
-
-    container_mock.push.assert_called_once_with(
-        IRC_BRIDGE_REGISTRATION_PATH, yaml.safe_dump({"key": "value"}), make_dirs=True
-    )
+    with mock.patch("synapse.workload._exec", mock_exec):
+        _get_irc_bridge_app_registration(container_mock)
 
 
 def test_create_irc_bridge_app_registration_path_error(monkeypatch: pytest.MonkeyPatch):
@@ -225,21 +216,6 @@ def test_create_irc_bridge_app_registration_path_error(monkeypatch: pytest.Monke
     monkeypatch.setattr("synapse.workload._add_app_service_config_field", MagicMock())
     with pytest.raises(CreateIRCBridgeRegistrationError):
         create_irc_bridge_app_registration(container_mock)
-
-
-def test_get_irc_bridge_app_registration_success():
-    """
-    arrange: mock the _exec function to return a successful result
-    act: call _get_irc_bridge_app_registration
-    assert: the expected registration config is returned
-    """
-    expected_config = {"key": "value"}
-    container_mock = MagicMock()
-    mock_exec = mock.Mock(return_value=mock.Mock(exit_code=0))
-    mock_open = mock.mock_open(read_data="key: value")
-    with mock.patch("synapse.workload._exec", mock_exec), mock.patch("builtins.open", mock_open):
-        config = _get_irc_bridge_app_registration(container_mock)
-    assert config == expected_config
 
 
 def test_get_irc_bridge_app_registration_failure():
