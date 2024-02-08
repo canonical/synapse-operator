@@ -1,6 +1,6 @@
 name: Matrix Deployment Bug Report
 description: Report a bug with the chat.ubuntu.com deployment
-labels: ["Type: Bug", "Status: Triage", "Context: deployment"]
+labels: ["Type: Bug", "Status: Triage", "Context: Deployment"]
 body:
   - type: markdown
     attributes:
