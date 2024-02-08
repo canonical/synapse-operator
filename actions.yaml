@@ -50,7 +50,7 @@ list-backups:
 restore-backup:
   description:  |
     Restore a Synapse backup.
-    S3 credentials are retrieved from a relation with the S3 integrator charm.
+    S3 credentials are retrieved from the relation with the S3 integrator charm.
     The server_name and filesystem configuration for the application should be
     identical to the application restored.
   params:
