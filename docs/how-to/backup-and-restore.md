@@ -2,11 +2,6 @@
 
 This document shows how to back up and restore Synapse.
 
-A backup strategy is an integral part of disaster recovery, and should be
-planned accordingly. The main goal of a backup is the possibility of being
-restored and the backup and restore process should be tested as part of
-normal operations.
-
 The process of backing up and restoring depends on whether an external database
 is used, so the step to run the backup for PostgreSQL must be done only if PostgreSQL
 is used in the original Synapse application.
