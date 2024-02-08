@@ -628,11 +628,14 @@ def test_get_paths_to_backup_correct(harness: Harness):
 
 def test_get_paths_to_backup_empty(harness: Harness):
     """
-    arrange: Create an empty container filesystem.
+    arrange: Create an empty container filesystem with just the default media directory.
     act: Call get_paths_to_backup
     assert: The paths to backup should be empty.
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    synapse_root = harness.get_filesystem_root(container)
+    media_dir = synapse_root / "media_store"
+    media_dir.mkdir()
 
     paths_to_backup = list(backup._get_paths_to_backup(container))
 

@@ -288,8 +288,7 @@ def restore_backup(
     # Delete the media directory.
     # Other files to back up will be just overwritten.
     media_dir = synapse.get_media_store_path(container)
-    if media_dir:
-        container.remove_path(media_dir, recursive=True)
+    container.remove_path(media_dir, recursive=True)
 
     restore_command = _build_restore_command(s3_parameters, backup_id, PASSPHRASE_FILE)
     logger.info("Restore command: %s", restore_command)
@@ -408,8 +407,7 @@ def _get_paths_to_backup(container: ops.Container) -> Iterable[str]:
         paths += container.list_files(synapse.SYNAPSE_CONFIG_DIR, pattern=pattern)
     # Local media if it exists
     media_dir = synapse.get_media_store_path(container)
-    if media_dir:
-        paths += container.list_files(media_dir, pattern=MEDIA_LOCAL_DIR_PATTERN)
+    paths += container.list_files(media_dir, pattern=MEDIA_LOCAL_DIR_PATTERN)
     return [path.path for path in paths]
 
 
