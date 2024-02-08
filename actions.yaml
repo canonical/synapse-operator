@@ -56,4 +56,4 @@ restore-backup:
   params:
     backup-id:
       type: string
-      description: A backup-id to identify the backup to restore.
+      description: The backup-id to identify the backup to restore.
