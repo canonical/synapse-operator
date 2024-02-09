@@ -29,7 +29,7 @@ async def test_saml_auth(  # pylint: disable=too-many-locals
     model: Model,
     model_name: str,
     synapse_app: Application,
-    nginx_integrator_app: Application,
+    nginx_integrator_app: Application,  # pylint: disable=unused-argument
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
