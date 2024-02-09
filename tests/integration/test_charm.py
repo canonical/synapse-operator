@@ -689,3 +689,40 @@ async def test_synapse_list_backups(
     assert len(backups) == 2
     assert backup_action_1.results["backup-id"] in backups
     assert backup_action_2.results["backup-id"] in backups
+
+
+@pytest.mark.s3
+@pytest.mark.usefixtures("s3_backup_bucket")
+async def test_synapse_backup_restore(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+):
+    """
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create a backup.
+    act: Run action restore-backup
+    assert: Should not fail. Synapse should be started.
+    """
+    # This is just a smoke test as internals of the restored files are not checked.
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    passphrase = token_hex(16)
+    await synapse_app.set_config({"backup_passphrase": passphrase})
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    backup_action: Action = await synapse_unit.run_action("create-backup")
+    await backup_action.wait()
+
+    restore_backup_action: Action = await synapse_unit.run_action(
+        "restore-backup", **{"backup-id": backup_action.results["backup-id"]}
+    )
+    await restore_backup_action.wait()
+
+    assert restore_backup_action.status == "completed"
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
