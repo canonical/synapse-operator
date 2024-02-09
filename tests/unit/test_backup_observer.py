@@ -237,3 +237,81 @@ backup-id                     | last-modified                |            size
 202301311259                  | 2024-01-01 00:00:00          |   1000000000000
 202401311259                  | 2024-02-01 00:00:00          |  20000000000000"""
     assert "\n" + results["formatted"] == expected_formatted_output
+
+
+def test_restore_backup_correct(
+    s3_relation_data_backup, harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Start the Synapse charm. Integrate with s3-integrator.
+        Mock can_use_bucket and restore_backup.
+    act: Run the restore backup action.
+    assert: Backup should be restored.
+    """
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+    restore_backup = MagicMock()
+    monkeypatch.setattr(backup, "restore_backup", restore_backup)
+
+    harness.update_config({"backup_passphrase": token_hex(16)})
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
+    harness.begin_with_initial_hooks()
+
+    output = harness.run_action("restore-backup")
+    assert output.results["result"] == "correct"
+    restore_backup.assert_called_once()
+
+
+def test_restore_backup_wrong_s3_parameters(harness: Harness):
+    """
+    arrange: start the Synapse charm. Do not integrate with S3.
+    act: Run the restore action.
+    assert: Backup should fail with error because there is no S3 integration
+    """
+    harness.begin_with_initial_hooks()
+    harness.update_config({"backup_passphrase": token_hex(16)})
+
+    with pytest.raises(ActionFailed) as err:
+        harness.run_action("restore-backup")
+    assert "Wrong S3 configuration" in str(err.value.message)
+
+
+def test_restore_backup_no_passphrase(
+    s3_relation_data_backup, harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: start the Synapse charm. Integrate with s3-integrator.
+        Mock can_use_bucket to True and do not set backup_password.
+    act: Run the restore action.
+    assert: Backup should fail because of missing backup_passphrase.
+    """
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
+    harness.begin_with_initial_hooks()
+
+    with pytest.raises(ActionFailed) as err:
+        harness.run_action("restore-backup")
+    assert "Missing backup_passphrase" in str(err.value.message)
+
+
+def test_restore_backup_wrong_restore_failure(
+    s3_relation_data_backup, harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: start the Synapse charm. Integrate with s3-integrator. Mock restore_backup
+        to fail.
+    act: Run the restore action.
+    assert: Backup should fail with error
+    """
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+    monkeypatch.setattr(
+        backup, "restore_backup", MagicMock(side_effect=backup.BackupError("Generic Error"))
+    )
+
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
+    harness.begin_with_initial_hooks()
+    harness.update_config({"backup_passphrase": token_hex(16)})
+
+    with pytest.raises(ActionFailed) as err:
+        harness.run_action("restore-backup")
+    assert "Error Restoring Backup" in str(err.value.message)
