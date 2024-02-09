@@ -21,6 +21,7 @@ import synapse
 from backup_observer import BackupObserver
 from charm_state import CharmConfigInvalidError, CharmState
 from database_observer import DatabaseObserver
+from irc_bridge import IRCBridge
 from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
@@ -52,6 +53,7 @@ class SynapseCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self._backup = BackupObserver(self)
+        self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._database = DatabaseObserver(self)
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
@@ -59,6 +61,7 @@ class SynapseCharm(ops.CharmBase):
             self._charm_state = CharmState.from_charm(
                 charm=self,
                 datasource=self._database.get_relation_as_datasource(),
+                irc_bridge_datasource=self._irc_bridge_database.get_relation_as_datasource(),
                 saml_config=self._saml.get_relation_as_saml_conf(),
                 smtp_config=self._smtp.get_relation_as_smtp_conf(),
             )
@@ -89,6 +92,8 @@ class SynapseCharm(ops.CharmBase):
         # See https://github.com/matrix-org/mjolnir/ for more details about it.
         if self._charm_state.synapse_config.enable_mjolnir:
             self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
+        if self._charm_state.synapse_config.enable_irc_bridge:
+            self._irc_bridge = IRCBridge(self, charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)

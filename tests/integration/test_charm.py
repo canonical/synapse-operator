@@ -582,3 +582,40 @@ async def test_synapse_enable_s3_backup_integration_no_bucket(
     await model.wait_for_idle(apps=[synapse_app.name], idle_period=5, status="blocked")
     assert synapse_app.units[0].workload_status == "blocked"
     assert "bucket does not exist" in synapse_app.units[0].workload_status_message
+
+
+async def test_synapse_irc_bridge_is_up(
+    ops_test: OpsTest,
+    model: Model,
+    synapse_app: Application,
+    irc_postgresql_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: Build and deploy the Synapse charm.
+    act: Enable the IRC bridge.
+    assert: Synapse and IRC bridge health points should return correct responses.
+    """
+    await model.add_relation(irc_postgresql_app.name, f"{synapse_app.name}:irc-bridge-database")
+    await model.wait_for_idle(apps=[irc_postgresql_app.name], status=ACTIVE_STATUS_NAME)
+    await synapse_app.set_config({"enable_irc_bridge": "true"})
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
+    )
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    async with ops_test.fast_forward():
+        # using fast_forward otherwise would wait for model config update-status-hook-interval
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_app.name], status="active"
+        )
+
+    response = requests.get(
+        f"http://{synapse_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+    )
+    assert response.status_code == 200
+    assert "Welcome to the Matrix" in response.text
+
+    irc_bridge_response = requests.get(
+        f"http://{synapse_ip}:{synapse.IRC_BRIDGE_HEALTH_PORT}", timeout=5
+    )
+    assert irc_bridge_response.status_code == 200

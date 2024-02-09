@@ -26,6 +26,11 @@ COMMAND_MIGRATE_CONFIG = "migrate_config"
 MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
 MJOLNIR_HEALTH_PORT = 7777
 MJOLNIR_SERVICE_NAME = "mjolnir"
+IRC_BRIDGE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/irc_bridge.yaml"
+IRC_BRIDGE_REGISTRATION_PATH = f"{SYNAPSE_CONFIG_DIR}/config/appservice-registration-irc.yaml"
+IRC_BRIDGE_HEALTH_PORT = "5446"
+IRC_BRIDGE_SERVICE_NAME = "irc"
+CHECK_IRC_BRIDGE_READY_NAME = "synapse-irc-ready"
 PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
@@ -69,6 +74,14 @@ class EnableMetricsError(WorkloadError):
 
 class CreateMjolnirConfigError(WorkloadError):
     """Exception raised when something goes wrong while creating mjolnir config."""
+
+
+class CreateIRCBridgeConfigError(WorkloadError):
+    """Exception raised when something goes wrong while creating irc bridge config."""
+
+
+class CreateIRCBridgeRegistrationError(WorkloadError):
+    """Exception raised when something goes wrong while creating irc bridge registration."""
 
 
 class EnableSAMLError(WorkloadError):
@@ -142,6 +155,19 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     check.override = "replace"
     check.level = "ready"
     check.http = {"url": f"http://localhost:{MJOLNIR_HEALTH_PORT}/healthz"}
+    return check.to_dict()
+
+
+def check_irc_bridge_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse IRC bridge service check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(CHECK_IRC_BRIDGE_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": f"http://localhost:{IRC_BRIDGE_HEALTH_PORT}"}
     return check.to_dict()
 
 
@@ -506,6 +532,117 @@ def create_mjolnir_config(container: ops.Container, access_token: str, room_id: 
         container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
     except ops.pebble.PathError as exc:
         raise CreateMjolnirConfigError(str(exc)) from exc
+
+
+def _get_irc_bridge_config(server_name: str, db_connect_string: str) -> typing.Dict:
+    """Create config as expected by irc bridge.
+
+    Args:
+        server_name: server name of the Synapse instance.
+        db_connect_string: database connection string.
+
+    Returns:
+        IRC Bridge configuration
+    """
+    with open("templates/irc_bridge_production.yaml", encoding="utf-8") as irc_config_file:
+        config = yaml.safe_load(irc_config_file)
+        config["homeserver"]["url"] = SYNAPSE_URL
+        config["homeserver"]["domain"] = server_name
+        config["database"]["connectionString"] = db_connect_string
+        return config
+
+
+def create_irc_bridge_config(
+    container: ops.Container, server_name: str, db_connect_string: str
+) -> None:
+    """Create irc bridge configuration.
+
+    Args:
+        container: Container of the charm.
+        server_name: server name of the Synapse instance.
+        db_connect_string: database connection string.
+
+    Raises:
+        CreateIRCBridgeConfigError: something went wrong creating irc bridge config.
+    """
+    try:
+        config = _get_irc_bridge_config(
+            server_name=server_name, db_connect_string=db_connect_string
+        )
+        container.push(IRC_BRIDGE_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
+    except ops.pebble.PathError as exc:
+        raise CreateIRCBridgeConfigError(str(exc)) from exc
+
+
+def _get_irc_bridge_app_registration(container: ops.Container) -> None:
+    """Create registration file as expected by irc bridge.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong creating irc bridge registration.
+    """
+    registration_result = _exec(
+        container,
+        [
+            "/bin/node",
+            "/app/app.js",
+            "-r",
+            "-f",
+            IRC_BRIDGE_REGISTRATION_PATH,
+            "-u",
+            "http://localhost:",
+            str(SYNAPSE_PORT),
+            "-c",
+            IRC_BRIDGE_CONFIG_PATH,
+            "-l",
+            "my_bot",
+        ],
+    )
+    if registration_result.exit_code:
+        logger.error(
+            "creating irc app registration failed, stdout: %s, stderr: %s",
+            registration_result.stdout,
+            registration_result.stderr,
+        )
+        raise WorkloadError("Creating irc app registration failed, please check the logs")
+
+
+def create_irc_bridge_app_registration(container: ops.Container) -> None:
+    """Create irc bridge app registration.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        CreateIRCBridgeRegistrationError: error creating irc bridge app registration.
+    """
+    try:
+        _get_irc_bridge_app_registration(container=container)
+        _add_app_service_config_field(container=container)
+    except ops.pebble.PathError as exc:
+        raise CreateIRCBridgeRegistrationError(str(exc)) from exc
+
+
+def _add_app_service_config_field(container: ops.Container) -> None:
+    """Add app_service_config_files to the Synapse configuration.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong updating the configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+
+        current_yaml["app_service_config_files"] = [f"{IRC_BRIDGE_REGISTRATION_PATH}"]
+
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(f"An error occurred while updating the configuration: {exc}") from exc
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:

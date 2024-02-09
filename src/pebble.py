@@ -73,6 +73,15 @@ class PebbleService:
         container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
         container.replan()
 
+    def replan_irc_bridge(self, container: ops.model.Container) -> None:
+        """Replan Synapse IRC bridge service.
+
+        Args:
+            container: Charm container.
+        """
+        container.add_layer("synapse-irc", self._irc_bridge_pebble_layer, combine=True)
+        container.replan()
+
     # The complexity of this method will be reviewed.
     def change_config(self, container: ops.model.Container) -> None:  # noqa: C901
         """Change the configuration.
@@ -249,6 +258,35 @@ class PebbleService:
             },
             "checks": {
                 synapse.CHECK_MJOLNIR_READY_NAME: synapse.check_mjolnir_ready(),
+            },
+        }
+        return typing.cast(ops.pebble.LayerDict, layer)
+
+    @property
+    def _irc_bridge_pebble_layer(self) -> ops.pebble.LayerDict:
+        """Generate pebble config for the irc bridge service.
+
+        Returns:
+            The pebble configuration for the irc bridge service.
+        """
+        command_params = (
+            f"-c {synapse.IRC_BRIDGE_CONFIG_PATH}/config.yaml"
+            + f" -f {synapse.IRC_BRIDGE_CONFIG_PATH}/appservice-registration-irc.yaml"
+            + f" -p {synapse.IRC_BRIDGE_HEALTH_PORT}"
+        )
+        layer = {
+            "summary": "Synapse irc layer",
+            "description": "Synapse irc layer",
+            "services": {
+                synapse.IRC_BRIDGE_SERVICE_NAME: {
+                    "override": "replace",
+                    "summary": "IRC service",
+                    "command": f"/bin/node /app/app.js {command_params}",
+                    "startup": "enabled",
+                },
+            },
+            "checks": {
+                synapse.CHECK_IRC_BRIDGE_READY_NAME: synapse.check_irc_bridge_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

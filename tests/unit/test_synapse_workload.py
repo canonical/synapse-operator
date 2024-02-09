@@ -262,7 +262,11 @@ def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pyte
     synapse.enable_ip_range_whitelist(
         container_mock,
         CharmState(
-            datasource=None, saml_config=None, smtp_config=None, synapse_config=synapse_config
+            datasource=None,
+            irc_bridge_datasource=None,
+            saml_config=None,
+            smtp_config=None,
+            synapse_config=synapse_config,
         ),
     )
 
@@ -361,7 +365,11 @@ listeners:
     synapse.enable_trusted_key_servers(
         container,
         CharmState(
-            datasource=None, saml_config=None, smtp_config=None, synapse_config=synapse_config
+            datasource=None,
+            irc_bridge_datasource=None,
+            saml_config=None,
+            smtp_config=None,
+            synapse_config=synapse_config,
         ),
     )
 
@@ -718,6 +726,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
 
     charm_state = CharmState(
         datasource=None,
+        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         synapse_config=SynapseConfig(
@@ -766,6 +775,7 @@ def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
 
     charm_state = CharmState(
         datasource=None,
+        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         synapse_config=SynapseConfig(
