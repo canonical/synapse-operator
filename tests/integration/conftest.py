@@ -107,7 +107,7 @@ async def synapse_app_fixture(
 ):
     """Build and deploy the Synapse charm."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing:
+    if use_existing or synapse_app_name in model.applications:
         return model.applications[synapse_app_name]
     resources = {
         "synapse-image": synapse_image,
