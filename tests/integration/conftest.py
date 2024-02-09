@@ -273,12 +273,7 @@ async def grafana_app_fixture(
             channel="latest/edge",
             trust=True,
         )
-        await model.wait_for_idle(
-            raise_on_error=False,
-            raise_on_blocked=False,
-            timeout=15 * 60,
-            status=ACTIVE_STATUS_NAME,
-        )
+        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
 
     return app
 
@@ -303,9 +298,9 @@ async def deploy_prometheus_fixture(
             channel="latest/edge",
             trust=True,
         )
-        # Sometimes in comes back after an error.
+        # Sometimes it comes back after an error.
         await model.wait_for_idle(
-            raise_on_error=False, raise_on_blocked=False, status=ACTIVE_STATUS_NAME
+            raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
         )
 
     return app
