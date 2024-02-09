@@ -7,7 +7,6 @@
 
 import logging
 import typing
-from secrets import token_hex
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
@@ -173,6 +172,17 @@ class SynapseCharm(ops.CharmBase):
     def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse pebble ready event."""
         self.change_config()
+        # Since Synapse is ready, the charm can create the admin access token
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            return
+        admin_user = synapse.create_admin_user(container)
+        if not admin_user:
+            logger.error("Failed to create admin user.")
+            return
+        self._set_admin_access_token(admin_user.access_token)
+        self._charm_state.synapse_config.admin_access_token = admin_user.access_token
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
@@ -236,27 +246,13 @@ class SynapseCharm(ops.CharmBase):
         results = {"register-user": True, "user-password": user.password}
         event.set_results(results)
 
-    def _create_admin_user(self) -> typing.Optional[User]:
-        """Create admin user.
+    def _get_peer_relation(self) -> typing.Optional[ops.Relation]:
+        """Get peer relation.
 
         Returns:
-            Admin user with token to be used in Synapse API requests or None if fails.
+            Relation or not if is not found.
         """
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            logger.error("Failed to connect to the container")
-            return None
-        # The username is random because if the user exists, register_user will try to get the
-        # access_token.
-        # But to do that it needs an admin user and we don't have one yet.
-        # So, to be on the safe side, the user name is randomly generated and if for any reason
-        # there is no access token on peer data/secret, another user will be created.
-        #
-        # Using 16 to create a random value but to  be secure against brute-force attacks,
-        # please check the docs:
-        # https://docs.python.org/3/library/secrets.html#how-many-bytes-should-tokens-use
-        username = token_hex(16)
-        return actions.register_user(container, username, True)
+        return self.model.get_relation(PEER_RELATION_NAME)
 
     def get_admin_access_token(self) -> typing.Optional[str]:
         """Get admin access token.
@@ -264,7 +260,7 @@ class SynapseCharm(ops.CharmBase):
         Returns:
             admin access token or None if fails.
         """
-        peer_relation = self.model.get_relation(PEER_RELATION_NAME)
+        peer_relation = self._get_peer_relation()
         if not peer_relation:
             logger.error(
                 "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
@@ -277,34 +273,38 @@ class SynapseCharm(ops.CharmBase):
                 try:
                     secret = self.model.get_secret(id=secret_id)
                     admin_access_token = secret.get_content().get(SECRET_KEY)
+                    return admin_access_token
                 except ops.model.SecretNotFoundError as exc:
                     logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
                     del peer_relation.data[self.app][SECRET_ID]
                     return None
-            else:
-                # There is Secrets support but none was created
-                # So lets create the user and store its token in the secret
-                admin_user = self._create_admin_user()
-                if not admin_user:
-                    return None
-                logger.debug("Adding secret")
-                secret = self.app.add_secret({SECRET_KEY: admin_user.access_token})
-                peer_relation.data[self.app].update({SECRET_ID: secret.id})
-                admin_access_token = admin_user.access_token
         else:
             # There is no Secrets support and none relation data was created
             # So lets create the user and store its token in the peer relation
             secret_value = peer_relation.data[self.app].get(SECRET_KEY)
             if secret_value:
-                admin_access_token = secret_value
-            else:
-                admin_user = self._create_admin_user()
-                if not admin_user:
-                    return None
-                logger.debug("Adding peer data")
-                peer_relation.data[self.app].update({SECRET_KEY: admin_user.access_token})
-                admin_access_token = admin_user.access_token
-        return admin_access_token
+                return secret_value
+        return None
+
+    def _set_admin_access_token(self, access_token: str) -> None:
+        """Set admin access token.
+
+        Args:
+            access_token: token to save in the secret.
+        """
+        peer_relation = self._get_peer_relation()
+        if not peer_relation:
+            logger.error(
+                "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
+            )
+            return
+        if JUJU_HAS_SECRETS:
+            logger.debug("Adding secret")
+            secret = self.app.add_secret({SECRET_KEY: access_token})
+            peer_relation.data[self.app].update({SECRET_ID: secret.id})
+        else:
+            logger.debug("Adding peer data")
+            peer_relation.data[self.app].update({SECRET_KEY: access_token})
 
     def _on_promote_user_admin_action(self, event: ActionEvent) -> None:
         """Promote user admin and report action result.

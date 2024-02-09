@@ -771,6 +771,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         synapse_config=SynapseConfig(
+            admin_access_token=None,
             federation_domain_whitelist=None,
             ip_range_whitelist=None,
             notif_from="noreply@example.com",
@@ -819,6 +820,7 @@ def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         synapse_config=SynapseConfig(
+            admin_access_token=None,
             federation_domain_whitelist=None,
             ip_range_whitelist=None,
             notif_from="noreply@example.com",
