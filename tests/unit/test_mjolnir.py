@@ -226,8 +226,8 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     mjolnir_user_mock = MagicMock()
     mjolnir_access_token = token_hex(16)
     mjolnir_user_mock.access_token = mjolnir_access_token
-    register_user_mock = MagicMock(return_value=mjolnir_user_mock)
-    monkeypatch.setattr(actions, "register_user", register_user_mock)
+    create_user_mock = MagicMock(return_value=mjolnir_user_mock)
+    monkeypatch.setattr(synapse, "create_user", create_user_mock)
     room_id = token_hex(16)
     get_room_id = MagicMock(return_value=room_id)
     monkeypatch.setattr(synapse, "get_room_id", get_room_id)
@@ -270,8 +270,8 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     mjolnir_user_mock = MagicMock()
     mjolnir_access_token = token_hex(16)
     mjolnir_user_mock.access_token = mjolnir_access_token
-    register_user_mock = MagicMock(return_value=mjolnir_user_mock)
-    monkeypatch.setattr(actions, "register_user", register_user_mock)
+    create_user_mock = MagicMock(return_value=mjolnir_user_mock)
+    monkeypatch.setattr(synapse, "create_user", create_user_mock)
     get_room_id = MagicMock(return_value=None)
     monkeypatch.setattr(synapse, "get_room_id", get_room_id)
     room_id = token_hex(16)
@@ -286,7 +286,7 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
 
     harness.charm._mjolnir.enable_mjolnir(admin_access_token)
 
-    register_user_mock.assert_called_once_with(ANY, ANY, ANY, admin_access_token, ANY)
+    create_user_mock.assert_called_once_with(ANY, ANY, ANY, admin_access_token, ANY)
     get_room_id.assert_called_once_with(
         room_name="management", admin_access_token=admin_access_token
     )
