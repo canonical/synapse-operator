@@ -58,7 +58,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         access_token = self._charm_state.synapse_config.admin_access_token
         if not access_token:
-            logging.error("Failed to get method get_admin_access_token.")
+            logging.error("Admin Access Token was not found, please check the logs.")
             return None
         return access_token
 

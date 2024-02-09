@@ -4,8 +4,12 @@
 # See LICENSE file for licensing details.
 
 """Charm for Synapse on kubernetes."""
+# ignoring due mjolnir being set in synapse pebble ready handler
+# pylint: disable=attribute-defined-outside-init
+
 
 import logging
+import time
 import typing
 
 import ops
@@ -84,8 +88,6 @@ class SynapseCharm(ops.CharmBase):
             strip_prefix=True,
         )
         self._observability = Observability(self)
-        # Mjolnir is a moderation tool for Matrix.
-        # See https://github.com/matrix-org/mjolnir/ for more details about it.
         if self._charm_state.synapse_config.enable_mjolnir:
             self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -177,19 +179,26 @@ class SynapseCharm(ops.CharmBase):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
+        time.sleep(3)
         admin_user = synapse.create_admin_user(container)
         if not admin_user:
             logger.error("Failed to create admin user.")
             return
         self._set_admin_access_token(admin_user.access_token)
         self._charm_state.synapse_config.admin_access_token = admin_user.access_token
+        # Mjolnir is a moderation tool for Matrix.
+        # See https://github.com/matrix-org/mjolnir/ for more details about it.
+        if self._charm_state.synapse_config.enable_mjolnir:
+            self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not container.can_connect():
+            logger.debug("synapse_nginx_pebble_ready failed to connect")
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
+        logger.debug("synapse_nginx_pebble_ready replanning nginx")
         self.pebble_service.replan_nginx(container)
         self._set_unit_status()
 
