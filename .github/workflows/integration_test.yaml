@@ -8,9 +8,6 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      chaos-app-label: app.kubernetes.io/name=synapse
-      chaos-enabled: false
-      chaos-experiments: pod-delete
       extra-arguments: --localstack-address 172.17.0.1
       pre-run-script: localstack-installation.sh
       trivy-image-config: "trivy.yaml"
