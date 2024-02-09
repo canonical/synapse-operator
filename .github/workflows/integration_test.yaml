@@ -9,25 +9,29 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
+      extra-arguments: -x
+      trivy-image-config: "trivy.yaml"
+      juju-channel: 3.1/stable
+      channel: 1.28-strict/stable
+      modules: '["test_charm", "test-mjolnir", "test_nginx"]'
+  integration-tests-s3:
+    name: Integration test with juju 3.1
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    secrets: inherit
+    with:
       extra-arguments: -x --localstack-address 172.17.0.1
       pre-run-script: localstack-installation.sh
       trivy-image-config: "trivy.yaml"
       juju-channel: 3.1/stable
       channel: 1.28-strict/stable
-      self-hosted-runner: true
-      self-hosted-runner-label: "edge"
-      tmate-debug: true
-      modules: '["test_charm"]'
-  integration-tests-refresh:
-    name: Integration test with juju 3.1 for refresh
+      modules: '["test_s3"]'
+  integration-tests-cos:
+    name: Integration test with juju 3.1
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      extra-arguments: -x
+      extra-arguments: -x --localstack-address 172.17.0.1
       trivy-image-config: "trivy.yaml"
       juju-channel: 3.1/stable
       channel: 1.28-strict/stable
-      self-hosted-runner: true
-      self-hosted-runner-label: "edge"
-      tmate-debug: true
-      modules: '["test_refresh"]'
+      modules: '["test_cos"]'

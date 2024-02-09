@@ -7,6 +7,7 @@
 import typing
 from secrets import token_hex
 
+import pytest
 import requests
 from juju.application import Application
 from juju.model import Model
@@ -19,6 +20,7 @@ from tests.integration.helpers import create_moderators_room, get_access_token, 
 # pylint: disable=too-many-arguments
 
 
+@pytest.mark.mjolnir
 async def test_synapse_with_mjolnir_from_refresh_is_up(
     ops_test: OpsTest,
     model: Model,
@@ -67,3 +69,33 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
         f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
     )
     assert mjolnir_response.status_code == 200
+
+
+@pytest.mark.mjolnir
+async def test_synapse_enable_mjolnir(
+    ops_test: OpsTest,
+    synapse_app: Application,
+    access_token: str,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: build and deploy the Synapse charm, create an user, get the access token,
+        enable Mjolnir and create the management room.
+    act: check Mjolnir health point.
+    assert: the Synapse application is active and Mjolnir health point returns a correct response.
+    """
+    await synapse_app.set_config({"enable_mjolnir": "true"})
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
+    )
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    create_moderators_room(synapse_ip, access_token)
+    async with ops_test.fast_forward():
+        # using fast_forward otherwise would wait for model config update-status-hook-interval
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_app.name], status="active"
+        )
+
+    res = requests.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
+
+    assert res.status_code == 200
