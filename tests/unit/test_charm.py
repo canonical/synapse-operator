@@ -13,7 +13,6 @@ import ops
 import pytest
 from ops.testing import Harness
 
-import actions
 import synapse
 from charm import SynapseCharm
 from pebble import PebbleServiceError
