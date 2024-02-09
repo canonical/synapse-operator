@@ -242,7 +242,7 @@ async def postgresql_app_fixture(
 ):
     """Deploy postgresql."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing:
+    if use_existing or postgresql_app_name in model.applications:
         return model.applications[postgresql_app_name]
     async with ops_test.fast_forward():
         await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
