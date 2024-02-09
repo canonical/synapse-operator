@@ -37,6 +37,7 @@ SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
 SYNAPSE_CRON_SERVICE_NAME = "synapse-cron"
 SYNAPSE_DATA_DIR = "/data"
+SYNAPSE_DEFAULT_MEDIA_STORE_PATH = "/media_store"
 SYNAPSE_GROUP = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
@@ -217,7 +218,7 @@ def get_registration_shared_secret(container: ops.Container) -> typing.Optional[
     return _get_configuration_field(container=container, fieldname="registration_shared_secret")
 
 
-def get_media_store_path(container: ops.Container) -> typing.Optional[str]:
+def get_media_store_path(container: ops.Container) -> str:
     """Get media_store_path from configuration file.
 
     Args:
@@ -226,7 +227,10 @@ def get_media_store_path(container: ops.Container) -> typing.Optional[str]:
     Returns:
         media_store_path value.
     """
-    return _get_configuration_field(container=container, fieldname="media_store_path")
+    media_store_path = _get_configuration_field(container=container, fieldname="media_store_path")
+    if not media_store_path:
+        media_store_path = SYNAPSE_DEFAULT_MEDIA_STORE_PATH
+    return media_store_path
 
 
 def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:
