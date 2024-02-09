@@ -33,7 +33,7 @@ Initialize the pebble service.
 
 ---
 
-<a href="../src/pebble.py#L80"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -57,7 +57,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_saml`
 
@@ -81,7 +81,7 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_smtp`
 
@@ -102,6 +102,24 @@ Enable SMTP while receiving on_smtp_data_available event.
 **Raises:**
  
  - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+---
+
+<a href="../src/pebble.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `replan_irc_bridge`
+
+```python
+replan_irc_bridge(container: Container) → None
+```
+
+Replan Synapse IRC bridge service. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
 
 ---
 
@@ -141,7 +159,7 @@ Replan Synapse NGINX service.
 
 ---
 
-<a href="../src/pebble.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `reset_instance`
 
