@@ -90,6 +90,7 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         )
         synapse.create_irc_bridge_app_registration(container=container)
         self._pebble_service.replan_irc_bridge(container)
+        self._pebble_service.restart_synapse(container)
         self._charm.model.unit.status = ops.ActiveStatus()
 
     def _get_db_connection(self) -> str:

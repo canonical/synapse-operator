@@ -295,7 +295,6 @@ class PebbleService:
         }
         return typing.cast(ops.pebble.LayerDict, layer)
 
-
     @property
     def _cron_pebble_layer(self) -> ops.pebble.LayerDict:
         """Generate pebble config for the cron service.
