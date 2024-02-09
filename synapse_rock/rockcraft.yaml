@@ -6,13 +6,41 @@ summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
 version: "1.0"
 base: ubuntu@22.04
-# renovate: base: ubuntu:22.04@sha256:e6173d4dc55e76b87c4af8db8821b1feae4146dd47341e4d431118c7dd060a74
+# renovate: base: ubuntu:22.04@sha256:e9569c25505f33ff72e88b2990887c9dcf230f23259da296eb814fc2b41af999
 build-base: ubuntu@22.04
-# renovate: build-base: ubuntu:22.04@sha256:e6173d4dc55e76b87c4af8db8821b1feae4146dd47341e4d431118c7dd060a74
+# renovate: build-base: ubuntu:22.04@sha256:e9569c25505f33ff72e88b2990887c9dcf230f23259da296eb814fc2b41af999
 license: Apache-2.0
 platforms:
   amd64:
 parts:
+    scripts:
+      plugin: dump
+      source: scripts
+      organize:
+        "*": usr/local/bin/
+      override-prime: |
+        craftctl default
+        chmod -R +x usr/local/bin/*
+    cron:
+      after:
+        - scripts
+      stage-packages:
+        - cron
+      plugin: dump
+      source: cron
+      organize:
+        "cron.hourly/*": /etc/cron.hourly
+        "cron.daily/*": /etc/cron.daily
+        "cron.weekly/*": /etc/cron.weekly
+        "cron.monthly/*": /etc/cron.monthly
+      override-prime: |
+        craftctl default
+        chmod -R +x etc/cron.*
+    add-user:
+        plugin: nil
+        overlay-script: |
+          groupadd -R $CRAFT_OVERLAY --gid 991 synapse
+          useradd -R $CRAFT_OVERLAY --system --gid 991 --uid 991 --home /srv/synapse -m synapse
     synapse:
         build-packages:
             - build-essential
@@ -37,6 +65,8 @@ parts:
             - coreutils
             - curl
             - gosu
+            - gpg
+            - gpg-agent
             - libffi-dev
             - libicu70
             - libjemalloc2
@@ -48,6 +78,7 @@ parts:
             - python3
             - xmlsec1
         stage-snaps:
+            - aws-cli
             - mjolnir/latest/edge
             - matrix-appservice-irc/latest/edge
         plugin: nil

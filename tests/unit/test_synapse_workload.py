@@ -3,7 +3,7 @@
 
 """Synapse workload unit tests."""
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-lines
 
 
 import io
@@ -491,6 +491,56 @@ def test_enable_metrics_error(monkeypatch: pytest.MonkeyPatch):
 
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_metrics(container_mock)
+
+
+def test_enable_forgotten_room_success(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: change the configuration file.
+    assert: new configuration file is pushed and forgotten_room_retention_period is enabled.
+    """
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    text_io_mock = io.StringIO(config_content)
+    pull_mock = Mock(return_value=text_io_mock)
+    push_mock = MagicMock()
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    monkeypatch.setattr(container_mock, "push", push_mock)
+
+    synapse.enable_forgotten_room_retention(container_mock)
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "forgotten_room_retention_period": "28d",
+    }
+    pull_mock.assert_called_with(synapse.SYNAPSE_CONFIG_PATH)
+    push_mock.assert_called_with(
+        synapse.SYNAPSE_CONFIG_PATH, yaml.safe_dump(expected_config_content)
+    )
+
+
+def test_enable_forgotten_room_error(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: set mock container with file.
+    act: change the configuration file.
+    assert: raise WorkloadError in case of error.
+    """
+    error_message = "Error pulling file"
+    path_error = ops.pebble.PathError(kind="fake", message=error_message)
+    pull_mock = MagicMock(side_effect=path_error)
+    container_mock = MagicMock()
+    monkeypatch.setattr(container_mock, "pull", pull_mock)
+
+    with pytest.raises(synapse.WorkloadError, match=error_message):
+        synapse.enable_forgotten_room_retention(container_mock)
 
 
 def test_enable_saml_success():

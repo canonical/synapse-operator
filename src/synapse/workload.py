@@ -35,11 +35,14 @@ PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
+SYNAPSE_CRON_SERVICE_NAME = "synapse-cron"
 SYNAPSE_DATA_DIR = "/data"
+SYNAPSE_GROUP = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
 SYNAPSE_SERVICE_NAME = "synapse"
+SYNAPSE_USER = "synapse"
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +217,18 @@ def get_registration_shared_secret(container: ops.Container) -> typing.Optional[
     return _get_configuration_field(container=container, fieldname="registration_shared_secret")
 
 
+def get_media_store_path(container: ops.Container) -> typing.Optional[str]:
+    """Get media_store_path from configuration file.
+
+    Args:
+        container: Container of the charm.
+
+    Returns:
+        media_store_path value.
+    """
+    return _get_configuration_field(container=container, fieldname="media_store_path")
+
+
 def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:
     """Check server_name.
 
@@ -341,6 +356,24 @@ def enable_metrics(container: ops.Container) -> None:
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise EnableMetricsError(str(exc)) from exc
+
+
+def enable_forgotten_room_retention(container: ops.Container) -> None:
+    """Change the Synapse configuration to enable forgotten_room_retention_period.
+
+    Args:
+        container: Container of the charm.
+
+    Raises:
+        WorkloadError: something went wrong enabling forgotten_room_retention_period.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["forgotten_room_retention_period"] = "28d"
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
 
 
 def disable_password_config(container: ops.Container) -> None:
