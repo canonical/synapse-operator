@@ -41,6 +41,9 @@ class BackupObserver(Object):
         self.framework.observe(self._s3_client.on.credentials_gone, self._on_s3_credential_gone)
         self.framework.observe(self._charm.on.create_backup_action, self._on_create_backup_action)
         self.framework.observe(self._charm.on.list_backups_action, self._on_list_backups_action)
+        self.framework.observe(
+            self._charm.on.restore_backup_action, self._on_restore_backup_action
+        )
 
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Check new S3 credentials set the unit to blocked if they are wrong."""
@@ -148,3 +151,35 @@ class BackupObserver(Object):
                 },
             }
         )
+
+    def _on_restore_backup_action(self, event: ActionEvent) -> None:
+        """Restore a backup from S3.
+
+        Args:
+            event: Event triggering the restore backup action.
+        """
+        backup_id = event.params.get("backup-id")
+        logger.info("A restore with backup-id %s has been requested on unit.", backup_id)
+
+        try:
+            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+        except ValueError:
+            logger.exception("Wrong S3 configuration in restore backup action")
+            event.fail("Wrong S3 configuration on restore backup action. Check S3 integration.")
+            return
+
+        backup_passphrase = self._charm.config.get("backup_passphrase")
+        if not backup_passphrase:
+            event.fail("Missing backup_passphrase config option.")
+            return
+
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+
+        try:
+            backup.restore_backup(container, s3_parameters, backup_passphrase, str(backup_id))
+        except (backup.BackupError, APIError, ExecError):
+            logger.exception("Error Restoring Backup.")
+            event.fail("Error Restoring Backup.")
+            return
+
+        event.set_results({"result": "correct"})

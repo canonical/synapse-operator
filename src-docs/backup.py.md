@@ -53,6 +53,39 @@ Create a backup for Synapse running it in the workload.
 
 ---
 
+<a href="../src/backup.py#L268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `restore_backup`
+
+```python
+restore_backup(
+    container: Container,
+    s3_parameters: S3Parameters,
+    passphrase: str,
+    backup_id: str
+) → None
+```
+
+Restore a backup for Synapse overwriting the current data. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Synapse Container 
+ - <b>`s3_parameters`</b>:  S3 parameters for the backup. 
+ - <b>`passphrase`</b>:  Passphrase use to decrypt the backup. 
+ - <b>`backup_id`</b>:  Name of the object in the backup. 
+
+
+
+**Raises:**
+ 
+ - <b>`BackupError`</b>:  If there was an error restoring the backup. 
+
+
+---
+
 ## <kbd>class</kbd> `BackupError`
 Generic backup Exception. 
 
