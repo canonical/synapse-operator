@@ -199,8 +199,12 @@ async def nginx_integrator_app_fixture(
     model: Model,
     synapse_app,
     nginx_integrator_app_name: str,
+    pytestconfig: Config,
 ):
     """Deploy nginx-ingress-integrator."""
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if use_existing or nginx_integrator_app_name in model.applications:
+        return model.applications[nginx_integrator_app_name]
     async with ops_test.fast_forward():
         app = await model.deploy(
             "nginx-ingress-integrator",
