@@ -6,13 +6,14 @@
 import datetime
 from secrets import token_hex
 from typing import Type
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import ops
 import pytest
 from ops.testing import ActionFailed, Harness
 
 import backup
+import synapse
 
 
 @pytest.mark.parametrize(
@@ -245,20 +246,22 @@ def test_restore_backup_correct(
     """
     arrange: Start the Synapse charm. Integrate with s3-integrator.
         Mock can_use_bucket and restore_backup.
-    act: Run the restore backup action.
-    assert: Backup should be restored.
+    act: Run the restore backup action with a backup-id.
+    assert: Backup should be restored. restore_backup should be called.
     """
     monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
     restore_backup = MagicMock()
     monkeypatch.setattr(backup, "restore_backup", restore_backup)
-
-    harness.update_config({"backup_passphrase": token_hex(16)})
+    backup_passphrase = token_hex(16)
+    harness.update_config({"backup_passphrase": backup_passphrase})
     harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
     harness.begin_with_initial_hooks()
 
-    output = harness.run_action("restore-backup")
+    output = harness.run_action("restore-backup", params={"backup-id": "backup-2024"})
+
     assert output.results["result"] == "correct"
-    restore_backup.assert_called_once()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    restore_backup.assert_called_once_with(container, ANY, backup_passphrase, "backup-2024")
 
 
 def test_restore_backup_wrong_s3_parameters(harness: Harness):
@@ -313,5 +316,47 @@ def test_restore_backup_wrong_restore_failure(
     harness.update_config({"backup_passphrase": token_hex(16)})
 
     with pytest.raises(ActionFailed) as err:
-        harness.run_action("restore-backup")
+        harness.run_action("restore-backup", params={"backup-id": "backup-2024"})
     assert "Error Restoring Backup" in str(err.value.message)
+
+
+def test_delete_backup_correct(
+    s3_relation_data_backup: dict, harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Start the Synapse charm. Integrate with S3. Mock can_use_bucket and
+        backup.delete_backup.
+    act: Run action delete-backup.
+    assert: Response is correct and s3 client delete_backup is called with the correct args.
+    """
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+    delete_backup_mock = MagicMock()
+    monkeypatch.setattr(backup.S3Client, "delete_backup", delete_backup_mock)
+
+    harness.begin_with_initial_hooks()
+    action = harness.run_action("delete-backup", params={"backup-id": "backup-2024"})
+
+    assert action.results["result"] == "correct"
+    delete_backup_mock.assert_called_once_with("backup-2024")
+
+
+def test_delete_backup_s3_error(
+    s3_relation_data_backup: dict, harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Start the Synapse charm. Integrate with S3. Mock can_use_bucket and
+        backup.delete_backup to raise S3Error.
+    act: Run action delete-backup.
+    assert: Raises ActionFailed.
+    """
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+    delete_backup_mock = MagicMock(side_effect=backup.S3Error("Error"))
+    monkeypatch.setattr(backup.S3Client, "delete_backup", delete_backup_mock)
+
+    harness.begin_with_initial_hooks()
+
+    with pytest.raises(ActionFailed) as err:
+        harness.run_action("delete-backup", params={"backup-id": "backup-2024"})
+    assert "Error deleting backup" in str(err.value.message)

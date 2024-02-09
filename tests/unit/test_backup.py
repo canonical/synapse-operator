@@ -172,6 +172,76 @@ def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.M
     assert not s3_client.can_use_bucket()
 
 
+def test_delete_backup_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. Mock delete_object to return a realistic correct response.
+        Also mock list_backups, as delete_backup checks if the backup exists.
+    act: Run delete_backup.
+    assert: The function was delete_object called with the right arguments.
+    """
+    backup_id = "backup-20240101"
+    backups = [backup.S3Backup(backup_id=backup_id, last_modified=datetime.datetime.now(), size=1)]
+    s3_client = backup.S3Client(s3_parameters_backup)
+    s3_example_response = {
+        "ResponseMetadata": {
+            "RequestId": "17B23CD508D801F2",
+            "HostId": "dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8",
+            "HTTPStatusCode": 204,
+            "HTTPHeaders": {
+                "server": "nginx/1.24.0 (Ubuntu)",
+                "date": "Fri, 09 Feb 2024 15:54:54 GMT",
+            },
+            "RetryAttempts": 0,
+        }
+    }
+    monkeypatch.setattr(s3_client, "list_backups", MagicMock(return_value=backups))
+    delete_object_mock = MagicMock(return_value=s3_example_response)
+    monkeypatch.setattr(s3_client._client, "delete_object", delete_object_mock)
+
+    s3_client.delete_backup(backup_id)
+
+    key = f"{s3_parameters_backup.path.strip('/')}/{backup_id}"
+    delete_object_mock.assert_called_once_with(Bucket=s3_parameters_backup.bucket, Key=key)
+
+
+def test_delete_backup_backup_does_not_exist(
+    s3_parameters_backup, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Create a S3Client. Mock list_backups, so the backup does not exist.
+    act: Run delete_backup.
+    assert: The function delete_object throws and exception because the backup does not exist.
+    """
+    backup_id = "backup-20240101"
+    backups: list[backup.S3Backup] = []
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(s3_client, "list_backups", MagicMock(return_value=backups))
+
+    with pytest.raises(backup.S3Error) as err:
+        s3_client.delete_backup(backup_id)
+    assert "does not exist" in str(err.value)
+
+
+def test_delete_backup_boto_client_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. Mock list_backups, so the backup exists. On delete_object return
+        a boto exception.
+    act: Run delete_backup.
+    assert: The function delete_object throws and exception.
+    """
+    backup_id = "backup-20240101"
+    backups = [backup.S3Backup(backup_id=backup_id, last_modified=datetime.datetime.now(), size=1)]
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(s3_client, "list_backups", MagicMock(return_value=backups))
+    monkeypatch.setattr(
+        s3_client._client, "delete_object", MagicMock(side_effect=ClientError({}, "Generic Error"))
+    )
+
+    with pytest.raises(backup.S3Error) as err:
+        s3_client.delete_backup(backup_id)
+    assert "Cannot delete backup_id" in str(err.value)
+
+
 def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create a S3Client. Mock response to return a real response in list_objects_v2.

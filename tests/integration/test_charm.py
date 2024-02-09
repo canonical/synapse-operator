@@ -726,3 +726,40 @@ async def test_synapse_backup_restore(
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
     )
+
+
+@pytest.mark.s3
+@pytest.mark.usefixtures("s3_backup_bucket")
+async def test_synapse_backup_delete(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+):
+    """
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create a backup.
+    act: Run action delete-backup with the created backup.
+    assert: In list-backups, there should be no backup.
+    """
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    passphrase = token_hex(16)
+    await synapse_app.set_config({"backup_passphrase": passphrase})
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    backup_action: Action = await synapse_unit.run_action("create-backup")
+    await backup_action.wait()
+
+    delete_backup_action: Action = await synapse_unit.run_action(
+        "delete-backup", **{"backup-id": backup_action.results["backup-id"]}
+    )
+    await delete_backup_action.wait()
+
+    assert delete_backup_action.status == "completed"
+    list_backups_action: Action = await synapse_unit.run_action("list-backups")
+    await list_backups_action.wait()
+    assert list_backups_action.status == "completed"
+    assert "backups" not in list_backups_action.results

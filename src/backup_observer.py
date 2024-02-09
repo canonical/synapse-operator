@@ -44,6 +44,7 @@ class BackupObserver(Object):
         self.framework.observe(
             self._charm.on.restore_backup_action, self._on_restore_backup_action
         )
+        self.framework.observe(self._charm.on.delete_backup_action, self._on_delete_backup_action)
 
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Check new S3 credentials set the unit to blocked if they are wrong."""
@@ -180,6 +181,32 @@ class BackupObserver(Object):
         except (backup.BackupError, APIError, ExecError):
             logger.exception("Error Restoring Backup.")
             event.fail("Error Restoring Backup.")
+            return
+
+        event.set_results({"result": "correct"})
+
+    def _on_delete_backup_action(self, event: ActionEvent) -> None:
+        """Delete a backup from S3.
+
+        Args:
+            event: Event triggering the delete backup action.
+        """
+        backup_id = event.params.get("backup-id")
+        logger.info("backup-id %s is going to be deleted", backup_id)
+
+        try:
+            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+        except ValueError:
+            logger.exception("Wrong S3 configuration in delete backup action")
+            event.fail("Wrong S3 configuration in delete backup action. Check S3 integration.")
+            return
+
+        try:
+            s3_client = backup.S3Client(s3_parameters)
+            s3_client.delete_backup(str(backup_id))
+        except backup.S3Error:
+            logger.exception("Error deleting backup.")
+            event.fail("Error deleting backup.")
             return
 
         event.set_results({"result": "correct"})
