@@ -372,17 +372,21 @@ def test_delete_backup_does_not_exist(
     arrange: Start the Synapse charm. Integrate with S3. Mock can_use_bucket, exists_backup and
         backup.delete_backup.
     act: Run action delete-backup.
-    assert: Response is correct and s3 client delete_backup is called with the correct args.
+    assert: Does not raise, but the result shows that the backup does not exist
+        and s3 client delete_backup is not called.
     """
     harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
     monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
     monkeypatch.setattr(backup.S3Client, "exists_backup", MagicMock(return_value=False))
+    delete_backup_mock = MagicMock()
+    monkeypatch.setattr(backup.S3Client, "delete_backup", delete_backup_mock)
 
     harness.begin_with_initial_hooks()
 
-    with pytest.raises(ActionFailed) as err:
-        harness.run_action("delete-backup", params={"backup-id": "backup-2024"})
-    assert "does not exist" in str(err.value.message)
+    action = harness.run_action("delete-backup", params={"backup-id": "backup-2024"})
+
+    assert "does not exist" in action.results["result"]
+    delete_backup_mock.assert_not_called()
 
 
 def test_delete_backup_s3_error(

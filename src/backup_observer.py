@@ -213,13 +213,15 @@ class BackupObserver(Object):
 
         try:
             s3_client = backup.S3Client(s3_parameters)
-            if not s3_client.exists_backup(backup_id):
-                event.fail("Backup to delete does not exist.")
-                return
-            s3_client.delete_backup(str(backup_id))
+            if s3_client.exists_backup(backup_id):
+                s3_client.delete_backup(backup_id)
+                result = "correct"
+            else:
+                logger.warning("backup-id %s to delete does not exist.", backup_id)
+                result = f"backup-id {backup_id} does not exist"
         except backup.S3Error:
             logger.exception("Error deleting backup.")
             event.fail("Error deleting backup.")
             return
 
-        event.set_results({"result": "correct"})
+        event.set_results({"result": result})
