@@ -185,16 +185,35 @@ class S3Client:
         Raises:
             S3Error: If there was an error deleting the backup.
         """
-        backups = self.list_backups()
-        if not any(backup.backup_id == backup_id for backup in backups):
-            raise S3Error(f"Backup with id {backup_id} does not exist")
-
         object_key = _s3_path(prefix=self._s3_parameters.path, object_name=backup_id)
 
         try:
             self._client.delete_object(Bucket=self._s3_parameters.bucket, Key=object_key)
         except ClientError as exc:
             raise S3Error(f"Cannot delete backup_id {backup_id} from bucket") from exc
+
+    def exists_backup(self, backup_id: str) -> bool:
+        """Check if a backup-id exists in S3.
+
+        Args:
+            backup_id: backup id to delete.
+
+        Returns:
+            True if the backup-id exists, False otherwise
+
+        Raises:
+            S3Error: If there was an error checking the backup.
+        """
+        object_key = _s3_path(prefix=self._s3_parameters.path, object_name=backup_id)
+        try:
+            self._client.head_object(Bucket=self._s3_parameters.bucket, Key=object_key)
+        except ClientError as exc:
+            if "Error" in exc.response and exc.response["Error"].get("Code") == "404":
+                return False
+            logger.exception("Error checking object")
+            raise S3Error("Error  checking object in S3") from exc
+
+        return True
 
     def list_backups(self) -> list[S3Backup]:
         """List the backups stored in S3 in the current s3 configuration.

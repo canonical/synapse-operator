@@ -17,7 +17,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -53,7 +53,7 @@ Create a backup for Synapse running it in the workload.
 
 ---
 
-<a href="../src/backup.py#L288"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L307"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restore_backup`
 
@@ -177,7 +177,36 @@ Delete a backup stored in S3 in the current s3 configuration.
 
 ---
 
-<a href="../src/backup.py#L199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `exists_backup`
+
+```python
+exists_backup(backup_id: str) → bool
+```
+
+Check if a backup-id exists in S3. 
+
+
+
+**Args:**
+ 
+ - <b>`backup_id`</b>:  backup id to delete. 
+
+
+
+**Returns:**
+ True if the backup-id exists, False otherwise 
+
+
+
+**Raises:**
+ 
+ - <b>`S3Error`</b>:  If there was an error checking the backup. 
+
+---
+
+<a href="../src/backup.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `list_backups`
 

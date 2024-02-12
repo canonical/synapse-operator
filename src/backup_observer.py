@@ -159,7 +159,7 @@ class BackupObserver(Object):
         Args:
             event: Event triggering the restore backup action.
         """
-        backup_id = event.params.get("backup-id")
+        backup_id = event.params["backup-id"]
         logger.info("A restore with backup-id %s has been requested on unit.", backup_id)
 
         try:
@@ -167,6 +167,16 @@ class BackupObserver(Object):
         except ValueError:
             logger.exception("Wrong S3 configuration in restore backup action")
             event.fail("Wrong S3 configuration on restore backup action. Check S3 integration.")
+            return
+
+        try:
+            s3_client = backup.S3Client(s3_parameters)
+            if not s3_client.exists_backup(backup_id):
+                event.fail(f"backup-id {backup_id} does not exist")
+                return
+        except backup.S3Error:
+            logger.exception("Error accessing S3 in restore backup action")
+            event.fail("Error accessing S3 in restore backup action.")
             return
 
         backup_passphrase = self._charm.config.get("backup_passphrase")
@@ -177,7 +187,7 @@ class BackupObserver(Object):
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
 
         try:
-            backup.restore_backup(container, s3_parameters, backup_passphrase, str(backup_id))
+            backup.restore_backup(container, s3_parameters, backup_passphrase, backup_id)
         except (backup.BackupError, APIError, ExecError):
             logger.exception("Error Restoring Backup.")
             event.fail("Error Restoring Backup.")
@@ -191,7 +201,7 @@ class BackupObserver(Object):
         Args:
             event: Event triggering the delete backup action.
         """
-        backup_id = event.params.get("backup-id")
+        backup_id = event.params["backup-id"]
         logger.info("backup-id %s is going to be deleted", backup_id)
 
         try:
@@ -203,6 +213,9 @@ class BackupObserver(Object):
 
         try:
             s3_client = backup.S3Client(s3_parameters)
+            if not s3_client.exists_backup(backup_id):
+                event.fail("Backup to delete does not exist.")
+                return
             s3_client.delete_backup(str(backup_id))
         except backup.S3Error:
             logger.exception("Error deleting backup.")
