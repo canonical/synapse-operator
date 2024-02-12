@@ -14,7 +14,6 @@ from ops.charm import ActionEvent
 from ops.testing import Harness
 
 import synapse
-from charm import SynapseCharm
 
 
 def test_anonymize_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -27,8 +26,8 @@ def test_anonymize_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch
     admin_access_token = token_hex(16)
     anonymize_user_mock = unittest.mock.Mock()
     monkeypatch.setattr(
-        SynapseCharm,
-        "get_admin_access_token",
+        harness.charm.token_service,
+        "get",
         unittest.mock.MagicMock(return_value=admin_access_token),
     )
     monkeypatch.setattr("synapse.deactivate_user", anonymize_user_mock)
@@ -64,8 +63,8 @@ def test_anonymize_user_api_error(harness: Harness, monkeypatch: pytest.MonkeyPa
     user = "username"
     admin = True
     monkeypatch.setattr(
-        SynapseCharm,
-        "get_admin_access_token",
+        harness.charm.token_service,
+        "get",
         unittest.mock.MagicMock(return_value=admin_access_token),
     )
     event = unittest.mock.MagicMock(spec=ActionEvent)
@@ -119,8 +118,8 @@ def test_anonymize_user_action_no_token(harness: Harness, monkeypatch: pytest.Mo
     harness.begin_with_initial_hooks()
     anonymize_user_mock = unittest.mock.Mock()
     monkeypatch.setattr(
-        SynapseCharm,
-        "get_admin_access_token",
+        harness.charm.token_service,
+        "get",
         unittest.mock.MagicMock(return_value=None),
     )
     monkeypatch.setattr("synapse.deactivate_user", anonymize_user_mock)

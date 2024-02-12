@@ -12,6 +12,7 @@ import typing
 import ops
 
 import synapse
+from admin_access_token import AdminAccessTokenService
 from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
@@ -28,16 +29,20 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
     See https://github.com/matrix-org/mjolnir/ for more details about it.
     """
 
-    def __init__(self, charm: ops.CharmBase, charm_state: CharmState):
+    def __init__(
+        self, charm: ops.CharmBase, charm_state: CharmState, token_service: AdminAccessTokenService
+    ):
         """Initialize a new instance of the Mjolnir class.
 
         Args:
             charm: The charm object that the Mjolnir instance belongs to.
             charm_state: Instance of CharmState.
+            token_service: Instance of Admin Access Token Service.
         """
         super().__init__(charm, "mjolnir")
         self._charm = charm
         self._charm_state = charm_state
+        self._token_service = token_service
         self.framework.observe(charm.on.collect_unit_status, self._on_collect_status)
 
     @property
@@ -56,7 +61,11 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         Returns:
             admin access token or None if fails.
         """
-        access_token = self._charm_state.synapse_config.admin_access_token
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            logger.exception("Failed to connect to Synapse")
+            return None
+        access_token = self._token_service.get(container)
         if not access_token:
             logging.error("Admin Access Token was not found, please check the logs.")
             return None

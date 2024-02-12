@@ -20,7 +20,7 @@ from mjolnir import Mjolnir
 
 def test_get_membership_room_id(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    arrange: start the Synapse charm, set server_name, mock get_admin_access_token.
+    arrange: start the Synapse charm, set server_name.
     act: call get_membership_room_id.
     assert: get_membership_room_id is called once with expected args.
     """

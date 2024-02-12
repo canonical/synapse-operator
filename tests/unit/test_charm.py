@@ -6,8 +6,7 @@
 # pylint: disable=protected-access
 
 import json
-from secrets import token_hex
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import ops
 import pytest
@@ -285,102 +284,6 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)
-
-
-@patch("charm.JUJU_HAS_SECRETS", True)
-@patch.object(ops.Application, "add_secret")
-def test_get_admin_access_token_no_peer_relation(mock_add_secret, harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm without relations.
-    act: get admin access token.
-    assert: add secret is not called and None is retrieved.
-    """
-    harness.begin()
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    mock_add_secret.assert_not_called()
-    assert not admin_access_token
-
-
-@patch("charm.JUJU_HAS_SECRETS", True)
-@patch.object(ops.Model, "get_secret")
-def test_get_admin_access_token_existing_secret(mock_get_secret, harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm, mock relation.
-    act: get admin access token.
-    assert: secret is queried and the token is retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    secret_id = token_hex(16)
-    harness.update_relation_data(peer_relation.id, "synapse", {"secret-id": secret_id})
-    # Mocking like the following doesn't get evaluated as expected
-    # mock_juju_env.return_value = MagicMock(has_secrets=True)
-    secret_mock = MagicMock
-    secret_mock.id = secret_id
-    admin_access_token_expected = token_hex(16)
-    secret_mock.get_content = MagicMock(return_value={"secret-key": admin_access_token_expected})
-    mock_get_secret.return_value = secret_mock
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    assert admin_access_token == admin_access_token_expected
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    assert (
-        harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
-        == secret_id
-    )
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
-@patch("charm.JUJU_HAS_SECRETS", True)
-@patch.object(ops.Model, "get_secret")
-def test_get_admin_access_token_not_found_secret(mock_get_secret, harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm, mock relation.
-    act: get admin access token.
-    assert: secret is not found, peer data is erased and None is retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    secret_id = token_hex(16)
-    harness.update_relation_data(peer_relation.id, "synapse", {"secret-id": secret_id})
-    # Mocking like the following doesn't get evaluated as expected
-    # mock_juju_env.return_value = MagicMock(has_secrets=True)
-    mock_get_secret.side_effect = ops.model.SecretNotFoundError()
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    assert not admin_access_token
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    assert not harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
-@patch("charm.JUJU_HAS_SECRETS", False)
-def test_get_admin_access_token_existing_peer_data(harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm, mock relation.
-    act: get admin access token.
-    assert: secret is queried and the token is retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    admin_access_token_expected = token_hex(16)
-    harness.update_relation_data(
-        peer_relation.id, "synapse", {"secret-key": admin_access_token_expected}
-    )
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    assert admin_access_token == admin_access_token_expected
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
 def test_enable_federation_domain_whitelist_is_called(
