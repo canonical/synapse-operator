@@ -175,9 +175,8 @@ def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.M
 def test_delete_backup_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create a S3Client. Mock delete_object to return a realistic correct response.
-        Also mock list_backups, as delete_backup checks if the backup exists.
     act: Run delete_backup.
-    assert: The function was delete_object called with the right arguments.
+    assert: The function delete_object called with the right arguments.
     """
     backup_id = "backup-20240101"
     s3_client = backup.S3Client(s3_parameters_backup)
@@ -204,8 +203,7 @@ def test_delete_backup_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyP
 
 def test_delete_backup_boto_client_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: Create a S3Client. Mock list_backups, so the backup exists. On delete_object return
-        a boto exception.
+    arrange: Create a S3Client. On delete_object return a boto exception.
     act: Run delete_backup.
     assert: The function delete_object throws and exception.
     """
@@ -245,7 +243,7 @@ def test_exists_backup_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyP
 def test_exists_backup_does_not_exist(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create a S3Client. mock head_object to raise a ClientError similar to what a real
-        S3 storage would return.
+        S3 storage would return when the object does not exist.
     act: Run exists_backup.
     assert: It should return False and head_object should be called.
     """

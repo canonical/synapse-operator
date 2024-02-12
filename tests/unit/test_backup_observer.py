@@ -245,7 +245,7 @@ def test_restore_backup_correct(
 ):
     """
     arrange: Start the Synapse charm. Integrate with s3-integrator.
-        Mock can_use_bucket and restore_backup.
+        Mock can_use_bucket, exists_backup and restore_backup.
     act: Run the restore backup action with a backup-id.
     assert: Backup should be restored. restore_backup should be called.
     """
@@ -284,7 +284,7 @@ def test_restore_backup_does_not_exist(
 ):
     """
     arrange: start the Synapse charm. Integrate with s3-integrator.
-        Mock can_use_bucket to True and do not set backup_password.
+        Mock can_use_bucket to True and exists_backup to False.
     act: Run the restore action.
     assert: Backup should fail because of missing backup_passphrase.
     """
@@ -304,7 +304,7 @@ def test_restore_backup_no_passphrase(
 ):
     """
     arrange: start the Synapse charm. Integrate with s3-integrator.
-        Mock can_use_bucket to True and do not set backup_password.
+        Mock can_use_bucket to True, exists_backup and do not set backup_password.
     act: Run the restore action.
     assert: Backup should fail because of missing backup_passphrase.
     """
@@ -323,8 +323,8 @@ def test_restore_backup_wrong_restore_failure(
     s3_relation_data_backup, harness: Harness, monkeypatch: pytest.MonkeyPatch
 ):
     """
-    arrange: start the Synapse charm. Integrate with s3-integrator. Mock restore_backup
-        to fail.
+    arrange: start the Synapse charm. Integrate with s3-integrator. Mock exists_backup
+        and restore_backup to fail.
     act: Run the restore action.
     assert: Backup should fail with error
     """

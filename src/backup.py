@@ -211,7 +211,7 @@ class S3Client:
             if "Error" in exc.response and exc.response["Error"].get("Code") == "404":
                 return False
             logger.exception("Error checking object")
-            raise S3Error("Error  checking object in S3") from exc
+            raise S3Error("Error checking object in S3") from exc
 
         return True
 
