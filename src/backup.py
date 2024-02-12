@@ -210,8 +210,8 @@ class S3Client:
         except ClientError as exc:
             if "Error" in exc.response and exc.response["Error"].get("Code") == "404":
                 return False
-            logger.exception("Error checking object")
-            raise S3Error("Error checking object in S3") from exc
+            logger.exception("Error when checking if S3 object exists with head_object.")
+            raise S3Error("Error when checking if S3 object exists with head_object.") from exc
 
         return True
 
