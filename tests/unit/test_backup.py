@@ -205,7 +205,7 @@ def test_delete_backup_boto_client_error(s3_parameters_backup, monkeypatch: pyte
     """
     arrange: Create a S3Client. On delete_object return a boto exception.
     act: Run delete_backup.
-    assert: The function delete_object throws and exception.
+    assert: The function delete_object throws an exception.
     """
     backup_id = "backup-20240101"
     backups = [backup.S3Backup(backup_id=backup_id, last_modified=datetime.datetime.now(), size=1)]
