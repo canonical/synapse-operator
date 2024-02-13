@@ -176,6 +176,45 @@ class S3Client:
             return False
         return True
 
+    def delete_backup(self, backup_id: str) -> None:
+        """Delete a backup stored in S3 in the current s3 configuration.
+
+        Args:
+            backup_id: backup id to delete.
+
+        Raises:
+            S3Error: If there was an error deleting the backup.
+        """
+        object_key = _s3_path(prefix=self._s3_parameters.path, object_name=backup_id)
+
+        try:
+            self._client.delete_object(Bucket=self._s3_parameters.bucket, Key=object_key)
+        except ClientError as exc:
+            raise S3Error(f"Cannot delete backup_id {backup_id} from bucket") from exc
+
+    def exists_backup(self, backup_id: str) -> bool:
+        """Check if a backup-id exists in S3.
+
+        Args:
+            backup_id: backup id to delete.
+
+        Returns:
+            True if the backup-id exists, False otherwise
+
+        Raises:
+            S3Error: If there was an error checking the backup.
+        """
+        object_key = _s3_path(prefix=self._s3_parameters.path, object_name=backup_id)
+        try:
+            self._client.head_object(Bucket=self._s3_parameters.bucket, Key=object_key)
+        except ClientError as exc:
+            if "Error" in exc.response and exc.response["Error"].get("Code") == "404":
+                return False
+            logger.exception("Error when checking if S3 object exists using head_object.")
+            raise S3Error("Error when checking if S3 object exists using head_object.") from exc
+
+        return True
+
     def list_backups(self) -> list[S3Backup]:
         """List the backups stored in S3 in the current s3 configuration.
 
@@ -265,6 +304,49 @@ def create_backup(
     return backup_id
 
 
+def restore_backup(
+    container: ops.Container,
+    s3_parameters: S3Parameters,
+    passphrase: str,
+    backup_id: str,
+) -> None:
+    """Restore a backup for Synapse overwriting the current data.
+
+    Args:
+        container: Synapse Container
+        s3_parameters: S3 parameters for the backup.
+        passphrase: Passphrase use to decrypt the backup.
+        backup_id: Name of the object in the backup.
+
+    Raises:
+       BackupError: If there was an error restoring the backup.
+    """
+    _prepare_container(container, s3_parameters, passphrase)
+    container.stop(synapse.SYNAPSE_SERVICE_NAME)
+
+    # Delete the media directory.
+    # Other files to back up will be just overwritten.
+    media_dir = synapse.get_media_store_path(container)
+    container.remove_path(media_dir, recursive=True)
+
+    restore_command = _build_restore_command(s3_parameters, backup_id, PASSPHRASE_FILE)
+    logger.info("Restore command: %s", restore_command)
+    environment = _get_environment(s3_parameters)
+    try:
+        exec_process = container.exec(
+            restore_command,
+            environment=environment,
+            user=synapse.SYNAPSE_USER,
+            group=synapse.SYNAPSE_GROUP,
+        )
+        stdout, stderr = exec_process.wait_output()
+    except (APIError, ExecError) as exc:
+        raise BackupError("Backup restore failed.") from exc
+    logger.info("Backup command output: %s. %s.", stdout, stderr)
+
+    container.start(synapse.SYNAPSE_SERVICE_NAME)
+
+
 def _prepare_container(
     container: ops.Container, s3_parameters: S3Parameters, passphrase: str
 ) -> None:
@@ -323,6 +405,33 @@ def _prepare_container(
         raise BackupError("Backup Failed. Error configuring GPG passphrase.") from exc
 
 
+def _build_restore_command(
+    s3_parameters: S3Parameters,
+    backup_id: str,
+    passphrase_file: str,
+) -> list[str]:
+    """Build the command to execute the backup restore.
+
+    Args:
+        s3_parameters: S3 parameters.
+        backup_id: The name of the object to back up.
+        passphrase_file: Passphrase to use to encrypt the backup file.
+
+    Returns:
+        The restore command to execute.
+    """
+    bash_strict_command = "set -euxo pipefail; "
+    s3_url = _s3_path(
+        prefix=s3_parameters.path, object_name=backup_id, bucket=s3_parameters.bucket
+    )
+    aws_command = f"{AWS_COMMAND} s3 cp '{s3_url}' -"
+    gpg_command = f"gpg --batch --no-symkey-cache --decrypt --passphrase-file '{passphrase_file}'"
+    # restoring with "-C /" is something to review.
+    tar_command = "tar -x -C /"
+    full_command = bash_strict_command + " | ".join((aws_command, gpg_command, tar_command))
+    return [BASH_COMMAND, "-c", full_command]
+
+
 def _get_paths_to_backup(container: ops.Container) -> Iterable[str]:
     """Get the list of paths that should be in a backup for Synapse.
 
@@ -337,8 +446,7 @@ def _get_paths_to_backup(container: ops.Container) -> Iterable[str]:
         paths += container.list_files(synapse.SYNAPSE_CONFIG_DIR, pattern=pattern)
     # Local media if it exists
     media_dir = synapse.get_media_store_path(container)
-    if media_dir:
-        paths += container.list_files(media_dir, pattern=MEDIA_LOCAL_DIR_PATTERN)
+    paths += container.list_files(media_dir, pattern=MEDIA_LOCAL_DIR_PATTERN)
     return [path.path for path in paths]
 
 

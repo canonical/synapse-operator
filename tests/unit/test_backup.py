@@ -172,6 +172,126 @@ def test_can_use_bucket_bucket_error(s3_parameters_backup, monkeypatch: pytest.M
     assert not s3_client.can_use_bucket()
 
 
+def test_delete_backup_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. Mock delete_object to return a realistic correct response.
+    act: Run delete_backup.
+    assert: The function delete_object called with the right arguments.
+    """
+    backup_id = "backup-20240101"
+    s3_client = backup.S3Client(s3_parameters_backup)
+    s3_example_response = {
+        "ResponseMetadata": {
+            "RequestId": "17B23CD508D801F2",
+            "HostId": "dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8",
+            "HTTPStatusCode": 204,
+            "HTTPHeaders": {
+                "server": "nginx/1.24.0 (Ubuntu)",
+                "date": "Fri, 09 Feb 2024 15:54:54 GMT",
+            },
+            "RetryAttempts": 0,
+        }
+    }
+    delete_object_mock = MagicMock(return_value=s3_example_response)
+    monkeypatch.setattr(s3_client._client, "delete_object", delete_object_mock)
+
+    s3_client.delete_backup(backup_id)
+
+    key = f"{s3_parameters_backup.path.strip('/')}/{backup_id}"
+    delete_object_mock.assert_called_once_with(Bucket=s3_parameters_backup.bucket, Key=key)
+
+
+def test_delete_backup_boto_client_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. On delete_object return a boto exception.
+    act: Run delete_backup.
+    assert: The function delete_object throws an exception.
+    """
+    backup_id = "backup-20240101"
+    backups = [backup.S3Backup(backup_id=backup_id, last_modified=datetime.datetime.now(), size=1)]
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(s3_client, "list_backups", MagicMock(return_value=backups))
+    monkeypatch.setattr(
+        s3_client._client, "delete_object", MagicMock(side_effect=ClientError({}, "Generic Error"))
+    )
+
+    with pytest.raises(backup.S3Error) as err:
+        s3_client.delete_backup(backup_id)
+    assert "Cannot delete backup_id" in str(err.value)
+
+
+def test_exists_backup_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. mock head_object to return a correct response.
+    act: Run exists_backup.
+    assert: Check exists backup returns true and the head_object was called.
+    """
+    backup_id = "backup-20240101"
+    head_object_mock = MagicMock()
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(s3_client._client, "head_object", head_object_mock)
+
+    assert s3_client.exists_backup(backup_id)
+
+    key = f"{s3_parameters_backup.path.strip('/')}/{backup_id}"
+    head_object_mock.assert_called_once_with(
+        Bucket=s3_parameters_backup.bucket,
+        Key=key,
+    )
+
+
+def test_exists_backup_does_not_exist(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. mock head_object to raise a ClientError similar to what a real
+        S3 storage would return when the object does not exist.
+    act: Run exists_backup.
+    assert: It should return False and head_object should be called.
+    """
+    error_response = {
+        "Error": {"Code": "404", "Message": "Not Found"},
+        "ResponseMetadata": {
+            "HTTPStatusCode": 404,
+            "HTTPHeaders": {
+                "server": "nginx/1.24.0 (Ubuntu)",
+            },
+            "RetryAttempts": 0,
+        },
+    }
+    backup_id = "backup-20240101"
+    head_object_mock = MagicMock(side_effect=ClientError(error_response, ""))
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(s3_client._client, "head_object", head_object_mock)
+
+    assert not s3_client.exists_backup(backup_id)
+
+    key = f"{s3_parameters_backup.path.strip('/')}/{backup_id}"
+    head_object_mock.assert_called_once_with(
+        Bucket=s3_parameters_backup.bucket,
+        Key=key,
+    )
+
+
+def test_exists_backup_boto_client_error(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: Create a S3Client. mock head_object to raise a ClientError.
+    act: Run exists_backup.
+    assert: It should raise and head_bucket should be called.
+    """
+    backup_id = "backup-20240101"
+    head_object_mock = MagicMock(side_effect=ClientError({}, "No Such Bucket"))
+    s3_client = backup.S3Client(s3_parameters_backup)
+    monkeypatch.setattr(s3_client._client, "head_object", head_object_mock)
+
+    with pytest.raises(backup.S3Error):
+        s3_client.exists_backup(backup_id)
+
+    key = f"{s3_parameters_backup.path.strip('/')}/{backup_id}"
+    head_object_mock.assert_called_once_with(
+        Bucket=s3_parameters_backup.bucket,
+        Key=key,
+    )
+
+
 def test_list_backups_correct(s3_parameters_backup, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Create a S3Client. Mock response to return a real response in list_objects_v2.
@@ -402,6 +522,98 @@ def test_create_backup_failure(
     assert "Backup Command Failed" in str(err.value)
 
 
+def test_restore_backup_correct(
+    harness: Harness, s3_parameters_backup, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Given the Synapse container, s3parameters, passphrase, the backup key and its location
+        mock prepare_container and stop container (but retaining previous functionality).
+    act: Call restore_backup.
+    assert: The container is stopped, a command is executed to backup and has some test
+        like "decrypt" and the the container is started again.
+    """
+    # start it so synapse service is in the container.
+    harness.begin_with_initial_hooks()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    passphrase = token_hex(16)
+    backup_id = token_hex(16)
+    monkeypatch.setattr(backup, "_prepare_container", MagicMock())
+    stop_mock = MagicMock(side_effect=container.stop)
+    monkeypatch.setattr(container, "stop", stop_mock)
+    monkeypatch.setattr(synapse, "get_media_store_path", MagicMock(return_value="/data/media"))
+    remove_path_mock = MagicMock(side_effect=container.remove_path)
+    monkeypatch.setattr(container, "remove_path", remove_path_mock)
+
+    def backup_command_handler(args: list[str]) -> synapse.ExecResult:
+        """Handler for the exec of the backup command.
+
+        Args:
+            args: argument given to the container.exec.
+
+        Returns:
+            tuple with status_code, stdout and stderr.
+        """
+        # simple check to see that the correct command was called
+        assert any(("--decrypt" in arg for arg in args))
+        return synapse.ExecResult(0, "", "")
+
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=container,
+        executable=backup.BASH_COMMAND,
+        handler=backup_command_handler,
+    )
+
+    backup.restore_backup(container, s3_parameters_backup, backup_id, passphrase)
+
+    stop_mock.assert_called_once()
+    remove_path_mock.assert_called_once_with("/data/media", recursive=True)
+    assert container.get_service(synapse.SYNAPSE_SERVICE_NAME).is_running()
+
+
+def test_restore_backup_failure(
+    harness: Harness, s3_parameters_backup, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: Given the Synapse container, s3parameters, passphrase, the backup key and its location
+        mock prepare_container, and mock fail on the command to backup.
+    act: Call restore_backup.
+    assert: Check that BackupError was raises and that the service is stopped.
+    """
+    # start it so synapse service is in the container.
+    harness.begin_with_initial_hooks()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    passphrase = token_hex(16)
+    backup_id = token_hex(16)
+    monkeypatch.setattr(backup, "_prepare_container", MagicMock())
+    stop_mock = MagicMock(side_effect=container.stop)
+    monkeypatch.setattr(container, "stop", stop_mock)
+    monkeypatch.setattr(synapse, "get_media_store_path", MagicMock(return_value="/data/media"))
+    remove_path_mock = MagicMock(side_effect=container.remove_path)
+    monkeypatch.setattr(container, "remove_path", remove_path_mock)
+
+    def backup_command_handler(_: list[str]) -> synapse.ExecResult:
+        """Handler for the exec of the backup command.
+
+        Returns:
+            tuple with status_code, stdout and stderr.
+        """
+        return synapse.ExecResult(1, "", "")
+
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=container,
+        executable=backup.BASH_COMMAND,
+        handler=backup_command_handler,
+    )
+
+    with pytest.raises(backup.BackupError) as err:
+        backup.restore_backup(container, s3_parameters_backup, backup_id, passphrase)
+    assert "Backup restore failed" in str(err.value)
+    stop_mock.assert_called_once()
+    # Everything can be in an incorrect state now.
+    remove_path_mock.assert_called_once_with("/data/media", recursive=True)
+    assert not container.get_service(synapse.SYNAPSE_SERVICE_NAME).is_running()
+
+
 def test_prepare_container_correct(harness: Harness, s3_parameters_backup):
     """
     arrange: Given the Synapse container, s3parameters, passphrase and its location
@@ -536,11 +748,14 @@ def test_get_paths_to_backup_correct(harness: Harness):
 
 def test_get_paths_to_backup_empty(harness: Harness):
     """
-    arrange: Create an empty container filesystem.
+    arrange: Create an empty container filesystem with just the default media directory.
     act: Call get_paths_to_backup
     assert: The paths to backup should be empty.
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    synapse_root = harness.get_filesystem_root(container)
+    media_dir = synapse_root / "media_store"
+    media_dir.mkdir()
 
     paths_to_backup = list(backup._get_paths_to_backup(container))
 
@@ -583,3 +798,23 @@ def test_calculate_size(harness: Harness):
     size = backup._calculate_size(container, paths)
 
     assert size == 1000
+
+
+def test_build_restore_command_correct(s3_parameters_backup):
+    """
+    arrange: Given some s3 parameters for backup, a name for the key in the bucket,
+         and passphrase file location
+    act: run _build_restore_command
+    assert: the command is the correct calling bash with pipes.
+    """
+    # pylint: disable=line-too-long
+
+    command = backup._build_restore_command(
+        s3_parameters_backup, "20230101231200", "/root/.gpg_passphrase"
+    )
+
+    assert list(command) == [
+        backup.BASH_COMMAND,
+        "-c",
+        f"set -euxo pipefail; {backup.AWS_COMMAND} s3 cp 's3://synapse-backup-bucket/synapse-backups/20230101231200' - | gpg --batch --no-symkey-cache --decrypt --passphrase-file '/root/.gpg_passphrase' | tar -x -C /",  # noqa: E501
+    ]

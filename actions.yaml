@@ -47,3 +47,24 @@ create-backup:
 list-backups:
   description: |
     Lists backups in s3 storage.
+restore-backup:
+  description:  |
+    Restore a Synapse backup.
+    S3 credentials are retrieved from the relation with the S3 integrator charm.
+    The server_name and filesystem configuration for the application should be
+    identical to the application restored.
+  params:
+    backup-id:
+      type: string
+      description: The backup-id to identify the backup to restore.
+  required:
+    - backup-id
+delete-backup:
+  description: |
+    Delete a backup in s3 storage by backup-id.
+  params:
+    backup-id:
+      type: string
+      description: The backup-id to identify the backup to delete.
+  required:
+    - backup-id
