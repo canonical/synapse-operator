@@ -432,4 +432,3 @@ async def test_synapse_backup_delete(
     await list_backups_action.wait()
     assert list_backups_action.status == "completed"
     assert "backups" not in list_backups_action.results
->>>>>>> origin/main
