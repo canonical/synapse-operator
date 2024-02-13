@@ -10,6 +10,7 @@ import logging
 import typing
 
 import ops
+from ops.pebble import APIError, ExecError
 
 import synapse
 from charm_state import CharmState
@@ -17,6 +18,18 @@ from charm_state import CharmState
 logger = logging.getLogger(__name__)
 
 IRC_SERVICE_NAME = "irc"
+
+
+class PEMCreateError(Exception):
+    """An exception raised when the PEM file creation fails."""
+
+    def __init__(self, message: str):
+        """Initialize a new instance of the PEMCreateError class.
+
+        Args:
+            message: The error message.
+        """
+        super().__init__(message)
 
 
 class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
@@ -75,6 +88,7 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         The required steps to enable the IRC bridge are:
          - Create the IRC bridge configuration file.
          - Create the IRC bridge registration file.
+         - Generate a PEM file for the IRC bridge.
          - Finally, add IRC bridge pebble layer.
 
         """
@@ -89,8 +103,39 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
             container=container, server_name=server_name, db_connect_string=db_connect_string
         )
         synapse.create_irc_bridge_app_registration(container=container)
+        self._create_pem_file(container=container)
         self._pebble_service.replan_irc_bridge(container)
         self._pebble_service.restart_synapse(container)
+        self._charm.model.unit.status = ops.ActiveStatus()
+
+    def _create_pem_file(self, container: ops.model.Container) -> None:
+        """Create a PEM file for the IRC bridge.
+
+        Args:
+            container: The container to create the PEM file in.
+
+        Raises:
+            PEMCreateError: If the PEM file creation fails.
+        """
+        self._charm.model.unit.status = ops.MaintenanceStatus("Creating PEM file for IRC bridge")
+        pem_create_command = [
+            "/bin/bash",
+            "-c",
+            "openssl genpkey -out /data/config/passkey.pem -outform PEM "
+            + "-algorithm RSA -pkeyopt rsa_keygen_bits:2048",
+        ]
+        logger.info("Creating PEM file for IRC bridge.")
+        try:
+            exec_process = container.exec(
+                pem_create_command,
+                environment={},
+                user=synapse.SYNAPSE_USER,
+                group=synapse.SYNAPSE_GROUP,
+            )
+            stdout, stderr = exec_process.wait_output()
+        except (APIError, ExecError) as exc:
+            raise PEMCreateError("PEM creation failed.") from exc
+        logger.info("PEM create output: %s. %s.", stdout, stderr)
         self._charm.model.unit.status = ops.ActiveStatus()
 
     def _get_db_connection(self) -> str:

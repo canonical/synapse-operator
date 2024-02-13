@@ -133,6 +133,8 @@ def test_enable_irc_bridge(harness: Harness, monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(
         synapse, "create_irc_bridge_app_registration", create_irc_bridge_app_registration_mock
     )
+    create_pem_file_mock = MagicMock()
+    monkeypatch.setattr(harness.charm._irc_bridge, "_create_pem_file", create_pem_file_mock)
     monkeypatch.setattr(
         harness.charm._irc_bridge,
         "_get_db_connection",
@@ -143,6 +145,7 @@ def test_enable_irc_bridge(harness: Harness, monkeypatch: pytest.MonkeyPatch) ->
         container=ANY, server_name=ANY, db_connect_string=ANY
     )
     create_irc_bridge_app_registration_mock.assert_called_once_with(container=ANY)
+    create_pem_file_mock.assert_called_once_with(container=ANY)
     assert harness.model.unit.status == ops.ActiveStatus()
 
 

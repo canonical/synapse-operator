@@ -111,7 +111,7 @@ ircService:
     http:
       port: 7700
       host: 127.0.0.1
-  passwordEncryptionKeyPath: "passkey.pem"
+  passwordEncryptionKeyPath: "/data/config/passkey.pem"
   matrixHandler:
     eventCacheSize: 4096
     shortReplyTemplate: "$NICK: $REPLY"

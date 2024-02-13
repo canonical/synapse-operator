@@ -727,7 +727,7 @@ async def test_synapse_irc_bridge_is_up(
     )
     assert irc_bridge_response.status_code == 200
 
-    
+
 @pytest.mark.s3
 @pytest.mark.usefixtures("s3_backup_bucket")
 async def test_synapse_backup_restore(
