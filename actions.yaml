@@ -57,3 +57,14 @@ restore-backup:
     backup-id:
       type: string
       description: The backup-id to identify the backup to restore.
+  required:
+    - backup-id
+delete-backup:
+  description: |
+    Delete a backup in s3 storage by backup-id.
+  params:
+    backup-id:
+      type: string
+      description: The backup-id to identify the backup to delete.
+  required:
+    - backup-id
