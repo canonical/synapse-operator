@@ -5,7 +5,7 @@ many different Kubernetes platforms, from [MicroK8s](https://microk8s.io) to [Ch
 
 As such, the charm makes it easy for those looking to take control of their own Chat server whilst keeping operations simple, and gives them the freedom to deploy on the Kubernetes platform of their choice.
 
-For DevOps or SRE teams this charm will make operating Synapse simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing of changes.
+For DevOps or SRE teams, this charm will make operating Synapse simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing of changes.
 
 ## Project and community
 
