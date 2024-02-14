@@ -264,6 +264,9 @@ async def irc_postgresql_app_fixture(
     pytestconfig: Config,
 ):
     """Deploy postgresql."""
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if use_existing:
+        return model.applications[irc_postgresql_app_name]
     async with ops_test.fast_forward():
         app = await model.deploy(
             postgresql_app_name,

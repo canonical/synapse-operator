@@ -691,6 +691,8 @@ async def test_synapse_list_backups(
     assert backup_action_2.results["backup-id"] in backups
 
 
+@pytest.mark.irc
+@pytest.mark.usefixtures("synapse_app", "irc_postgresql_app")
 async def test_synapse_irc_bridge_is_up(
     ops_test: OpsTest,
     model: Model,
