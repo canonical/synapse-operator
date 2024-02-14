@@ -725,7 +725,7 @@ async def test_synapse_irc_bridge_is_up(
     assert "Welcome to the Matrix" in response.text
 
     irc_bridge_response = requests.get(
-        f"http://{synapse_ip}:{synapse.IRC_BRIDGE_HEALTH_PORT}", timeout=5
+        f"http://{synapse_ip}:{synapse.IRC_BRIDGE_HEALTH_PORT}/health", timeout=5
     )
     assert irc_bridge_response.status_code == 200
 
