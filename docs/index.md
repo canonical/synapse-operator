@@ -30,6 +30,7 @@ If there’s a particular area of documentation that you’d like to see that’
 1. [How to](how-to)
   1. [Configure SMTP](how-to/configure-smtp.md)
   2. [Contribute](how-to/contribute.md)
+  3. [Backup and Restore](how-to/backup-and-restore.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
   1. [Integrations](reference/integrations.md)
