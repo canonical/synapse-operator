@@ -23,7 +23,11 @@ Mjolnir is a moderation tool for Matrix to be used to protect your server from m
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBase, charm_state: CharmState)
+__init__(
+    charm: CharmBase,
+    charm_state: CharmState,
+    token_service: AdminAccessTokenService
+)
 ```
 
 Initialize a new instance of the Mjolnir class. 
@@ -34,6 +38,7 @@ Initialize a new instance of the Mjolnir class.
  
  - <b>`charm`</b>:  The charm object that the Mjolnir instance belongs to. 
  - <b>`charm_state`</b>:  Instance of CharmState. 
+ - <b>`token_service`</b>:  Instance of Admin Access Token Service. 
 
 
 ---
@@ -46,7 +51,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/mjolnir.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_mjolnir`
 
@@ -76,7 +81,7 @@ The required steps to enable Mjolnir are:
 
 ---
 
-<a href="../src/mjolnir.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_membership_room_id`
 
