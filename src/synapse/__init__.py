@@ -4,6 +4,7 @@
 """Synapse package is used to interact with Synapse instance."""
 
 # Exporting methods to be used for another modules
+from .admin import create_admin_user, create_user  # noqa: F401
 from .api import (  # noqa: F401
     ADD_USER_ROOM_URL,
     CREATE_ROOM_URL,

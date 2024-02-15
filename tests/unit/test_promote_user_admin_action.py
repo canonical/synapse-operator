@@ -14,7 +14,6 @@ from ops.charm import ActionEvent
 from ops.testing import Harness
 
 import synapse
-from charm import SynapseCharm
 
 
 def test_promote_user_admin_action(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -27,8 +26,8 @@ def test_promote_user_admin_action(harness: Harness, monkeypatch: pytest.MonkeyP
     admin_access_token = token_hex(16)
     promote_user_admin_mock = unittest.mock.Mock()
     monkeypatch.setattr(
-        SynapseCharm,
-        "get_admin_access_token",
+        harness.charm.token_service,
+        "get",
         unittest.mock.MagicMock(return_value=admin_access_token),
     )
     monkeypatch.setattr("synapse.promote_user_admin", promote_user_admin_mock)
@@ -60,8 +59,8 @@ def test_promote_user_admin_api_error(harness: Harness, monkeypatch: pytest.Monk
     monkeypatch.setattr("synapse.promote_user_admin", promote_user_admin_mock)
     admin_access_token = token_hex(16)
     monkeypatch.setattr(
-        SynapseCharm,
-        "get_admin_access_token",
+        harness.charm.token_service,
+        "get",
         unittest.mock.MagicMock(return_value=admin_access_token),
     )
     user = "username"
@@ -116,8 +115,8 @@ def test_promote_user_admin_action_no_token(
     harness.begin_with_initial_hooks()
     promote_user_admin_mock = unittest.mock.Mock()
     monkeypatch.setattr(
-        SynapseCharm,
-        "get_admin_access_token",
+        harness.charm.token_service,
+        "get",
         unittest.mock.MagicMock(return_value=None),
     )
     monkeypatch.setattr("synapse.promote_user_admin", promote_user_admin_mock)
