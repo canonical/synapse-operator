@@ -5,12 +5,6 @@
 # <kbd>module</kbd> `charm.py`
 Charm for Synapse on kubernetes. 
 
-**Global Variables**
----------------
-- **JUJU_HAS_SECRETS**
-- **PEER_RELATION_NAME**
-- **SECRET_ID**
-- **SECRET_KEY**
 
 
 ---
@@ -18,7 +12,7 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
-<a href="../src/charm.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -75,7 +69,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -102,4 +96,4 @@ Get admin access token.
 **Returns:**
   admin access token or None if fails. 
 
-
+=======
