@@ -77,7 +77,7 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
             return
         irc_service = container.get_services(IRC_SERVICE_NAME)
         if irc_service:
-            logger.debug("%s service asealready exists, skipping", IRC_SERVICE_NAME)
+            logger.debug("%s service already exists, skipping", IRC_SERVICE_NAME)
             return
         self.enable_irc_bridge()
         event.add_status(ops.ActiveStatus())
@@ -121,21 +121,20 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         pem_create_command = [
             "/bin/bash",
             "-c",
-            "openssl genpkey -out /data/config/passkey.pem -outform PEM "
-            + "-algorithm RSA -pkeyopt rsa_keygen_bits:2048",
+            "[[ -f /data/config/passkey.pem ]] || "
+            + "openssl genpkey -out /data/config/passkey.pem "
+            + "-outform PEM -algorithm RSA -pkeyopt rsa_keygen_bits:2048",
         ]
         logger.info("Creating PEM file for IRC bridge.")
         try:
             exec_process = container.exec(
                 pem_create_command,
                 environment={},
-                user=synapse.SYNAPSE_USER,
-                group=synapse.SYNAPSE_GROUP,
             )
             stdout, stderr = exec_process.wait_output()
+            logger.info("PEM create output: %s. %s.", stdout, stderr)
         except (APIError, ExecError) as exc:
             raise PEMCreateError("PEM creation failed.") from exc
-        logger.info("PEM create output: %s. %s.", stdout, stderr)
         self._charm.model.unit.status = ops.ActiveStatus()
 
     def _get_db_connection(self) -> str:
