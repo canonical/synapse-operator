@@ -17,7 +17,7 @@ A class representing the IRC bridge plugin for Synapse application.
 
 See https://github.com/matrix-org/matrix-appservice-irc/ for more details about it. 
 
-<a href="../src/irc_bridge.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/irc_bridge.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -45,7 +45,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/irc_bridge.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/irc_bridge.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_irc_bridge`
 
@@ -58,6 +58,32 @@ Enable irc service.
 The required steps to enable the IRC bridge are: 
  - Create the IRC bridge configuration file. 
  - Create the IRC bridge registration file. 
+ - Generate a PEM file for the IRC bridge. 
  - Finally, add IRC bridge pebble layer. 
+
+
+---
+
+## <kbd>class</kbd> `PEMCreateError`
+An exception raised when the PEM file creation fails. 
+
+<a href="../src/irc_bridge.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(message: str)
+```
+
+Initialize a new instance of the PEMCreateError class. 
+
+
+
+**Args:**
+ 
+ - <b>`message`</b>:  The error message. 
+
+
+
 
 
