@@ -2,7 +2,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Integration tests for Synapse charm."""
+"""Integration tests for Synapse charm needing the nginx_integrator_app fixture."""
 import logging
 import typing
 

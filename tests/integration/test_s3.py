@@ -2,7 +2,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Integration tests for Synapse charm."""
+"""Integration tests for Synapse charm needing the s3_backup_bucket fixture."""
 import logging
 import typing
 from secrets import token_hex
