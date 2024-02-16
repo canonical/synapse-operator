@@ -86,7 +86,9 @@ class SynapseCharm(ops.CharmBase):
         )
         self._observability = Observability(self)
         if self._charm_state.synapse_config.enable_mjolnir:
-            self._mjolnir = Mjolnir(self, charm_state=self._charm_state)
+            self._mjolnir = Mjolnir(
+                self, charm_state=self._charm_state, token_service=self.token_service
+            )
         if self._charm_state.synapse_config.enable_irc_bridge:
             self._irc_bridge = IRCBridge(self, charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
