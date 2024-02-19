@@ -99,7 +99,7 @@ parts:
             cp pyproject.toml poetry.lock /synapse/
             /usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
             pip3 install --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
-            git clone https://github.com/amandahla/synapse_stats_exporter.git
+            git clone https://github.com/canonical/synapse_stats_exporter.git
             cd synapse_stats_exporter
             pip3 install --prefix="/install" --no-warn-script-location -U .
             cd ..
