@@ -107,7 +107,7 @@ async def synapse_app_fixture(
 ):
     """Build and deploy the Synapse charm."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing:
+    if use_existing or synapse_app_name in model.applications:
         return model.applications[synapse_app_name]
     resources = {
         "synapse-image": synapse_image,
@@ -199,8 +199,12 @@ async def nginx_integrator_app_fixture(
     model: Model,
     synapse_app,
     nginx_integrator_app_name: str,
+    pytestconfig: Config,
 ):
     """Deploy nginx-ingress-integrator."""
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if use_existing or nginx_integrator_app_name in model.applications:
+        return model.applications[nginx_integrator_app_name]
     async with ops_test.fast_forward():
         app = await model.deploy(
             "nginx-ingress-integrator",
@@ -242,7 +246,7 @@ async def postgresql_app_fixture(
 ):
     """Deploy postgresql."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing:
+    if use_existing or postgresql_app_name in model.applications:
         return model.applications[postgresql_app_name]
     async with ops_test.fast_forward():
         await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
@@ -294,7 +298,10 @@ async def deploy_prometheus_fixture(
             channel="latest/edge",
             trust=True,
         )
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+        # Sometimes it comes back after an error.
+        await model.wait_for_idle(
+            raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
+        )
 
     return app
 
