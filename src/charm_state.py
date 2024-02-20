@@ -6,6 +6,7 @@ import dataclasses
 import itertools
 import os
 import typing
+from abc import ABC, abstractmethod
 
 import ops
 
@@ -21,6 +22,55 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 )
 
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration, SMTPConfiguration
+
+
+def inject_charm_state(  # pylint: disable=protected-access
+    method: typing.Callable[[typing.Any, typing.Any, "CharmState"], None]
+) -> typing.Callable[[typing.Any, typing.Any], None]:
+    """Workaround until this is fixed https://github.com/canonical/operator/issues/1129.
+
+    Args:
+        method: observer method to wrap and inject the charm_state
+
+    Returns:
+        the function wrapper
+    """
+
+    def wrapper(theself: typing.Any, event: typing.Any) -> None:
+        """Add the charm_state argument to the function.
+
+        Args:
+            theself: the self in the Object
+            event: the event for the observer
+
+        Returns:
+            The value returned from the original function. That is, None.
+
+        Raises:
+            TypeError: if the function wrapped is invalid
+        """
+        try:
+            if hasattr(theself, "build_charm_state"):
+                charm_state = theself.build_charm_state()
+            elif hasattr(theself, "_charm") and hasattr(theself._charm, "build_charm_state"):
+                charm_state = theself._charm.build_charm_state()
+            else:
+                raise TypeError("Cannot inject charm state into observer method")
+        except CharmConfigInvalidError as exc:
+            theself.model.unit.status = ops.BlockedStatus(exc.msg)
+            return None
+        return method(theself, event, charm_state)
+
+    setattr(wrapper, "__name__", method.__name__)
+    return wrapper
+
+
+class CharmBaseWithState(ops.CharmBase, ABC):
+    """CharmBase than can build a CharmState."""
+
+    @abstractmethod
+    def build_charm_state(self) -> "CharmState":
+        """Build charm state."""
 
 
 class CharmConfigInvalidError(Exception):

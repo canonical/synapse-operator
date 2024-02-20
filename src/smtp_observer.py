@@ -7,7 +7,6 @@
 # pylint: disable=R0801
 
 import logging
-import typing
 from typing import Optional
 
 import ops
@@ -18,28 +17,23 @@ from charms.smtp_integrator.v0.smtp import (
     SmtpRequires,
     TransportSecurity,
 )
-from ops.charm import CharmBase
 from ops.framework import Object
 from pydantic import ValidationError
 
+import pebble
 import synapse
-from charm_state import CharmConfigInvalidError
+from charm_state import CharmBaseWithState, CharmConfigInvalidError, CharmState, inject_charm_state
 from charm_types import SMTPConfiguration
-from pebble import PebbleServiceError
 
 logger = logging.getLogger(__name__)
 
 
 class SMTPObserver(Object):
-    """The SMTP relation observer.
-
-    Attrs:
-        _pebble_service: instance of pebble service.
-    """
+    """The SMTP relation observer."""
 
     _RELATION_NAME = "smtp"
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: CharmBaseWithState):
         """Initialize the observer and register event handlers.
 
         Args:
@@ -126,30 +120,32 @@ class SMTPObserver(Object):
             return content["password"]
         return relation_data.password
 
-    def _on_smtp_relation_data_available(self, _: SmtpDataAvailableEvent) -> None:
-        """Handle SMTP data available."""
+    @inject_charm_state
+    def _on_smtp_relation_data_available(
+        self, _: SmtpDataAvailableEvent, charm_state: CharmState
+    ) -> None:
+        """Handle SMTP data available.
+
+        Args:
+            charm_state: The charm state.
+        """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SMTP integration")
         logger.debug("_on_smtp_data_available: Enabling SMTP")
-        self._enable_smtp()
+        self._enable_smtp(charm_state)
 
-    def _enable_smtp(self) -> None:
-        """Enable SMTP."""
+    def _enable_smtp(self, charm_state: CharmState) -> None:
+        """Enable SMTP.
+
+        Args:
+            charm_state: The charm state
+        """
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect() or self._pebble_service is None:
+        if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            self._pebble_service.enable_smtp(container)
-        except PebbleServiceError as exc:
+            pebble.enable_smtp(charm_state, container)
+        except pebble.PebbleServiceError as exc:
             self._charm.model.unit.status = ops.BlockedStatus(f"SMTP integration failed: {exc}")
             return
         self._charm.unit.status = ops.ActiveStatus()
-
-    @property
-    def _pebble_service(self) -> typing.Any:
-        """Return instance of pebble service.
-
-        Returns:
-            instance of pebble service or none.
-        """
-        return getattr(self._charm, "pebble_service", None)

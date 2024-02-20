@@ -11,26 +11,22 @@ import typing
 
 import ops
 from charms.saml_integrator.v0.saml import SamlDataAvailableEvent, SamlRequires
-from ops.charm import CharmBase
 from ops.framework import Object
 
+import pebble
 import synapse
+from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import SAMLConfiguration
-from pebble import PebbleServiceError
 
 logger = logging.getLogger(__name__)
 
 
 class SAMLObserver(Object):
-    """The SAML Integrator relation observer.
-
-    Attrs:
-        _pebble_service: instance of pebble service.
-    """
+    """The SAML Integrator relation observer."""
 
     _RELATION_NAME = "saml"
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: CharmBaseWithState):
         """Initialize the observer and register event handlers.
 
         Args:
@@ -41,33 +37,34 @@ class SAMLObserver(Object):
         self.saml = SamlRequires(self._charm)
         self.framework.observe(self.saml.on.saml_data_available, self._on_saml_data_available)
 
-    @property
-    def _pebble_service(self) -> typing.Any:
-        """Return instance of pebble service.
+    def _enable_saml(self, charm_state: CharmState) -> None:
+        """Enable  SAML.
 
-        Returns:
-            instance of pebble service or none.
+        Args:
+            charm_state: Instance of CharmState
         """
-        return getattr(self._charm, "pebble_service", None)
-
-    def _enable_saml(self) -> None:
-        """Enable  SAML."""
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect() or self._pebble_service is None:
+        if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            self._pebble_service.enable_saml(container)
-        except PebbleServiceError as exc:
+            pebble.enable_saml(charm_state, container)
+        except pebble.PebbleServiceError as exc:
             self._charm.model.unit.status = ops.BlockedStatus(f"SAML integration failed: {exc}")
             return
         self._charm.unit.status = ops.ActiveStatus()
 
-    def _on_saml_data_available(self, _: SamlDataAvailableEvent) -> None:
-        """Handle SAML data available."""
+    @inject_charm_state
+    def _on_saml_data_available(self, _: SamlDataAvailableEvent, charm_state: CharmState) -> None:
+        """Handle SAML data available.
+
+        Args:
+            charm_state: The charm state.
+        """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SAML integration")
         logger.debug("_on_saml_data_available: Enabling SAML")
-        self._enable_saml()
+
+        self._enable_saml(charm_state)
 
     def get_relation_as_saml_conf(self) -> typing.Optional[SAMLConfiguration]:
         """Get SAML data from relation.

@@ -12,14 +12,12 @@ The SAML integrator relation observer.
 ## <kbd>class</kbd> `SAMLObserver`
 The SAML Integrator relation observer. 
 
-Attrs:  _pebble_service: instance of pebble service. 
-
-<a href="../src/saml_observer.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/saml_observer.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBase)
+__init__(charm: CharmBaseWithState)
 ```
 
 Initialize the observer and register event handlers. 
@@ -41,7 +39,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/saml_observer.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/saml_observer.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_saml_conf`
 

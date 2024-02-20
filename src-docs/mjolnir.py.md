@@ -18,16 +18,12 @@ A class representing the Mjolnir plugin for Synapse application.
 
 Mjolnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/matrix-org/mjolnir/ for more details about it. 
 
-<a href="../src/mjolnir.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(
-    charm: CharmBase,
-    charm_state: CharmState,
-    token_service: AdminAccessTokenService
-)
+__init__(charm: CharmBaseWithState, token_service: AdminAccessTokenService)
 ```
 
 Initialize a new instance of the Mjolnir class. 
@@ -37,7 +33,6 @@ Initialize a new instance of the Mjolnir class.
 **Args:**
  
  - <b>`charm`</b>:  The charm object that the Mjolnir instance belongs to. 
- - <b>`charm_state`</b>:  Instance of CharmState. 
  - <b>`token_service`</b>:  Instance of Admin Access Token Service. 
 
 
@@ -51,12 +46,12 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/mjolnir.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_mjolnir`
 
 ```python
-enable_mjolnir(admin_access_token: str) → None
+enable_mjolnir(charm_state: CharmState, admin_access_token: str) → None
 ```
 
 Enable mjolnir service. 
@@ -77,11 +72,12 @@ The required steps to enable Mjolnir are:
 
 **Args:**
  
+ - <b>`charm_state`</b>:  Instance of CharmState. 
  - <b>`admin_access_token`</b>:  not empty admin access token. 
 
 ---
 
-<a href="../src/mjolnir.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_membership_room_id`
 

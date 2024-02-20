@@ -12,14 +12,12 @@ The SMTP integrator relation observer.
 ## <kbd>class</kbd> `SMTPObserver`
 The SMTP relation observer. 
 
-Attrs:  _pebble_service: instance of pebble service. 
-
-<a href="../src/smtp_observer.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/smtp_observer.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBase)
+__init__(charm: CharmBaseWithState)
 ```
 
 Initialize the observer and register event handlers. 
@@ -41,7 +39,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/smtp_observer.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/smtp_observer.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_smtp_conf`
 

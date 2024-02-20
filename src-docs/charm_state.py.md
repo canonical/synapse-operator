@@ -6,6 +6,88 @@
 State of the Charm. 
 
 
+---
+
+<a href="../src/charm_state.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `inject_charm_state`
+
+```python
+inject_charm_state(
+    method: Callable[[Any, Any, ForwardRef('CharmState')], NoneType]
+) → Callable[[Any, Any], NoneType]
+```
+
+Workaround until this is fixed https://github.com/canonical/operator/issues/1129. 
+
+
+
+**Args:**
+ 
+ - <b>`method`</b>:  observer method to wrap and inject the charm_state 
+
+
+
+**Returns:**
+ the function wrapper 
+
+
+---
+
+## <kbd>class</kbd> `CharmBaseWithState`
+CharmBase than can build a CharmState. 
+
+
+---
+
+#### <kbd>property</kbd> app
+
+Application that this unit is part of. 
+
+---
+
+#### <kbd>property</kbd> charm_dir
+
+Root directory of the charm as it is running. 
+
+---
+
+#### <kbd>property</kbd> config
+
+A mapping containing the charm's config and current values. 
+
+---
+
+#### <kbd>property</kbd> meta
+
+Metadata of this charm. 
+
+---
+
+#### <kbd>property</kbd> model
+
+Shortcut for more simple access the model. 
+
+---
+
+#### <kbd>property</kbd> unit
+
+Unit that this execution is responsible for. 
+
+
+
+---
+
+<a href="../src/charm_state.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `build_charm_state`
+
+```python
+build_charm_state() → CharmState
+```
+
+Build charm state. 
+
 
 ---
 
@@ -14,7 +96,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -65,7 +147,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -141,7 +223,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L146"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -165,7 +247,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
