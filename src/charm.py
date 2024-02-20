@@ -88,13 +88,12 @@ class SynapseCharm(CharmBaseWithState):
         Returns:
             The current charm state.
         """
-        charm_state = CharmState.from_charm(
+        return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
         )
-        return charm_state
 
     def change_config(self, charm_state: CharmState) -> None:
         """Change configuration.
