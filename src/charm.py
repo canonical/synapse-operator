@@ -24,6 +24,7 @@ from database_observer import DatabaseObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
+from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
 from user import User
@@ -49,6 +50,7 @@ class SynapseCharm(ops.CharmBase):
         self._database = DatabaseObserver(self)
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
+        self._redis = RedisObserver(self)
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
