@@ -165,7 +165,7 @@ class SynapseCharm(CharmBaseWithState):
             logger.debug("Cannot set workload version at this time: %s", exc)
 
     @inject_charm_state
-    def _on_config_changed(self, _: ops.EventBase, charm_state: CharmState) -> None:
+    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
         """Handle changed configuration.
 
         Args:
@@ -175,7 +175,7 @@ class SynapseCharm(CharmBaseWithState):
         self._set_workload_version()
 
     @inject_charm_state
-    def _on_synapse_pebble_ready(self, _: ops.EventBase, charm_state: CharmState) -> None:
+    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
         """Handle synapse pebble ready event.
 
         Args:
@@ -183,7 +183,7 @@ class SynapseCharm(CharmBaseWithState):
         """
         self.change_config(charm_state)
 
-    def _on_synapse_nginx_pebble_ready(self, _: ops.EventBase) -> None:
+    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not container.can_connect():

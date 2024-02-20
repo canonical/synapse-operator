@@ -24,10 +24,29 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration, SMTPConfiguration
 
 
+class CharmBaseWithState(ops.CharmBase, ABC):
+    """CharmBase than can build a CharmState."""
+
+    @abstractmethod
+    def build_charm_state(self) -> "CharmState":
+        """Build charm state."""
+
+
 def inject_charm_state(  # pylint: disable=protected-access
     method: typing.Callable[[typing.Any, typing.Any, "CharmState"], None]
 ) -> typing.Callable[[typing.Any, typing.Any], None]:
-    """Workaround until this is fixed https://github.com/canonical/operator/issues/1129.
+    """Create a decorator that injects the argument charm_state to an observer hook.
+
+    If the configuration is invalid, it sets the state to Blocked and does
+    not call the wrapped observer.
+
+    This decorator can be used in an observer method of a CharmBaseWithState class
+    or a class/instance that has an attribute _charm that points to a
+    CharmBaseWithState instance.
+
+    Because of https://github.com/canonical/operator/issues/1129,
+    @functools.wraps cannot be used yet to have a properly created
+    decorator.
 
     Args:
         method: observer method to wrap and inject the charm_state
@@ -36,11 +55,11 @@ def inject_charm_state(  # pylint: disable=protected-access
         the function wrapper
     """
 
-    def wrapper(theself: typing.Any, event: typing.Any) -> None:
+    def wrapper(instance: typing.Any, event: typing.Any) -> None:
         """Add the charm_state argument to the function.
 
         Args:
-            theself: the self in the Object
+            instance: the instance of the class with the method to inject the charm state.
             event: the event for the observer
 
         Returns:
@@ -49,28 +68,23 @@ def inject_charm_state(  # pylint: disable=protected-access
         Raises:
             TypeError: if the function wrapped is invalid
         """
-        try:
-            if hasattr(theself, "build_charm_state"):
-                charm_state = theself.build_charm_state()
-            elif hasattr(theself, "_charm") and hasattr(theself._charm, "build_charm_state"):
-                charm_state = theself._charm.build_charm_state()
-            else:
-                raise TypeError("Cannot inject charm state into observer method")
-        except CharmConfigInvalidError as exc:
-            theself.model.unit.status = ops.BlockedStatus(exc.msg)
-            return None
-        return method(theself, event, charm_state)
+        if isinstance(instance, CharmBaseWithState):
+            charm = instance
+        elif hasattr(instance, "_charm") and isinstance(instance._charm, CharmBaseWithState):
+            charm = instance._charm
+        else:
+            raise TypeError(f"Cannot inject charm_state into method {method.__name__}.")
 
+        try:
+            charm_state = charm.build_charm_state()
+        except CharmConfigInvalidError as exc:
+            charm.model.unit.status = ops.BlockedStatus(exc.msg)
+            return None
+        return method(instance, event, charm_state)
+
+    # This is necessary for ops to work
     setattr(wrapper, "__name__", method.__name__)
     return wrapper
-
-
-class CharmBaseWithState(ops.CharmBase, ABC):
-    """CharmBase than can build a CharmState."""
-
-    @abstractmethod
-    def build_charm_state(self) -> "CharmState":
-        """Build charm state."""
 
 
 class CharmConfigInvalidError(Exception):
