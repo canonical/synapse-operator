@@ -88,7 +88,7 @@ class SynapseCharm(CharmBaseWithState):
         """Build charm state.
 
         Returns:
-            The current charm state
+            The current charm state.
         """
         charm_state = CharmState.from_charm(
             charm=self,

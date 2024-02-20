@@ -82,7 +82,7 @@ Build charm state.
 
 
 **Returns:**
-  The current charm state 
+  The current charm state. 
 
 ---
 
