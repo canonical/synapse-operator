@@ -4,8 +4,6 @@
 # See LICENSE file for licensing details.
 
 """Charm for Synapse on kubernetes."""
-# ignoring due mjolnir being set in synapse pebble ready handler
-# pylint: disable=attribute-defined-outside-init
 
 
 import logging
