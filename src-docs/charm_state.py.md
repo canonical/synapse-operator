@@ -8,14 +8,14 @@ State of the Charm.
 
 ---
 
-<a href="../src/charm_state.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `inject_charm_state`
 
 ```python
 inject_charm_state(
-    method: Callable[[Any, Any, ForwardRef('CharmState')], NoneType]
-) → Callable[[Any, Any], NoneType]
+    method: Callable[[~C, ~E, ForwardRef('CharmState')], NoneType]
+) → Callable[[~C, ~E], NoneType]
 ```
 
 Create a decorator that injects the argument charm_state to an observer hook. 
@@ -102,7 +102,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -153,7 +153,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -229,7 +229,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -253,7 +253,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

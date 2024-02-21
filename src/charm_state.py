@@ -32,9 +32,13 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         """Build charm state."""
 
 
+C = typing.TypeVar("C", bound=ops.Object)
+E = typing.TypeVar("E", bound=ops.EventBase)
+
+
 def inject_charm_state(  # pylint: disable=protected-access
-    method: typing.Callable[[typing.Any, typing.Any, "CharmState"], None]
-) -> typing.Callable[[typing.Any, typing.Any], None]:
+    method: typing.Callable[[C, E, "CharmState"], None]
+) -> typing.Callable[[C, E], None]:
     """Create a decorator that injects the argument charm_state to an observer hook.
 
     If the configuration is invalid, it sets the state to Blocked and does
@@ -55,7 +59,7 @@ def inject_charm_state(  # pylint: disable=protected-access
         the function wrapper
     """
 
-    def wrapper(instance: typing.Any, event: typing.Any) -> None:
+    def wrapper(instance: C, event: E) -> None:
         """Add the charm_state argument to the function.
 
         Args:
