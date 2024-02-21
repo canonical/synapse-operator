@@ -82,9 +82,12 @@ parts:
             - mjolnir/latest/edge
             - matrix-appservice-irc/latest/edge
         plugin: nil
-        source: https://github.com/matrix-org/synapse/
+        source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.96.1
+        source-tag: v1.101.0
+        build-environment:
+          - RUST_VERSION: "1.76.0"
+          - POETRY_VERSION: "1.7.1"
         override-build: |
             craftctl default
             export RUSTUP_HOME=/rust
@@ -92,13 +95,17 @@ parts:
             export PATH=/cargo/bin:/rust/bin:$PATH
             export CARGO_NET_GIT_FETCH_WITH_CLI=false
             mkdir -p /rust /cargo /synapse /install
-            curl -m 30 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal
-            /rust/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc -V > $CRAFT_PART_INSTALL/rust-version
+            curl -m 30 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain=$RUST_VERSION --profile minimal
+            /rust/toolchains/$RUST_VERSION-x86_64-unknown-linux-gnu/bin/rustc -V > $CRAFT_PART_INSTALL/rust-version
             pip3 install -U pip setuptools
-            pip3 install --root-user-action=ignore "poetry==1.3.2"
+            pip3 install --root-user-action=ignore "poetry==$POETRY_VERSION"
             cp pyproject.toml poetry.lock /synapse/
             /usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
             pip3 install --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
+            git clone https://github.com/canonical/synapse_stats_exporter.git
+            cd synapse_stats_exporter
+            pip3 install --prefix="/install" --no-warn-script-location -U .
+            cd ..
             cp -r synapse /synapse/
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
