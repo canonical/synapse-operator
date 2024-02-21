@@ -62,6 +62,9 @@ def inject_charm_state(  # pylint: disable=protected-access
     def wrapper(instance: C, event: E) -> None:
         """Add the charm_state argument to the function.
 
+        If the charm_state is invalid, it will not call the wrapped function
+        and will set the charm to BlockedStatus.
+
         Args:
             instance: the instance of the class with the method to inject the charm state.
             event: the event for the observer
