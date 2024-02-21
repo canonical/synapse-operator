@@ -11,6 +11,7 @@ import typing
 import ops
 
 import synapse
+from admin_access_token import AdminAccessTokenService
 from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,25 @@ class PebbleService:
             container: Charm container.
         """
         container.add_layer("synapse-mjolnir", self._mjolnir_pebble_layer, combine=True)
+        container.replan()
+
+    def replan_stats_exporter(
+        self, container: ops.model.Container, token_service: AdminAccessTokenService
+    ) -> None:
+        """Replan Synapse StatsExporter service.
+
+        Args:
+            container: Charm container.
+            token_service: Instance of Admin Access Token Service.
+        """
+        admin_access_token = token_service.get(container)
+        if not admin_access_token:
+            logger.warning("Admin Access Token is none, skipping Stats Exporter start.")
+        layer = self._stats_exporter_pebble_layer
+        layer["services"][synapse.STATS_EXPORTER_SERVICE_NAME]["environment"] = {
+            "PROM_SYNAPSE_ADMIN_TOKEN": str(admin_access_token)
+        }
+        container.add_layer("synapse-stats-exporter", layer, combine=True)
         container.replan()
 
     # The complexity of this method will be reviewed.
@@ -275,6 +295,30 @@ class PebbleService:
                     "environment": synapse.get_environment(self._charm_state),
                     "startup": "enabled",
                 },
+            },
+        }
+        return typing.cast(ops.pebble.LayerDict, layer)
+
+    @property
+    def _stats_exporter_pebble_layer(self) -> ops.pebble.LayerDict:
+        """Generate pebble config for the Synapse Stats Exporter service.
+
+        Returns:
+            The pebble configuration for the Synapse Stats Exporter service.
+        """
+        layer = {
+            "summary": "Synapse Stats Exporter layer",
+            "description": "Synapse Stats Exporter",
+            "services": {
+                synapse.STATS_EXPORTER_SERVICE_NAME: {
+                    "override": "replace",
+                    "summary": "Synapse Stats Exporter service",
+                    "command": "synapse-stats-exporter",
+                    "startup": "enabled",
+                }
+            },
+            "checks": {
+                synapse.CHECK_STATS_EXPORTER_READY_NAME: synapse.check_stats_exporter_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

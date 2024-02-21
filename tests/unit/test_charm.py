@@ -6,7 +6,7 @@
 # pylint: disable=protected-access
 
 import json
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import ops
 import pytest
@@ -426,3 +426,24 @@ def test_nginx_replan_with_synapse_service_not_existing(
 
     replan_nginx_mock.assert_called_once()
     assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse")
+
+
+def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
+    """
+    arrange: charm deployed.
+    act: start the Synapse charm, set Synapse container to be ready and set server_name.
+    assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
+    """
+    harness.begin_with_initial_hooks()
+
+    synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
+        "services"
+    ][synapse.STATS_EXPORTER_SERVICE_NAME]
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+    assert synapse_layer == {
+        "override": "replace",
+        "summary": "Synapse Stats Exporter service",
+        "command": "synapse-stats-exporter",
+        "startup": "enabled",
+        "environment": {"PROM_SYNAPSE_ADMIN_TOKEN": ANY},
+    }

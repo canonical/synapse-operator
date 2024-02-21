@@ -107,6 +107,7 @@ class SynapseCharm(ops.CharmBase):
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
             self.pebble_service.change_config(container)
+            self.pebble_service.replan_stats_exporter(container, self.token_service)
         except PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return

@@ -25,5 +25,16 @@ class Observability:  # pylint: disable=too-few-public-methods
         self._metrics_endpoint = MetricsEndpointProvider(
             charm,
             relation_name="metrics-endpoint",
-            jobs=[{"static_configs": [{"targets": [f"*:{synapse.PROMETHEUS_TARGET_PORT}"]}]}],
+            jobs=[
+                {
+                    "static_configs": [
+                        {
+                            "targets": [
+                                f"*:{synapse.PROMETHEUS_TARGET_PORT}",
+                                f"*:{synapse.STATS_EXPORTER_PORT}",
+                            ]
+                        }
+                    ]
+                }
+            ],
         )
