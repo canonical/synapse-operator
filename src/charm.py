@@ -24,6 +24,7 @@ from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
 from mjolnir import Mjolnir
 from observability import Observability
+from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
 from user import User
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 class SynapseCharm(CharmBaseWithState):
     """Charm the service."""
 
-    # This class has several instance attributes like observers, libraries and state.
+    # This class has several instance attributes like observers and libraries.
     # Consider refactoring if more attributes are added.
     # pylint: disable=too-many-instance-attributes
 
@@ -49,6 +50,7 @@ class SynapseCharm(CharmBaseWithState):
         self._database = DatabaseObserver(self)
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
+        self._redis = RedisObserver(self)
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
