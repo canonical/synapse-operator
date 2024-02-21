@@ -82,7 +82,7 @@ parts:
             - mjolnir/latest/edge
             - matrix-appservice-irc/latest/edge
         plugin: nil
-        source: https://github.com/matrix-org/synapse/
+        source: https://github.com/element-hq/synapse/
         source-type: git
         source-tag: v1.101.0
         override-build: |
