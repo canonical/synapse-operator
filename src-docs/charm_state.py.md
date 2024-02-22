@@ -189,7 +189,7 @@ Return: The CharmState instance created by the provided charm.
 ---
 
 ## <kbd>class</kbd> `HasCharmWithState`
-Protocol that defines a class that can return a CharmBaseWithState. 
+Protocol that defines a class that returns a CharmBaseWithState. 
 
 
 

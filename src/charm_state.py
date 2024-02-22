@@ -36,7 +36,7 @@ class CharmBaseWithState(ops.CharmBase, ABC):
 
 
 class HasCharmWithState(typing.Protocol):  # pylint: disable=too-few-public-methods
-    """Protocol that defines a class that can return a CharmBaseWithState."""
+    """Protocol that defines a class that returns a CharmBaseWithState."""
 
     def get_charm(self) -> CharmBaseWithState:
         """Get the charm that can build a state."""
