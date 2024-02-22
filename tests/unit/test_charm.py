@@ -445,5 +445,8 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
         "summary": "Synapse Stats Exporter service",
         "command": "synapse-stats-exporter",
         "startup": "enabled",
-        "environment": {"PROM_SYNAPSE_ADMIN_TOKEN": ANY},
+        "environment": {
+            "PROM_SYNAPSE_ADMIN_TOKEN": ANY,
+            "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
+        },
     }
