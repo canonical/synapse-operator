@@ -44,8 +44,8 @@ def inject_charm_state(  # pylint: disable=protected-access
 ) -> typing.Callable[[C, E], None]:
     """Create a decorator that injects the argument charm_state to an observer hook.
 
-    If the configuration is invalid, it sets the state to Blocked and does
-    not call the wrapped observer.
+    If the configuration is invalid, set the state to Blocked if it is
+    a Hook or to failed if it is an Action and do not call the wrapped observer.
 
     This decorator can be used in an observer method of a CharmBaseWithState class
     or a class/instance that has an attribute _charm that points to a
@@ -66,7 +66,7 @@ def inject_charm_state(  # pylint: disable=protected-access
         """Add the charm_state argument to the function.
 
         If the charm_state is invalid, it will not call the wrapped function
-        and will set the charm to BlockedStatus.
+        and will set the charm to BlockedStatus if it is a Hook of to failed if it is an Action.
 
         Args:
             instance: the instance of the class with the method to inject the charm state.

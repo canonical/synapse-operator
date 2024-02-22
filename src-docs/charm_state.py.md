@@ -20,7 +20,7 @@ inject_charm_state(
 
 Create a decorator that injects the argument charm_state to an observer hook. 
 
-If the configuration is invalid, it sets the state to Blocked and does not call the wrapped observer. 
+If the configuration is invalid, set the state to Blocked if it is a Hook or to failed if it is an Action and do not call the wrapped observer. 
 
 This decorator can be used in an observer method of a CharmBaseWithState class or a class/instance that has an attribute _charm that points to a CharmBaseWithState instance. 
 
