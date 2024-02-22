@@ -117,7 +117,7 @@ async def test_synapse_create_backup_no_passphrase(
     await synapse_app.reset_config(["backup_passphrase"])
     await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
     await model.wait_for_idle(
-        idle_period=30,
+        idle_period=60,
         apps=[synapse_app.name, s3_integrator_app_backup.name],
         status=ACTIVE_STATUS_NAME,
     )
