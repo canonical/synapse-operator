@@ -35,14 +35,14 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         """Build charm state."""
 
 
-class HasCharm(typing.Protocol):  # pylint: disable=too-few-public-methods
+class HasCharmWithState(typing.Protocol):  # pylint: disable=too-few-public-methods
     """Protocol that defines a class that can return a CharmBaseWithState."""
 
     def get_charm(self) -> CharmBaseWithState:
         """Get the charm that can build a state."""
 
 
-C = typing.TypeVar("C", bound=HasCharm)
+C = typing.TypeVar("C", bound=HasCharmWithState)
 E = typing.TypeVar("E", bound=ops.EventBase)
 
 
