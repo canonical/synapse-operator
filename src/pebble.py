@@ -91,6 +91,7 @@ class PebbleService:
             logger.warning("Admin Access Token is none, skipping Stats Exporter start.")
         layer = self._stats_exporter_pebble_layer
         layer["services"][synapse.STATS_EXPORTER_SERVICE_NAME]["environment"] = {
+            "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
             "PROM_SYNAPSE_ADMIN_TOKEN": str(admin_access_token)
         }
         container.add_layer("synapse-stats-exporter", layer, combine=True)
