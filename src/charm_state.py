@@ -54,9 +54,9 @@ def inject_charm_state(  # pylint: disable=protected-access
     If the configuration is invalid, set the state to Blocked if it is
     a Hook or to failed if it is an Action and do not call the wrapped observer.
 
-    This decorator can be used in an observer method of a CharmBaseWithState class
-    or a class/instance that has an attribute _charm that points to a
-    CharmBaseWithState instance.
+    This decorator can be used in a class that observes a hook/action
+    and that defines de get_charm function to get a charm that implements
+    CharmBaseWithState.
 
     Because of https://github.com/canonical/operator/issues/1129,
     @functools.wraps cannot be used yet to have a properly created
