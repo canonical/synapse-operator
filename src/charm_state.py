@@ -4,6 +4,7 @@
 """State of the Charm."""
 import dataclasses
 import itertools
+import logging
 import os
 import typing
 from abc import ABC, abstractmethod
@@ -22,6 +23,8 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 )
 
 from charm_types import DatasourcePostgreSQL, SAMLConfiguration, SMTPConfiguration
+
+logger = logging.getLogger(__name__)
 
 
 class CharmBaseWithState(ops.CharmBase, ABC):
@@ -85,7 +88,13 @@ def inject_charm_state(  # pylint: disable=protected-access
         try:
             charm_state = charm.build_charm_state()
         except CharmConfigInvalidError as exc:
-            charm.model.unit.status = ops.BlockedStatus(exc.msg)
+            logger.exception("Error creating CharmConfig")
+            # There are two main types of events, Hooks and Actions.
+            # Each one of them should be treated differently.
+            if isinstance(event, ops.charm.ActionEvent):
+                event.fail(exc.msg)
+            else:
+                charm.model.unit.status = ops.BlockedStatus(exc.msg)
             return None
         return method(instance, event, charm_state)
 
