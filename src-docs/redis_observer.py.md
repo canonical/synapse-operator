@@ -14,7 +14,7 @@ The Redis relation observer.
 
 Attrs:  on: listen to Redis events.  _stored: stored state. 
 
-<a href="../src/redis_observer.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/redis_observer.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -38,5 +38,22 @@ Initialize the observer and register event handlers.
 Shortcut for more simple access the model. 
 
 
+
+---
+
+<a href="../src/redis_observer.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_relation_as_redis_conf`
+
+```python
+get_relation_as_redis_conf() → Optional[RedisConfiguration]
+```
+
+Get the hostname and port from the redis relation data. 
+
+
+
+**Returns:**
+  RedisConfiguration instance with the hostname and port of the related redis or None  if not found. 
 
 

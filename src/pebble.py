@@ -152,6 +152,22 @@ class PebbleService:
         except (synapse.WorkloadError, ops.pebble.PathError) as exc:
             raise PebbleServiceError(str(exc)) from exc
 
+    def enable_redis(self, container: ops.model.Container) -> None:
+        """Enable Redis while receiving on_redis_relation_updated event.
+
+        Args:
+            container: Charm container.
+
+        Raises:
+            PebbleServiceError: if something goes wrong while interacting with Pebble.
+        """
+        try:
+            logger.debug("pebble.enable_redis: Enabling Redis")
+            synapse.enable_redis(container=container, charm_state=self._charm_state)
+            self.restart_synapse(container)
+        except (synapse.WorkloadError, ops.pebble.PathError) as exc:
+            raise PebbleServiceError(str(exc)) from exc
+
     def reset_instance(self, container: ops.model.Container) -> None:
         """Reset instance.
 

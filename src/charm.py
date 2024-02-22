@@ -57,6 +57,7 @@ class SynapseCharm(ops.CharmBase):
                 datasource=self._database.get_relation_as_datasource(),
                 saml_config=self._saml.get_relation_as_saml_conf(),
                 smtp_config=self._smtp.get_relation_as_smtp_conf(),
+                redis_config=self._redis.get_relation_as_redis_conf(),
             )
         except CharmConfigInvalidError as exc:
             self.model.unit.status = ops.BlockedStatus(exc.msg)

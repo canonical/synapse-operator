@@ -57,6 +57,30 @@ Change the configuration.
 
 ---
 
+<a href="../src/pebble.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `enable_redis`
+
+```python
+enable_redis(container: Container) → None
+```
+
+Enable Redis while receiving on_redis_relation_updated event. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+---
+
 <a href="../src/pebble.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_saml`
@@ -141,7 +165,7 @@ Replan Synapse NGINX service.
 
 ---
 
-<a href="../src/pebble.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `reset_instance`
 

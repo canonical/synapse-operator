@@ -28,6 +28,22 @@ A named tuple representing a Datasource PostgreSQL.
 
 ---
 
+## <kbd>class</kbd> `RedisConfiguration`
+A named tuple representing Redis configuration. 
+
+
+
+**Attributes:**
+ 
+ - <b>`host`</b>:  The hostname of the Redis server. 
+ - <b>`port`</b>:  The port on the Redis server. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `SAMLConfiguration`
 A named tuple representing a SAML configuration. 
 

@@ -14,7 +14,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -47,6 +47,7 @@ State of the Charm.
  - <b>`datasource`</b>:  datasource information. 
  - <b>`saml_config`</b>:  saml configuration. 
  - <b>`smtp_config`</b>:  smtp configuration. 
+ - <b>`redis_config`</b>:  redis configuration. 
  - <b>`proxy`</b>:  proxy information. 
 
 
@@ -65,7 +66,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -74,7 +75,8 @@ from_charm(
     charm: CharmBase,
     datasource: Optional[DatasourcePostgreSQL],
     saml_config: Optional[SAMLConfiguration],
-    smtp_config: Optional[SMTPConfiguration]
+    smtp_config: Optional[SMTPConfiguration],
+    redis_config: Optional[RedisConfiguration]
 ) → CharmState
 ```
 
@@ -88,6 +90,7 @@ Initialize a new instance of the CharmState class from the associated charm.
  - <b>`datasource`</b>:  datasource information to be used by Synapse. 
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
+ - <b>`redis_config`</b>:  Redis configuration to be used by Synapse. 
 
 Return: The CharmState instance created by the provided charm. 
 
@@ -141,7 +144,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -165,7 +168,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
