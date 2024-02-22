@@ -39,7 +39,24 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/saml_observer.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/saml_observer.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_charm`
+
+```python
+get_charm() → CharmBaseWithState
+```
+
+Return the current charm. 
+
+
+
+**Returns:**
+  The current charm 
+
+---
+
+<a href="../src/saml_observer.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_saml_conf`
 

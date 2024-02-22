@@ -50,6 +50,14 @@ class SMTPObserver(Object):
             self._on_smtp_relation_data_available,
         )
 
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
+
+        Returns:
+           The current charm
+        """
+        return self._charm
+
     def get_relation_as_smtp_conf(self) -> Optional[SMTPConfiguration]:
         """Get SMTP data from relation.
 

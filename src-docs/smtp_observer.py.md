@@ -41,6 +41,23 @@ Shortcut for more simple access the model.
 
 <a href="../src/smtp_observer.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+### <kbd>function</kbd> `get_charm`
+
+```python
+get_charm() → CharmBaseWithState
+```
+
+Return the current charm. 
+
+
+
+**Returns:**
+  The current charm 
+
+---
+
+<a href="../src/smtp_observer.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ### <kbd>function</kbd> `get_relation_as_smtp_conf`
 
 ```python

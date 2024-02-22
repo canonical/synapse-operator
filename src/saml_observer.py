@@ -37,6 +37,14 @@ class SAMLObserver(Object):
         self.saml = SamlRequires(self._charm)
         self.framework.observe(self.saml.on.saml_data_available, self._on_saml_data_available)
 
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
+
+        Returns:
+           The current charm
+        """
+        return self._charm
+
     def _enable_saml(self, charm_state: CharmState) -> None:
         """Enable  SAML.
 

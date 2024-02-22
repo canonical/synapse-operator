@@ -69,7 +69,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -86,7 +86,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -101,5 +101,22 @@ Change configuration.
 **Args:**
  
  - <b>`charm_state`</b>:  Instance of CharmState 
+
+---
+
+<a href="../src/charm.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_charm`
+
+```python
+get_charm() → CharmBaseWithState
+```
+
+Return the current charm. 
+
+
+
+**Returns:**
+  The current charm 
 
 

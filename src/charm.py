@@ -84,6 +84,14 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
 
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
+
+        Returns:
+           The current charm
+        """
+        return self
+
     def build_charm_state(self) -> CharmState:
         """Build charm state.
 

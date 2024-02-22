@@ -36,6 +36,14 @@ class TestCharm(CharmBaseWithState):
             smtp_config=None,
         )
 
+    def get_charm(self) -> CharmBaseWithState:
+        """Get the charm that can build a state.
+
+        Returns:
+            The current charm.
+        """
+        return self
+
 
 def test_inject_charm_state_correct() -> None:
     """
@@ -90,6 +98,14 @@ def test_inject_charm_state_in_observer_correct() -> None:
             """
             super().__init__(charm, "some-observer")
             self._charm = charm
+
+        def get_charm(self) -> CharmBaseWithState:
+            """Get the charm that can build a state.
+
+            Returns:
+                The current charm.
+            """
+            return self._charm
 
         @inject_charm_state
         def on_start(self, _: ops.HookEvent, charm_state: CharmState):

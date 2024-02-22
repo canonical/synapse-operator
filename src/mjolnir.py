@@ -42,6 +42,14 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         self._token_service = token_service
         self.framework.observe(charm.on.collect_unit_status, self._on_collect_status)
 
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
+
+        Returns:
+           The current charm
+        """
+        return self._charm
+
     @property
     def _admin_access_token(self) -> typing.Optional[str]:
         """Get admin access token.

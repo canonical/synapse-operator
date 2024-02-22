@@ -35,7 +35,14 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         """Build charm state."""
 
 
-C = typing.TypeVar("C", bound=ops.Object)
+class HasCharm(typing.Protocol):  # pylint: disable=too-few-public-methods
+    """Protocol that defines a class that can return a CharmBaseWithState."""
+
+    def get_charm(self) -> CharmBaseWithState:
+        """Get the charm that can build a state."""
+
+
+C = typing.TypeVar("C", bound=HasCharm)
 E = typing.TypeVar("E", bound=ops.EventBase)
 
 
@@ -74,16 +81,8 @@ def inject_charm_state(  # pylint: disable=protected-access
 
         Returns:
             The value returned from the original function. That is, None.
-
-        Raises:
-            TypeError: if the function wrapped is invalid
         """
-        if isinstance(instance, CharmBaseWithState):
-            charm = instance
-        elif hasattr(instance, "_charm") and isinstance(instance._charm, CharmBaseWithState):
-            charm = instance._charm
-        else:
-            raise TypeError(f"Cannot inject charm_state into method {method.__name__}.")
+        charm = instance.get_charm()
 
         try:
             charm_state = charm.build_charm_state()

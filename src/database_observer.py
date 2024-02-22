@@ -45,6 +45,14 @@ class DatabaseObserver(Object):
         self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(self.database.on.endpoints_changed, self._on_endpoints_changed)
 
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
+
+        Returns:
+           The current charm
+        """
+        return self._charm
+
     def _change_config(self, charm_state: CharmState) -> None:
         """Change the configuration.
 
