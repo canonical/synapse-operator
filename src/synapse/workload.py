@@ -702,7 +702,7 @@ def enable_redis(container: ops.Container, charm_state: CharmState) -> None:
         redis_config = charm_state.redis_config
         current_yaml["redis"]["enabled"] = True
         current_yaml["redis"]["host"] = redis_config["host"]
-        current_yaml["email"]["port"] = redis_config["port"]
+        current_yaml["redis"]["port"] = redis_config["port"]
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         raise WorkloadError(str(exc)) from exc

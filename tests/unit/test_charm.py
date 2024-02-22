@@ -426,3 +426,64 @@ def test_nginx_replan_with_synapse_service_not_existing(
 
     replan_nginx_mock.assert_called_once()
     assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse")
+
+
+def test_redis_relation_pebble_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_redis.
+    act: emit redis_relation_updated
+    assert: synapse.enable_redis is called once and unit is active.
+    """
+    harness = redis_configured
+    enable_redis_mock = MagicMock()
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
+    harness.begin()
+
+    harness.charm._redis.on.redis_relation_updated.emit()
+
+    enable_redis_mock.assert_called_once_with(
+        container=container, charm_state=harness.charm._charm_state
+    )
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+def test_redis_relation_pebble_error(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit redis_relation_updated.
+    assert: Synapse charm should submit the correct status (blocked).
+    """
+    harness = redis_configured
+    harness.begin()
+
+    enable_redis_mock = MagicMock(side_effect=PebbleServiceError("fail"))
+    monkeypatch.setattr(harness.charm._redis._pebble_service, "enable_redis", enable_redis_mock)
+
+    harness.charm._redis.on.redis_relation_updated.emit()
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "Redis integration failed" in str(harness.model.unit.status)
+
+
+def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_redis.
+    act: emit redis_relation_updated.
+    assert: get_relation_as_redis_conf works as expected.
+    """
+    harness = redis_configured
+    enable_redis_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
+
+    harness.begin()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+
+    redis_config = harness.charm._redis.get_relation_as_redis_conf()
+    assert relation.data[relation.app]["hostname"] == redis_config["host"]
+    assert relation.data[relation.app]["port"] == str(redis_config["port"])
