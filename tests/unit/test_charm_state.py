@@ -19,8 +19,8 @@ from charm_state import (
 )
 
 
-class TestCharm(CharmBaseWithState):
-    """Fake charm that builds a charm_state."""
+class SimpleCharm(CharmBaseWithState):
+    """Simple charm that builds a charm_state."""
 
     def build_charm_state(self) -> CharmState:
         """Build charm state.
@@ -54,7 +54,7 @@ def test_inject_charm_state_correct() -> None:
         of the charm.
     """
 
-    class FakeCharm(TestCharm):
+    class FakeCharm(SimpleCharm):
         """Fake charm with on_start handler."""
 
         @inject_charm_state
@@ -116,7 +116,7 @@ def test_inject_charm_state_in_observer_correct() -> None:
             """
             self.charm_state = charm_state
 
-    harness = Harness(TestCharm)
+    harness = Harness(SimpleCharm)
     harness.begin()
     charm = harness.charm
     observer = Observer(charm)
@@ -137,7 +137,7 @@ def test_inject_charm_state_hook_failed() -> None:
         of the observer as the handler was not called..
     """
 
-    class FakeCharm(TestCharm):
+    class FakeCharm(SimpleCharm):
         """Fake observer with on_start."""
 
         def build_charm_state(self) -> CharmState:
@@ -176,7 +176,7 @@ def test_inject_charm_state_action_failed() -> None:
     assert: Action should fail with error invalid configuration. No charm_state attribute exists.
     """
 
-    class FakeCharm(TestCharm):
+    class FakeCharm(SimpleCharm):
         """Fake observer with on_create_backup."""
 
         def build_charm_state(self) -> CharmState:
