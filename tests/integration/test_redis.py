@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 async def test_synapse_enable_redis(
     model: Model,
     synapse_app: Application,
-    relation_name: str,
 ):
     """
     arrange: build and deploy the Synapse charm.
@@ -36,7 +35,7 @@ async def test_synapse_enable_redis(
         channel="latest/edge",
     )
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    await model.add_relation(f"{redis_app.name}:{relation_name}", synapse_app.name)
+    await model.add_relation(f"{redis_app.name}:redis", synapse_app.name)
     await model.wait_for_idle(
         idle_period=30,
         apps=[synapse_app.name, redis_app.name],
