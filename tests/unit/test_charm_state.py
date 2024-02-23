@@ -36,14 +36,6 @@ class SimpleCharm(CharmBaseWithState):
             smtp_config=None,
         )
 
-    def get_charm(self) -> CharmBaseWithState:
-        """Get the charm that can build a state.
-
-        Returns:
-            The current charm.
-        """
-        return self
-
 
 def test_inject_charm_state_correct() -> None:
     """
