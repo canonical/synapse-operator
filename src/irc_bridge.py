@@ -121,8 +121,8 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         pem_create_command = [
             "/bin/bash",
             "-c",
-            "[[ -f /data/config/passkey.pem ]] || "
-            + "openssl genpkey -out /data/config/passkey.pem "
+            "[[ -f /data/config/irc_passkey.pem ]] || "
+            + "openssl genpkey -out /data/config/irc_passkey.pem "
             + "-outform PEM -algorithm RSA -pkeyopt rsa_keygen_bits:2048",
         ]
         logger.info("Creating PEM file for IRC bridge.")
