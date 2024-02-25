@@ -49,12 +49,10 @@ class SynapseCharm(ops.CharmBase):
         super().__init__(*args)
         self._backup = BackupObserver(self)
         self._database = DatabaseObserver(self)
+        self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
-        if self._charm_state.synapse_config.enable_irc_bridge:
-            self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
-            self._irc_bridge = IRCBridge(self, charm_state=self._charm_state)
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
@@ -91,6 +89,8 @@ class SynapseCharm(ops.CharmBase):
             self._mjolnir = Mjolnir(
                 self, charm_state=self._charm_state, token_service=self.token_service
             )
+        if self._charm_state.synapse_config.enable_irc_bridge:
+            self._irc_bridge = IRCBridge(self, charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)

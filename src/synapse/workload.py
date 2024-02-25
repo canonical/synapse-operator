@@ -581,12 +581,12 @@ def _get_irc_bridge_config(server_name: str, db_connect_string: str) -> typing.D
     Returns:
         IRC Bridge configuration
     """
-    with open("templates/irc_bridge_production.yaml", encoding="utf-8") as irc_config_file:
-        config = yaml.safe_load(irc_config_file)
-        config["homeserver"]["url"] = SYNAPSE_URL
-        config["homeserver"]["domain"] = server_name
-        config["database"]["connectionString"] = db_connect_string
-        return config
+    irc_config_file = Path("templates/irc_bridge_production.yaml").read_text(encoding="utf-8")
+    config = yaml.safe_load(irc_config_file)
+    config["homeserver"]["url"] = SYNAPSE_URL
+    config["homeserver"]["domain"] = server_name
+    config["database"]["connectionString"] = db_connect_string
+    return config
 
 
 def create_irc_bridge_config(
