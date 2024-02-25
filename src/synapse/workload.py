@@ -7,6 +7,7 @@
 
 import logging
 import typing
+from pathlib import Path
 
 import ops
 import yaml

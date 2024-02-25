@@ -143,12 +143,14 @@ class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
         Returns:
             The database connection string.
         """
+        if self._charm_state.irc_bridge_datasource is None:
+            return ""
         db_connect_string = (
             "postgres://"
-            + f"{self._charm_state.irc_bridge_datasource['user']}"  # type: ignore
-            + f":{self._charm_state.irc_bridge_datasource['password']}"  # type: ignore
-            + f"@{self._charm_state.irc_bridge_datasource['host']}"  # type: ignore
-            + f":{self._charm_state.irc_bridge_datasource['port']}"  # type: ignore
-            + f"/{self._charm_state.irc_bridge_datasource['db']}"  # type: ignore
+            + f"{self._charm_state.irc_bridge_datasource['user']}"
+            + f":{self._charm_state.irc_bridge_datasource['password']}"
+            + f"@{self._charm_state.irc_bridge_datasource['host']}"
+            + f":{self._charm_state.irc_bridge_datasource['port']}"
+            + f"/{self._charm_state.irc_bridge_datasource['db']}"
         )
         return db_connect_string
