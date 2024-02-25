@@ -66,6 +66,9 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
             event: Collect status event.
         """
         # pylint:disable=duplicate-code
+        # the code that is duplicated checks that Synapse is ready
+        # the relevant lines are three and refactoring this in a separate method
+        # would not add any value
         if not self._charm_state.synapse_config.enable_irc_bridge:
             return
         if self._charm_state.irc_bridge_datasource is None:
