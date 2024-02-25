@@ -32,7 +32,7 @@ class PEMCreateError(Exception):
         super().__init__(message)
 
 
-class IRCBridge(ops.Object):  # pylint: disable=too-few-public-methods
+class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
     """A class representing the IRC bridge plugin for Synapse application.
 
     See https://github.com/matrix-org/matrix-appservice-irc/ for more details about it.
