@@ -1,4 +1,11 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+"""Exceptions unit tests."""
+
+
 from exceptions import CharmDatabaseRelationNotFoundError
+
 
 def test_charm_database_relation_not_found_error():
     """
