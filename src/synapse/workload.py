@@ -634,7 +634,7 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> None:
             "-c",
             IRC_BRIDGE_CONFIG_PATH,
             "-l",
-            "my_bot",
+            "irc_bot",
         ],
     )
     if registration_result.exit_code:
