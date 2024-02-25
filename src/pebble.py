@@ -275,8 +275,8 @@ class PebbleService:
         """
         command_params = (
             f"-c {synapse.IRC_BRIDGE_CONFIG_PATH}"
-            + f" -f {synapse.IRC_BRIDGE_REGISTRATION_PATH}"
-            + f" -p {synapse.IRC_BRIDGE_HEALTH_PORT}"
+            f" -f {synapse.IRC_BRIDGE_REGISTRATION_PATH}"
+            f" -p {synapse.IRC_BRIDGE_HEALTH_PORT}"
         )
         layer = {
             "summary": "Synapse irc layer",
