@@ -79,10 +79,10 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
         if irc_service:
             logger.debug("%s service already exists, skipping", IRC_SERVICE_NAME)
             return
-        self.enable_irc_bridge()
+        self._enable_irc_bridge()
         event.add_status(ops.ActiveStatus())
 
-    def enable_irc_bridge(self) -> None:
+    def _enable_irc_bridge(self) -> None:
         """Enable irc service.
 
         The required steps to enable the IRC bridge are:
