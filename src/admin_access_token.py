@@ -22,7 +22,7 @@ SECRET_ID = "secret-id"  # nosec
 SECRET_KEY = "secret-key"  # nosec
 
 
-class AdminAccessTokenService:
+class AdminAccessTokenService:  # pragma: no cover
     """The Admin Access Token Service.
 
     Attrs:
