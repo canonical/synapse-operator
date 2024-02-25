@@ -14,6 +14,7 @@ from ops.pebble import APIError, ExecError
 
 import synapse
 from charm_state import CharmState
+from pebble import PebbleService
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
         self.framework.observe(charm.on.collect_unit_status, self._on_collect_status)
 
     @property
-    def _pebble_service(self) -> typing.Any:
+    def _pebble_service(self) -> typing.Optional[PebbleService]:
         """Return instance of pebble service.
 
         Returns:
@@ -107,6 +108,8 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
         )
         synapse.create_irc_bridge_app_registration(container=container)
         self._create_pem_file(container=container)
+        if self._pebble_service is None:
+            return
         self._pebble_service.replan_irc_bridge(container)
         self._pebble_service.restart_synapse(container)
         self._charm.model.unit.status = ops.ActiveStatus()
