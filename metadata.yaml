@@ -73,6 +73,10 @@ requires:
         interface: s3
         limit: 1
         optional: true
+    redis:
+        interface: redis
+        limit: 1
+        optional: true
 
 peers:
   synapse-peers:

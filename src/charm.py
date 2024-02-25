@@ -4,8 +4,6 @@
 # See LICENSE file for licensing details.
 
 """Charm for Synapse on kubernetes."""
-# ignoring due mjolnir being set in synapse pebble ready handler
-# pylint: disable=attribute-defined-outside-init
 
 
 import logging
@@ -27,6 +25,7 @@ from irc_bridge import IRCBridge
 from mjolnir import Mjolnir
 from observability import Observability
 from pebble import PebbleService, PebbleServiceError
+from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
 from user import User
@@ -53,6 +52,7 @@ class SynapseCharm(ops.CharmBase):
         self._database = DatabaseObserver(self)
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
+        self._redis = RedisObserver(self)
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,

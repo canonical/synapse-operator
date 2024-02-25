@@ -12,7 +12,7 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
-<a href="../src/charm.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -69,7 +69,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
