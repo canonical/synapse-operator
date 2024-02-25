@@ -58,7 +58,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     Attributes:
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
-        enable_irc_bridge: enable_irc_bridge config.
+        enable_irc_bridge: creates a registration file in Synapse and starts an irc bridge app.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
@@ -166,6 +166,9 @@ class CharmState:
         )
 
     # pylint: disable=too-many-arguments
+    # this either needs to be refactored or it's fine as is for now
+    # the disable stems from the additional datasoure for irc bridge
+    # and that might end up in a separate charm
     @classmethod
     def from_charm(
         cls,
