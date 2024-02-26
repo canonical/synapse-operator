@@ -94,7 +94,7 @@ class PebbleService:
             "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
             "PROM_SYNAPSE_ADMIN_TOKEN": str(admin_access_token),
         }
-        container.add_layer("synapse-stats-exporter", layer, combine=True)
+        container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
         container.replan()
 
     # The complexity of this method will be reviewed.
