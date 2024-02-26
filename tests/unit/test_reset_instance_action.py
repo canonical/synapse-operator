@@ -175,7 +175,7 @@ def test_reset_instance_action_erase_database(
 
     actions.reset_instance(
         container=unittest.mock.MagicMock(),
-        charm_state=harness.charm._charm_state,
+        charm_state=harness.charm.build_charm_state(),
         datasource=unittest.mock.MagicMock(),
     )
 

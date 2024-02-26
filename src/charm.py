@@ -17,14 +17,14 @@ from ops.charm import ActionEvent
 from ops.main import main
 
 import actions
+import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
-from charm_state import CharmConfigInvalidError, CharmState
+from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
 from mjolnir import Mjolnir
 from observability import Observability
-from pebble import PebbleService, PebbleServiceError
 from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
@@ -33,14 +33,14 @@ from user import User
 logger = logging.getLogger(__name__)
 
 
-class SynapseCharm(ops.CharmBase):
+class SynapseCharm(CharmBaseWithState):
     """Charm the service.
 
     Attrs:
         on: listen to Redis events.
     """
 
-    # This class has several instance attributes like observers, libraries and state.
+    # This class has several instance attributes like observers and libraries.
     # Consider refactoring if more attributes are added.
     # pylint: disable=too-many-instance-attributes
     on = RedisRelationCharmEvents()
@@ -57,19 +57,7 @@ class SynapseCharm(ops.CharmBase):
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
-        try:
-            self._charm_state = CharmState.from_charm(
-                charm=self,
-                datasource=self._database.get_relation_as_datasource(),
-                saml_config=self._saml.get_relation_as_saml_conf(),
-                smtp_config=self._smtp.get_relation_as_smtp_conf(),
-                redis_config=self._redis.get_relation_as_redis_conf(),
-            )
-        except CharmConfigInvalidError as exc:
-            self.model.unit.status = ops.BlockedStatus(exc.msg)
-            return
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
-        self.pebble_service = PebbleService(charm_state=self._charm_state)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -89,10 +77,7 @@ class SynapseCharm(ops.CharmBase):
             strip_prefix=True,
         )
         self._observability = Observability(self)
-        if self._charm_state.synapse_config.enable_mjolnir:
-            self._mjolnir = Mjolnir(
-                self, charm_state=self._charm_state, token_service=self.token_service
-            )
+        self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
@@ -105,16 +90,34 @@ class SynapseCharm(ops.CharmBase):
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
 
-    def change_config(self) -> None:
-        """Change configuration."""
+    def build_charm_state(self) -> CharmState:
+        """Build charm state.
+
+        Returns:
+            The current charm state.
+        """
+        return CharmState.from_charm(
+            charm=self,
+            datasource=self._database.get_relation_as_datasource(),
+            saml_config=self._saml.get_relation_as_saml_conf(),
+            smtp_config=self._smtp.get_relation_as_smtp_conf(),
+            redis_config=self._redis.get_relation_as_redis_conf(),
+        )
+
+    def change_config(self, charm_state: CharmState) -> None:
+        """Change configuration.
+
+        Args:
+            charm_state: Instance of CharmState
+        """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            self.pebble_service.change_config(container)
-        except PebbleServiceError as exc:
+            pebble.change_config(charm_state, container)
+        except pebble.PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
         self._set_unit_status()
@@ -169,14 +172,24 @@ class SynapseCharm(ops.CharmBase):
         except synapse.APIError as exc:
             logger.debug("Cannot set workload version at this time: %s", exc)
 
-    def _on_config_changed(self, _: ops.HookEvent) -> None:
-        """Handle changed configuration."""
-        self.change_config()
+    @inject_charm_state
+    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle changed configuration.
+
+        Args:
+            charm_state: The charm state.
+        """
+        self.change_config(charm_state)
         self._set_workload_version()
 
-    def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle synapse pebble ready event."""
-        self.change_config()
+    @inject_charm_state
+    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle synapse pebble ready event.
+
+        Args:
+            charm_state: The charm state.
+        """
+        self.change_config(charm_state)
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
@@ -186,14 +199,16 @@ class SynapseCharm(ops.CharmBase):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
-        self.pebble_service.replan_nginx(container)
+        pebble.replan_nginx(container)
         self._set_unit_status()
 
-    def _on_reset_instance_action(self, event: ActionEvent) -> None:
+    @inject_charm_state
+    def _on_reset_instance_action(self, event: ActionEvent, charm_state: CharmState) -> None:
         """Reset instance and report action result.
 
         Args:
             event: Event triggering the reset instance action.
+            charm_state: The charm state.
         """
         results = {
             "reset-instance": False,
@@ -207,15 +222,15 @@ class SynapseCharm(ops.CharmBase):
             return
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
-            self.pebble_service.reset_instance(container)
+            pebble.reset_instance(charm_state, container)
             datasource = self._database.get_relation_as_datasource()
             actions.reset_instance(
-                container=container, charm_state=self._charm_state, datasource=datasource
+                container=container, charm_state=charm_state, datasource=datasource
             )
             logger.info("Start Synapse")
-            self.pebble_service.restart_synapse(container)
+            pebble.restart_synapse(charm_state, container)
             results["reset-instance"] = True
-        except (PebbleServiceError, actions.ResetInstanceError) as exc:
+        except (pebble.PebbleServiceError, actions.ResetInstanceError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             event.fail(str(exc))
             return
@@ -242,11 +257,13 @@ class SynapseCharm(ops.CharmBase):
         results = {"register-user": True, "user-password": user.password}
         event.set_results(results)
 
-    def _on_promote_user_admin_action(self, event: ActionEvent) -> None:
+    @inject_charm_state
+    def _on_promote_user_admin_action(self, event: ActionEvent, charm_state: CharmState) -> None:
         """Promote user admin and report action result.
 
         Args:
             event: Event triggering the promote user admin action.
+            charm_state: The charm state.
         """
         results = {
             "promote-user-admin": False,
@@ -261,7 +278,7 @@ class SynapseCharm(ops.CharmBase):
                 event.fail("Failed to get admin access token")
                 return
             username = event.params["username"]
-            server = self._charm_state.synapse_config.server_name
+            server = charm_state.synapse_config.server_name
             user = User(username=username, admin=True)
             synapse.promote_user_admin(
                 user=user, server=server, admin_access_token=admin_access_token
@@ -272,11 +289,13 @@ class SynapseCharm(ops.CharmBase):
             return
         event.set_results(results)
 
-    def _on_anonymize_user_action(self, event: ActionEvent) -> None:
+    @inject_charm_state
+    def _on_anonymize_user_action(self, event: ActionEvent, charm_state: CharmState) -> None:
         """Anonymize user and report action result.
 
         Args:
             event: Event triggering the anonymize user action.
+            charm_state: The charm state.
         """
         results = {
             "anonymize-user": False,
@@ -291,7 +310,7 @@ class SynapseCharm(ops.CharmBase):
                 event.fail("Failed to get admin access token")
                 return
             username = event.params["username"]
-            server = self._charm_state.synapse_config.server_name
+            server = charm_state.synapse_config.server_name
             user = User(username=username, admin=False)
             synapse.deactivate_user(
                 user=user, server=server, admin_access_token=admin_access_token

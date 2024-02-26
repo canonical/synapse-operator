@@ -4,14 +4,15 @@
 """The Redis agent relation observer."""
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 import ops
 from charms.redis_k8s.v0.redis import RedisRequires
-from ops.charm import CharmBase, HookEvent
 from ops.framework import Object, StoredState
 
+import pebble
 import synapse
+from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import RedisConfiguration
 from pebble import PebbleServiceError
 
@@ -23,7 +24,7 @@ class RedisObserver(Object):
 
     _stored = StoredState()
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: CharmBaseWithState):
         """Initialize the observer and register event handlers.
 
         Args:
@@ -38,6 +39,14 @@ class RedisObserver(Object):
         self.framework.observe(
             self._charm.on.redis_relation_updated, self._on_redis_relation_updated
         )
+
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
+
+        Returns:
+           The current charm
+        """
+        return self._charm
 
     def get_relation_as_redis_conf(self) -> Optional[RedisConfiguration]:
         """Get the hostname and port from the redis relation data.
@@ -67,33 +76,33 @@ class RedisObserver(Object):
             logger.info("Redis databag is empty.")
         return redis_config
 
-    def _enable_redis(self) -> None:
-        """Enable Redis."""
+    def _enable_redis(self, charm_state: CharmState) -> None:
+        """Enable Redis.
+
+        Args:
+            charm_state: Instance of CharmState.
+        """
         # Other observers do this check too.
         container = self._charm.unit.get_container(
             synapse.SYNAPSE_CONTAINER_NAME
         )  # pylint: disable=duplicate-code
-        if not container.can_connect() or self._pebble_service is None:
+        if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            self._pebble_service.enable_redis(container)
+            pebble.enable_redis(container=container, charm_state=charm_state)
         except PebbleServiceError as exc:
             self._charm.model.unit.status = ops.BlockedStatus(f"Redis integration failed: {exc}")
             return
         self._charm.unit.status = ops.ActiveStatus()
 
-    def _on_redis_relation_updated(self, _: HookEvent) -> None:
-        """Handle redis relation updated event."""
+    @inject_charm_state
+    def _on_redis_relation_updated(self, _: ops.EventBase, charm_state: CharmState) -> None:
+        """Handle redis relation updated event.
+
+        Args:
+            charm_state: The charm state.
+        """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the Redis integration")
         logger.debug("_on_redis_relation_updated: Enabling Redis")
-        self._enable_redis()
-
-    @property
-    def _pebble_service(self) -> Any:
-        """Return instance of pebble service.
-
-        Returns:
-            instance of pebble service or none.
-        """
-        return getattr(self._charm, "pebble_service", None)
+        self._enable_redis(charm_state)
