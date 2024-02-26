@@ -7,7 +7,7 @@ import logging
 from typing import Any, Optional
 
 import ops
-from charms.redis_k8s.v0.redis import RedisRelationCharmEvents, RedisRequires
+from charms.redis_k8s.v0.redis import RedisRequires
 from ops.charm import CharmBase, HookEvent
 from ops.framework import Object, StoredState
 
@@ -19,14 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class RedisObserver(Object):
-    """The Redis relation observer.
+    """The Redis relation observer."""
 
-    Attrs:
-        on: listen to Redis events.
-        _stored: stored state.
-    """
-
-    on = RedisRelationCharmEvents()
     _stored = StoredState()
 
     def __init__(self, charm: CharmBase):
@@ -40,9 +34,10 @@ class RedisObserver(Object):
         self._stored.set_default(
             redis_relation={},
         )
-        self._stored.set_default(redis_relation={})
         self.redis = RedisRequires(self._charm, self._stored)
-        self.framework.observe(self.on.redis_relation_updated, self._on_redis_relation_updated)
+        self.framework.observe(
+            self._charm.on.redis_relation_updated, self._on_redis_relation_updated
+        )
 
     def get_relation_as_redis_conf(self) -> Optional[RedisConfiguration]:
         """Get the hostname and port from the redis relation data.

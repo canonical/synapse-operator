@@ -440,7 +440,7 @@ def test_redis_relation_pebble_success(redis_configured: Harness, monkeypatch: p
     monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
     harness.begin()
 
-    harness.charm._redis.on.redis_relation_updated.emit()
+    harness.charm.on.redis_relation_updated.emit()
 
     enable_redis_mock.assert_called_once_with(
         container=container, charm_state=harness.charm._charm_state
@@ -460,7 +460,7 @@ def test_redis_relation_pebble_error(redis_configured: Harness, monkeypatch: pyt
     enable_redis_mock = MagicMock(side_effect=PebbleServiceError("fail"))
     monkeypatch.setattr(harness.charm._redis._pebble_service, "enable_redis", enable_redis_mock)
 
-    harness.charm._redis.on.redis_relation_updated.emit()
+    harness.charm.on.redis_relation_updated.emit()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "Redis integration failed" in str(harness.model.unit.status)

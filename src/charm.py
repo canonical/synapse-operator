@@ -11,6 +11,7 @@ import typing
 
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
+from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import ActionEvent
 from ops.main import main
@@ -33,11 +34,16 @@ logger = logging.getLogger(__name__)
 
 
 class SynapseCharm(ops.CharmBase):
-    """Charm the service."""
+    """Charm the service.
+
+    Attrs:
+        on: listen to Redis events.
+    """
 
     # This class has several instance attributes like observers, libraries and state.
     # Consider refactoring if more attributes are added.
     # pylint: disable=too-many-instance-attributes
+    on = RedisRelationCharmEvents()
 
     def __init__(self, *args: typing.Any) -> None:
         """Construct.
