@@ -124,12 +124,6 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             )
             return
         self.enable_mjolnir(self._admin_access_token)
-        is_stats_exporter_running = container.get_service(
-            synapse.STATS_EXPORTER_SERVICE_NAME
-        ).is_running()
-        if not is_stats_exporter_running:
-            logger.warning("Synapse Stats Exporter not running, restarting.")
-            self._pebble_service.replan_stats_exporter(container, self._admin_access_token)
         event.add_status(ops.ActiveStatus())
 
     def get_membership_room_id(self, admin_access_token: str) -> typing.Optional[str]:

@@ -5,6 +5,8 @@
 
 """Charm for Synapse on kubernetes."""
 
+# ignoring duplicate-code with container connect check in the mjolnir observer.
+# pylint: disable=R0801
 
 import logging
 import typing
@@ -51,6 +53,9 @@ class SynapseCharm(ops.CharmBase):
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
+        self.framework.observe(
+            self.on.synapse_nginx_pebble_ready, self._on_synapse_nginx_pebble_ready
+        )
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
@@ -89,9 +94,6 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
-        self.framework.observe(
-            self.on.synapse_nginx_pebble_ready, self._on_synapse_nginx_pebble_ready
-        )
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
@@ -99,12 +101,8 @@ class SynapseCharm(ops.CharmBase):
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
         self.framework.observe(self.on.collect_unit_status, self._on_collect_status)
 
-    def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
-        """Collect status event handler.
-
-        Args:
-            event: Collect status event.
-        """
+    def _on_collect_status(self, _: ops.CollectStatusEvent) -> None:
+        """Collect status event handler."""
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             logger.warning("Synapse Stats Exporter: Waiting for Synapse pebble")
@@ -126,6 +124,7 @@ class SynapseCharm(ops.CharmBase):
         if not stats_service or stats_not_active:
             logger.warning("Synapse Stats Exporter not running, restarting.")
             self.pebble_service.replan_stats_exporter(container, self.token_service)
+        self._set_unit_status()
 
     def change_config(self) -> None:
         """Change configuration."""
@@ -173,7 +172,7 @@ class SynapseCharm(ops.CharmBase):
         nginx_not_active = [
             service for service in nginx_service.values() if not service.is_running()
         ]
-        if not nginx_service or nginx_not_active:
+        if nginx_not_active or not nginx_service:
             self.unit.status = ops.MaintenanceStatus("Waiting for NGINX")
             return
         # All checks passed, the unit is active
@@ -200,15 +199,24 @@ class SynapseCharm(ops.CharmBase):
         """Handle synapse pebble ready event."""
         self.change_config()
 
-    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle synapse nginx pebble ready event."""
+    def _on_synapse_nginx_pebble_ready(self, event: ops.HookEvent) -> None:
+        """Handle synapse nginx pebble ready event.
+
+        Args:
+            event: Event triggering the synapse nginx pebble ready.
+        """
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not container.can_connect():
-            logger.debug("synapse_nginx_pebble_ready failed to connect")
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
+            logger.debug("synapse_nginx_pebble_ready failed to connect, defer")
+            event.defer()
             return
-        logger.debug("synapse_nginx_pebble_ready replanning nginx")
-        self.pebble_service.replan_nginx(container)
+        nginx_service = container.get_services(synapse.SYNAPSE_NGINX_SERVICE_NAME)
+        nginx_not_active = [
+            service for service in nginx_service.values() if not service.is_running()
+        ]
+        if nginx_not_active or not nginx_service:
+            logger.debug("synapse_nginx_pebble_ready replanning nginx")
+            self.pebble_service.replan_nginx(container)
         self._set_unit_status()
 
     def _on_reset_instance_action(self, event: ActionEvent) -> None:

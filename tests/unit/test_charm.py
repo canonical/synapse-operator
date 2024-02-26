@@ -431,10 +431,12 @@ def test_nginx_replan_with_synapse_service_not_existing(
 def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
     """
     arrange: charm deployed.
-    act: start the Synapse charm, set Synapse container to be ready and set server_name.
+    act: emit collect unit status event.
     assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
     """
     harness.begin_with_initial_hooks()
+
+    harness.charm.on.collect_unit_status.emit()
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
@@ -449,5 +451,5 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
             "PROM_SYNAPSE_ADMIN_TOKEN": ANY,
             "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
         },
-        "on-failure": "success-shutdown",
+        "on-failure": "ignore",
     }
