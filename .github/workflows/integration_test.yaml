@@ -5,7 +5,7 @@ on:
 
 jobs:
   integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@charmcraft-tox-wrapper
     secrets: inherit
     with:
       extra-arguments: -x --localstack-address 172.17.0.1

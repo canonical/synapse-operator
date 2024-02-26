@@ -14,7 +14,6 @@ branch = true
 fail_under = 92
 show_missing = true
 
-
 [tool.pytest.ini_options]
 minversion = "6.0"
 log_cli_level = "INFO"
@@ -64,3 +63,97 @@ disallow_untyped_defs = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[tool.poetry]
+# Charm is not packed as a standard Python package; this information is not used
+name = "charm"
+version = "0.0.0"
+description = ""
+authors = ["IS DevOps <https://launchpad.net/~canonical-is-devops>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+ops = "^2.10.0"
+pydantic = "^1.10"
+psycopg2-binary = "^2.9.9"
+requests = "^2.31.0"
+boto3 = "^1.34.47"
+
+[tool.poetry.group.charm-libs.dependencies]
+ops = "*"
+pydantic = "*"
+# lib/charms/prometheus_k8s/v0/prometheus_scrape.py
+# lib/charms/grafana_k8s/v0/grafana_dashboard.py
+pyyaml = "^6.0.1"
+# lib/charms/traefik_k8s/v1/ingress.py
+jsonschema = "^4.21.1"
+# lib/charms/prometheus_k8s/v0/prometheus_scrape.py
+cosl = "^0.0.8"
+
+[tool.poetry.group.fmt]
+optional = true
+
+[tool.poetry.group.fmt.dependencies]
+black = "^24.2.0"
+isort = "^5.13.2"
+
+[tool.poetry.group.lint]
+optional = true
+
+[tool.poetry.group.lint.dependencies]
+black = "^24.2.0"
+codespell = "^2.2.6"
+flake8 = "<6.0.0"
+flake8-builtins = "^2.2.0"
+flake8-copyright = "<6.0.0"
+flake8-docstrings = ">=1.6.0"
+flake8-docstrings-complete = ">=1.0.3"
+flake8-test-docs = ">=1.0"
+isort = "^5.13.2"
+mypy = "^1.8.0"
+pep8-naming = "^0.13.3"
+pydocstyle = ">=2.10"
+pylint = "^3.0.3"
+pyproject-flake8 = "<6.0.0"
+pytest = "^8.0.1"
+pytest-operator = "^0.32.0"
+python-magic = "^0.4.27"
+types-pyyaml = "^6.0.12.12"
+types-requests = "^2.31.0.20240218"
+saml-test-helper = {git = "https://github.com/canonical/saml-test-idp.git"}
+
+[tool.poetry.group.src-docs]
+optional = true
+
+[tool.poetry.group.src-docs.dependencies]
+lazydocs = "^0.4.8"
+
+[tool.poetry.group.unit]
+optional = true
+
+[tool.poetry.group.unit.dependencies]
+coverage = {extras = ["toml"], version = "^7.4.2"}
+pytest = "^8.0.1"
+
+[tool.poetry.group.coverage-report]
+optional = true
+
+[tool.poetry.group.coverage-report.dependencies]
+coverage = {extras = ["toml"], version = "^7.4.2"}
+pytest = "^8.0.1"
+
+[tool.poetry.group.static]
+optional = true
+
+[tool.poetry.group.static.dependencies]
+bandit = {extras = ["toml"], version = "^1.7.7"}
+
+[tool.poetry.group.integration]
+optional = true
+
+[tool.poetry.group.integration.dependencies]
+juju = ">=3.0"
+pytest = "^8.0.1"
+pytest-operator = "^0.32.0"
+python-magic = "^0.4.27"
+saml-test-helper = {git = "https://github.com/canonical/saml-test-idp.git"}

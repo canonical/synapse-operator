@@ -166,3 +166,7 @@ cython_debug/
 .vscode/
 
 */*.snap
+
+# Poetry
+requirements.txt
+requirements-last-build.txt
