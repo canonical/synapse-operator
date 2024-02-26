@@ -316,7 +316,7 @@ class PebbleService:
                     "summary": "Synapse Stats Exporter service",
                     "command": "synapse-stats-exporter",
                     "startup": "enabled",
-                    "on-failure": "success-shutdown",
+                    "on-failure": "ignore",
                 }
             },
         }
