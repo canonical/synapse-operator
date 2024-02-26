@@ -17,7 +17,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L258"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -53,7 +53,7 @@ Create a backup for Synapse running it in the workload.
 
 ---
 
-<a href="../src/backup.py#L307"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L306"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restore_backup`
 
