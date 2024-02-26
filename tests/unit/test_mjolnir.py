@@ -238,7 +238,8 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
-    harness.charm._mjolnir.enable_mjolnir(admin_access_token)
+    charm_state = harness.charm.build_charm_state()
+    harness.charm._mjolnir.enable_mjolnir(charm_state, admin_access_token)
 
     get_room_id.assert_called_once_with(
         room_name="management", admin_access_token=admin_access_token
@@ -284,7 +285,8 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
-    harness.charm._mjolnir.enable_mjolnir(admin_access_token)
+    charm_state = harness.charm.build_charm_state()
+    harness.charm._mjolnir.enable_mjolnir(charm_state, admin_access_token)
 
     create_user_mock.assert_called_once_with(ANY, ANY, ANY, admin_access_token, ANY)
     get_room_id.assert_called_once_with(
@@ -316,6 +318,7 @@ def test_enable_mjolnir_container_off(harness: Harness, monkeypatch: pytest.Monk
     register_user_mock = MagicMock()
     monkeypatch.setattr(actions, "register_user", register_user_mock)
 
-    harness.charm._mjolnir.enable_mjolnir(token_hex(16))
+    charm_state = harness.charm.build_charm_state()
+    harness.charm._mjolnir.enable_mjolnir(charm_state, token_hex(16))
 
     register_user_mock.assert_not_called()
