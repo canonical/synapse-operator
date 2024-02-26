@@ -316,10 +316,8 @@ class PebbleService:
                     "summary": "Synapse Stats Exporter service",
                     "command": "synapse-stats-exporter",
                     "startup": "enabled",
+                    "on-failure": "success-shutdown",
                 }
-            },
-            "checks": {
-                synapse.CHECK_STATS_EXPORTER_READY_NAME: synapse.check_stats_exporter_ready(),
             },
         }
         return typing.cast(ops.pebble.LayerDict, layer)

@@ -153,19 +153,6 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def check_stats_exporter_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse Stats Exporter service check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(CHECK_STATS_EXPORTER_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{STATS_EXPORTER_PORT}/metrics"}
-    return check.to_dict()
-
-
 def _get_configuration_field(container: ops.Container, fieldname: str) -> typing.Optional[str]:
     """Get configuration field.
 

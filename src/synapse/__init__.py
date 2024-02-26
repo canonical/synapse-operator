@@ -61,7 +61,6 @@ from .workload import (  # noqa: F401
     check_mjolnir_ready,
     check_nginx_ready,
     check_ready,
-    check_stats_exporter_ready,
     create_mjolnir_config,
     disable_password_config,
     disable_room_list_search,
