@@ -91,6 +91,9 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
         if charm_state.smtp_config is not None:
             logger.debug("pebble.change_config: Enabling SMTP")
             synapse.enable_smtp(container=container, charm_state=charm_state)
+        if charm_state.redis_config is not None:
+            logger.debug("pebble.change_config: Enabling Redis")
+            synapse.enable_redis(container=container, charm_state=charm_state)
         if not charm_state.synapse_config.enable_password_config:
             synapse.disable_password_config(container=container)
         if charm_state.synapse_config.federation_domain_whitelist:
