@@ -678,6 +678,36 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
         raise EnableSMTPError(str(exc)) from exc
 
 
+def enable_redis(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable Redis.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling SMTP.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["redis"] = {}
+
+        if charm_state.redis_config is None:
+            raise WorkloadError(
+                "Redis Configuration not found. "
+                "Please verify the integration between Redis and Synapse."
+            )
+
+        redis_config = charm_state.redis_config
+        current_yaml["redis"]["enabled"] = True
+        current_yaml["redis"]["host"] = redis_config["host"]
+        current_yaml["redis"]["port"] = redis_config["port"]
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def reset_instance(container: ops.Container) -> None:
     """Erase data and config server_name.
 

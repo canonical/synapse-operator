@@ -94,7 +94,33 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `enable_redis`
+
+```python
+enable_redis(charm_state: CharmState, container: Container) → None
+```
+
+Enable Redis while receiving on_redis_relation_updated event. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+
+---
+
+<a href="../src/pebble.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_saml`
 
@@ -120,7 +146,7 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_smtp`
 
@@ -146,7 +172,7 @@ Enable SMTP while receiving on_smtp_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

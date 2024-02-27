@@ -12,7 +12,9 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
-<a href="../src/charm.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+Attrs:  on: listen to Redis events. 
+
+<a href="../src/charm.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -69,7 +71,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -86,7 +88,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
