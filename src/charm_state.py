@@ -22,7 +22,12 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
     validator,
 )
 
-from charm_types import DatasourcePostgreSQL, SAMLConfiguration, SMTPConfiguration
+from charm_types import (
+    DatasourcePostgreSQL,
+    RedisConfiguration,
+    SAMLConfiguration,
+    SMTPConfiguration,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -224,6 +229,7 @@ class CharmState:
         datasource: datasource information.
         saml_config: saml configuration.
         smtp_config: smtp configuration.
+        redis_config: redis configuration.
         proxy: proxy information.
     """
 
@@ -231,6 +237,7 @@ class CharmState:
     datasource: typing.Optional[DatasourcePostgreSQL]
     saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
+    redis_config: typing.Optional[RedisConfiguration]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -248,13 +255,15 @@ class CharmState:
             no_proxy=no_proxy,
         )
 
+    # from_charm receives configuration from all integration so too many arguments.
     @classmethod
-    def from_charm(
+    def from_charm(  # pylint: disable=too-many-arguments
         cls,
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],
         saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
+        redis_config: typing.Optional[RedisConfiguration],
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
@@ -263,6 +272,7 @@ class CharmState:
             datasource: datasource information to be used by Synapse.
             saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
+            redis_config: Redis configuration to be used by Synapse.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -285,4 +295,5 @@ class CharmState:
             datasource=datasource,
             saml_config=saml_config,
             smtp_config=smtp_config,
+            redis_config=redis_config,
         )

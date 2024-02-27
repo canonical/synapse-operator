@@ -91,6 +91,9 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
         if charm_state.smtp_config is not None:
             logger.debug("pebble.change_config: Enabling SMTP")
             synapse.enable_smtp(container=container, charm_state=charm_state)
+        if charm_state.redis_config is not None:
+            logger.debug("pebble.change_config: Enabling Redis")
+            synapse.enable_redis(container=container, charm_state=charm_state)
         if not charm_state.synapse_config.enable_password_config:
             synapse.disable_password_config(container=container)
         if charm_state.synapse_config.federation_domain_whitelist:
@@ -106,7 +109,25 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
         if charm_state.synapse_config.ip_range_whitelist:
             synapse.enable_ip_range_whitelist(container=container, charm_state=charm_state)
         synapse.validate_config(container=container)
-        restart_synapse(charm_state, container)
+        restart_synapse(container=container, charm_state=charm_state)
+    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
+def enable_redis(charm_state: CharmState, container: ops.model.Container) -> None:
+    """Enable Redis while receiving on_redis_relation_updated event.
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        logger.debug("pebble.enable_redis: Enabling Redis")
+        synapse.enable_redis(container=container, charm_state=charm_state)
+        restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
@@ -124,7 +145,7 @@ def enable_saml(charm_state: CharmState, container: ops.model.Container) -> None
     try:
         logger.debug("pebble.enable_saml: Enabling SAML")
         synapse.enable_saml(container=container, charm_state=charm_state)
-        restart_synapse(charm_state, container)
+        restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
@@ -142,7 +163,7 @@ def enable_smtp(charm_state: CharmState, container: ops.model.Container) -> None
     try:
         logger.debug("pebble.enable_smtp: Enabling SMTP")
         synapse.enable_smtp(container=container, charm_state=charm_state)
-        restart_synapse(charm_state, container)
+        restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
