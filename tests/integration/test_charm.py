@@ -83,11 +83,6 @@ async def test_reset_instance_action(
         "reset-instance"
     )
     await action_reset_instance.wait()
-    await model.wait_for_idle(
-        idle_period=60,
-        apps=[another_synapse_app.name],
-        status=ACTIVE_STATUS_NAME,
-    )
     assert action_reset_instance.status == "completed"
     assert action_reset_instance.results["reset-instance"]
     assert unit.workload_status == "active"
