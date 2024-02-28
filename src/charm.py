@@ -116,7 +116,11 @@ class SynapseCharm(CharmBaseWithState):
         ]
         if not stats_service or stats_not_active:
             logger.warning("Synapse Stats Exporter not running, restarting.")
-            pebble.replan_stats_exporter(container, self.token_service)
+            try:
+                pebble.replan_stats_exporter(container, self.token_service)
+            except (ops.pebble.APIError, ops.pebble.ConnectionError) as e:
+                logger.debug("Ignoring error while restarting Synapse Stats Exporter")
+                logger.exception(str(e))
         self._set_unit_status()
 
     def build_charm_state(self) -> CharmState:
@@ -134,7 +138,7 @@ class SynapseCharm(CharmBaseWithState):
         )
 
     @inject_charm_state
-    def change_config(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+    def change_config(self, event: ops.HookEvent, charm_state: CharmState) -> None:
         """Change configuration.
 
         Args:
@@ -162,6 +166,7 @@ class SynapseCharm(CharmBaseWithState):
         # If the unit is in a blocked state, do not change it, as it
         # was set by a problem or error with the configuration
         if isinstance(self.unit.status, ops.BlockedStatus):
+            logger.debug("set_unit_status: Charm is blocked, skipping")
             return
         # Synapse checks
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)

@@ -95,6 +95,7 @@ def inject_charm_state(  # pylint: disable=protected-access
         Returns:
             The value returned from the original function. That is, None.
         """
+        logger.debug("Calling wrapper from event %s", event)
         charm = instance.get_charm()
 
         try:
