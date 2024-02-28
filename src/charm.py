@@ -91,11 +91,11 @@ class SynapseCharm(CharmBaseWithState):
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
-        self.framework.observe(self.on.collect_unit_status, self._on_collect_status)
+        self.framework.observe(self.on.update_status, self._on_update_status)
 
-    def _on_collect_status(self, _: ops.CollectStatusEvent) -> None:
-        """Collect status event handler."""
-        logger.debug("Running collect status event handler in charm")
+    def _on_update_status(self, _: ops.UpdateStatusEvent) -> None:
+        """Update status event handler."""
+        logger.debug("Running update status event handler in charm")
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             logger.warning("Synapse Stats Exporter: Waiting for Synapse pebble")
