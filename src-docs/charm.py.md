@@ -71,7 +71,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L122"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -85,23 +85,5 @@ Build charm state.
 
 **Returns:**
   The current charm state. 
-
----
-
-<a href="../src/charm.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `change_config`
-
-```python
-change_config(charm_state: CharmState) → None
-```
-
-Change configuration. 
-
-
-
-**Args:**
- 
- - <b>`charm_state`</b>:  Instance of CharmState 
 
 

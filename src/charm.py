@@ -95,6 +95,7 @@ class SynapseCharm(CharmBaseWithState):
 
     def _on_collect_status(self, _: ops.CollectStatusEvent) -> None:
         """Collect status event handler."""
+        logger.debug("Running collect status event handler")
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             logger.warning("Synapse Stats Exporter: Waiting for Synapse pebble")
@@ -132,7 +133,8 @@ class SynapseCharm(CharmBaseWithState):
             redis_config=self._redis.get_relation_as_redis_conf(),
         )
 
-    def change_config(self, charm_state: CharmState) -> None:
+    @inject_charm_state
+    def change_config(self, _: ops.HookEvent, charm_state: CharmState) -> None:
         """Change configuration.
 
         Args:
@@ -200,24 +202,14 @@ class SynapseCharm(CharmBaseWithState):
         except synapse.APIError as exc:
             logger.debug("Cannot set workload version at this time: %s", exc)
 
-    @inject_charm_state
-    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle changed configuration.
-
-        Args:
-            charm_state: The charm state.
-        """
-        self.change_config(charm_state)
+    def _on_config_changed(self, event: ops.HookEvent) -> None:
+        """Handle changed configuration."""
+        self.change_config(event)
         self._set_workload_version()
 
-    @inject_charm_state
-    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle synapse pebble ready event.
-
-        Args:
-            charm_state: The charm state.
-        """
-        self.change_config(charm_state)
+    def _on_synapse_pebble_ready(self, event: ops.HookEvent) -> None:
+        """Handle synapse pebble ready event."""
+        self.change_config(event)
 
     def _on_synapse_nginx_pebble_ready(self, event: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event.
