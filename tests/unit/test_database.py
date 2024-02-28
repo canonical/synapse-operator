@@ -195,7 +195,7 @@ def test_relation_as_datasource(
         user="user",
     )
     assert expected == harness.charm._database.get_relation_as_datasource()
-    synapse_env = synapse.get_environment(harness.charm._charm_state)
+    synapse_env = synapse.get_environment(harness.charm.build_charm_state())
     assert synapse_env["POSTGRES_DB"] == expected["db"]
     assert synapse_env["POSTGRES_HOST"] == expected["host"]
     assert synapse_env["POSTGRES_PORT"] == expected["port"]
@@ -211,7 +211,8 @@ def test_change_config(harness: Harness):
     """
     harness.begin()
 
-    harness.charm._database._change_config()
+    charm_state = harness.charm.build_charm_state()
+    harness.charm._database._change_config(charm_state)
 
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
@@ -227,7 +228,8 @@ def test_change_config_error(
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
 
-    harness.charm._database._change_config()
+    charm_state = harness.charm.build_charm_state()
+    harness.charm._database._change_config(charm_state)
 
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 

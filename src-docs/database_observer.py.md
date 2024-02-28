@@ -12,14 +12,12 @@ The Database agent relation observer.
 ## <kbd>class</kbd> `DatabaseObserver`
 The Database relation observer. 
 
-Attrs:  _pebble_service: instance of pebble service. 
-
-<a href="../src/database_observer.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBase)
+__init__(charm: CharmBaseWithState)
 ```
 
 Initialize the observer and register event handlers. 
@@ -41,7 +39,24 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/database_observer.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_charm`
+
+```python
+get_charm() → CharmBaseWithState
+```
+
+Return the current charm. 
+
+
+
+**Returns:**
+  The current charm 
+
+---
+
+<a href="../src/database_observer.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_datasource`
 

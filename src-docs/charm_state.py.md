@@ -6,6 +6,111 @@
 State of the Charm. 
 
 
+---
+
+<a href="../src/charm_state.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `inject_charm_state`
+
+```python
+inject_charm_state(
+    method: Callable[[~C, ~E, ForwardRef('CharmState')], NoneType]
+) → Callable[[~C, ~E], NoneType]
+```
+
+Create a decorator that injects the argument charm_state to an observer hook. 
+
+If the configuration is invalid, set the charm state to Blocked if it is a Hook or the event to failed if it is an Action and do not call the wrapped observer. 
+
+This decorator can be used in a class that observes a hook/action and that defines de get_charm function to get a charm that implements CharmBaseWithState. 
+
+Because of https://github.com/canonical/operator/issues/1129, @functools.wraps cannot be used yet to have a properly created decorator. 
+
+
+
+**Args:**
+ 
+ - <b>`method`</b>:  observer method to wrap and inject the charm_state 
+
+
+
+**Returns:**
+ the function wrapper 
+
+
+---
+
+## <kbd>class</kbd> `CharmBaseWithState`
+CharmBase than can build a CharmState. 
+
+
+---
+
+#### <kbd>property</kbd> app
+
+Application that this unit is part of. 
+
+---
+
+#### <kbd>property</kbd> charm_dir
+
+Root directory of the charm as it is running. 
+
+---
+
+#### <kbd>property</kbd> config
+
+A mapping containing the charm's config and current values. 
+
+---
+
+#### <kbd>property</kbd> meta
+
+Metadata of this charm. 
+
+---
+
+#### <kbd>property</kbd> model
+
+Shortcut for more simple access the model. 
+
+---
+
+#### <kbd>property</kbd> unit
+
+Unit that this execution is responsible for. 
+
+
+
+---
+
+<a href="../src/charm_state.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `build_charm_state`
+
+```python
+build_charm_state() → CharmState
+```
+
+Build charm state. 
+
+---
+
+<a href="../src/charm_state.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_charm`
+
+```python
+get_charm() → CharmBaseWithState
+```
+
+Return the current charm. 
+
+
+
+**Returns:**
+  The current charm 
+
 
 ---
 
@@ -14,7 +119,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -47,6 +152,7 @@ State of the Charm.
  - <b>`datasource`</b>:  datasource information. 
  - <b>`saml_config`</b>:  saml configuration. 
  - <b>`smtp_config`</b>:  smtp configuration. 
+ - <b>`redis_config`</b>:  redis configuration. 
  - <b>`proxy`</b>:  proxy information. 
 
 
@@ -65,7 +171,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -74,7 +180,8 @@ from_charm(
     charm: CharmBase,
     datasource: Optional[DatasourcePostgreSQL],
     saml_config: Optional[SAMLConfiguration],
-    smtp_config: Optional[SMTPConfiguration]
+    smtp_config: Optional[SMTPConfiguration],
+    redis_config: Optional[RedisConfiguration]
 ) → CharmState
 ```
 
@@ -88,6 +195,7 @@ Initialize a new instance of the CharmState class from the associated charm.
  - <b>`datasource`</b>:  datasource information to be used by Synapse. 
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
+ - <b>`redis_config`</b>:  Redis configuration to be used by Synapse. 
 
 Return: The CharmState instance created by the provided charm. 
 
@@ -96,6 +204,27 @@ Return: The CharmState instance created by the provided charm.
 **Raises:**
  
  - <b>`CharmConfigInvalidError`</b>:  if the charm configuration is invalid. 
+
+
+---
+
+## <kbd>class</kbd> `HasCharmWithState`
+Protocol that defines a class that returns a CharmBaseWithState. 
+
+
+
+
+---
+
+<a href="../src/charm_state.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_charm`
+
+```python
+get_charm() → CharmBaseWithState
+```
+
+Get the charm that can build a state. 
 
 
 ---
@@ -141,7 +270,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -165,7 +294,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
