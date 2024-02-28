@@ -86,4 +86,22 @@ Build charm state.
 **Returns:**
   The current charm state. 
 
+---
+
+<a href="../src/charm.py#L140"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `change_config`
+
+```python
+change_config(charm_state: CharmState) → None
+```
+
+Change configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
+
 

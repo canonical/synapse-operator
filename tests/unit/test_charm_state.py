@@ -142,7 +142,7 @@ def test_inject_charm_state_hook_failed() -> None:
             raise CharmConfigInvalidError("Invalid configuration")
 
         @inject_charm_state
-        def on_start(self, _: ops.HookEvent, charm_state: CharmState):
+        def on_config_changed(self, _: ops.HookEvent, charm_state: CharmState):
             """Event handler for on_start.
 
             Args:
@@ -153,8 +153,8 @@ def test_inject_charm_state_hook_failed() -> None:
     harness = Harness(FakeCharm)
     harness.begin()
     charm = harness.charm
-    charm.framework.observe(charm.on.install, charm.on_start)
-    charm.on.install.emit()
+    charm.framework.observe(charm.on.config_changed, charm.on_config_changed)
+    charm.on.config_changed.emit()
 
     assert harness.model.unit.status == ops.BlockedStatus("Invalid configuration")
     assert not hasattr(charm, "charm_state")
