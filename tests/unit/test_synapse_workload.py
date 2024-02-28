@@ -136,7 +136,7 @@ listeners:
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     harness.update_config({"trusted_key_servers": trusted_key_servers})
     harness.begin()
-    synapse.enable_trusted_key_servers(container, harness.charm._charm_state)
+    synapse.enable_trusted_key_servers(container, harness.charm.build_charm_state())
 
     content = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     expected_config_content = {
@@ -206,7 +206,7 @@ listeners:
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     harness.update_config({"ip_range_whitelist": ip_range_whitelist})
     harness.begin()
-    synapse.enable_ip_range_whitelist(container, harness.charm._charm_state)
+    synapse.enable_ip_range_whitelist(container, harness.charm.build_charm_state())
 
     with open(config_path, encoding="utf-8") as config_file:
         content = yaml.safe_load(config_file)
@@ -231,7 +231,7 @@ def test_enable_ip_range_whitelist_blocked(harness: Harness):
         {"ip_range_whitelist": f"{expected_first_domain},{expected_second_domain}"}
     )
 
-    harness.begin()
+    harness.begin_with_initial_hooks()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
 
@@ -262,7 +262,11 @@ def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pyte
     synapse.enable_ip_range_whitelist(
         container_mock,
         CharmState(
-            datasource=None, saml_config=None, smtp_config=None, synapse_config=synapse_config
+            datasource=None,
+            saml_config=None,
+            smtp_config=None,
+            redis_config=None,
+            synapse_config=synapse_config,
         ),
     )
 
@@ -298,7 +302,7 @@ def test_enable_federation_domain_whitelist_success(
         {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
     )
     harness.begin()
-    synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
+    synapse.enable_federation_domain_whitelist(container_mock, harness.charm.build_charm_state())
 
     assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
@@ -332,7 +336,9 @@ def test_enable_federation_domain_whitelist_error(
     )
     harness.begin()
     with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_federation_domain_whitelist(container_mock, harness.charm._charm_state)
+        synapse.enable_federation_domain_whitelist(
+            container_mock, harness.charm.build_charm_state()
+        )
 
 
 def test_enable_trusted_key_servers_no_action(harness: Harness):
@@ -361,7 +367,11 @@ listeners:
     synapse.enable_trusted_key_servers(
         container,
         CharmState(
-            datasource=None, saml_config=None, smtp_config=None, synapse_config=synapse_config
+            datasource=None,
+            saml_config=None,
+            smtp_config=None,
+            redis_config=None,
+            synapse_config=synapse_config,
         ),
     )
 
@@ -575,7 +585,7 @@ listeners:
 
     # Act: write the Synapse config file with SAML enabled
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    synapse.enable_saml(container, harness.charm._charm_state)
+    synapse.enable_saml(container, harness.charm.build_charm_state())
 
     # Assert: ensure config file was written correctly
     expected_config_content = {
@@ -647,7 +657,7 @@ listeners:
 
     # Act: write the Synapse config file with SAML enabled
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    synapse.enable_saml(container, harness.charm._charm_state)
+    synapse.enable_saml(container, harness.charm.build_charm_state())
 
     # Assert: ensure config file was written correctly
     expected_config_content = {
@@ -693,7 +703,7 @@ def test_enable_saml_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(container_mock, "pull", pull_mock)
 
     with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_saml(container_mock, harness.charm._charm_state)
+        synapse.enable_saml(container_mock, harness.charm.build_charm_state())
 
 
 def test_get_mjolnir_config_success():
@@ -770,6 +780,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
         datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
         synapse_config=SynapseConfig(
             federation_domain_whitelist=None,
             ip_range_whitelist=None,
@@ -818,6 +829,7 @@ def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
         datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
         synapse_config=SynapseConfig(
             federation_domain_whitelist=None,
             ip_range_whitelist=None,
@@ -1006,7 +1018,7 @@ def test_http_proxy(
         monkeypatch.setenv(set_env_name, set_env_value)
 
     harness.begin()
-    env = synapse.get_environment(harness.charm._charm_state)
+    env = synapse.get_environment(harness.charm.build_charm_state())
 
     expected_env: typing.Dict[str, typing.Optional[str]] = {
         "http_proxy": None,

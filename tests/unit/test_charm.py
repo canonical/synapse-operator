@@ -12,6 +12,7 @@ import ops
 import pytest
 from ops.testing import Harness
 
+import pebble
 import synapse
 from charm import SynapseCharm
 from pebble import PebbleServiceError
@@ -109,7 +110,7 @@ def test_server_name_empty() -> None:
     """
     harness = Harness(SynapseCharm)
 
-    harness.begin()
+    harness.begin_with_initial_hooks()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "invalid configuration: server_name" in str(harness.model.unit.status)
@@ -178,10 +179,11 @@ def test_saml_integration_pebble_success(
     enable_saml_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_saml", enable_saml_mock)
 
-    harness.charm._saml._pebble_service.enable_saml(container=container)
+    charm_state = harness.charm.build_charm_state()
+    pebble.enable_saml(charm_state, container=container)
 
     enable_saml_mock.assert_called_once_with(
-        container=container, charm_state=harness.charm._charm_state
+        container=container, charm_state=harness.charm.build_charm_state()
     )
 
 
@@ -198,7 +200,7 @@ def test_saml_integration_pebble_error(
 
     relation = harness.charm.framework.model.get_relation("saml", 0)
     enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
-    monkeypatch.setattr(harness.charm._saml._pebble_service, "enable_saml", enable_saml_mock)
+    monkeypatch.setattr(pebble, "enable_saml", enable_saml_mock)
 
     harness.charm._saml.saml.on.saml_data_available.emit(relation)
 
@@ -241,7 +243,7 @@ def test_smtp_relation_pebble_success(smtp_configured: Harness, monkeypatch: pyt
     harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
 
     enable_smtp_mock.assert_called_once_with(
-        container=container, charm_state=harness.charm._charm_state
+        container=container, charm_state=harness.charm.build_charm_state()
     )
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
@@ -256,7 +258,7 @@ def test_smtp_relation_pebble_error(smtp_configured: Harness, monkeypatch: pytes
     harness.begin()
 
     enable_smtp_mock = MagicMock(side_effect=PebbleServiceError("fail"))
-    monkeypatch.setattr(harness.charm._smtp._pebble_service, "enable_smtp", enable_smtp_mock)
+    monkeypatch.setattr(pebble, "enable_smtp", enable_smtp_mock)
 
     relation = harness.charm.framework.model.get_relation("smtp", 0)
     harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
@@ -278,7 +280,9 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
     )
     charm_state_mock = MagicMock()
     charm_state_mock.server_name = TEST_SERVER_NAME_CHANGED
-    monkeypatch.setattr(harness.charm.pebble_service, "_charm_state", charm_state_mock)
+    monkeypatch.setattr(
+        harness.charm, "build_charm_state", MagicMock(return_value=charm_state_mock)
+    )
 
     harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
 
@@ -307,7 +311,8 @@ def test_enable_federation_domain_whitelist_is_called(
     enable_federation_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
-    harness.charm.pebble_service.change_config(container=MagicMock())
+    charm_state = harness.charm.build_charm_state()
+    pebble.change_config(charm_state, container=MagicMock())
 
     enable_federation_mock.assert_called_once()
 
@@ -333,7 +338,8 @@ def test_disable_password_config_is_called(
     disable_password_config_mock = MagicMock()
     monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
 
-    harness.charm.pebble_service.change_config(container=MagicMock())
+    charm_state = harness.charm.build_charm_state()
+    pebble.change_config(charm_state, container=MagicMock())
 
     disable_password_config_mock.assert_called_once()
 
@@ -346,7 +352,7 @@ def test_nginx_replan(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
     harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
@@ -362,7 +368,7 @@ def test_nginx_replan_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
     harness.set_can_connect(container, False)
@@ -398,7 +404,7 @@ def test_nginx_replan_with_synapse_container_down(
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
     harness.set_can_connect(container, False)
@@ -420,7 +426,7 @@ def test_nginx_replan_with_synapse_service_not_existing(
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
 
@@ -453,3 +459,61 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
         },
         "on-failure": "ignore",
     }
+
+
+def test_redis_relation_pebble_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_redis.
+    act: emit redis_relation_updated
+    assert: synapse.enable_redis is called once and unit is active.
+    """
+    harness = redis_configured
+    enable_redis_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
+    harness.begin()
+
+    harness.charm.on.redis_relation_updated.emit()
+
+    enable_redis_mock.assert_called_once()
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+def test_redis_relation_pebble_error(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit redis_relation_updated.
+    assert: Synapse charm should submit the correct status (blocked).
+    """
+    harness = redis_configured
+    harness.begin()
+
+    enable_redis_mock = MagicMock(side_effect=PebbleServiceError("fail"))
+    monkeypatch.setattr(pebble, "enable_redis", enable_redis_mock)
+
+    harness.charm.on.redis_relation_updated.emit()
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "Redis integration failed" in str(harness.model.unit.status)
+
+
+def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_redis.
+    act: emit redis_relation_updated.
+    assert: get_relation_as_redis_conf works as expected.
+    """
+    harness = redis_configured
+    enable_redis_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
+
+    harness.begin()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+
+    redis_config = harness.charm._redis.get_relation_as_redis_conf()
+    assert relation.data[relation.app]["hostname"] == redis_config["host"]
+    assert relation.data[relation.app]["port"] == str(redis_config["port"])

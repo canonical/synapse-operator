@@ -63,3 +63,16 @@ class SMTPConfiguration(typing.TypedDict):
     enable_tls: bool
     force_tls: bool
     require_transport_security: bool
+
+
+@dataclass(frozen=True)
+class RedisConfiguration(typing.TypedDict):
+    """A named tuple representing Redis configuration.
+
+    Attributes:
+        host: The hostname of the Redis server.
+        port: The port on the Redis server.
+    """
+
+    host: str
+    port: int
