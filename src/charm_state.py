@@ -106,8 +106,10 @@ def inject_charm_state(  # pylint: disable=protected-access
             # Each one of them should be treated differently.
             if isinstance(event, ops.charm.ActionEvent):
                 event.fail(exc.msg)
-            else:
+            elif isinstance(event, ops.ConfigChangedEvent):
                 charm.model.unit.status = ops.BlockedStatus(exc.msg)
+            else:
+                logger.debug("CharmConfigInvalidError ignored since is not ConfigChangedEvent")
             return None
         return method(instance, event, charm_state)
 

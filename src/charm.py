@@ -95,7 +95,7 @@ class SynapseCharm(CharmBaseWithState):
 
     def _on_collect_status(self, _: ops.CollectStatusEvent) -> None:
         """Collect status event handler."""
-        logger.debug("Running collect status event handler")
+        logger.debug("Running collect status event handler in charm")
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             logger.warning("Synapse Stats Exporter: Waiting for Synapse pebble")
