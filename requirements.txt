@@ -1,5 +1,5 @@
 jsonschema ==4.21.1
-ops ==2.10.0
+ops ==2.11.0
 pydantic ==1.10.14
 psycopg2-binary ==2.9.9
 requests == 2.31.0
