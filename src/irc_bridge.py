@@ -7,14 +7,13 @@
 # pylint: disable=too-many-return-statements
 
 import logging
-import typing
 
 import ops
 from ops.pebble import APIError, ExecError
 
+import pebble
 import synapse
-from charm_state import CharmState
-from pebble import PebbleService
+from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -39,40 +38,42 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
     See https://github.com/matrix-org/matrix-appservice-irc/ for more details about it.
     """
 
-    def __init__(self, charm: ops.CharmBase, charm_state: CharmState):
+    def __init__(self, charm: CharmBaseWithState) -> None:
         """Initialize a new instance of the IRC bridge class.
 
         Args:
             charm: The charm object that the IRC bridge instance belongs to.
-            charm_state: Instance of CharmState.
         """
         super().__init__(charm, "irc-bridge")
         self._charm = charm
-        self._charm_state = charm_state
         self.framework.observe(charm.on.collect_unit_status, self._on_collect_status)
 
-    @property
-    def _pebble_service(self) -> typing.Optional[PebbleService]:
-        """Return instance of pebble service.
+    def get_charm(self) -> CharmBaseWithState:
+        # pylint:disable=duplicate-code
+        # pylint is extra picky over the smallest details
+        # this doesn't need refactoring
+        """Return the current charm.
 
         Returns:
-            instance of pebble service or none.
+            The charm object.
         """
-        return getattr(self._charm, "pebble_service", None)
+        return self._charm
 
-    def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
-        """Collect status event handler.
-
-        Args:
-            event: Collect status event.
-        """
+    @inject_charm_state
+    def _on_collect_status(self, event: ops.CollectStatusEvent, charm_state: CharmState) -> None:
         # pylint:disable=duplicate-code
         # the code that is duplicated checks that Synapse is ready
         # the relevant lines are three and refactoring this in a separate method
         # would not add any value
-        if not self._charm_state.synapse_config.enable_irc_bridge:
+        """Collect status event handler.
+
+        Args:
+            event: Collect status event.
+            charm_state: Instance of CharmState.
+        """
+        if not charm_state.synapse_config.enable_irc_bridge:
             return
-        if self._charm_state.irc_bridge_datasource is None:
+        if charm_state.irc_bridge_datasource is None:
             ops.MaintenanceStatus("Waiting for irc bridge db relation")
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
@@ -83,10 +84,10 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
         if irc_service:
             logger.debug("%s service already exists, skipping", IRC_SERVICE_NAME)
             return
-        self._enable_irc_bridge()
+        self._enable_irc_bridge(charm_state)
         event.add_status(ops.ActiveStatus())
 
-    def _enable_irc_bridge(self) -> None:
+    def _enable_irc_bridge(self, charm_state: CharmState) -> None:
         """Enable irc service.
 
         The required steps to enable the IRC bridge are:
@@ -95,23 +96,24 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
          - Generate a PEM file for the IRC bridge.
          - Finally, add IRC bridge pebble layer.
 
+        Args:
+            charm_state: Instance of CharmState.
+
         """
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring IRC bridge")
-        server_name = self._charm_state.synapse_config.server_name
-        db_connect_string = self._get_db_connection()
+        server_name = charm_state.synapse_config.server_name
+        db_connect_string = self._get_db_connection(charm_state)
         synapse.create_irc_bridge_config(
             container=container, server_name=server_name, db_connect_string=db_connect_string
         )
         synapse.create_irc_bridge_app_registration(container=container)
         self._create_pem_file(container=container)
-        if self._pebble_service is None:
-            return
-        self._pebble_service.replan_irc_bridge(container)
-        self._pebble_service.restart_synapse(container)
+        pebble.replan_irc_bridge(container)
+        pebble.restart_synapse(charm_state, container)
         self._charm.model.unit.status = ops.ActiveStatus()
 
     def _create_pem_file(self, container: ops.model.Container) -> None:
@@ -143,20 +145,23 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
             raise PEMCreateError("PEM creation failed.") from exc
         self._charm.model.unit.status = ops.ActiveStatus()
 
-    def _get_db_connection(self) -> str:
+    def _get_db_connection(self, charm_state: CharmState) -> str:
         """Get the database connection string.
+
+        Args:
+            charm_state: Instance of CharmState.
 
         Returns:
             The database connection string.
         """
-        if self._charm_state.irc_bridge_datasource is None:
+        if charm_state.irc_bridge_datasource is None:
             return ""
         db_connect_string = (
             "postgres://"
-            + f"{self._charm_state.irc_bridge_datasource['user']}"
-            + f":{self._charm_state.irc_bridge_datasource['password']}"
-            + f"@{self._charm_state.irc_bridge_datasource['host']}"
-            + f":{self._charm_state.irc_bridge_datasource['port']}"
-            + f"/{self._charm_state.irc_bridge_datasource['db']}"
+            + f"{charm_state.irc_bridge_datasource['user']}"
+            + f":{charm_state.irc_bridge_datasource['password']}"
+            + f"@{charm_state.irc_bridge_datasource['host']}"
+            + f":{charm_state.irc_bridge_datasource['port']}"
+            + f"/{charm_state.irc_bridge_datasource['db']}"
         )
         return db_connect_string

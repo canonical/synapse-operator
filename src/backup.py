@@ -250,8 +250,7 @@ class S3Client:
         try:
             for page in page_iterator:
                 if page["KeyCount"] > 0:
-                    for item in page["Contents"]:
-                        yield item
+                    yield from page["Contents"]
         except ClientError as exc:
             raise S3Error("Error iterating over objects in bucket") from exc
 

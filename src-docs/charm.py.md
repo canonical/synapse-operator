@@ -12,7 +12,9 @@ Charm for Synapse on kubernetes.
 ## <kbd>class</kbd> `SynapseCharm`
 Charm the service. 
 
-<a href="../src/charm.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+Attrs:  on: listen to Redis events. 
+
+<a href="../src/charm.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -69,14 +71,37 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `build_charm_state`
+
+```python
+build_charm_state() → CharmState
+```
+
+Build charm state. 
+
+
+
+**Returns:**
+  The current charm state. 
+
+---
+
+<a href="../src/charm.py#L111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
 ```python
-change_config() → None
+change_config(charm_state: CharmState) → None
 ```
 
 Change configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
 
 

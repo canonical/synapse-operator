@@ -43,6 +43,7 @@ def test_on_collect_status_service_exists(
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=MagicMock()))
     enable_irc_bridge_mock = MagicMock()
+    enable_irc_bridge_mock.enable_irc_bridge = True
     monkeypatch.setattr(IRCBridgeObserver, "_enable_irc_bridge", enable_irc_bridge_mock)
 
     event_mock = MagicMock()
@@ -64,6 +65,7 @@ def test_on_collect_status_no_service(harness: Harness, monkeypatch: pytest.Monk
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value={}))
     enable_irc_bridge_mock = MagicMock()
+    enable_irc_bridge_mock.enable_irc_bridge = True
     monkeypatch.setattr(IRCBridgeObserver, "_enable_irc_bridge", enable_irc_bridge_mock)
 
     event_mock = MagicMock()
@@ -140,7 +142,9 @@ def test_enable_irc_bridge(harness: Harness, monkeypatch: pytest.MonkeyPatch) ->
         "_get_db_connection",
         MagicMock(return_value="db_connect_string"),
     )
-    harness.charm._irc_bridge._enable_irc_bridge()
+    charm_state_mock = MagicMock()
+    charm_state_mock.enable_irc_bridge = True
+    harness.charm._irc_bridge._enable_irc_bridge(charm_state_mock)
     create_irc_bridge_config_mock.assert_called_once_with(
         container=ANY, server_name=ANY, db_connect_string=ANY
     )
