@@ -104,12 +104,11 @@ def inject_charm_state(  # pylint: disable=protected-access
             logger.exception("Error creating CharmConfig")
             # There are two main types of events, Hooks and Actions.
             # Each one of them should be treated differently.
-            if isinstance(event, ops.charm.ActionEvent):
-                event.fail(exc.msg)
-            elif isinstance(event, ops.ConfigChangedEvent):
+            if isinstance(event, ops.ConfigChangedEvent):
                 charm.model.unit.status = ops.BlockedStatus(exc.msg)
             else:
                 logger.debug("CharmConfigInvalidError ignored since is not ConfigChangedEvent")
+                logger.exception(str(exc))
             return None
         return method(instance, event, charm_state)
 
