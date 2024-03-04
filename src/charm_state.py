@@ -108,6 +108,9 @@ def inject_charm_state(  # pylint: disable=protected-access
                 logger.error("Failed on ActionEvent")
                 event.fail(exc.msg)
             else:
+                if isinstance(event, ops.CollectStatusEvent):
+                    logger.error("Failed on CollectStatusEvent, ignoring")
+                    return None
                 logger.error("Failed on %s", type(event).__name__)
                 charm.model.unit.status = ops.BlockedStatus(exc.msg)
             return None
