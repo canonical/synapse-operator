@@ -8,10 +8,10 @@ description: |
   A charm for the matrix synapse chat server.
   Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
   This charm is useful if you want to spin up your own chat instance.
-docs: ""
+docs: https://discourse.charmhub.io/t/synapse-documentation-overview/11358
 issues: https://github.com/canonical/synapse-operator/issues
 maintainers:
-  - launchpad.net/~canonical-is-devops
+  - https://launchpad.net/~canonical-is-devops
 source: https://github.com/canonical/synapse-operator
 assumes:
   - k8s-api
@@ -34,15 +34,7 @@ storage:
     location: /data
 
 requires:
-    ingress:
-        interface: ingress
-        limit: 1
-        optional: true
     database:
         interface: postgresql_client
-        limit: 1
-        optional: true
-    nginx-route:
-        interface: nginx-route
         limit: 1
         optional: true

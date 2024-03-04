@@ -5,24 +5,25 @@
 
 """Charm for Synapse on kubernetes."""
 
+import itertools
 import logging
 import typing
 
 import ops
-import psycopg2
-from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
-from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
-from ops.charm import ActionEvent
+from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from ops.main import main
 
-from charm_state import CharmConfigInvalidError, CharmState
-from constants import SYNAPSE_CONTAINER_NAME, SYNAPSE_PORT
+# pydantic is causing this no-name-in-module problem
+from pydantic import ValidationError  # pylint: disable=no-name-in-module,import-error
+
+from config import KNOWN_CHARM_CONFIG, ConfigInvalidError, SynapseConfig
+from containers import synapse
 from database_client import DatabaseClient
-from database_observer import DatabaseObserver
-from pebble import PebbleService
-from synapse import CommandMigrateConfigError, ServerNameModifiedError, Synapse
+from integrations import database
 
 logger = logging.getLogger(__name__)
+
+SYNAPSE_CONTAINER_NAME = "synapse"
 
 
 class SynapseCharm(ops.CharmBase):
@@ -35,108 +36,93 @@ class SynapseCharm(ops.CharmBase):
             args: class arguments.
         """
         super().__init__(*args)
-        self.database = DatabaseObserver(self)
-        try:
-            self._charm_state = CharmState.from_charm(charm=self)
-        except CharmConfigInvalidError as exc:
-            self.model.unit.status = ops.BlockedStatus(exc.msg)
-            return
-        self._synapse = Synapse(charm_state=self._charm_state)
-        self.pebble_service = PebbleService(synapse=self._synapse)
-        # service-hostname is a required field so we're hardcoding to the same
-        # value as service-name. service-hostname should be set via Nginx
-        # Ingress Integrator charm config.
-        require_nginx_route(
-            charm=self,
-            service_hostname=self.app.name,
-            service_name=self.app.name,
-            service_port=SYNAPSE_PORT,
-        )
-        self._ingress = IngressPerAppRequirer(
+        self.database = DatabaseRequires(
             self,
-            port=SYNAPSE_PORT,
-            # We're forced to use the app's service endpoint
-            # as the ingress per app interface currently always routes to the leader.
-            # https://github.com/canonical/traefik-k8s-operator/issues/159
-            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
-            strip_prefix=True,
+            relation_name=database.RELATION_NAME,
+            database_name=database.DATABASE_NAME,
+            extra_user_roles="SUPERUSER",
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_pebble_ready)
+        self.framework.observe(self.database.on.database_created, self._on_database_created)
+        self.framework.observe(self.database.on.endpoints_changed, self._on_endpoints_changed)
 
-    def change_config(self, _: ops.HookEvent) -> None:
-        """Change configuration."""
-        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for pebble")
+    def get_charm_configuration(self) -> SynapseConfig:
+        """Get charm configuration.
+
+        Raises:
+            ConfigInvalidError: if configuration is invalid.
+
+        Returns:
+            SynapseConfig: Charm configuration.
+        """
+        synapse_config = {k: v for k, v in self.config.items() if k in KNOWN_CHARM_CONFIG}
+        try:
+            synapse_config = SynapseConfig(**synapse_config)  # type: ignore
+        except ValidationError as exc:
+            error_fields = set(
+                itertools.chain.from_iterable(error["loc"] for error in exc.errors())
+            )
+            error_field_str = " ".join(f"{f}" for f in error_fields)
+            raise ConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
+        # ignoring because mypy fails with:
+        # "has incompatible type "**dict[str, str]"; expected ...""
+        return synapse_config  # type: ignore
+
+    def reconcile(self) -> None:
+        """Change configuration.
+
+        Raises:
+            PebbleError: if something goes wrong while interacting with Pebble.
+        """
+        # Get configuration from the charm
+        try:
+            synapse_config = self.get_charm_configuration()
+        except ConfigInvalidError as exc:
+            self.model.unit.status = ops.BlockedStatus(exc.msg)
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
+        # Get configuration from integrations
+        database_config = database.get_configuration(self.model, self.database)
+        # Generate environment variables
+        env = synapse.synapse_environment(
+            synapse_config=synapse_config, database_config=database_config
+        )
         try:
-            self.pebble_service.change_config(container)
-        except (
-            CharmConfigInvalidError,
-            CommandMigrateConfigError,
-            ops.pebble.PathError,
-            ServerNameModifiedError,
-        ) as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            return
+            container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
+            synapse.execute_migrate_config(container, env)
+            container.add_layer(
+                synapse.SYNAPSE_SERVICE_NAME, synapse.pebble_layer(env), combine=True
+            )
+            container.restart(synapse.SYNAPSE_SERVICE_NAME)
+        except (ops.pebble.ConnectionError, synapse.ContainerError) as exc:
+            # implement retry
+            logger.exception(str(exc))
+            raise
         self.model.unit.status = ops.ActiveStatus()
 
-    def _on_config_changed(self, event: ops.HookEvent) -> None:
-        """Handle changed configuration.
+    def _on_config_changed(self, _: ops.HookEvent) -> None:
+        """Handle changed configuration."""
+        self.reconcile()
 
-        Args:
-            event: Event triggering after config is changed.
-        """
-        self.change_config(event)
+    def _on_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle pebble ready event."""
+        self.reconcile()
 
-    def _on_pebble_ready(self, event: ops.HookEvent) -> None:
-        """Handle pebble ready event.
-
-        Args:
-            event: Event triggering after pebble is ready.
-        """
-        self.change_config(event)
-
-    def _on_reset_instance_action(self, event: ActionEvent) -> None:
-        """Reset instance and report action result.
-
-        Args:
-            event: Event triggering the reset instance action.
-        """
-        results = {
-            "reset-instance": False,
-        }
-        if not self.model.unit.is_leader():
-            event.fail("Only the juju leader unit can run reset instance action")
+    def _on_database_created(self, _: ops.HookEvent) -> None:
+        """Handle database created."""
+        database_config = database.get_configuration(self.model, self.database)
+        if database_config is None:
+            logger.error("database created event received but there is no integration data")
             return
-        container = self.unit.get_container(SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to container")
-            return
-        try:
-            self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
-            self.pebble_service.reset_instance(container)
-            datasource = self.database.get_relation_as_datasource()
-            if datasource is not None:
-                logger.info("Erase Synapse database")
-                # Connecting to template1 to make it possible to erase the database.
-                # Otherwise PostgreSQL will prevent it if there are open connections.
-                db_client = DatabaseClient(datasource=datasource, alternative_database="template1")
-                db_client.erase()
-            self._synapse.execute_migrate_config(container)
-            logger.info("Start Synapse database")
-            self.pebble_service.replan(container)
-            results["reset-instance"] = True
-        except (psycopg2.Error, ops.pebble.PathError, CommandMigrateConfigError) as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            event.fail(str(exc))
-            return
-        # results is a dict and set_results expects _SerializedData
-        event.set_results(results)  # type: ignore[arg-type]
-        self.model.unit.status = ops.ActiveStatus()
+        # this is needed due Synapse requires specific database collation
+        db_client = DatabaseClient(database_config=database_config)
+        db_client.prepare()
+        self.reconcile()
+
+    def _on_endpoints_changed(self, _: ops.HookEvent) -> None:
+        """Handle database endpoints changed."""
+        self.reconcile()
 
 
 if __name__ == "__main__":  # pragma: nocover
