@@ -7,8 +7,7 @@
 # pylint: disable=attribute-defined-outside-init
 
 import ops
-import pytest
-from ops.testing import ActionFailed, Harness
+from ops.testing import Harness
 
 from charm_state import (
     CharmBaseWithState,
