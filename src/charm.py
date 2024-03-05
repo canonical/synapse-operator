@@ -91,7 +91,7 @@ class SynapseCharm(CharmBaseWithState):
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
-        self.framework.observe(self.on.update_status, self._on_update_status)
+        # self.framework.observe(self.on.update_status, self._on_update_status)
 
     def _on_update_status(self, _: ops.UpdateStatusEvent) -> None:
         """Update status event handler."""

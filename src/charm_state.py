@@ -105,13 +105,8 @@ def inject_charm_state(  # pylint: disable=protected-access
             # There are two main types of events, Hooks and Actions.
             # Each one of them should be treated differently.
             if isinstance(event, ops.charm.ActionEvent):
-                logger.error("Failed on ActionEvent")
                 event.fail(exc.msg)
             else:
-                if isinstance(event, ops.CollectStatusEvent):
-                    logger.error("Failed on CollectStatusEvent, ignoring")
-                    return None
-                logger.error("Failed on %s", type(event).__name__)
                 charm.model.unit.status = ops.BlockedStatus(exc.msg)
             return None
         return method(instance, event, charm_state)

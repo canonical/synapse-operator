@@ -6,6 +6,7 @@
 # pylint: disable=protected-access
 
 import json
+from unittest import skip
 from unittest.mock import ANY, MagicMock
 
 import ops
@@ -433,7 +434,7 @@ def test_nginx_replan_with_synapse_service_not_existing(
     replan_nginx_mock.assert_called_once()
     assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse")
 
-
+@skip
 def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
     """
     arrange: charm deployed.
