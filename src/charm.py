@@ -188,7 +188,7 @@ class SynapseCharm(CharmBaseWithState):
         nginx_not_active = [
             service for service in nginx_service.values() if not service.is_running()
         ]
-        if nginx_not_active or not nginx_service:
+        if not nginx_service or nginx_not_active:
             self.unit.status = ops.MaintenanceStatus("Waiting for NGINX")
             return
         # All checks passed, the unit is active
@@ -225,16 +225,12 @@ class SynapseCharm(CharmBaseWithState):
         """
         self.change_config(charm_state)
 
-    def _on_synapse_nginx_pebble_ready(self, event: ops.HookEvent) -> None:
-        """Handle synapse nginx pebble ready event.
-
-        Args:
-            event: Event triggering the synapse nginx pebble ready.
-        """
+    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse nginx pebble ready event."""
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not container.can_connect():
-            logger.debug("synapse_nginx_pebble_ready failed to connect, defer")
-            event.defer()
+            logger.debug("synapse_nginx_pebble_ready failed to connect")
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
         pebble.replan_nginx(container)
