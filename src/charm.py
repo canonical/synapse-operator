@@ -118,7 +118,7 @@ class SynapseCharm(CharmBaseWithState):
             logger.warning("Synapse Stats Exporter not running, restarting.")
             try:
                 pebble.replan_stats_exporter(container, self.token_service)
-            except (ops.pebble.APIError, ops.pebble.ConnectionError) as e:
+            except ops.pebble.Error as e:
                 logger.debug("Ignoring error while restarting Synapse Stats Exporter")
                 logger.exception(str(e))
         self._set_unit_status()

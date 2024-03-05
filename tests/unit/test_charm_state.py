@@ -7,7 +7,8 @@
 # pylint: disable=attribute-defined-outside-init
 
 import ops
-from ops.testing import Harness
+import pytest
+from ops.testing import ActionFailed, Harness
 
 from charm_state import (
     CharmBaseWithState,
@@ -156,4 +157,47 @@ def test_inject_charm_state_hook_failed() -> None:
     charm.on.config_changed.emit()
 
     assert harness.model.unit.status == ops.BlockedStatus("Invalid configuration")
+    assert not hasattr(charm, "charm_state")
+
+
+def test_inject_charm_state_action_failed() -> None:
+    """
+    arrange: Create a charm with an action "create-backup" that stores the charm_state
+        in an attribute of the class, and that raises when trying to get the
+        charm_state and the create_backup action observer.
+    act: Run action create-backup
+    assert: Action should fail with error invalid configuration. No charm_state attribute exists.
+    """
+
+    class FakeCharm(SimpleCharm):
+        """Fake observer with on_create_backup."""
+
+        def build_charm_state(self) -> CharmState:
+            """Build charm state.
+
+            Raises:
+                CharmConfigInvalidError: always
+            """
+            raise CharmConfigInvalidError("Invalid configuration")
+
+        @inject_charm_state
+        def on_create_backup_action(self, _: ops.ActionEvent, charm_state: CharmState):
+            """Action handler for create-backup action.
+
+            Args:
+                charm_state: Injected CharmState
+            """
+            self.charm_state = charm_state
+
+    harness = Harness(FakeCharm)
+    harness.begin()
+    charm = harness.charm
+    # Very low level. If a best approach is found, replace it.
+    charm.meta.actions["create-backup"] = ops.ActionMeta("create-backup")
+    charm.on.define_event("create_backup_action", ops.ActionEvent)
+    charm.framework.observe(charm.on.create_backup_action, charm.on_create_backup_action)
+
+    with pytest.raises(ActionFailed) as err:
+        harness.run_action("create-backup")
+    assert "Invalid configuration" in str(err.value.message)
     assert not hasattr(charm, "charm_state")
