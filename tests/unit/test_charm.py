@@ -451,8 +451,8 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
     assert synapse_layer == {
         "override": "replace",
         "summary": "Synapse Stats Exporter service",
-        "command": "synapse-stats-exporter",
-        "startup": "enabled",
+        "command": "sleep 1.1 && synapse-stats-exporter",
+        "startup": "disabled",
         "environment": {
             "PROM_SYNAPSE_ADMIN_TOKEN": ANY,
             "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",

@@ -116,11 +116,7 @@ class SynapseCharm(CharmBaseWithState):
         ]
         if not stats_service or stats_not_active:
             logger.warning("Synapse Stats Exporter not running, restarting.")
-            try:
-                pebble.replan_stats_exporter(container, self.token_service)
-            except ops.pebble.Error as e:
-                logger.debug("Ignoring error while restarting Synapse Stats Exporter")
-                logger.exception(str(e))
+            pebble.replan_stats_exporter(container, self.token_service)
         self._set_unit_status()
 
     def build_charm_state(self) -> CharmState:

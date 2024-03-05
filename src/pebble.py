@@ -87,8 +87,12 @@ def replan_stats_exporter(
         "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
         "PROM_SYNAPSE_ADMIN_TOKEN": str(admin_access_token),
     }
-    container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
-    container.replan()
+    try:
+        container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
+        container.replan()
+    except ops.pebble.Error as e:
+        logger.debug("Ignoring error while restarting Synapse Stats Exporter")
+        logger.exception(str(e))
 
 
 # The complexity of this method will be reviewed.
@@ -351,8 +355,8 @@ def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
             synapse.STATS_EXPORTER_SERVICE_NAME: {
                 "override": "replace",
                 "summary": "Synapse Stats Exporter service",
-                "command": "synapse-stats-exporter",
-                "startup": "enabled",
+                "command": "sleep 1.1 && synapse-stats-exporter",
+                "startup": "disabled",
                 "on-failure": "ignore",
             }
         },
