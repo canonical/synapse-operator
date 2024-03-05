@@ -95,16 +95,17 @@ def inject_charm_state(  # pylint: disable=protected-access
         Returns:
             The value returned from the original function. That is, None.
         """
-        logger.debug("Calling wrapper from event %s", event)
+        logger.error("Calling wrapper from event %s", event)
         charm = instance.get_charm()
 
         try:
             charm_state = charm.build_charm_state()
         except CharmConfigInvalidError as exc:
-            logger.exception("Error creating CharmConfig")
+            logger.error("Error creating CharmConfig")
             # There are two main types of events, Hooks and Actions.
             # Each one of them should be treated differently.
             if isinstance(event, ops.charm.ActionEvent):
+                logger.error("Failing because of event %s", event)
                 event.fail(exc.msg)
             else:
                 charm.model.unit.status = ops.BlockedStatus(exc.msg)
