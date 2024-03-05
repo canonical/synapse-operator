@@ -300,11 +300,13 @@ class SynapseCharm(CharmBaseWithState):
         }
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
+            logger.error("Failed to connect to the container")
             event.fail("Failed to connect to the container")
             return
         try:
             admin_access_token = self.token_service.get(container)
             if not admin_access_token:
+                logger.error("Failed to get admin access token")
                 event.fail("Failed to get admin access token")
                 return
             username = event.params["username"]
@@ -315,8 +317,10 @@ class SynapseCharm(CharmBaseWithState):
             )
             results["promote-user-admin"] = True
         except synapse.APIError as exc:
+            logger.error(str(exc))
             event.fail(str(exc))
             return
+        logger.error("Setting results: %s", str(results))
         event.set_results(results)
 
     @inject_charm_state
