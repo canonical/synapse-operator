@@ -80,8 +80,6 @@ class AdminAccessTokenService:
                     del peer_relation.data[self._app][SECRET_ID]
                     return None
         else:
-            # There is no Secrets support and none relation data was created
-            # So lets create the user and store its token in the peer relation
             secret_value = peer_relation.data[self._app].get(SECRET_KEY)
             if secret_value:
                 admin_access_token = secret_value
