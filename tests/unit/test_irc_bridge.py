@@ -29,6 +29,16 @@ from synapse.workload import (
 )
 
 
+@pytest.fixture
+def irc_postgresql_relation_data_fixture() -> dict:
+    """Configure irc postgres relation for base harness"""
+    postgresql_relation_data = {
+        "endpoints": "myhost:5432",
+        "username": "user",
+    }
+    return postgresql_relation_data
+
+
 def test_on_collect_status_service_exists(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -97,7 +107,8 @@ def test_on_collect_status_container_off(
     enable_irc_bridge_mock.assert_not_called()
 
 
-def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPatch,
+                                  irc_postgresql_relation_data_fixture) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container, get_membership_room_id
         and _update_peer_data.
@@ -105,6 +116,7 @@ def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPa
     assert: status is active.
     """
     harness.update_config({"enable_irc_bridge": True})
+    harness.add_relation("irc-bridge-database", "postgresql", app_data=irc_postgresql_relation_data_fixture)
     harness.begin_with_initial_hooks()
     harness.set_leader(True)
     enable_irc_bridge_mock = MagicMock(return_value=None)
