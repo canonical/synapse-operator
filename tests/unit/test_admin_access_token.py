@@ -86,3 +86,38 @@ def test_get_admin_access_token_no_secrets(
         == admin_access_token_expected
     )
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+@patch("admin_access_token.JUJU_HAS_SECRETS", True)
+def test_get_admin_access_token_refresh(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start Synapse charm. mock create_admin_user and is_token_valid to return False.
+        get an admin access token. is_token_valid should not be called yet, and a token
+        should be returned.
+    act: call get another admin access token.
+    assert: is_token_valid should be called, and a new token should be requested.
+    """
+    initial_token = token_hex(16)
+    initial_user_mock = MagicMock()
+    initial_user_mock.access_token = initial_token
+
+    token_refreshed = token_hex(16)
+    refreshed_user_mock = MagicMock()
+    refreshed_user_mock.access_token = token_refreshed
+
+    create_admin_user_mock = MagicMock(side_effect=[initial_user_mock, refreshed_user_mock])
+    monkeypatch.setattr(synapse, "create_admin_user", create_admin_user_mock)
+    is_token_valid_mock = MagicMock(return_value=False)
+    monkeypatch.setattr(synapse, "is_token_valid", is_token_valid_mock)
+
+    # Get admin access token
+    harness.begin_with_initial_hooks()
+    admin_access_token = harness.charm.token_service.get(MagicMock)
+    is_token_valid_mock.assert_not_called()
+    assert admin_access_token == initial_token
+
+    # Get admin access token. Should be refreshed as it is invalid.
+    admin_access_token_refreshed = harness.charm.token_service.get(MagicMock)
+
+    is_token_valid_mock.assert_called_once()
+    assert admin_access_token_refreshed == token_refreshed

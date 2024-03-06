@@ -104,7 +104,7 @@ class AdminAccessTokenService:
             return None
         admin_user = synapse.create_admin_user(container)
         if not admin_user:
-            logger.error("Error getting admin access token")
+            logger.error("Error creating admin user to get admin access token")
             return None
         if JUJU_HAS_SECRETS:
             logger.debug("Adding/ secret")
