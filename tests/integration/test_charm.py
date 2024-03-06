@@ -407,19 +407,19 @@ async def test_admin_token_refresh(model: Model, synapse_app: Application):
     act: Promote the second user to admin.
     assert: It should not fail as the admin token is refreshed.
     """
-    action_register_user1: Action = await synapse_app.units[0].run_action(
-        "register-user", username="user1", admin=False
+    action_register_initial_user: Action = await synapse_app.units[0].run_action(
+        "register-user", username="initial_user", admin=False
     )
-    await action_register_user1.wait()
-    assert action_register_user1.status == "completed"
-    assert action_register_user1.results.get("register-user")
-    password = action_register_user1.results.get("user-password")
+    await action_register_initial_user.wait()
+    assert action_register_initial_user.status == "completed"
+    assert action_register_initial_user.results.get("register-user")
+    password = action_register_initial_user.results.get("user-password")
     assert password
-    action_promote1: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "promote-user-admin", username="user1"
+    action_promote_initial_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "promote-user-admin", username="initial_user"
     )
-    await action_promote1.wait()
-    assert action_promote1.status == "completed"
+    await action_promote_initial_user.wait()
+    assert action_promote_initial_user.status == "completed"
 
     new_server_name = f"test-admin-token-refresh{token_hex(6)}"
     await synapse_app.set_config({"server_name": new_server_name})
@@ -436,17 +436,17 @@ async def test_admin_token_refresh(model: Model, synapse_app: Application):
     assert action_reset_instance.results["reset-instance"]
     assert unit.workload_status == "active"
 
-    action_register_user2: Action = await synapse_app.units[0].run_action(
+    action_register_after_reset: Action = await synapse_app.units[0].run_action(
         "register-user", username="user2", admin=False
     )
-    await action_register_user2.wait()
-    assert action_register_user2.status == "completed"
-    assert action_register_user2.results.get("register-user")
-    password = action_register_user2.results.get("user-password")
+    await action_register_after_reset.wait()
+    assert action_register_after_reset.status == "completed"
+    assert action_register_after_reset.results.get("register-user")
+    password = action_register_after_reset.results.get("user-password")
     assert password
 
-    action_promote: Action = await synapse_app.units[0].run_action(  # type: ignore
+    action_promote_after_reset: Action = await synapse_app.units[0].run_action(  # type: ignore
         "promote-user-admin", username="user2"
     )
-    await action_promote.wait()
-    assert action_promote.status == "completed"
+    await action_promote_after_reset.wait()
+    assert action_promote_after_reset.status == "completed"
