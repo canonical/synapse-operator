@@ -34,3 +34,12 @@ Initialize a new instance of the CharmDatabaseRelationNotFoundError exception.
 
 
 
+---
+
+## <kbd>class</kbd> `PeerRelationNotFoundError`
+Exception raised when there is no peer relation. 
+
+
+
+
+
