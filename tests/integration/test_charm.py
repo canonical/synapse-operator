@@ -395,3 +395,58 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
         f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
     )
     assert mjolnir_response.status_code == 200
+
+
+async def test_admin_token_refresh(model: Model, synapse_app: Application):
+    """
+    arrange: Build and deploy the Synapse charm from charmhub.
+             Create an user.
+             Promote it to admin (forces to get the admin token).
+             Reset the instance (wipes database and so admin token is invalid).
+             Create another user.
+    act: Promote the second user to admin.
+    assert: It should not fail as the admin token is refreshed.
+    """
+    action_register_user1: Action = await synapse_app.units[0].run_action(
+        "register-user", username="user1", admin=False
+    )
+    await action_register_user1.wait()
+    assert action_register_user1.status == "completed"
+    assert action_register_user1.results.get("register-user")
+    password = action_register_user1.results.get("user-password")
+    assert password
+    action_promote1: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "promote-user-admin", username="user1"
+    )
+    await action_promote1.wait()
+    assert action_promote1.status == "completed"
+
+    new_server_name = f"test-admin-token-refresh{token_hex(6)}"
+    await synapse_app.set_config({"server_name": new_server_name})
+    await model.wait_for_idle()
+
+    unit = model.applications[synapse_app.name].units[0]
+    assert unit.workload_status == "blocked"
+    assert "server_name modification is not allowed" in unit.workload_status_message
+    action_reset_instance: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "reset-instance"
+    )
+    await action_reset_instance.wait()
+    assert action_reset_instance.status == "completed"
+    assert action_reset_instance.results["reset-instance"]
+    assert unit.workload_status == "active"
+
+    action_register_user2: Action = await synapse_app.units[0].run_action(
+        "register-user", username="user2", admin=False
+    )
+    await action_register_user2.wait()
+    assert action_register_user2.status == "completed"
+    assert action_register_user2.results.get("register-user")
+    password = action_register_user2.results.get("user-password")
+    assert password
+
+    action_promote: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "promote-user-admin", username="user2"
+    )
+    await action_promote.wait()
+    assert action_promote.status == "completed"

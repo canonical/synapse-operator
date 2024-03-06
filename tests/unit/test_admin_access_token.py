@@ -37,6 +37,7 @@ def test_get_admin_access_token_with_secrets(
     user_mock.access_token = admin_access_token_expected
     create_admin_user_mock = MagicMock(return_value=user_mock)
     monkeypatch.setattr(synapse, "create_admin_user", create_admin_user_mock)
+    monkeypatch.setattr(synapse, "is_token_valid", MagicMock(return_value=True))
 
     admin_access_token = harness.charm.token_service.get(MagicMock)
 
@@ -71,6 +72,7 @@ def test_get_admin_access_token_no_secrets(
     user_mock.access_token = admin_access_token_expected
     create_admin_user_mock = MagicMock(return_value=user_mock)
     monkeypatch.setattr(synapse, "create_admin_user", create_admin_user_mock)
+    monkeypatch.setattr(synapse, "is_token_valid", MagicMock(return_value=True))
 
     admin_access_token = harness.charm.token_service.get(MagicMock)
 

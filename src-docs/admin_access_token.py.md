@@ -50,7 +50,9 @@ Initialize the service.
 get(container: Container) → Optional[str]
 ```
 
-Get admin access token. 
+Get admin access token from peer relation. 
+
+If the admin token is not valid or it does not exist it creates one. 
 
 
 
