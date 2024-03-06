@@ -41,7 +41,7 @@ class AdminAccessTokenService:
         self._model = model
 
     def get(self, container: ops.Container) -> typing.Optional[str]:
-        """Get admin access token from peer relation.
+        """Get an admin access token.
 
         If the admin token is not valid or it does not exist it creates one.
 
@@ -57,10 +57,10 @@ class AdminAccessTokenService:
         return admin_access_token
 
     def _get_from_peer_relation(self) -> typing.Optional[str]:
-        """Get admin access token from peer relation.
+        """Get admin access token from the peer relation.
 
         Returns:
-            Admin access token or None if not found or failure.
+            Admin access token or None if admin token was not found or there was an error.
         """
         peer_relation = self._model.get_relation(PEER_RELATION_NAME)
         if not peer_relation:
@@ -92,7 +92,7 @@ class AdminAccessTokenService:
             container: Workload container.
 
         Returns:
-            admin access token or None if not found or failure.
+            admin access token or None if there was an error.
         """
         peer_relation = self._model.get_relation(PEER_RELATION_NAME)
         if not peer_relation:
