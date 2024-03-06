@@ -140,7 +140,7 @@ def _do_request(
         session = requests.Session()
         # By default always retry on connect (and in server errors). Failing on connect
         # should mean that the server has not started to process the request.
-        # Only retry on read if retry set to True, as in a not idempontent operation
+        # Only retry on read if retry set to True, as in a non-idempotent operation
         # this may have undesired effects.
         retries = Retry(
             connect=3,

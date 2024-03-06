@@ -125,7 +125,7 @@ def test_get_admin_access_with_refresh(
     is_token_valid_mock.assert_not_called()
     assert initial_admin_access_token == initial_token
 
-    # Get admin access token. Should not be refreshed as it is valid.
+    # Get admin access token. Should not be refreshed if it is valid.
     refreshed_admin_access_token = harness.charm.token_service.get(MagicMock)
 
     is_token_valid_mock.assert_called_once()

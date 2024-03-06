@@ -400,7 +400,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
 async def test_admin_token_refresh(model: Model, synapse_app: Application):
     """
     arrange: Build and deploy the Synapse charm from charmhub.
-             Create an user.
+             Create a user.
              Promote it to admin (forces to get the admin token).
              Reset the instance (wipes database and so admin token is invalid).
              Create another user.
