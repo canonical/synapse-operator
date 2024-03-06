@@ -112,12 +112,12 @@ class AdminAccessTokenService:
             logger.error("Error creating admin user to get admin access token")
             return None
         if JUJU_HAS_SECRETS:
-            logger.debug("Adding/ secret")
+            logger.debug("Adding admin_access_token secret to peer relation")
             secret = self._app.add_secret({SECRET_KEY: admin_user.access_token})
             peer_relation.data[self._app].update({SECRET_ID: secret.id})
             admin_access_token = admin_user.access_token
         else:
-            logger.debug("Adding peer data")
+            logger.debug("Adding admin_access_token to peer relation")
             peer_relation.data[self._app].update({SECRET_KEY: admin_user.access_token})
             admin_access_token = admin_user.access_token
         return admin_access_token
