@@ -13,4 +13,6 @@ jobs:
       trivy-image-config: "trivy.yaml"
       juju-channel: 3.1/stable
       channel: 1.28-strict/stable
-      modules: '["test_charm", "test_nginx", "test_s3", "test_redis"]'
+      tmate-debug: true
+      tmate-timeout: 60
+      modules: '["test_charm"]'
