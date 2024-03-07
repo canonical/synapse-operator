@@ -20,7 +20,3 @@ class CharmDatabaseRelationNotFoundError(Exception):
             msg (str): Explanation of the error.
         """
         self.msg = msg
-
-
-class PeerRelationNotFoundError(Exception):
-    """Exception raised when there is no peer relation."""

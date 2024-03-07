@@ -12,7 +12,6 @@ import ops
 from ops.jujuversion import JujuVersion
 
 import synapse
-from exceptions import PeerRelationNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -62,16 +61,13 @@ class AdminAccessTokenService:
 
         Returns:
             Admin access token or None if admin token was not found or there was an error.
-
-        Raise:
-            PeerRelationNotFoundError: if the peer relation does not exist.
         """
         peer_relation = self._model.get_relation(PEER_RELATION_NAME)
         if not peer_relation:
             logger.error(
                 "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
             )
-            raise PeerRelationNotFoundError()
+            return None
         admin_access_token = None
         if JUJU_HAS_SECRETS:
             secret_id = peer_relation.data[self._app].get(SECRET_ID)
@@ -97,16 +93,13 @@ class AdminAccessTokenService:
 
         Returns:
             admin access token or None if there was an error.
-
-        Raise:
-            PeerRelationNotFoundError: if the peer relation does not exist.
         """
         peer_relation = self._model.get_relation(PEER_RELATION_NAME)
         if not peer_relation:
             logger.error(
                 "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
             )
-            raise PeerRelationNotFoundError()
+            return None
         admin_user = synapse.create_admin_user(container)
         if not admin_user:
             logger.error("Error creating admin user to get admin access token")
