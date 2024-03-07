@@ -440,9 +440,9 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
     act: emit update status event.
     assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
     """
-    harness.begin_with_initial_hooks()
+    harness.update_config({"stats_exporter_user": "user", "stats_exporter_password": "foo"})
 
-    harness.charm.on.update_status.emit()
+    harness.begin_with_initial_hooks()
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
@@ -454,7 +454,8 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
         "command": "sleep 1.1 && synapse-stats-exporter",
         "startup": "disabled",
         "environment": {
-            "PROM_SYNAPSE_ADMIN_TOKEN": ANY,
+            "PROM_SYNAPSE_USER": "user",
+            "PROM_SYNAPSE_PASSWORD": "foo",
             "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
         },
         "on-failure": "ignore",

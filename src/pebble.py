@@ -11,7 +11,6 @@ import typing
 import ops
 
 import synapse
-from admin_access_token import AdminAccessTokenService
 from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
@@ -70,22 +69,18 @@ def replan_mjolnir(container: ops.model.Container) -> None:
     container.replan()
 
 
-def replan_stats_exporter(
-    container: ops.model.Container, token_service: AdminAccessTokenService
-) -> None:
+def replan_stats_exporter(container: ops.model.Container, charm_state: CharmState) -> None:
     """Replan Synapse StatsExporter service.
 
     Args:
         container: Charm container.
-        token_service: Instance of Admin Access Token Service.
+        charm_state: Instance of CharmState.
     """
-    admin_access_token = token_service.get(container)
-    if not admin_access_token:
-        logger.warning("Admin Access Token is none, skipping Stats Exporter start.")
     layer = _stats_exporter_pebble_layer()
     layer["services"][synapse.STATS_EXPORTER_SERVICE_NAME]["environment"] = {
         "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
-        "PROM_SYNAPSE_ADMIN_TOKEN": str(admin_access_token),
+        "PROM_SYNAPSE_USER": str(charm_state.synapse_config.stats_exporter_user),
+        "PROM_SYNAPSE_PASSWORD": str(charm_state.synapse_config.stats_exporter_password),
     }
     try:
         container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
@@ -134,6 +129,12 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
             synapse.enable_trusted_key_servers(container=container, charm_state=charm_state)
         if charm_state.synapse_config.ip_range_whitelist:
             synapse.enable_ip_range_whitelist(container=container, charm_state=charm_state)
+        if (
+            charm_state.synapse_config.stats_exporter_user
+            and charm_state.synapse_config.stats_exporter_password
+        ):
+            logger.info("Synapse Stats Exporter enabled.")
+            replan_stats_exporter(container=container, charm_state=charm_state)
         synapse.validate_config(container=container)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:

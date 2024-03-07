@@ -161,6 +161,8 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         public_baseurl: public_baseurl config.
         report_stats: report_stats config.
         server_name: server_name config.
+        stats_exporter_user: user to be used by Synapse Stats Exporter.
+        stats_exporter_password: password to be used by Synapse Stats Exporter.
         trusted_key_servers: trusted_key_servers config.
     """
 
@@ -173,6 +175,8 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     public_baseurl: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
+    stats_exporter_user: str | None = Field(None)
+    stats_exporter_password: str | None = Field(None)
     notif_from: str | None = Field(None)
     trusted_key_servers: str | None = Field(
         None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"

@@ -788,6 +788,8 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
             public_baseurl=None,
             report_stats=None,
             server_name="example.com",
+            stats_exporter_user=None,
+            stats_exporter_password=None,
             trusted_key_servers=None,
         ),
     )
@@ -837,6 +839,8 @@ def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
             public_baseurl=None,
             report_stats=None,
             server_name="example.com",
+            stats_exporter_user=None,
+            stats_exporter_password=None,
             trusted_key_servers=None,
         ),
     )

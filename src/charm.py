@@ -91,33 +91,6 @@ class SynapseCharm(CharmBaseWithState):
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
-        self.framework.observe(self.on.update_status, self._on_update_status)
-
-    def _on_update_status(self, _: ops.UpdateStatusEvent) -> None:
-        """Update status event handler."""
-        logger.debug("Running update status event handler in charm")
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            logger.warning("Synapse Stats Exporter: Waiting for Synapse pebble")
-            return
-        synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
-        synapse_not_active = [
-            service for service in synapse_service.values() if not service.is_running()
-        ]
-        if not synapse_service or synapse_not_active:
-            # The get_membership_room_id does a call to Synapse API in order to get the
-            # membership room id. This only works if Synapse is running so that's why
-            # the service status is checked here.
-            logger.warning("Synapse Stats Exporter: Waiting for Synapse")
-            return
-        stats_service = container.get_services(synapse.STATS_EXPORTER_SERVICE_NAME)
-        stats_not_active = [
-            service for service in stats_service.values() if not service.is_running()
-        ]
-        if not stats_service or stats_not_active:
-            logger.warning("Synapse Stats Exporter not running, restarting.")
-            pebble.replan_stats_exporter(container, self.token_service)
-        self._set_unit_status()
 
     def build_charm_state(self) -> CharmState:
         """Build charm state.

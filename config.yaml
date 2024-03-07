@@ -60,6 +60,15 @@ options:
       Synapse server name. Must be set to deploy the charm. Corresponds to the
       server_name option on Synapse configuration file and sets the
       public-facing domain of the server.
+  stats_exporter_user:
+    type: string
+    description: |
+      Stats Exporter user to get metrics. If set together with stats_exporter_password,
+      Synapse Stats Exporter will be enabled.
+  stats_exporter_password:
+    type: string
+    description: |
+      Stats Exporter password to get metrics.
   trusted_key_servers:
     type: string
     description: Comma separated list of trusted servers to download signing
