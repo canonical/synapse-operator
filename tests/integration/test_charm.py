@@ -66,6 +66,60 @@ async def test_synapse_validate_configuration(synapse_app: Application):
     )
 
 
+async def test_enable_stats_exporter(
+    synapse_app: Application,
+    synapse_app_name: str,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: build and deploy the Synapse charm, create an user.
+    act:  set user and password to Synapse Stats Exporter.
+    assert: the Synapse application is active and the Exporter returns as expected.
+    """
+    operator_username = "stats_exporter_operator"
+    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "register-user", username=operator_username, admin=False
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    password = action_register_user.results["user-password"]
+
+    await synapse_app.set_config(
+        {"stats_exporter_user": operator_username, "stats_exporter_password": password}
+    )
+
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    response = requests.get(
+        f"http://{synapse_ip}:9877/", headers={"Host": synapse_app_name}, timeout=5
+    )
+    assert response.status_code == 200
+
+
+async def test_reset_instance_action(
+    model: Model, another_synapse_app: Application, another_server_name: str
+):
+    """
+    arrange: a deployed Synapse charm in a blocked state due to a server_name change.
+    act: call the reset_instance action.
+    assert: the old instance is deleted and the new one configured.
+    """
+    unit = model.applications[another_synapse_app.name].units[0]
+    # Status string defined in Juju
+    # https://github.com/juju/juju/blob/2.9/core/status/status.go#L150
+    assert unit.workload_status == "blocked"
+    assert "server_name modification is not allowed" in unit.workload_status_message
+    action_reset_instance: Action = await another_synapse_app.units[0].run_action(  # type: ignore
+        "reset-instance"
+    )
+    await action_reset_instance.wait()
+    assert action_reset_instance.status == "completed"
+    assert action_reset_instance.results["reset-instance"]
+    assert unit.workload_status == "active"
+    config = await model.applications[another_synapse_app.name].get_config()
+    current_server_name = config.get("server_name", {}).get("value")
+    assert current_server_name == another_server_name
+
+
 @pytest.mark.asyncio
 async def test_workload_version(
     ops_test: OpsTest,
@@ -370,28 +424,3 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
         f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
     )
     assert mjolnir_response.status_code == 200
-
-
-async def test_reset_instance_action(
-    model: Model, another_synapse_app: Application, another_server_name: str
-):
-    """
-    arrange: a deployed Synapse charm in a blocked state due to a server_name change.
-    act: call the reset_instance action.
-    assert: the old instance is deleted and the new one configured.
-    """
-    unit = model.applications[another_synapse_app.name].units[0]
-    # Status string defined in Juju
-    # https://github.com/juju/juju/blob/2.9/core/status/status.go#L150
-    assert unit.workload_status == "blocked"
-    assert "server_name modification is not allowed" in unit.workload_status_message
-    action_reset_instance: Action = await another_synapse_app.units[0].run_action(  # type: ignore
-        "reset-instance"
-    )
-    await action_reset_instance.wait()
-    assert action_reset_instance.status == "completed"
-    assert action_reset_instance.results["reset-instance"]
-    assert unit.workload_status == "active"
-    config = await model.applications[another_synapse_app.name].get_config()
-    current_server_name = config.get("server_name", {}).get("value")
-    assert current_server_name == another_server_name
