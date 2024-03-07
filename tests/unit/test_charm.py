@@ -451,7 +451,7 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
     assert synapse_layer == {
         "override": "replace",
         "summary": "Synapse Stats Exporter service",
-        "command": "sleep 1.1 && synapse-stats-exporter",
+        "command": "synapse-stats-exporter",
         "startup": "disabled",
         "environment": {
             "PROM_SYNAPSE_USER": "user",

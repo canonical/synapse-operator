@@ -84,7 +84,7 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
     }
     try:
         container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
-        container.replan()
+        container.start(synapse.STATS_EXPORTER_SERVICE_NAME)
     except ops.pebble.Error as e:
         logger.debug("Ignoring error while restarting Synapse Stats Exporter")
         logger.exception(str(e))
@@ -356,7 +356,7 @@ def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
             synapse.STATS_EXPORTER_SERVICE_NAME: {
                 "override": "replace",
                 "summary": "Synapse Stats Exporter service",
-                "command": "sleep 1.1 && synapse-stats-exporter",
+                "command": "synapse-stats-exporter",
                 "startup": "disabled",
                 "on-failure": "ignore",
             }

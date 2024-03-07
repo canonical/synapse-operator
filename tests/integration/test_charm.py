@@ -93,6 +93,7 @@ async def test_enable_stats_exporter(
         f"http://{synapse_ip}:9877/", headers={"Host": synapse_app_name}, timeout=5
     )
     assert response.status_code == 200
+    assert "synapse_total_users" in response.text
 
 
 async def test_reset_instance_action(
