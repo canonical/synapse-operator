@@ -42,6 +42,8 @@ SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
 WHOAMI_URL = f"{SYNAPSE_URL}/_matrix/client/v3/account/whoami"
 
+_MAX_RETRIES = 3
+
 
 class APIError(Exception):
     """Exception raised when something fails while calling the API.
@@ -138,17 +140,22 @@ def _do_request(
     """
     try:
         session = requests.Session()
-        # By default always retry on connect (and in server errors). Failing on connect
+        # By default always retry on connect. Failing on connect
         # should mean that the server has not started to process the request.
-        # Only retry on read if retry set to True, as in a non-idempotent operation
-        # this may have undesired effects.
+        # Only retry on the rest of cases if retry parameter is set to True
         retries = Retry(
-            connect=3,
-            total=3,
+            total=_MAX_RETRIES,
+            connect=_MAX_RETRIES,
+            status=0,
+            read=0,
+            other=0,
             backoff_factor=3,
         )
         if retry:
-            retries.read = 3
+            retries.read = _MAX_RETRIES
+            retries.status = _MAX_RETRIES
+            retries.other = _MAX_RETRIES
+
         session.mount("http://", HTTPAdapter(max_retries=retries))
 
         headers = None
