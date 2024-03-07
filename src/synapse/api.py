@@ -520,6 +520,6 @@ def is_token_valid(access_token: str) -> bool:
     try:
         _do_request("GET", WHOAMI_URL, admin_access_token=access_token, retry=True)
     except UnauthorizedError:
-        logger.info("Invalid access token ")
+        logger.info("Invalid access token")
         return False
     return True
