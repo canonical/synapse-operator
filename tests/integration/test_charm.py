@@ -78,7 +78,7 @@ async def test_enable_stats_exporter(
     """
     operator_username = "stats_exporter_operator"
     action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "register-user", username=operator_username, admin=False
+        "register-user", username=operator_username, admin=True
     )
     await action_register_user.wait()
     assert action_register_user.status == "completed"
