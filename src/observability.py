@@ -9,6 +9,8 @@ from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 
 import synapse
 
+STATS_EXPORTER_PORT = "9877"
+
 
 class Observability:  # pylint: disable=too-few-public-methods
     """A class representing the observability stack for Synapse application."""
@@ -31,7 +33,7 @@ class Observability:  # pylint: disable=too-few-public-methods
                         {
                             "targets": [
                                 f"*:{synapse.PROMETHEUS_TARGET_PORT}",
-                                f"*:{synapse.STATS_EXPORTER_PORT}",
+                                f"*:{STATS_EXPORTER_PORT}",
                             ]
                         }
                     ]

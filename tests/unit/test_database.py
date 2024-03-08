@@ -15,6 +15,7 @@ from ops.testing import Harness
 from psycopg2 import sql
 
 import database_observer
+import pebble
 import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
@@ -266,7 +267,7 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
-    ][synapse.STATS_EXPORTER_SERVICE_NAME]
+    ][pebble.STATS_EXPORTER_SERVICE_NAME]
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
     synapse_env = synapse.get_environment(harness.charm.build_charm_state())
     assert synapse_layer == {

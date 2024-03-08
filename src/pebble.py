@@ -15,6 +15,8 @@ from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
 
+STATS_EXPORTER_SERVICE_NAME = "stats-exporter"
+
 
 class PebbleServiceError(Exception):
     """Exception raised when something fails while interacting with Pebble.
@@ -79,7 +81,7 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
     layer = _stats_exporter_pebble_layer()
     datasource = charm_state.datasource
     if datasource is not None:
-        layer["services"][synapse.STATS_EXPORTER_SERVICE_NAME]["environment"] = {
+        layer["services"][STATS_EXPORTER_SERVICE_NAME]["environment"] = {
             "PROM_SYNAPSE_DATABASE": datasource["db"],
             "PROM_SYNAPSE_HOST": datasource["host"],
             "PROM_SYNAPSE_PORT": datasource["port"],
@@ -87,8 +89,8 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
             "PROM_SYNAPSE_PASSWORD": datasource["password"],
         }
         try:
-            container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
-            container.start(synapse.STATS_EXPORTER_SERVICE_NAME)
+            container.add_layer(STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
+            container.start(STATS_EXPORTER_SERVICE_NAME)
         except ops.pebble.Error as e:
             logger.debug("Ignoring error while restarting Synapse Stats Exporter")
             logger.exception(str(e))
@@ -354,7 +356,7 @@ def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
         "summary": "Synapse Stats Exporter layer",
         "description": "Synapse Stats Exporter",
         "services": {
-            synapse.STATS_EXPORTER_SERVICE_NAME: {
+            STATS_EXPORTER_SERVICE_NAME: {
                 "override": "replace",
                 "summary": "Synapse Stats Exporter service",
                 "command": "synapse-stats-exporter",
