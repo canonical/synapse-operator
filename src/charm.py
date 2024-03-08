@@ -222,6 +222,11 @@ class SynapseCharm(CharmBaseWithState):
             return
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
+            try:
+                container.stop(pebble.STATS_EXPORTER_SERVICE_NAME)
+            except (ops.pebble.Error, RuntimeError) as e:
+                logger.debug("Ignoring error while stopping Synapse Stats Exporter")
+                logger.exception(str(e))
             pebble.reset_instance(charm_state, container)
             datasource = self._database.get_relation_as_datasource()
             actions.reset_instance(
