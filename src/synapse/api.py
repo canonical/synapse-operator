@@ -40,6 +40,9 @@ MJOLNIR_MEMBERSHIP_ROOM = "moderators"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
+WHOAMI_URL = f"{SYNAPSE_URL}/_matrix/client/v3/account/whoami"
+
+_MAX_RETRIES = 3
 
 
 class APIError(Exception):
@@ -60,6 +63,10 @@ class APIError(Exception):
 
 class NetworkError(APIError):
     """Exception raised when requesting API fails due network issues."""
+
+
+class UnauthorizedError(APIError):
+    """Exception raised when requesting API fails due to unauthorized access."""
 
 
 class GetNonceError(APIError):
@@ -126,18 +133,31 @@ def _do_request(
     Raises:
         NetworkError: if there was an error fetching the api_url.
         UserExistsError: if there is an attempt to register an existing user.
+        UnauthorizedError: if the token is not allowed to do the operation.
 
     Returns:
         Response from the request.
     """
     try:
         session = requests.Session()
+        # By default always retry on connect. Failing on connect
+        # should mean that the server has not started to process the request.
+        # Only retry on the rest of cases if retry parameter is set to True
         retries = Retry(
-            total=3,
+            total=_MAX_RETRIES,
+            connect=_MAX_RETRIES,
+            status=0,
+            read=0,
+            other=0,
             backoff_factor=3,
         )
         if retry:
-            session.mount("http://", HTTPAdapter(max_retries=retries))
+            retries.read = _MAX_RETRIES
+            retries.status = _MAX_RETRIES
+            retries.other = _MAX_RETRIES
+
+        session.mount("http://", HTTPAdapter(max_retries=retries))
+
         headers = None
         if admin_access_token:
             headers = _generate_authorization_header(admin_access_token)
@@ -152,6 +172,8 @@ def _do_request(
         logger.exception("HTTP error from %s: %r", url, exc)
         if exc.response is not None and "User ID already taken" in exc.response.text:
             raise UserExistsError("User exists") from exc
+        if exc.response is not None and exc.response.status_code == 401:
+            raise UnauthorizedError("401 Unauthorized.") from exc
         raise NetworkError(f"HTTP error from {url}.") from exc
 
 
@@ -491,3 +513,20 @@ def promote_user_admin(
     user_id = f"@{user.username}:{server}"
     url = PROMOTE_USER_ADMIN_URL.replace("user_id", user_id)
     _do_request("PUT", url, admin_access_token=admin_access_token, json=data)
+
+
+def is_token_valid(access_token: str) -> bool:
+    """Check if the access token is valid making a request to whoami.
+
+    Args:
+        access_token: server access token to be used.
+
+    Returns:
+        If the token is valid or not.
+    """
+    try:
+        _do_request("GET", WHOAMI_URL, admin_access_token=access_token, retry=True)
+    except UnauthorizedError:
+        logger.info("Invalid access token")
+        return False
+    return True
