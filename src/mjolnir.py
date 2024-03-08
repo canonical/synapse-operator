@@ -75,9 +75,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             event: Collect status event.
             charm_state: The charm state.
         """
-        logger.debug("Running collect status event handler in Mjolnir")
         if not charm_state.synapse_config.enable_mjolnir:
-            logging.debug("Mjolnir is not enabled, skipping")
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():

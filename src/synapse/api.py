@@ -285,7 +285,7 @@ def _get_nonce() -> str:
     Raises:
         GetNonceError: if there was an error while reading nonce.
     """
-    res = _do_request("GET", REGISTER_URL, retry=True)
+    res = _do_request("GET", REGISTER_URL)
     try:
         nonce = res.json()["nonce"]
     except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:

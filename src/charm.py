@@ -5,8 +5,6 @@
 
 """Charm for Synapse on kubernetes."""
 
-# ignoring duplicate-code with container connect check in the mjolnir observer.
-# pylint: disable=R0801
 
 import logging
 import typing
@@ -134,7 +132,6 @@ class SynapseCharm(CharmBaseWithState):
         # If the unit is in a blocked state, do not change it, as it
         # was set by a problem or error with the configuration
         if isinstance(self.unit.status, ops.BlockedStatus):
-            logger.debug("set_unit_status: Charm is blocked, skipping")
             return
         # Synapse checks
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
@@ -273,13 +270,11 @@ class SynapseCharm(CharmBaseWithState):
         }
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            logger.error("Failed to connect to the container")
             event.fail("Failed to connect to the container")
             return
         try:
             admin_access_token = self.token_service.get(container)
             if not admin_access_token:
-                logger.error("Failed to get admin access token")
                 event.fail("Failed to get admin access token")
                 return
             username = event.params["username"]
@@ -290,10 +285,8 @@ class SynapseCharm(CharmBaseWithState):
             )
             results["promote-user-admin"] = True
         except synapse.APIError as exc:
-            logger.error(str(exc))
             event.fail(str(exc))
             return
-        logger.error("Setting results: %s", str(results))
         event.set_results(results)
 
     @inject_charm_state
