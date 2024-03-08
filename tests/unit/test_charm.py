@@ -434,34 +434,6 @@ def test_nginx_replan_with_synapse_service_not_existing(
     assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse")
 
 
-def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
-    """
-    arrange: charm deployed.
-    act: emit update status event.
-    assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
-    """
-    harness.update_config({"stats_exporter_user": "user", "stats_exporter_password": "foo"})
-
-    harness.begin_with_initial_hooks()
-
-    synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
-        "services"
-    ][synapse.STATS_EXPORTER_SERVICE_NAME]
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-    assert synapse_layer == {
-        "override": "replace",
-        "summary": "Synapse Stats Exporter service",
-        "command": "synapse-stats-exporter",
-        "startup": "disabled",
-        "environment": {
-            "PROM_SYNAPSE_USER": "user",
-            "PROM_SYNAPSE_PASSWORD": "foo",
-            "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
-        },
-        "on-failure": "ignore",
-    }
-
-
 def test_redis_relation_pebble_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set server_name, mock synapse.enable_redis.

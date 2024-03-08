@@ -77,17 +77,21 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
         charm_state: Instance of CharmState.
     """
     layer = _stats_exporter_pebble_layer()
-    layer["services"][synapse.STATS_EXPORTER_SERVICE_NAME]["environment"] = {
-        "PROM_SYNAPSE_BASE_URL": "http://localhost:8008/",
-        "PROM_SYNAPSE_USER": str(charm_state.synapse_config.stats_exporter_user),
-        "PROM_SYNAPSE_PASSWORD": str(charm_state.synapse_config.stats_exporter_password),
-    }
-    try:
-        container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
-        container.start(synapse.STATS_EXPORTER_SERVICE_NAME)
-    except ops.pebble.Error as e:
-        logger.debug("Ignoring error while restarting Synapse Stats Exporter")
-        logger.exception(str(e))
+    datasource = charm_state.datasource
+    if datasource is not None:
+        layer["services"][synapse.STATS_EXPORTER_SERVICE_NAME]["environment"] = {
+            "PROM_SYNAPSE_DATABASE": datasource["db"],
+            "PROM_SYNAPSE_HOST": datasource["host"],
+            "PROM_SYNAPSE_PORT": datasource["port"],
+            "PROM_SYNAPSE_USER": datasource["user"],
+            "PROM_SYNAPSE_PASSWORD": datasource["password"],
+        }
+        try:
+            container.add_layer(synapse.STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
+            container.start(synapse.STATS_EXPORTER_SERVICE_NAME)
+        except ops.pebble.Error as e:
+            logger.debug("Ignoring error while restarting Synapse Stats Exporter")
+            logger.exception(str(e))
 
 
 # The complexity of this method will be reviewed.
@@ -129,10 +133,7 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
             synapse.enable_trusted_key_servers(container=container, charm_state=charm_state)
         if charm_state.synapse_config.ip_range_whitelist:
             synapse.enable_ip_range_whitelist(container=container, charm_state=charm_state)
-        if (
-            charm_state.synapse_config.stats_exporter_user
-            and charm_state.synapse_config.stats_exporter_password
-        ):
+        if charm_state.datasource:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
         synapse.validate_config(container=container)

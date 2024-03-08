@@ -72,21 +72,10 @@ async def test_enable_stats_exporter(
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ) -> None:
     """
-    arrange: build and deploy the Synapse charm, create an user.
-    act:  set user and password to Synapse Stats Exporter.
+    arrange: Synapse is integrated with Postgresql.
+    act:  request Synapse Stats Exporter URL.
     assert: the Synapse application is active and the Exporter returns as expected.
     """
-    operator_username = "stats_exporter_operator"
-    action_register_user: Action = await synapse_app.units[0].run_action(  # type: ignore
-        "register-user", username=operator_username, admin=True
-    )
-    await action_register_user.wait()
-    assert action_register_user.status == "completed"
-    password = action_register_user.results["user-password"]
-
-    await synapse_app.set_config(
-        {"stats_exporter_user": operator_username, "stats_exporter_password": password}
-    )
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
     )
@@ -95,6 +84,7 @@ async def test_enable_stats_exporter(
     response = requests.get(
         f"http://{synapse_ip}:9877/", headers={"Host": synapse_app_name}, timeout=5
     )
+
     assert response.status_code == 200
     assert "synapse_total_users" in response.text
 
