@@ -679,7 +679,7 @@ def _add_app_service_config_field(container: ops.Container) -> None:
         config = container.pull(SYNAPSE_CONFIG_PATH).read()
         current_yaml = yaml.safe_load(config)
 
-        current_yaml["app_service_config_files"] = [f"{IRC_BRIDGE_REGISTRATION_PATH}"]
+        current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
 
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
