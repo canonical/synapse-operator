@@ -161,7 +161,7 @@ def test_enable_irc_bridge(harness: Harness, monkeypatch: pytest.MonkeyPatch) ->
     charm_state_mock.enable_irc_bridge = True
     harness.charm._irc_bridge._enable_irc_bridge(charm_state_mock)
     create_irc_bridge_config_mock.assert_called_once_with(
-        container=ANY, server_name=ANY, db_connect_string=ANY
+        container=ANY, charm_state=charm_state_mock, db_connect_string=ANY
     )
     create_irc_bridge_app_registration_mock.assert_called_once_with(container=ANY)
     create_pem_file_mock.assert_called_once_with(container=ANY)
@@ -175,13 +175,13 @@ def test_create_irc_bridge_config_success(monkeypatch: pytest.MonkeyPatch):
     assert: container.push is called with the correct arguments.
     """
     container_mock = MagicMock()
-    server_name = "server_name"
+    charm_state_mock = MagicMock()
     db_connect_string = "db_connect_string"
     _get_irc_bridge_config_mock = MagicMock(return_value={"key": "value"})
 
     monkeypatch.setattr(synapse.workload, "_get_irc_bridge_config", _get_irc_bridge_config_mock)
     create_irc_bridge_config(
-        container_mock, server_name=server_name, db_connect_string=db_connect_string
+        container_mock, charm_state=charm_state_mock, db_connect_string=db_connect_string
     )
 
     container_mock.push.assert_called_once_with(
@@ -196,7 +196,7 @@ def test_create_irc_bridge_config_path_error(monkeypatch: pytest.MonkeyPatch):
     assert: CreateIRCBridgeConfigError is raised.
     """
     container_mock = MagicMock()
-    server_name = "server_name"
+    charm_state_mock = MagicMock()
     db_connect_string = "db_connect_string"
     _get_irc_bridge_config_mock = MagicMock(
         side_effect=ops.pebble.PathError(kind="not-found", message="Path not found")
@@ -205,7 +205,7 @@ def test_create_irc_bridge_config_path_error(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(synapse.workload, "_get_irc_bridge_config", _get_irc_bridge_config_mock)
     with pytest.raises(CreateIRCBridgeConfigError):
         create_irc_bridge_config(
-            container_mock, server_name=server_name, db_connect_string=db_connect_string
+            container_mock, charm_state=charm_state_mock, db_connect_string=db_connect_string
         )
 
 

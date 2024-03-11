@@ -105,10 +105,9 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring IRC bridge")
-        server_name = charm_state.synapse_config.server_name
         db_connect_string = self._get_db_connection(charm_state)
         synapse.create_irc_bridge_config(
-            container=container, server_name=server_name, db_connect_string=db_connect_string
+            container=container, charm_state=charm_state, db_connect_string=db_connect_string
         )
         synapse.create_irc_bridge_app_registration(container=container)
         self._create_pem_file(container=container)

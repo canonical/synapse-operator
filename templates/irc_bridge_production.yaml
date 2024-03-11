@@ -123,11 +123,6 @@ ircService:
   ircHandler:
     mapIrcMentionsToMatrix: "on" # This can be "on", "off", "force-off".
     powerLevelGracePeriod: 1000
-  permissions:
-    '@merkata:ubuntu.com': admin
-    '@amandahla:ubuntu.com': admin
-    '@kewisch:ubuntu.com': admin
-    '@ilvipero:ubuntu.com': admin
   perRoomConfig:
     enabled: false
 advanced:

@@ -572,7 +572,7 @@ def create_mjolnir_config(container: ops.Container, access_token: str, room_id: 
         raise CreateMjolnirConfigError(str(exc)) from exc
 
 
-def _get_irc_bridge_config(server_name: str, db_connect_string: str) -> typing.Dict:
+def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> typing.Dict:
     """Create config as expected by irc bridge.
 
     Args:
@@ -585,13 +585,16 @@ def _get_irc_bridge_config(server_name: str, db_connect_string: str) -> typing.D
     irc_config_file = Path("templates/irc_bridge_production.yaml").read_text(encoding="utf-8")
     config = yaml.safe_load(irc_config_file)
     config["homeserver"]["url"] = SYNAPSE_URL
-    config["homeserver"]["domain"] = server_name
+    config["homeserver"]["domain"] = charm_state.synapse_config.server_name
     config["database"]["connectionString"] = db_connect_string
+    if charm_state.synapse_config.irc_bridge_admins:
+        for admin in (a.strip for a in charm_states.synapse_config.irc_bridge_admins.split(",")):
+            config["ircService"]["permissions"][admin] = 'admin'
     return config
 
 
 def create_irc_bridge_config(
-    container: ops.Container, server_name: str, db_connect_string: str
+        container: ops.Container, charm_state: CharmState, db_connect_string: str
 ) -> None:
     """Create irc bridge configuration.
 
@@ -605,7 +608,7 @@ def create_irc_bridge_config(
     """
     try:
         config = _get_irc_bridge_config(
-            server_name=server_name, db_connect_string=db_connect_string
+            charm_state=charm_state, db_connect_string=db_connect_string
         )
         container.push(IRC_BRIDGE_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
     except ops.pebble.PathError as exc:
