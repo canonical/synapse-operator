@@ -286,3 +286,24 @@ def test_add_app_service_config_field_path_error(monkeypatch: pytest.MonkeyPatch
 
     with pytest.raises(WorkloadError):
         _add_app_service_config_field(container_mock)
+
+
+def test_db_relation_exists(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch, irc_postgresql_relation_data
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock container, get_membership_room_id
+        and _update_peer_data.
+    act: add the default database relation.
+    assert: relation is not added as it already exists.
+    """
+    harness.update_config({"enable_irc_bridge": True})
+    print(harness.model.relations["database"])
+    harness.add_relation(
+        "database", "postgresql", app_data=irc_postgresql_relation_data
+    )
+    with pytest.raises(ops.model.TooManyRelatedAppsError):
+        harness.add_relation(
+            "database", "postgresql", app_data=irc_postgresql_relation_data
+        )
+        harness.begin_with_initial_hooks()
