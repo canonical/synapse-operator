@@ -13,7 +13,7 @@ import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
-from ops.charm import ActionEvent
+from ops.charm import ActionEvent, RelationDepartedEvent
 from ops.main import main
 
 import actions
@@ -79,6 +79,13 @@ class SynapseCharm(CharmBaseWithState):
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(
+            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_joined, self._on_relation_joined
+        )
+        self.framework.observe(
+            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed,
+            self._on_relation_departed,
+        )
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
         self.framework.observe(
@@ -181,6 +188,45 @@ class SynapseCharm(CharmBaseWithState):
         """
         self.change_config(charm_state)
         self._set_workload_version()
+
+    @inject_charm_state
+    def _on_relation_joined(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle Synapse peer relation joined event.
+
+        Args:
+            charm_state: The charm state.
+        """
+        if charm_state.redis_config is None:
+            logger.debug("Scaling is not allowed without Redis integration.")
+            self.model.unit.status = ops.BlockedStatus(
+                "Redis integration not found. Please, verify it."
+            )
+            return
+        self.model.unit.status = ops.ActiveStatus()
+
+    @inject_charm_state
+    def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
+        """Handle Synapse peer relation departed event.
+
+        Args:
+            event: relation departed event.
+            charm_state: The charm state.
+        """
+        if not self.unit.is_leader() or event.departing_unit == self.unit:
+            # returning because only the leader will change the charm status.
+            return
+        peer_relation = self.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
+        if peer_relation is not None:
+            # if more than 1, check for Redis integration
+            synapse_units = peer_relation.units
+            if len(synapse_units) > 1:
+                logger.debug("Found %d units, checking for Redis integration.", synapse_units)
+                if charm_state.redis_config is None:
+                    logger.debug("Scaling is not allowed without Redis integration.")
+                    self.model.unit.status = ops.BlockedStatus(
+                        "Redis integration not found. Please, verify it."
+                    )
+        self.model.unit.status = ops.ActiveStatus()
 
     @inject_charm_state
     def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
