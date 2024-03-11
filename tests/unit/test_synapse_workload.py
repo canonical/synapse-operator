@@ -787,6 +787,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
         synapse_config=SynapseConfig(
             federation_domain_whitelist=None,
             ip_range_whitelist=None,
+            irc_bridge_admins=None,
             notif_from="noreply@example.com",
             public_baseurl=None,
             report_stats=None,
@@ -837,6 +838,7 @@ def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
         synapse_config=SynapseConfig(
             federation_domain_whitelist=None,
             ip_range_whitelist=None,
+            irc_bridge_admins=None,
             notif_from="noreply@example.com",
             public_baseurl=None,
             report_stats=None,

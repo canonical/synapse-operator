@@ -576,7 +576,7 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     """Create config as expected by irc bridge.
 
     Args:
-        server_name: server name of the Synapse instance.
+        charm_state: Instance of CharmState.
         db_connect_string: database connection string.
 
     Returns:
@@ -588,19 +588,19 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     config["homeserver"]["domain"] = charm_state.synapse_config.server_name
     config["database"]["connectionString"] = db_connect_string
     if charm_state.synapse_config.irc_bridge_admins:
-        for admin in (a.strip for a in charm_states.synapse_config.irc_bridge_admins.split(",")):
-            config["ircService"]["permissions"][admin] = 'admin'
+        for admin in (a.strip() for a in charm_state.synapse_config.irc_bridge_admins.split(",")):
+            config["ircService"]["permissions"][admin] = "admin"
     return config
 
 
 def create_irc_bridge_config(
-        container: ops.Container, charm_state: CharmState, db_connect_string: str
+    container: ops.Container, charm_state: CharmState, db_connect_string: str
 ) -> None:
     """Create irc bridge configuration.
 
     Args:
         container: Container of the charm.
-        server_name: server name of the Synapse instance.
+        charm_state: Instance of CharmState.
         db_connect_string: database connection string.
 
     Raises:

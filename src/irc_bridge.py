@@ -74,7 +74,7 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
         if not charm_state.synapse_config.enable_irc_bridge:
             return
         if charm_state.irc_bridge_datasource is None:
-            ops.MaintenanceStatus("Waiting for irc bridge db relation")
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for irc bridge db relation")
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -136,7 +136,6 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
         try:
             exec_process = container.exec(
                 pem_create_command,
-                environment={},
             )
             stdout, stderr = exec_process.wait_output()
             logger.info("PEM create output: %s. %s.", stdout, stderr)
@@ -157,10 +156,10 @@ class IRCBridgeObserver(ops.Object):  # pylint: disable=too-few-public-methods
             return ""
         db_connect_string = (
             "postgres://"
-            + f"{charm_state.irc_bridge_datasource['user']}"
-            + f":{charm_state.irc_bridge_datasource['password']}"
-            + f"@{charm_state.irc_bridge_datasource['host']}"
-            + f":{charm_state.irc_bridge_datasource['port']}"
-            + f"/{charm_state.irc_bridge_datasource['db']}"
+            f"{charm_state.irc_bridge_datasource['user']}"
+            f":{charm_state.irc_bridge_datasource['password']}"
+            f"@{charm_state.irc_bridge_datasource['host']}"
+            f":{charm_state.irc_bridge_datasource['port']}"
+            f"/{charm_state.irc_bridge_datasource['db']}"
         )
         return db_connect_string
