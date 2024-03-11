@@ -42,13 +42,26 @@ class AdminAccessTokenService:  # pragma: no cover
         self._model = model
 
     def get(self, container: ops.Container) -> typing.Optional[str]:
-        """Get admin access token.
+        """Get an admin access token.
+
+        If the admin token is not valid or it does not exist it creates one.
 
         Args:
             container: Workload container.
 
         Returns:
             admin access token or None if fails.
+        """
+        admin_access_token = self._get_from_peer_relation()
+        if admin_access_token is None or not synapse.is_token_valid(admin_access_token):
+            admin_access_token = self._renew_token(container)
+        return admin_access_token
+
+    def _get_from_peer_relation(self) -> typing.Optional[str]:
+        """Get admin access token from the peer relation.
+
+        Returns:
+            Admin access token or None if admin token was not found or there was an error.
         """
         peer_relation = self._model.get_relation(PEER_RELATION_NAME)
         if not peer_relation:
@@ -67,27 +80,38 @@ class AdminAccessTokenService:  # pragma: no cover
                     logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
                     del peer_relation.data[self._app][SECRET_ID]
                     return None
-            else:
-                # There is Secrets support but none was created
-                # So lets create the user and store its token in the secret
-                admin_user = synapse.create_admin_user(container)
-                if not admin_user:
-                    return None
-                logger.debug("Adding secret")
-                secret = self._app.add_secret({SECRET_KEY: admin_user.access_token})
-                peer_relation.data[self._app].update({SECRET_ID: secret.id})
-                admin_access_token = admin_user.access_token
         else:
-            # There is no Secrets support and none relation data was created
-            # So lets create the user and store its token in the peer relation
             secret_value = peer_relation.data[self._app].get(SECRET_KEY)
             if secret_value:
                 admin_access_token = secret_value
-            else:
-                admin_user = synapse.create_admin_user(container)
-                if not admin_user:
-                    return None
-                logger.debug("Adding peer data")
-                peer_relation.data[self._app].update({SECRET_KEY: admin_user.access_token})
-                admin_access_token = admin_user.access_token
+        return admin_access_token
+
+    def _renew_token(self, container: ops.Container) -> typing.Optional[str]:
+        """Create/Renew an admin access token and put it in the peer relation.
+
+        Args:
+            container: Workload container.
+
+        Returns:
+            admin access token or None if there was an error.
+        """
+        peer_relation = self._model.get_relation(PEER_RELATION_NAME)
+        if not peer_relation:
+            logger.error(
+                "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
+            )
+            return None
+        admin_user = synapse.create_admin_user(container)
+        if not admin_user:
+            logger.error("Error creating admin user to get admin access token")
+            return None
+        if JUJU_HAS_SECRETS:
+            logger.debug("Adding admin_access_token secret to peer relation")
+            secret = self._app.add_secret({SECRET_KEY: admin_user.access_token})
+            peer_relation.data[self._app].update({SECRET_ID: secret.id})
+            admin_access_token = admin_user.access_token
+        else:
+            logger.debug("Adding admin_access_token to peer relation")
+            peer_relation.data[self._app].update({SECRET_KEY: admin_user.access_token})
+            admin_access_token = admin_user.access_token
         return admin_access_token
