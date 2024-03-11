@@ -218,8 +218,8 @@ class SynapseCharm(CharmBaseWithState):
         peer_relation = self.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
         if peer_relation is not None:
             # if more than 1, check for Redis integration
-            synapse_units = peer_relation.units
-            if len(synapse_units) > 1:
+            synapse_units = len(peer_relation.units)
+            if synapse_units > 1:
                 logger.debug("Found %d units, checking for Redis integration.", synapse_units)
                 if charm_state.redis_config is None:
                     logger.debug("Scaling is not allowed without Redis integration.")
