@@ -74,6 +74,11 @@ forward non-static traffic to it.
 
 The workload that this container is running is defined in the [Synapse ROCK](https://github.com/canonical/synapse-operator/tree/main/synapse_rock).
 
+If Synapse is integrated with PostgreSQL, [Synapse Stats Exporter](https://github.com/canonical/synapse_stats_exporter) will be enabled.
+Synapse Stats Exporter listens to non-TLs POR `9877` and will be configured as a
+target if the charm is integrated with Prometheus. It will provide two metrics: number of rooms and
+number of users.
+
 ## Integrations
 
 See [Integrations](https://charmhub.io/synapse/docs/reference/integrations).
