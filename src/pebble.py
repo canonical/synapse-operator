@@ -92,6 +92,8 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
             container.add_layer(STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
             container.start(STATS_EXPORTER_SERVICE_NAME)
         except ops.pebble.Error as e:
+            # Error being ignore to prevent Synapse Stats Exporter to affect
+            # Synapse. This can be caught in logs or using Prometheus alert.
             logger.debug("Ignoring error while restarting Synapse Stats Exporter")
             logger.exception(str(e))
 
