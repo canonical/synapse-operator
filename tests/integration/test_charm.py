@@ -74,7 +74,7 @@ async def test_enable_stats_exporter(
     """
     arrange: Synapse is integrated with Postgresql.
     act:  request Synapse Stats Exporter URL.
-    assert: the Synapse application is active and the Exporter returns as expected.
+    assert: Synapse Stats Exporter returns as expected.
     """
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
