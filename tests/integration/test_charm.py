@@ -66,6 +66,29 @@ async def test_synapse_validate_configuration(synapse_app: Application):
     )
 
 
+async def test_enable_stats_exporter(
+    synapse_app: Application,
+    synapse_app_name: str,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: Synapse is integrated with Postgresql.
+    act:  request Synapse Stats Exporter URL.
+    assert: Synapse Stats Exporter returns as expected.
+    """
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    response = requests.get(
+        f"http://{synapse_ip}:9877/", headers={"Host": synapse_app_name}, timeout=5
+    )
+
+    assert response.status_code == 200
+    assert "synapse_total_users" in response.text
+
+
 async def test_reset_instance_action(
     model: Model, another_synapse_app: Application, another_server_name: str
 ):
@@ -395,3 +418,58 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
         f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
     )
     assert mjolnir_response.status_code == 200
+
+
+async def test_admin_token_refresh(model: Model, synapse_app: Application):
+    """
+    arrange: Build and deploy the Synapse charm from charmhub.
+             Create a user.
+             Promote it to admin (forces to get the admin token).
+             Reset the instance (wipes database and so admin token is invalid).
+             Create another user.
+    act: Promote the second user to admin.
+    assert: It should not fail as the admin token is refreshed.
+    """
+    action_register_initial_user: Action = await synapse_app.units[0].run_action(
+        "register-user", username="initial_user", admin=False
+    )
+    await action_register_initial_user.wait()
+    assert action_register_initial_user.status == "completed"
+    assert action_register_initial_user.results.get("register-user")
+    password = action_register_initial_user.results.get("user-password")
+    assert password
+    action_promote_initial_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "promote-user-admin", username="initial_user"
+    )
+    await action_promote_initial_user.wait()
+    assert action_promote_initial_user.status == "completed"
+
+    new_server_name = f"test-admin-token-refresh{token_hex(6)}"
+    await synapse_app.set_config({"server_name": new_server_name})
+    await model.wait_for_idle()
+
+    unit = model.applications[synapse_app.name].units[0]
+    assert unit.workload_status == "blocked"
+    assert "server_name modification is not allowed" in unit.workload_status_message
+    action_reset_instance: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "reset-instance"
+    )
+    await action_reset_instance.wait()
+    assert action_reset_instance.status == "completed"
+    assert action_reset_instance.results["reset-instance"]
+    assert unit.workload_status == "active"
+
+    action_register_after_reset: Action = await synapse_app.units[0].run_action(
+        "register-user", username="user2", admin=False
+    )
+    await action_register_after_reset.wait()
+    assert action_register_after_reset.status == "completed"
+    assert action_register_after_reset.results.get("register-user")
+    password = action_register_after_reset.results.get("user-password")
+    assert password
+
+    action_promote_after_reset: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "promote-user-admin", username="user2"
+    )
+    await action_promote_after_reset.wait()
+    assert action_promote_after_reset.status == "completed"
