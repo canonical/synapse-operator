@@ -212,8 +212,8 @@ class SynapseCharm(CharmBaseWithState):
             event: relation departed event.
             charm_state: The charm state.
         """
-        if not self.unit.is_leader() or event.departing_unit == self.unit:
-            # returning because only the leader will change the charm status.
+        if event.departing_unit == self.unit:
+            # there is no action for the departing unit
             return
         peer_relation = self.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
         if peer_relation is not None:
@@ -226,6 +226,7 @@ class SynapseCharm(CharmBaseWithState):
                     self.model.unit.status = ops.BlockedStatus(
                         "Redis integration not found. Please, verify it."
                     )
+                    return
         self.model.unit.status = ops.ActiveStatus()
 
     @inject_charm_state
