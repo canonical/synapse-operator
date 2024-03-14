@@ -8,7 +8,6 @@ The Admin Access Token service.
 **Global Variables**
 ---------------
 - **JUJU_HAS_SECRETS**
-- **PEER_RELATION_NAME**
 - **SECRET_ID**
 - **SECRET_KEY**
 
@@ -20,7 +19,7 @@ The Admin Access Token Service.
 
 Attrs:  _app: instance of Juju application.  _model: instance of Juju model. 
 
-<a href="../src/admin_access_token.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/admin_access_token.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -42,7 +41,7 @@ Initialize the service.
 
 ---
 
-<a href="../src/admin_access_token.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/admin_access_token.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get`
 

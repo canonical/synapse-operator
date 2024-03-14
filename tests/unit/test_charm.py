@@ -26,6 +26,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should submit the correct Synapse pebble layer to pebble.
     """
+    harness.set_leader(True)
     harness.begin_with_initial_hooks()
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
@@ -61,6 +62,7 @@ def test_synapse_migrate_config_error(harness: Harness) -> None:
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
+    harness.set_leader(True)
     harness.begin_with_initial_hooks()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
@@ -122,8 +124,8 @@ def test_traefik_integration(harness: Harness) -> None:
     act: update relation with expected URL.
     assert: Relation data is as expected.
     """
-    harness.begin()
     harness.set_leader(True)
+    harness.begin()
     harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
     relation_id = harness.add_relation("ingress", "traefik")
     harness.add_relation_unit(relation_id, "traefik/0")
@@ -273,7 +275,8 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
     act: change to a different server_name.
     assert: Synapse charm should prevent the change with a BlockStatus.
     """
-    harness.begin()
+    harness.set_leader(True)
+    harness.begin_with_initial_hooks()
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     container.push(
         synapse.SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True
@@ -302,9 +305,9 @@ def test_enable_federation_domain_whitelist_is_called(
     """
     harness.update_config({"federation_domain_whitelist": "foo"})
     harness.begin()
-    harness.set_leader(True)
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
+    monkeypatch.setattr(synapse, "enable_replication", MagicMock())
     monkeypatch.setattr(synapse, "enable_forgotten_room_retention", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
     monkeypatch.setattr(synapse, "validate_config", MagicMock())
@@ -329,9 +332,9 @@ def test_disable_password_config_is_called(
     """
     harness.update_config({"enable_password_config": False})
     harness.begin()
-    harness.set_leader(True)
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
+    monkeypatch.setattr(synapse, "enable_replication", MagicMock())
     monkeypatch.setattr(synapse, "enable_forgotten_room_retention", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
     monkeypatch.setattr(synapse, "validate_config", MagicMock())

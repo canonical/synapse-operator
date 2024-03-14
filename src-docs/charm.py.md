@@ -5,6 +5,9 @@
 # <kbd>module</kbd> `charm.py`
 Charm for Synapse on kubernetes. 
 
+**Global Variables**
+---------------
+- **MAIN_UNIT_ID**
 
 
 ---
@@ -14,7 +17,7 @@ Charm the service.
 
 Attrs:  on: listen to Redis events. 
 
-<a href="../src/charm.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -71,7 +74,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -88,7 +91,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -103,5 +106,58 @@ Change configuration.
 **Args:**
  
  - <b>`charm_state`</b>:  Instance of CharmState 
+
+---
+
+<a href="../src/charm.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_main_unit`
+
+```python
+get_main_unit() → Optional[str]
+```
+
+Get main unit. 
+
+
+
+**Returns:**
+  main unit or none if there was an error. 
+
+---
+
+<a href="../src/charm.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `is_main`
+
+```python
+is_main() → bool
+```
+
+Verify if this unit is the main. 
+
+
+
+**Returns:**
+ 
+ - <b>`bool`</b>:  true if is the main unit. 
+
+---
+
+<a href="../src/charm.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `set_main_unit`
+
+```python
+set_main_unit(unit: str) → None
+```
+
+Create/Renew an admin access token and put it in the peer relation. 
+
+
+
+**Args:**
+ 
+ - <b>`unit`</b>:  Unit to be the main. 
 
 
