@@ -15,7 +15,7 @@ from ops.pebble import Check, ExecError, PathError
 
 from charm_state import CharmState
 
-from .api import SYNAPSE_PORT, SYNAPSE_URL, VERSION_URL
+from .api import SYNAPSE_PORT, SYNAPSE_URL
 
 SYNAPSE_CONFIG_DIR = "/data"
 
@@ -110,32 +110,6 @@ class ExecResult(typing.NamedTuple):
     exit_code: int
     stdout: str
     stderr: str
-
-
-def check_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse container ready check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(CHECK_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": VERSION_URL}
-    return check.to_dict()
-
-
-def check_alive() -> ops.pebble.CheckDict:
-    """Return the Synapse container alive check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(CHECK_ALIVE_NAME)
-    check.override = "replace"
-    check.level = "alive"
-    check.tcp = {"port": SYNAPSE_PORT}
-    return check.to_dict()
 
 
 def check_nginx_ready() -> ops.pebble.CheckDict:

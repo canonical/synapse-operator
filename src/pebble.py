@@ -9,6 +9,7 @@ import logging
 import typing
 
 import ops
+from ops.pebble import Check
 
 import synapse
 from charm_state import CharmState
@@ -32,6 +33,32 @@ class PebbleServiceError(Exception):
             msg (str): Explanation of the error.
         """
         self.msg = msg
+
+
+def check_synapse_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse container ready check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(synapse.CHECK_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": synapse.VERSION_URL}
+    return check.to_dict()
+
+
+def check_synapse_alive() -> ops.pebble.CheckDict:
+    """Return the Synapse container alive check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(synapse.CHECK_ALIVE_NAME)
+    check.override = "replace"
+    check.level = "alive"
+    check.tcp = {"port": synapse.SYNAPSE_PORT}
+    return check.to_dict()
 
 
 def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> None:
@@ -260,8 +287,8 @@ def _pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
             }
         },
         "checks": {
-            synapse.CHECK_READY_NAME: synapse.check_ready(),
-            synapse.CHECK_ALIVE_NAME: synapse.check_alive(),
+            synapse.CHECK_READY_NAME: check_synapse_ready(),
+            synapse.CHECK_ALIVE_NAME: check_synapse_alive(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
