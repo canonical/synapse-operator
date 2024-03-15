@@ -5,10 +5,13 @@
 # <kbd>module</kbd> `pebble.py`
 Class to interact with pebble. 
 
+**Global Variables**
+---------------
+- **STATS_EXPORTER_SERVICE_NAME**
 
 ---
 
-<a href="../src/pebble.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L37"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_synapse`
 
@@ -30,7 +33,7 @@ This will force a restart even if its plan hasn't changed.
 
 ---
 
-<a href="../src/pebble.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_nginx`
 
@@ -49,7 +52,7 @@ Replan Synapse NGINX service.
 
 ---
 
-<a href="../src/pebble.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_mjolnir`
 
@@ -68,7 +71,7 @@ Replan Synapse Mjolnir service.
 
 ---
 
-<a href="../src/pebble.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_irc_bridge`
 
@@ -87,7 +90,27 @@ Replan Synapse IRC bridge service.
 
 ---
 
-<a href="../src/pebble.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `replan_stats_exporter`
+
+```python
+replan_stats_exporter(container: Container, charm_state: CharmState) → None
+```
+
+Replan Synapse StatsExporter service. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+---
+
+<a href="../src/pebble.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `change_config`
 
@@ -113,7 +136,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_redis`
 
@@ -139,7 +162,7 @@ Enable Redis while receiving on_redis_relation_updated event.
 
 ---
 
-<a href="../src/pebble.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L177"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_saml`
 
@@ -165,7 +188,7 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_smtp`
 
@@ -191,7 +214,7 @@ Enable SMTP while receiving on_smtp_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 
@@ -222,7 +245,7 @@ Exception raised when something fails while interacting with Pebble.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/pebble.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

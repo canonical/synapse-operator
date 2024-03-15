@@ -15,6 +15,8 @@ from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
 
+STATS_EXPORTER_SERVICE_NAME = "stats-exporter"
+
 
 class PebbleServiceError(Exception):
     """Exception raised when something fails while interacting with Pebble.
@@ -79,6 +81,33 @@ def replan_irc_bridge(container: ops.model.Container) -> None:
     container.replan()
 
 
+def replan_stats_exporter(container: ops.model.Container, charm_state: CharmState) -> None:
+    """Replan Synapse StatsExporter service.
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+    """
+    layer = _stats_exporter_pebble_layer()
+    datasource = charm_state.datasource
+    if datasource is not None:
+        layer["services"][STATS_EXPORTER_SERVICE_NAME]["environment"] = {
+            "PROM_SYNAPSE_DATABASE": datasource["db"],
+            "PROM_SYNAPSE_HOST": datasource["host"],
+            "PROM_SYNAPSE_PORT": datasource["port"],
+            "PROM_SYNAPSE_USER": datasource["user"],
+            "PROM_SYNAPSE_PASSWORD": datasource["password"],
+        }
+        try:
+            container.add_layer(STATS_EXPORTER_SERVICE_NAME, layer, combine=True)
+            container.start(STATS_EXPORTER_SERVICE_NAME)
+        except ops.pebble.Error as e:
+            # Error being ignore to prevent Synapse Stats Exporter to affect
+            # Synapse. This can be caught in logs or using Prometheus alert.
+            logger.debug("Ignoring error while restarting Synapse Stats Exporter")
+            logger.exception(str(e))
+
+
 # The complexity of this method will be reviewed.
 def change_config(charm_state: CharmState, container: ops.model.Container) -> None:  # noqa: C901
     """Change the configuration.
@@ -118,6 +147,9 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
             synapse.enable_trusted_key_servers(container=container, charm_state=charm_state)
         if charm_state.synapse_config.ip_range_whitelist:
             synapse.enable_ip_range_whitelist(container=container, charm_state=charm_state)
+        if charm_state.datasource:
+            logger.info("Synapse Stats Exporter enabled.")
+            replan_stats_exporter(container=container, charm_state=charm_state)
         synapse.validate_config(container=container)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
@@ -350,6 +382,28 @@ def _irc_bridge_pebble_layer() -> ops.pebble.LayerDict:
         },
         "checks": {
             synapse.CHECK_IRC_BRIDGE_READY_NAME: synapse.check_irc_bridge_ready(),
+        },
+    }
+    return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
+    """Generate pebble config for the Synapse Stats Exporter service.
+
+    Returns:
+        The pebble configuration for the Synapse Stats Exporter service.
+    """
+    layer = {
+        "summary": "Synapse Stats Exporter layer",
+        "description": "Synapse Stats Exporter",
+        "services": {
+            STATS_EXPORTER_SERVICE_NAME: {
+                "override": "replace",
+                "summary": "Synapse Stats Exporter service",
+                "command": "synapse-stats-exporter",
+                "startup": "disabled",
+                "on-failure": "ignore",
+            }
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
