@@ -45,6 +45,7 @@ SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
 SYNAPSE_SERVICE_NAME = "synapse"
 SYNAPSE_USER = "synapse"
+SYNAPSE_DB_RELATION_NAME = "database"
 
 logger = logging.getLogger(__name__)
 

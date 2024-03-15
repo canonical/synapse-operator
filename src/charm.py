@@ -54,7 +54,7 @@ class SynapseCharm(CharmBaseWithState):
         """
         super().__init__(*args)
         self._backup = BackupObserver(self)
-        self._database = DatabaseObserver(self)
+        self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
         self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)

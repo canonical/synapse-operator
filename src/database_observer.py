@@ -25,9 +25,7 @@ logger = logging.getLogger(__name__)
 class DatabaseObserver(Object):
     """The Database relation observer."""
 
-    _RELATION_NAME = "database"
-
-    def __init__(self, charm: CharmBaseWithState, relation_name: str = _RELATION_NAME):
+    def __init__(self, charm: CharmBaseWithState, relation_name: str) -> None:
         """Initialize the observer and register event handlers.
 
         Args:
@@ -85,7 +83,7 @@ class DatabaseObserver(Object):
         # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
         datasource = self.get_relation_as_datasource()
         db_client = DatabaseClient(datasource=datasource)
-        if self.database.relation_name == self._RELATION_NAME:
+        if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
             db_client.prepare()
         self._change_config(charm_state)
 
