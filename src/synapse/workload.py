@@ -11,7 +11,7 @@ from pathlib import Path
 
 import ops
 import yaml
-from ops.pebble import Check, ExecError, PathError
+from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 
@@ -110,45 +110,6 @@ class ExecResult(typing.NamedTuple):
     exit_code: int
     stdout: str
     stderr: str
-
-
-def check_nginx_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse NGINX container check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(CHECK_NGINX_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{SYNAPSE_NGINX_PORT}/health"}
-    return check.to_dict()
-
-
-def check_mjolnir_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse Mjolnir service check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(CHECK_MJOLNIR_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{MJOLNIR_HEALTH_PORT}/healthz"}
-    return check.to_dict()
-
-
-def check_irc_bridge_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse IRC bridge service check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(CHECK_IRC_BRIDGE_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{IRC_BRIDGE_HEALTH_PORT}"}
-    return check.to_dict()
 
 
 def _get_configuration_field(container: ops.Container, fieldname: str) -> typing.Optional[str]:

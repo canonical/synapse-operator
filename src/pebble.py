@@ -78,6 +78,45 @@ def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> 
     container.restart(synapse.SYNAPSE_SERVICE_NAME)
 
 
+def check_nginx_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse NGINX container check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(synapse.CHECK_NGINX_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": f"http://localhost:{synapse.SYNAPSE_NGINX_PORT}/health"}
+    return check.to_dict()
+
+
+def check_mjolnir_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse Mjolnir service check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(synapse.CHECK_MJOLNIR_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
+    return check.to_dict()
+
+
+def check_irc_bridge_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse IRC bridge service check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(synapse.CHECK_IRC_BRIDGE_READY_NAME)
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": f"http://localhost:{synapse.IRC_BRIDGE_HEALTH_PORT}"}
+    return check.to_dict()
+
+
 def replan_nginx(container: ops.model.Container) -> None:
     """Replan Synapse NGINX service.
 
@@ -329,7 +368,7 @@ def _nginx_pebble_layer() -> ops.pebble.LayerDict:
             },
         },
         "checks": {
-            synapse.CHECK_NGINX_READY_NAME: synapse.check_nginx_ready(),
+            synapse.CHECK_NGINX_READY_NAME: check_nginx_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
@@ -354,7 +393,7 @@ def _mjolnir_pebble_layer() -> ops.pebble.LayerDict:
             },
         },
         "checks": {
-            synapse.CHECK_MJOLNIR_READY_NAME: synapse.check_mjolnir_ready(),
+            synapse.CHECK_MJOLNIR_READY_NAME: check_mjolnir_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
@@ -408,7 +447,7 @@ def _irc_bridge_pebble_layer() -> ops.pebble.LayerDict:
             },
         },
         "checks": {
-            synapse.CHECK_IRC_BRIDGE_READY_NAME: synapse.check_irc_bridge_ready(),
+            synapse.CHECK_IRC_BRIDGE_READY_NAME: check_irc_bridge_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
