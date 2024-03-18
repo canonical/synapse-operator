@@ -300,10 +300,7 @@ def enable_forgotten_room_retention(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable forgotten_room_retention_period.
 
     Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong enabling forgotten_room_retention_period.
+        current_yaml: current configuration.
     """
     current_yaml["forgotten_room_retention_period"] = "28d"
 
@@ -312,10 +309,7 @@ def disable_password_config(current_yaml: dict) -> None:
     """Change the Synapse configuration to disable password config.
 
     Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong disabling password config.
+        current_yaml: current configuration.
     """
     current_yaml["password_config"] = {"enabled": False}
 
@@ -324,10 +318,7 @@ def disable_room_list_search(current_yaml: dict) -> None:
     """Change the Synapse configuration to disable room_list_search.
 
     Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong disabling room_list_search.
+        current_yaml: current configuration.
     """
     current_yaml["enable_room_list_search"] = False
 
@@ -336,10 +327,7 @@ def enable_serve_server_wellknown(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable server wellknown file.
 
     Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong enabling configuration.
+        current_yaml: current configuration.
     """
     current_yaml["serve_server_wellknown"] = True
 
@@ -348,7 +336,7 @@ def enable_federation_domain_whitelist(current_yaml: dict, charm_state: CharmSta
     """Change the Synapse configuration to enable federation_domain_whitelist.
 
     Args:
-        container: Container of the charm.
+        current_yaml: current configuration.
         charm_state: Instance of CharmState.
 
     Raises:
@@ -368,7 +356,7 @@ def enable_trusted_key_servers(current_yaml: dict, charm_state: CharmState) -> N
     """Change the Synapse configuration to set trusted_key_servers.
 
     Args:
-        container: Container of the charm.
+        current_yaml: current configuration.
         charm_state: Instance of CharmState.
 
     Raises:
@@ -389,10 +377,7 @@ def enable_allow_public_rooms_over_federation(current_yaml: dict) -> None:
     """Change the Synapse configuration to allow public rooms in federation.
 
     Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong enabling configuration.
+        current_yaml: current configuration.
     """
     current_yaml["allow_public_rooms_over_federation"] = True
 
@@ -413,7 +398,7 @@ def enable_ip_range_whitelist(current_yaml: dict, charm_state: CharmState) -> No
     """Change the Synapse configuration to enable ip_range_whitelist.
 
     Args:
-        container: Container of the charm.
+        current_yaml: current configuration.
         charm_state: Instance of CharmState.
 
     Raises:
@@ -632,7 +617,7 @@ def enable_saml(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable SAML.
 
     Args:
-        container: Container of the charm.
+        current_yaml: current configuration.
         charm_state: Instance of CharmState.
 
     Raises:
@@ -674,7 +659,7 @@ def enable_smtp(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable SMTP.
 
     Args:
-        container: Container of the charm.
+        current_yaml: current configuration.
         charm_state: Instance of CharmState.
 
     Raises:
@@ -710,7 +695,7 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable Redis.
 
     Args:
-        container: Container of the charm.
+        current_yaml: current configuration.
         charm_state: Instance of CharmState.
 
     Raises:

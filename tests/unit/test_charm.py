@@ -5,8 +5,8 @@
 
 # pylint: disable=protected-access
 
-import json
 import io
+import json
 from unittest.mock import MagicMock
 
 import ops

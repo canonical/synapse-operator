@@ -205,9 +205,7 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
         if not charm_state.synapse_config.enable_password_config:
             synapse.disable_password_config(current_yaml)
         if charm_state.synapse_config.federation_domain_whitelist:
-            synapse.enable_federation_domain_whitelist(
-                current_yaml, charm_state=charm_state
-            )
+            synapse.enable_federation_domain_whitelist(current_yaml, charm_state=charm_state)
         if charm_state.synapse_config.allow_public_rooms_over_federation:
             synapse.enable_allow_public_rooms_over_federation(current_yaml)
         if not charm_state.synapse_config.enable_room_list_search:

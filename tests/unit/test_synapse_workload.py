@@ -265,7 +265,7 @@ listeners:
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
-    "federation_domain_whitelist": [expected_first_domain, expected_second_domain],
+        "federation_domain_whitelist": [expected_first_domain, expected_second_domain],
     }
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
 
@@ -276,25 +276,20 @@ def test_enable_trusted_key_servers_no_action(harness: Harness):
     act: call enable_trusted_key_servers without changing the configuration.
     assert: configuration is not changed.
     """
-    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
-    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        """
+    config_content = """
 listeners:
     - type: http
       port: 8080
       bind_addresses:
         - "::"
 """
-    )
+    content = yaml.safe_load(config_content)
 
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     config = {"server_name": "foo"}
     synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
 
     synapse.enable_trusted_key_servers(
-        container,
+        content,
         CharmState(
             datasource=None,
             irc_bridge_datasource=None,
@@ -305,14 +300,12 @@ listeners:
         ),
     )
 
-    with open(config_path, encoding="utf-8") as config_file:
-        content = yaml.safe_load(config_file)
-        expected_config_content = {
-            "listeners": [
-                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            ],
-        }
-        assert content == expected_config_content
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+    }
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
 def test_disable_room_list_search_success(harness: Harness):
@@ -484,7 +477,6 @@ def test_enable_saml_success_no_ubuntu_url():
     act: enable saml.
     assert: SAML configuration is created as expected.
     """
-    # Arrange: set up harness and container filesystem
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     relation_id = harness.add_relation("saml", "saml-integrator")
@@ -511,11 +503,8 @@ listeners:
 
     config = yaml.safe_load(current_config)
 
-    # Act: write the Synapse config file with SAML enabled
-    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     synapse.enable_saml(config, harness.charm.build_charm_state())
 
-    # Assert: ensure config file was written correctly
     expected_config_content = {
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
