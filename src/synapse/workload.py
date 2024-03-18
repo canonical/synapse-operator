@@ -275,18 +275,16 @@ def validate_config(container: ops.Container) -> None:
         raise WorkloadError("Validate config failed, please check the logs")
 
 
-def enable_metrics(container: ops.Container) -> None:
+def enable_metrics(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable metrics.
 
     Args:
-        container: Container of the charm.
+    current_yaml: current configuration.
 
     Raises:
         EnableMetricsError: something went wrong enabling metrics.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
         metric_listener = {
             "port": int(PROMETHEUS_TARGET_PORT),
             "type": "metrics",
@@ -294,12 +292,11 @@ def enable_metrics(container: ops.Container) -> None:
         }
         current_yaml["listeners"].extend([metric_listener])
         current_yaml["enable_metrics"] = True
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
+    except KeyError as exc:
         raise EnableMetricsError(str(exc)) from exc
 
 
-def enable_forgotten_room_retention(container: ops.Container) -> None:
+def enable_forgotten_room_retention(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable forgotten_room_retention_period.
 
     Args:
@@ -308,16 +305,10 @@ def enable_forgotten_room_retention(container: ops.Container) -> None:
     Raises:
         WorkloadError: something went wrong enabling forgotten_room_retention_period.
     """
-    try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        current_yaml["forgotten_room_retention_period"] = "28d"
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(str(exc)) from exc
+    current_yaml["forgotten_room_retention_period"] = "28d"
 
 
-def disable_password_config(container: ops.Container) -> None:
+def disable_password_config(current_yaml: dict) -> None:
     """Change the Synapse configuration to disable password config.
 
     Args:
@@ -326,16 +317,10 @@ def disable_password_config(container: ops.Container) -> None:
     Raises:
         WorkloadError: something went wrong disabling password config.
     """
-    try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        current_yaml["password_config"] = {"enabled": False}
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(str(exc)) from exc
+    current_yaml["password_config"] = {"enabled": False}
 
 
-def disable_room_list_search(container: ops.Container) -> None:
+def disable_room_list_search(current_yaml: dict) -> None:
     """Change the Synapse configuration to disable room_list_search.
 
     Args:
@@ -344,16 +329,10 @@ def disable_room_list_search(container: ops.Container) -> None:
     Raises:
         WorkloadError: something went wrong disabling room_list_search.
     """
-    try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        current_yaml["enable_room_list_search"] = False
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(str(exc)) from exc
+    current_yaml["enable_room_list_search"] = False
 
 
-def enable_serve_server_wellknown(container: ops.Container) -> None:
+def enable_serve_server_wellknown(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable server wellknown file.
 
     Args:
@@ -362,16 +341,10 @@ def enable_serve_server_wellknown(container: ops.Container) -> None:
     Raises:
         WorkloadError: something went wrong enabling configuration.
     """
-    try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        current_yaml["serve_server_wellknown"] = True
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(str(exc)) from exc
+    current_yaml["serve_server_wellknown"] = True
 
 
-def enable_federation_domain_whitelist(container: ops.Container, charm_state: CharmState) -> None:
+def enable_federation_domain_whitelist(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable federation_domain_whitelist.
 
     Args:
@@ -382,19 +355,16 @@ def enable_federation_domain_whitelist(container: ops.Container, charm_state: Ch
         WorkloadError: something went wrong enabling configuration.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
         federation_domain_whitelist = charm_state.synapse_config.federation_domain_whitelist
         if federation_domain_whitelist is not None:
             current_yaml["federation_domain_whitelist"] = _create_tuple_from_string_list(
                 federation_domain_whitelist
             )
-            container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
+    except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
 
-def enable_trusted_key_servers(container: ops.Container, charm_state: CharmState) -> None:
+def enable_trusted_key_servers(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to set trusted_key_servers.
 
     Args:
@@ -405,20 +375,17 @@ def enable_trusted_key_servers(container: ops.Container, charm_state: CharmState
         WorkloadError: something went wrong enabling configuration.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
         trusted_key_servers = charm_state.synapse_config.trusted_key_servers
         if trusted_key_servers is not None:
             current_yaml["trusted_key_servers"] = tuple(
                 {"server_name": f"{item}"}
                 for item in _create_tuple_from_string_list(trusted_key_servers)
             )
-            container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
+    except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
 
-def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
+def enable_allow_public_rooms_over_federation(current_yaml: dict) -> None:
     """Change the Synapse configuration to allow public rooms in federation.
 
     Args:
@@ -427,13 +394,7 @@ def enable_allow_public_rooms_over_federation(container: ops.Container) -> None:
     Raises:
         WorkloadError: something went wrong enabling configuration.
     """
-    try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        current_yaml["allow_public_rooms_over_federation"] = True
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(str(exc)) from exc
+    current_yaml["allow_public_rooms_over_federation"] = True
 
 
 def _create_tuple_from_string_list(string_list: str) -> tuple[str, ...]:
@@ -448,7 +409,7 @@ def _create_tuple_from_string_list(string_list: str) -> tuple[str, ...]:
     return tuple(item.strip() for item in string_list.split(","))
 
 
-def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState) -> None:
+def enable_ip_range_whitelist(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable ip_range_whitelist.
 
     Args:
@@ -459,15 +420,12 @@ def enable_ip_range_whitelist(container: ops.Container, charm_state: CharmState)
         WorkloadError: something went wrong enabling configuration.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
         ip_range_whitelist = charm_state.synapse_config.ip_range_whitelist
         if ip_range_whitelist is None:
             logger.warning("enable_ip_range_whitelist called but config is empty")
             return
         current_yaml["ip_range_whitelist"] = _create_tuple_from_string_list(ip_range_whitelist)
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
+    except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
 
@@ -670,7 +628,7 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     return sp_config
 
 
-def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
+def enable_saml(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable SAML.
 
     Args:
@@ -681,8 +639,6 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
         EnableSAMLError: something went wrong enabling SAML.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
         if charm_state.synapse_config.public_baseurl is not None:
             current_yaml["public_baseurl"] = charm_state.synapse_config.public_baseurl
         # enable x_forwarded to pass expected headers
@@ -710,12 +666,11 @@ def enable_saml(container: ops.Container, charm_state: CharmState) -> None:
             },
         }
         current_yaml["saml2_config"]["user_mapping_provider"] = user_mapping_provider_config
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
+    except KeyError as exc:
         raise EnableSAMLError(str(exc)) from exc
 
 
-def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
+def enable_smtp(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable SMTP.
 
     Args:
@@ -726,8 +681,6 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
         EnableSMTPError: something went wrong enabling SMTP.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
         current_yaml["email"] = {}
         current_yaml["email"]["notif_from"] = charm_state.synapse_config.notif_from
 
@@ -749,12 +702,11 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
         current_yaml["email"]["require_transport_security"] = smtp_config[
             "require_transport_security"
         ]
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
+    except KeyError as exc:
         raise EnableSMTPError(str(exc)) from exc
 
 
-def enable_redis(container: ops.Container, charm_state: CharmState) -> None:
+def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable Redis.
 
     Args:
@@ -765,8 +717,6 @@ def enable_redis(container: ops.Container, charm_state: CharmState) -> None:
         WorkloadError: something went wrong enabling SMTP.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
         current_yaml["redis"] = {}
 
         if charm_state.redis_config is None:
@@ -779,8 +729,7 @@ def enable_redis(container: ops.Container, charm_state: CharmState) -> None:
         current_yaml["redis"]["enabled"] = True
         current_yaml["redis"]["host"] = redis_config["host"]
         current_yaml["redis"]["port"] = redis_config["port"]
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
+    except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
 

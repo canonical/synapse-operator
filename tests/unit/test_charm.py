@@ -6,6 +6,7 @@
 # pylint: disable=protected-access
 
 import json
+import io
 from unittest.mock import MagicMock
 
 import ops
@@ -300,6 +301,14 @@ def test_enable_federation_domain_whitelist_is_called(
     act: call pebble change_config.
     assert: enable_federation_domain_whitelist is called.
     """
+    config_content = """
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    config = io.StringIO(config_content)
     harness.update_config({"federation_domain_whitelist": "foo"})
     harness.begin()
     harness.set_leader(True)
@@ -312,7 +321,10 @@ def test_enable_federation_domain_whitelist_is_called(
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
     charm_state = harness.charm.build_charm_state()
-    pebble.change_config(charm_state, container=MagicMock())
+    container = MagicMock()
+    monkeypatch.setattr(container, "push", MagicMock())
+    monkeypatch.setattr(container, "pull", MagicMock(return_value=config))
+    pebble.change_config(charm_state, container=container)
 
     enable_federation_mock.assert_called_once()
 
@@ -339,7 +351,10 @@ def test_disable_password_config_is_called(
     monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
 
     charm_state = harness.charm.build_charm_state()
-    pebble.change_config(charm_state, container=MagicMock())
+    container = MagicMock()
+    monkeypatch.setattr(container, "push", MagicMock())
+    monkeypatch.setattr(container, "pull", MagicMock(return_value=io.StringIO("{}")))
+    pebble.change_config(charm_state, container=container)
 
     disable_password_config_mock.assert_called_once()
 
