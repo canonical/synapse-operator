@@ -8,6 +8,7 @@ Charm for Synapse on kubernetes.
 **Global Variables**
 ---------------
 - **MAIN_UNIT_ID**
+- **PEER_UNITS_TOTAL**
 
 
 ---
@@ -17,7 +18,7 @@ Charm the service.
 
 Attrs:  on: listen to Redis events. 
 
-<a href="../src/charm.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -109,7 +110,7 @@ Change configuration.
 
 ---
 
-<a href="../src/charm.py#L283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit`
 
@@ -144,7 +145,24 @@ Verify if this unit is the main.
 
 ---
 
-<a href="../src/charm.py#L295"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `peer_units_total`
+
+```python
+peer_units_total() → int
+```
+
+Get peer units total. 
+
+
+
+**Returns:**
+  total of units in peer relation or None if there is no peer relation. 
+
+---
+
+<a href="../src/charm.py#L291"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `set_main_unit`
 

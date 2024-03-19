@@ -47,7 +47,7 @@ def restart_synapse(
         container: Synapse container.
         is_main: if unit is main.
     """
-    logger.debug("Restarting the Synapse container")
+    logger.debug("Restarting the Synapse container. Main: %s", str(is_main))
     container.add_layer(
         synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state, is_main), combine=True
     )

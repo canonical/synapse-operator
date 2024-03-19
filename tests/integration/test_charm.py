@@ -89,12 +89,13 @@ async def test_enable_stats_exporter(
     assert "synapse_total_users" in response.text
 
 
-async def test_synapse_scale_blocked(synapse_app: Application):
+async def test_synapse_scale_blocked(model: Model):
     """
     arrange: build and deploy the Synapse charm.
     act: scale Synapse.
     assert: the Synapse application is blocked since there is no Redis integration.
     """
+    synapse_app = model.applications["s1"]
     await synapse_app.scale(2)
 
     await synapse_app.model.wait_for_idle(
