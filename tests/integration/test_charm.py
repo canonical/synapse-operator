@@ -95,7 +95,8 @@ async def test_synapse_scale_blocked(model: Model):
     act: scale Synapse.
     assert: the Synapse application is blocked since there is no Redis integration.
     """
-    synapse_app = model.applications["s1"]
+    # for local test, ignore
+    synapse_app = model.applications["s3"]
     await synapse_app.scale(2)
 
     await synapse_app.model.wait_for_idle(

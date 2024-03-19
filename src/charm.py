@@ -264,7 +264,7 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             charm_state: The charm state.
         """
-        logger.debug("Found %d peer unit(s).", str(self.peer_units_total()))
+        logger.debug("Found %d peer unit(s).", int(self.peer_units_total()))
         if charm_state.redis_config is None:
             if self.peer_units_total() > 1:
                 logger.debug("More than 1 peer unit found. Redis is required.")
