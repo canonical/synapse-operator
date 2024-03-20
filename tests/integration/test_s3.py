@@ -241,3 +241,38 @@ async def test_synapse_backup_delete(
     await list_backups_action.wait()
     assert list_backups_action.status == "completed"
     assert "backups" not in list_backups_action.results
+
+
+@pytest.mark.s3
+@pytest.mark.usefixtures("s3_storage")
+async def test_synapse_media_upload(
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_storage: Application,
+    s3_storage_configuration: dict,
+    boto_s3_client: typing.Any,
+):
+    """
+    arrange: Synapse App deployed and related with s3-integrator. Set media_store_bucket.
+    act: Upload media to Synapse.
+    assert: The media is in the S3 bucket.
+    """
+    await model.add_relation(s3_integrator_app_storage.name, f"{synapse_app.name}:storage")
+    await synapse_app.set_config({"media_store_bucket": s3_storage_configuration["bucket"]})
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_storage.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    # unsure about whether this is the correct way to do this. 
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    media_id = token_hex(16)
+    media_content = b"Hello, World!"
+    synapse_unit.run("/snap/bin/synapse.upload-media", media_id, stdin=media_content)
+
+    s3objresp = boto_s3_client.get_object(
+        Bucket=s3_storage_configuration["bucket"], Key=f"media/{media_id}"
+    )
+    objbuf = s3objresp["Body"].read()
+    assert objbuf == media_content
