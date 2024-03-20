@@ -677,7 +677,7 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
     except ops.pebble.PathError as exc:
         raise EnableSMTPError(str(exc)) from exc
 
-def enable_s3(container: ops.Container, charm_state: CharmState) -> None:
+def enable_s3_media_store(container: ops.Container, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable S3.
 
     Args:
