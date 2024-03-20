@@ -22,6 +22,26 @@ containers:
     mounts:
       - storage: data
         location: /data
+        interface: smtp
+        limit: 1
+        optional: true
+    backup:
+        interface: s3
+        limit: 1
+        optional: true
+        interface: smtp
+        limit: 1
+        optional: true
+    backup:
+        interface: s3
+        limit: 1
+        optional: true
+    redis:
+        interface: redis
+        limit: 1
+    redis:
+        interface: redis
+        limit: 1
   synapse-nginx:
     resource: synapse-nginx-image
 
@@ -37,13 +57,20 @@ storage:
   data:
     type: filesystem
     location: /data
-  s3-data:
-    type: filesystem
-    location: /data
 
 provides:
   grafana-dashboard:
     interface: grafana_dashboard
+        interface: smtp
+        limit: 1
+        optional: true
+    backup:
+        interface: s3
+        limit: 1
+        optional: true
+    redis:
+        interface: redis
+        limit: 1
   metrics-endpoint:
     interface: prometheus_scrape
 
@@ -66,6 +93,10 @@ requires:
         optional: true
     smtp:
         interface: smtp
+        limit: 1
+        optional: true
+    media:
+        interface: s3
         limit: 1
         optional: true
     backup:
