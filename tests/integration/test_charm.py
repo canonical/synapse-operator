@@ -13,6 +13,7 @@ import pytest
 import requests
 from juju.action import Action
 from juju.application import Application
+from juju.errors import JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
 from ops.model import ActiveStatus
@@ -89,19 +90,18 @@ async def test_enable_stats_exporter(
     assert "synapse_total_users" in response.text
 
 
-async def test_synapse_scale_blocked(model: Model):
+async def test_synapse_scale_blocked(synapse_app: Application):
     """
     arrange: build and deploy the Synapse charm.
     act: scale Synapse.
     assert: the Synapse application is blocked since there is no Redis integration.
     """
-    # for local test, ignore
-    synapse_app = model.applications["s3"]
     await synapse_app.scale(2)
 
-    await synapse_app.model.wait_for_idle(
-        idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
-    )
+    with pytest.raises(JujuUnitError):
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, timeout=120, apps=[synapse_app.name], raise_on_blocked=True
+        )
 
     await synapse_app.scale(1)
 
