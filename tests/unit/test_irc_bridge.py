@@ -11,8 +11,8 @@ from unittest.mock import ANY, MagicMock
 import ops
 import pytest
 import yaml
-from ops.testing import Harness
 from ops.pebble import ExecError
+from ops.testing import Harness
 
 import synapse
 import synapse.workload
@@ -307,17 +307,24 @@ def test_create_pem_file_success(harness: Harness, monkeypatch: pytest.MonkeyPat
     """
     harness.begin_with_initial_hooks()
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    monkeypatch.setattr(container, "exec", MagicMock(return_value=MagicMock(wait_output=lambda: ("", ""))))
+    monkeypatch.setattr(
+        container, "exec", MagicMock(return_value=MagicMock(wait_output=lambda: ("", "")))
+    )
 
     harness.charm._irc_bridge._create_pem_file(container)
 
-    container.exec.assert_called_once_with([
+    #  pylint: disable=duplicate-code
+    # I actually want this to be exactly the same as the one in the function
+    command = [
         "/bin/bash",
         "-c",
         "[[ -f /data/config/irc_passkey.pem ]] || "
         + "openssl genpkey -out /data/config/irc_passkey.pem "
         + "-outform PEM -algorithm RSA -pkeyopt rsa_keygen_bits:2048",
-    ])
+    ]
+
+    # see https://github.com/python/mypy/issues/5936
+    container.exec.assert_called_once_with(command)  # type: ignore[attr-defined]
     assert harness.model.unit.status == ops.ActiveStatus()
 
 
@@ -329,16 +336,19 @@ def test_create_pem_file_failure(harness: Harness, monkeypatch: pytest.MonkeyPat
     """
     harness.begin_with_initial_hooks()
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    monkeypatch.setattr(container, "exec", MagicMock(side_effect=ExecError(command="tests", exit_code=-1, stdout="Failure", stderr="Exec error")))
+    monkeypatch.setattr(
+        container,
+        "exec",
+        MagicMock(
+            side_effect=ExecError(
+                command=["tests"], exit_code=-1, stdout="Failure", stderr="Exec error"
+            )
+        ),
+    )
 
     with pytest.raises(PEMCreateError):
         harness.charm._irc_bridge._create_pem_file(container)
 
-    container.exec.assert_called_once_with([
-        "/bin/bash",
-        "-c",
-        "[[ -f /data/config/irc_passkey.pem ]] || "
-        + "openssl genpkey -out /data/config/irc_passkey.pem "
-        + "-outform PEM -algorithm RSA -pkeyopt rsa_keygen_bits:2048",
-    ])
+    # see https://github.com/python/mypy/issues/5936
+    container.exec.assert_called_once()  # type: ignore[attr-defined]
     assert harness.model.unit.status == ops.MaintenanceStatus("Creating PEM file for IRC bridge")
