@@ -204,6 +204,11 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             charm_state: The charm state.
         """
+        logger.debug("Found %d peer unit(s).", self.peer_units_total())
+        if charm_state.redis_config is None and self.peer_units_total() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            return
         self.change_config(charm_state)
         self._set_workload_version()
 
@@ -265,11 +270,10 @@ class SynapseCharm(CharmBaseWithState):
             charm_state: The charm state.
         """
         logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None:
-            if self.peer_units_total() > 1:
-                logger.debug("More than 1 peer unit found. Redis is required.")
-                self.unit.status = ops.BlockedStatus("Redis integration is required.")
-                return
+        if charm_state.redis_config is None and self.peer_units_total() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            return
         self.unit.status = ops.ActiveStatus()
         self.change_config(charm_state)
 
