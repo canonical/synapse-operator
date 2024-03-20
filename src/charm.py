@@ -323,7 +323,8 @@ class SynapseCharm(CharmBaseWithState):
             charm_state: The charm state.
         """
         # the main unit has changed so workers must be restarted
-        self.change_config(charm_state)
+        if self.get_main_unit() != self.unit.name:
+            self.change_config(charm_state)
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
