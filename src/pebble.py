@@ -189,24 +189,26 @@ def _get_synapse_config(container: ops.model.Container) -> dict:
     """
     try:
         config = container.pull(synapse.SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        return current_yaml
+        current_synapse_config = yaml.safe_load(config)
+        return current_synapse_config
     except ops.pebble.PathError as exc:
         raise PebbleServiceError(str(exc)) from exc
 
 
-def _push_synapse_config(container: ops.model.Container, current_yaml: dict) -> None:
+def _push_synapse_config(container: ops.model.Container, current_synapse_config: dict) -> None:
     """Push the Synapse configuration to the container.
 
     Args:
         container: Synapse container.
-        current_yaml: Synapse configuration.
+        current_synapse_config: Synapse configuration.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        container.push(synapse.SYNAPSE_CONFIG_PATH, yaml.dump(current_yaml).encode("utf-8"))
+        container.push(
+            synapse.SYNAPSE_CONFIG_PATH, yaml.dump(current_synapse_config).encode("utf-8")
+        )
     except ops.pebble.PathError as exc:
         raise PebbleServiceError(str(exc)) from exc
 
@@ -224,36 +226,38 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
     """
     try:
         synapse.execute_migrate_config(container=container, charm_state=charm_state)
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_metrics(current_yaml)
-        synapse.enable_forgotten_room_retention(current_yaml)
-        synapse.enable_serve_server_wellknown(current_yaml)
+        current_synapse_config = _get_synapse_config(container)
+        synapse.enable_metrics(current_synapse_config)
+        synapse.enable_forgotten_room_retention(current_synapse_config)
+        synapse.enable_serve_server_wellknown(current_synapse_config)
         if charm_state.saml_config is not None:
             logger.debug("pebble.change_config: Enabling SAML")
-            synapse.enable_saml(current_yaml, charm_state=charm_state)
+            synapse.enable_saml(current_synapse_config, charm_state=charm_state)
         if charm_state.smtp_config is not None:
             logger.debug("pebble.change_config: Enabling SMTP")
-            synapse.enable_smtp(current_yaml, charm_state=charm_state)
+            synapse.enable_smtp(current_synapse_config, charm_state=charm_state)
         if charm_state.redis_config is not None:
             logger.debug("pebble.change_config: Enabling Redis")
-            synapse.enable_redis(current_yaml, charm_state=charm_state)
+            synapse.enable_redis(current_synapse_config, charm_state=charm_state)
         if not charm_state.synapse_config.enable_password_config:
-            synapse.disable_password_config(current_yaml)
+            synapse.disable_password_config(current_synapse_config)
         if charm_state.synapse_config.federation_domain_whitelist:
-            synapse.enable_federation_domain_whitelist(current_yaml, charm_state=charm_state)
+            synapse.enable_federation_domain_whitelist(
+                current_synapse_config, charm_state=charm_state
+            )
         if charm_state.synapse_config.allow_public_rooms_over_federation:
-            synapse.enable_allow_public_rooms_over_federation(current_yaml)
+            synapse.enable_allow_public_rooms_over_federation(current_synapse_config)
         if not charm_state.synapse_config.enable_room_list_search:
-            synapse.disable_room_list_search(current_yaml)
+            synapse.disable_room_list_search(current_synapse_config)
         if charm_state.synapse_config.trusted_key_servers:
-            synapse.enable_trusted_key_servers(current_yaml, charm_state=charm_state)
+            synapse.enable_trusted_key_servers(current_synapse_config, charm_state=charm_state)
         if charm_state.synapse_config.ip_range_whitelist:
-            synapse.enable_ip_range_whitelist(current_yaml, charm_state=charm_state)
+            synapse.enable_ip_range_whitelist(current_synapse_config, charm_state=charm_state)
         if charm_state.datasource:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
+        _push_synapse_config(container, current_synapse_config)
         synapse.validate_config(container)
-        _push_synapse_config(container, current_yaml)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
