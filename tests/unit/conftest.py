@@ -278,3 +278,15 @@ def s3_relation_data_backup_fixture() -> dict:
 def s3_parameters_backup_fixture(s3_relation_data_backup) -> backup.S3Parameters:
     """Returns valid S3 Parameters."""
     return backup.S3Parameters(**s3_relation_data_backup)
+
+
+@pytest.fixture(name="config_content")
+def config_content_fixture() -> dict:
+    """Returns valid Synapse configuration."""
+    config_content = """
+    listeners:
+      - type: http
+        port: 8080
+        bind_addresses: ['::']
+    """
+    return yaml.safe_load(config_content)

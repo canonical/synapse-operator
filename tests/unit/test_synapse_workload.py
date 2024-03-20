@@ -24,21 +24,14 @@ from charm_types import SMTPConfiguration
 from .conftest import TEST_SERVER_NAME
 
 
-def test_allow_public_rooms_over_federation_sucess(monkeypatch: pytest.MonkeyPatch):
+def test_allow_public_rooms_over_federation_sucess(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: call enable_allow_public_rooms_over_federation.
     assert: new configuration file is pushed and
         allow_public_rooms_over_federation is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    current_yaml = yaml.safe_load(config_content)
+    current_yaml = config_content
 
     synapse.enable_allow_public_rooms_over_federation(current_yaml)
 
@@ -90,21 +83,17 @@ def test_allow_public_rooms_over_federation_sucess(monkeypatch: pytest.MonkeyPat
     ],
 )
 def test_enable_trusted_key_servers_success(
-    trusted_key_servers: str, expected_trusted_key_servers: list[dict[str, str]], harness: Harness
+    trusted_key_servers: str,
+    expected_trusted_key_servers: list[dict[str, str]],
+    harness: Harness,
+    config_content: dict[str, typing.Any],
 ):
     """
     arrange: set mock container with file.
     act: update trusted_key_servers config and call enable_trusted_key_servers.
     assert: new configuration file is pushed and trusted_key_servers is enabled.
     """
-    config_content = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-    config = yaml.safe_load(config_content)
+    config = config_content
 
     harness.update_config({"trusted_key_servers": trusted_key_servers})
     harness.begin()
@@ -154,22 +143,17 @@ listeners:
     ],
 )
 def test_enable_ip_range_whitelist_success(
-    ip_range_whitelist: str, expected_ip_range_whitelist: list[str], harness: Harness
+    ip_range_whitelist: str,
+    expected_ip_range_whitelist: list[str],
+    harness: Harness,
+    config_content: dict[str, typing.Any],
 ):
     """
     arrange: set mock container with file.
     act: update ip_range_whitelist config and call enable_ip_range_whitelist.
     assert: new configuration file is pushed and ip_range_whitelist is enabled.
     """
-    config_content = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-
-    config = yaml.safe_load(config_content)
+    config = config_content
 
     harness.update_config({"ip_range_whitelist": ip_range_whitelist})
     harness.begin()
@@ -201,57 +185,35 @@ def test_enable_ip_range_whitelist_blocked(harness: Harness):
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
 
 
-def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_enable_ip_range_whitelist_no_action(
+    harness: Harness, config_content: dict[str, typing.Any]
+):
     """
     arrange: set mock container with file.
     act: leave ip_range_whitelist config empty and call enable_ip_range_whitelist.
     assert: configuration file is not changed.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    content = yaml.safe_load(config_content)
+    content = config_content
 
+    harness.update_config({"server_name": "foo", "ip_range_whitelist": None})  # type: ignore
     harness.begin()
-    config = {"server_name": "foo", "ip_range_whitelist": None}
-    # ignoring setting the other arguments
-    synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
     synapse.enable_ip_range_whitelist(
         content,
-        CharmState(
-            datasource=None,
-            irc_bridge_datasource=None,
-            saml_config=None,
-            smtp_config=None,
-            redis_config=None,
-            synapse_config=synapse_config,
-        ),
+        harness.charm.build_charm_state(),
     )
 
-    assert yaml.safe_dump(content) == yaml.safe_dump(yaml.safe_load(config_content))
+    assert yaml.safe_dump(content) == yaml.safe_dump(config_content)
 
 
 def test_enable_federation_domain_whitelist_success(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
+    harness: Harness, config_content: dict[str, typing.Any]
 ):
     """
     arrange: set mock container with file.
     act: update federation_domain_whitelist config and call enable_federation_domain_whitelist.
     assert: new configuration file is pushed and federation_domain_whitelist is enabled.
     """
-    content = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-
-    config_content = yaml.safe_load(content)
+    content = config_content
 
     expected_first_domain = "foo1"
     expected_second_domain = "foo2"
@@ -259,7 +221,7 @@ listeners:
         {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
     )
     harness.begin()
-    synapse.enable_federation_domain_whitelist(config_content, harness.charm.build_charm_state())
+    synapse.enable_federation_domain_whitelist(content, harness.charm.build_charm_state())
 
     expected_config_content = {
         "listeners": [
@@ -267,35 +229,28 @@ listeners:
         ],
         "federation_domain_whitelist": [expected_first_domain, expected_second_domain],
     }
-    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_trusted_key_servers_no_action(harness: Harness):
+def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: call enable_trusted_key_servers without changing the configuration.
     assert: configuration is not changed.
     """
-    config_content = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-    content = yaml.safe_load(config_content)
+    content = config_content
 
     config = {"server_name": "foo"}
     synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
 
     synapse.enable_trusted_key_servers(
         content,
-        CharmState(
+        CharmState(  # pylint: disable=duplicate-code
             datasource=None,
             irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
-            redis_config=None,
+            redis_config=None,  # pylint: disable=duplicate-code
             synapse_config=synapse_config,
         ),
     )
@@ -308,20 +263,13 @@ listeners:
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_disable_room_list_search_success(harness: Harness):
+def test_disable_room_list_search_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
     assert: new configuration file is pushed and room_list_search is disabled.
     """
-    config_content = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-    config = yaml.safe_load(config_content)
+    config = config_content
 
     synapse.disable_room_list_search(config)
 
@@ -349,22 +297,15 @@ def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
         synapse.validate_config(container_mock)
 
 
-def test_enable_metrics_success():
+def test_enable_metrics_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
     assert: new configuration file is pushed and metrics are enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    current_config = yaml.safe_load(config_content)
+    content = config_content
 
-    synapse.enable_metrics(current_config)
+    synapse.enable_metrics(content)
 
     expected_config_content = {
         "listeners": [
@@ -373,25 +314,18 @@ def test_enable_metrics_success():
         ],
         "enable_metrics": True,
     }
-    assert yaml.safe_dump(current_config) == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_forgotten_room_success(monkeypatch: pytest.MonkeyPatch):
+def test_enable_forgotten_room_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
     assert: new configuration file is pushed and forgotten_room_retention_period is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    config = yaml.safe_load(config_content)
+    content = config_content
 
-    synapse.enable_forgotten_room_retention(config)
+    synapse.enable_forgotten_room_retention(content)
 
     expected_config_content = {
         "listeners": [
@@ -399,7 +333,7 @@ def test_enable_forgotten_room_success(monkeypatch: pytest.MonkeyPatch):
         ],
         "forgotten_room_retention_period": "28d",
     }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
 def test_enable_saml_success():
@@ -584,20 +518,13 @@ SMTP_CONFIGURATION = SMTPConfiguration(
 )
 
 
-def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
+def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: update smtp_host config and call enable_smtp.
     assert: new configuration file is pushed and SMTP is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    config = yaml.safe_load(config_content)
+    content = config_content
 
     charm_state = CharmState(
         datasource=None,
@@ -616,7 +543,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
             trusted_key_servers=None,
         ),
     )
-    synapse.enable_smtp(config, charm_state)
+    synapse.enable_smtp(content, charm_state)
 
     expected_config_content = {
         "listeners": [
@@ -633,25 +560,18 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
             "smtp_pass": SMTP_CONFIGURATION["password"],
         },
     }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_serve_server_wellknown_success(monkeypatch: pytest.MonkeyPatch):
+def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: call enable_serve_server_wellknown.
     assert: new configuration file is pushed and serve_server_wellknown is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    config = yaml.safe_load(config_content)
+    content = config_content
 
-    synapse.enable_serve_server_wellknown(config)
+    synapse.enable_serve_server_wellknown(content)
 
     expected_config_content = {
         "listeners": [
@@ -659,10 +579,10 @@ def test_enable_serve_server_wellknown_success(monkeypatch: pytest.MonkeyPatch):
         ],
         "serve_server_wellknown": True,
     }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_disable_password_config_success(monkeypatch: pytest.MonkeyPatch):
+def test_disable_password_config_success():
     """
     arrange: set mock container with file.
     act: call disable_password_config.

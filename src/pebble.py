@@ -175,6 +175,42 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
             logger.exception(str(e))
 
 
+def _get_synapse_config(container: ops.model.Container) -> dict:
+    """Get the current Synapse configuration.
+
+    Args:
+        container: Synapse container.
+
+    Returns:
+        dict: Synapse configuration.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        config = container.pull(synapse.SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        return current_yaml
+    except ops.pebble.PathError as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
+def _push_synapse_config(container: ops.model.Container, current_yaml: dict) -> None:
+    """Push the Synapse configuration to the container.
+
+    Args:
+        container: Synapse container.
+        current_yaml: Synapse configuration.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        container.push(synapse.SYNAPSE_CONFIG_PATH, yaml.dump(current_yaml).encode("utf-8"))
+    except ops.pebble.PathError as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
 # The complexity of this method will be reviewed.
 def change_config(charm_state: CharmState, container: ops.model.Container) -> None:  # noqa: C901
     """Change the configuration.
@@ -188,8 +224,7 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
     """
     try:
         synapse.execute_migrate_config(container=container, charm_state=charm_state)
-        config = container.pull(synapse.SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
+        current_yaml = _get_synapse_config(container)
         synapse.enable_metrics(current_yaml)
         synapse.enable_forgotten_room_retention(current_yaml)
         synapse.enable_serve_server_wellknown(current_yaml)
@@ -218,7 +253,7 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
         synapse.validate_config(container)
-        container.push(synapse.SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+        _push_synapse_config(container, current_yaml)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
@@ -236,7 +271,9 @@ def enable_redis(charm_state: CharmState, container: ops.model.Container) -> Non
     """
     try:
         logger.debug("pebble.enable_redis: Enabling Redis")
-        synapse.enable_redis(container=container, charm_state=charm_state)
+        current_yaml = _get_synapse_config(container)
+        synapse.enable_redis(current_yaml, charm_state=charm_state)
+        _push_synapse_config(container, current_yaml)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
@@ -254,7 +291,9 @@ def enable_saml(charm_state: CharmState, container: ops.model.Container) -> None
     """
     try:
         logger.debug("pebble.enable_saml: Enabling SAML")
-        synapse.enable_saml(container=container, charm_state=charm_state)
+        current_yaml = _get_synapse_config(container)
+        synapse.enable_saml(current_yaml, charm_state=charm_state)
+        _push_synapse_config(container, current_yaml)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
@@ -272,7 +311,9 @@ def enable_smtp(charm_state: CharmState, container: ops.model.Container) -> None
     """
     try:
         logger.debug("pebble.enable_smtp: Enabling SMTP")
-        synapse.enable_smtp(container=container, charm_state=charm_state)
+        current_yaml = _get_synapse_config(container)
+        synapse.enable_smtp(current_yaml, charm_state=charm_state)
+        _push_synapse_config(container, current_yaml)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
