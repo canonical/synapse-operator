@@ -265,7 +265,7 @@ async def test_synapse_media_upload(
         status=ACTIVE_STATUS_NAME,
     )
 
-    # unsure about whether this is the correct way to do this. 
+    # unsure about whether this is the correct way to do this.
     synapse_unit: Unit = next(iter(synapse_app.units))
     media_id = token_hex(16)
     media_content = b"Hello, World!"
