@@ -45,7 +45,7 @@ def test_get_admin_access_token_with_secrets(
     create_admin_user_mock.assert_called_once()
     mock_add_secret.assert_called_once()
     assert admin_access_token_real == admin_access_token_expected
-    peer_relation = harness.model.get_relation("synapse-peers")
+    peer_relation = harness.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
     assert peer_relation
     assert (
         harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
@@ -80,7 +80,7 @@ def test_get_admin_access_token_no_secrets(
     create_admin_user_mock.assert_called_once()
     mock_add_secret.assert_not_called()
     assert admin_access_token_real == admin_access_token_expected
-    peer_relation = harness.model.get_relation("synapse-peers")
+    peer_relation = harness.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
     assert peer_relation
     assert (
         harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-key")

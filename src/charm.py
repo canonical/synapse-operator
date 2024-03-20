@@ -87,11 +87,11 @@ class SynapseCharm(CharmBaseWithState):
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_joined, self._on_relation_joined
         )
         self.framework.observe(
-            self.on["synapse-peers"].relation_departed,
+            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed,
             self._on_relation_departed,
         )
         self.framework.observe(
-            self.on["synapse-peers"].relation_changed, self._on_relation_changed
+            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
@@ -300,7 +300,10 @@ class SynapseCharm(CharmBaseWithState):
         """
         peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
         if not peer_relation:
-            logger.error("Failed to get main unit: no peer relation %s found", "synapse-peers")
+            logger.error(
+                "Failed to get main unit: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
         else:
             logging.info("Setting main unit to be %s", unit)
             peer_relation[0].data[self.app].update({MAIN_UNIT_ID: unit})

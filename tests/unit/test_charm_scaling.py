@@ -61,7 +61,7 @@ def test_scaling_worker_configured(harness: Harness) -> None:
     }
     harness.set_leader(False)
 
-    rel_id = harness.add_relation("synapse-peers", harness.charm.app.name)
+    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
     harness.add_relation_unit(rel_id, "synapse/1")
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
@@ -90,7 +90,7 @@ def test_scaling_main_configured(harness: Harness) -> None:
     }
     harness.set_leader(True)
 
-    harness.add_relation("synapse-peers", harness.charm.app.name)
+    harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
@@ -112,8 +112,12 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
         relation.id: ({"hostname": "redis-host", "port": 1010})
     }
     harness.set_leader(False)
-    harness.add_relation("synapse-peers", harness.charm.app.name, app_data={"main_unit_id": "foo"})
-    relation = harness.model.relations["synapse-peers"][0]
+    harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        harness.charm.app.name,
+        app_data={"main_unit_id": "foo"},
+    )
+    relation = harness.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME][0]
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
     ][synapse.SYNAPSE_SERVICE_NAME]
@@ -127,7 +131,7 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
     harness.set_leader(True)
     unit = harness.charm.unit
     unit.name = "foo"
-    harness.charm.on["synapse-peers"].relation_departed.emit(
+    harness.charm.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed.emit(
         relation=relation, app=harness.charm.app, unit=unit
     )
 
