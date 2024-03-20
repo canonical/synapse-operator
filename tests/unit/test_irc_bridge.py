@@ -11,11 +11,12 @@ from unittest.mock import ANY, MagicMock
 import ops
 import pytest
 import yaml
+from ops.pebble import ExecError
 from ops.testing import Harness
 
 import synapse
 import synapse.workload
-from irc_bridge import IRCBridgeObserver
+from irc_bridge import IRCBridgeObserver, PEMCreateError
 from synapse.workload import (
     IRC_BRIDGE_CONFIG_PATH,
     SYNAPSE_CONFIG_PATH,
@@ -296,3 +297,58 @@ def test_db_relation_exists(harness: Harness, irc_postgresql_relation_data) -> N
     with pytest.raises(ops.model.TooManyRelatedAppsError):
         harness.add_relation("database", "postgresql", app_data=irc_postgresql_relation_data)
         harness.begin_with_initial_hooks()
+
+
+def test_create_pem_file_success(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock container.exec to return success.
+    act: call _create_pem_file.
+    assert: PEM file is created and status is set to active.
+    """
+    harness.begin_with_initial_hooks()
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(
+        container, "exec", MagicMock(return_value=MagicMock(wait_output=lambda: ("", "")))
+    )
+
+    harness.charm._irc_bridge._create_pem_file(container)
+
+    #  pylint: disable=duplicate-code
+    # I actually want this to be exactly the same as the one in the function
+    command = [
+        "/bin/bash",
+        "-c",
+        "[[ -f /data/config/irc_passkey.pem ]] || "
+        + "openssl genpkey -out /data/config/irc_passkey.pem "
+        + "-outform PEM -algorithm RSA -pkeyopt rsa_keygen_bits:2048",
+    ]
+
+    # see https://github.com/python/mypy/issues/5936
+    container.exec.assert_called_once_with(command)  # type: ignore[attr-defined]
+    assert harness.model.unit.status == ops.ActiveStatus()
+
+
+def test_create_pem_file_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock container.exec to raise an exception.
+    act: call _create_pem_file.
+    assert: PEMCreateError is raised and status is set to maintenance.
+    """
+    harness.begin_with_initial_hooks()
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(
+        container,
+        "exec",
+        MagicMock(
+            side_effect=ExecError(
+                command=["tests"], exit_code=-1, stdout="Failure", stderr="Exec error"
+            )
+        ),
+    )
+
+    with pytest.raises(PEMCreateError):
+        harness.charm._irc_bridge._create_pem_file(container)
+
+    # see https://github.com/python/mypy/issues/5936
+    container.exec.assert_called_once()  # type: ignore[attr-defined]
+    assert harness.model.unit.status == ops.MaintenanceStatus("Creating PEM file for IRC bridge")
