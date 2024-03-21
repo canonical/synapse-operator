@@ -8,7 +8,6 @@ Charm for Synapse on kubernetes.
 **Global Variables**
 ---------------
 - **MAIN_UNIT_ID**
-- **PEER_UNITS_TOTAL**
 
 
 ---
@@ -18,7 +17,7 @@ Charm the service.
 
 Attrs:  on: listen to Redis events. 
 
-<a href="../src/charm.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -75,7 +74,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -92,7 +91,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -110,7 +109,7 @@ Change configuration.
 
 ---
 
-<a href="../src/charm.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L277"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit`
 
@@ -127,7 +126,7 @@ Get main unit.
 
 ---
 
-<a href="../src/charm.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_main`
 
@@ -145,7 +144,24 @@ Verify if this unit is the main.
 
 ---
 
-<a href="../src/charm.py#L250"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `peer_addresses`
+
+```python
+peer_addresses() → list
+```
+
+Property to get addresses of the units in the cluster. 
+
+
+
+**Returns:**
+  List of peer IP addresses. 
+
+---
+
+<a href="../src/charm.py#L247"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `peer_units_total`
 
@@ -162,7 +178,7 @@ Get peer units total.
 
 ---
 
-<a href="../src/charm.py#L295"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `set_main_unit`
 
