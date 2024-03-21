@@ -250,15 +250,7 @@ class SynapseCharm(CharmBaseWithState):
         Returns:
             total of units in peer relation or None if there is no peer relation.
         """
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if not peer_relation:
-            logger.error(
-                "Failed to get main unit: no peer relation %s found",
-                synapse.SYNAPSE_PEER_RELATION_NAME,
-            )
-            return 1
-        units = len(peer_relation[0].units)
-        return 1 if units == 0 else units
+        return self.app.planned_units()
 
     @inject_charm_state
     def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
