@@ -257,7 +257,8 @@ class SynapseCharm(CharmBaseWithState):
                 synapse.SYNAPSE_PEER_RELATION_NAME,
             )
             return 1
-        return 1 if len(self.peer_addresses()) == 0 else len(self.peer_addresses())
+        units = len(peer_relation[0].units)
+        return 1 if units == 0 else units
 
     @inject_charm_state
     def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
