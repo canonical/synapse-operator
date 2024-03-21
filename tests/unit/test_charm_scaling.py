@@ -20,8 +20,13 @@ def test_scaling_redis_required(harness: Harness) -> None:
     harness.begin()
     harness.set_leader(True)
 
-    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
+    rel_id = harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        harness.charm.app.name,
+        unit_data={"ingress-address": "10.10.10.10"},
+    )
     harness.add_relation_unit(rel_id, "synapse/1")
+    harness.update_relation_data(rel_id, "synapse/1", {"ingress-address": "10.10.10.11"})
 
     harness.charm.on.synapse_pebble_ready.emit(unittest.mock.MagicMock())
     assert isinstance(harness.charm.unit.status, ops.BlockedStatus)
@@ -35,8 +40,13 @@ def test_scaling_redis_not_required(harness: Harness) -> None:
     """
     harness.begin()
     harness.set_leader(True)
-    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
+    rel_id = harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        harness.charm.app.name,
+        unit_data={"ingress-address": "10.10.10.10"},
+    )
     harness.add_relation_unit(rel_id, "synapse/1")
+    harness.update_relation_data(rel_id, "synapse/1", {"ingress-address": "10.10.10.11"})
     harness.charm.on.synapse_pebble_ready.emit(unittest.mock.MagicMock())
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
 

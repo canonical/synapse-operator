@@ -33,7 +33,6 @@ from user import User
 logger = logging.getLogger(__name__)
 
 MAIN_UNIT_ID = "main_unit_id"
-PEER_UNITS_TOTAL = "peer_units_total"
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -84,9 +83,6 @@ class SynapseCharm(CharmBaseWithState):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
-            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_joined, self._on_relation_joined
-        )
-        self.framework.observe(
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed,
             self._on_relation_departed,
         )
@@ -125,6 +121,22 @@ class SynapseCharm(CharmBaseWithState):
             bool: true if is the main unit.
         """
         return self.get_main_unit() == self.unit.name
+
+    def peer_addresses(self) -> list:
+        """Property to get addresses of the units in the cluster.
+
+        Returns:
+            List of peer IP addresses.
+        """
+        addresses = []
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if peer_relation:
+            relation = peer_relation[0]
+            for u in relation.units:
+                if "ingress-address" in relation.data[u]:
+                    addresses.append(relation.data[u]["ingress-address"])
+        logger.debug("peer_addresses values are: %s", str(addresses))
+        return addresses
 
     def change_config(self, charm_state: CharmState) -> None:
         """Change configuration.
@@ -212,15 +224,6 @@ class SynapseCharm(CharmBaseWithState):
         self.change_config(charm_state)
         self._set_workload_version()
 
-    def _on_relation_joined(self, _: ops.HookEvent) -> None:
-        """Handle Synapse peer relation joined event."""
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if peer_relation is not None and self.unit.is_leader():
-            peer_units_total = peer_relation[0].data[self.app].get(PEER_UNITS_TOTAL, "1")
-            peer_relation[0].data[self.app].update(
-                {PEER_UNITS_TOTAL: str(int(peer_units_total) + 1)}
-            )
-
     @inject_charm_state
     def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
         """Handle Synapse peer relation departed event.
@@ -229,12 +232,6 @@ class SynapseCharm(CharmBaseWithState):
             event: relation departed event.
             charm_state: The charm state.
         """
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if peer_relation is not None and self.unit.is_leader():
-            peer_units_total = peer_relation[0].data[self.app].get(PEER_UNITS_TOTAL, "1")
-            peer_relation[0].data[self.app].update(
-                {PEER_UNITS_TOTAL: str(int(peer_units_total) - 1)}
-            )
         if event.departing_unit == self.unit:
             # there is no action for the departing unit
             return
@@ -260,7 +257,7 @@ class SynapseCharm(CharmBaseWithState):
                 synapse.SYNAPSE_PEER_RELATION_NAME,
             )
             return 1
-        return int(peer_relation[0].data[self.app].get(PEER_UNITS_TOTAL, "1"))
+        return 1 if len(self.peer_addresses()) == 0 else len(self.peer_addresses())
 
     @inject_charm_state
     def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
