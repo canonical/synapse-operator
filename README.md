@@ -30,9 +30,9 @@ project that warmly welcomes community projects, contributions, suggestions,
 fixes and constructive feedback.
 * [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 * [Get support](https://discourse.charmhub.io/)
-* [Join our online chat](https://chat.charmhub.io/charmhub/channels/charm-dev)
+* [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 * [Contribute](https://charmhub.io/synapse/docs/contributing)
 * [Getting Started](https://charmhub.io/synapse/docs/getting-started)
-Thinking about using the Synapse Operator for your next project? [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
+Thinking about using the Synapse Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
 
 ---
