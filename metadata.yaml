@@ -37,9 +37,6 @@ storage:
   data:
     type: filesystem
     location: /data
-  s3-data:
-    type: filesystem
-    location: /data
 
 provides:
   grafana-dashboard:
