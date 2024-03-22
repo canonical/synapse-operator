@@ -66,7 +66,7 @@ from .workload import (  # noqa: F401
     enable_forgotten_room_retention,
     enable_ip_range_whitelist,
     enable_metrics,
-    enable_s3_media_store,
+    enable_media,
     enable_redis,
     enable_saml,
     enable_serve_server_wellknown,

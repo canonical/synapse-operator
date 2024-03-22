@@ -678,7 +678,7 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
         raise EnableSMTPError(str(exc)) from exc
 
 
-def enable_s3_media_store(container: ops.Container, charm_state: CharmState) -> None:
+def enable_media(container: ops.Container, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable S3.
 
     Args:
@@ -703,6 +703,7 @@ def enable_s3_media_store(container: ops.Container, charm_state: CharmState) -> 
         current_yaml["media_store"]["s3"]["region_name"] = synapse_config.s3_region_name
         current_yaml["media_store"]["s3"]["path_template"] = synapse_config.s3_path_template
         # store synchronous consideration, document here
+
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         # enabling s3
