@@ -9,6 +9,7 @@ import logging
 import typing
 
 import ops
+import yaml
 
 import synapse
 from charm_state import CharmState
@@ -34,7 +35,9 @@ class PebbleServiceError(Exception):
         self.msg = msg
 
 
-def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> None:
+def restart_synapse(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
     """Restart Synapse service.
 
     This will force a restart even if its plan hasn't changed.
@@ -42,9 +45,12 @@ def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> 
     Args:
         charm_state: Instance of CharmState
         container: Synapse container.
+        is_main: if unit is main.
     """
-    logger.debug("Restarting the Synapse container")
-    container.add_layer(synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state), combine=True)
+    logger.debug("Restarting the Synapse container. Main: %s", str(is_main))
+    container.add_layer(
+        synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state, is_main), combine=True
+    )
     container.add_layer(
         synapse.SYNAPSE_CRON_SERVICE_NAME, _cron_pebble_layer(charm_state), combine=True
     )
@@ -99,12 +105,15 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
 
 
 # The complexity of this method will be reviewed.
-def change_config(charm_state: CharmState, container: ops.model.Container) -> None:  # noqa: C901
-    """Change the configuration.
+def change_config(  # noqa: C901
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
+    """Change the configuration (main and worker).
 
     Args:
         charm_state: Instance of CharmState
         container: Charm container.
+        is_main: if unit is main.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
@@ -112,6 +121,7 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
     try:
         synapse.execute_migrate_config(container=container, charm_state=charm_state)
         synapse.enable_metrics(container=container)
+        synapse.enable_replication(container=container)
         synapse.enable_forgotten_room_retention(container=container)
         synapse.enable_serve_server_wellknown(container=container)
         if charm_state.saml_config is not None:
@@ -140,8 +150,11 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
         if charm_state.datasource:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
+        with open("templates/worker.yaml", encoding="utf-8") as worker_config_file:
+            config = yaml.safe_load(worker_config_file)
+            container.push(synapse.SYNAPSE_WORKER_CONFIG_PATH, yaml.safe_dump(config))
         synapse.validate_config(container=container)
-        restart_synapse(container=container, charm_state=charm_state)
+        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
@@ -228,15 +241,24 @@ def reset_instance(charm_state: CharmState, container: ops.model.Container) -> N
         raise PebbleServiceError(str(exc)) from exc
 
 
-def _pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
+def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.LayerDict:
     """Return a dictionary representing a Pebble layer.
 
     Args:
         charm_state: Instance of CharmState
+        is_main: if unit is main.
 
     Returns:
         pebble layer for Synapse
     """
+    command = synapse.SYNAPSE_COMMAND_PATH
+    if not is_main:
+        command = (
+            f"{command} run -m synapse.app.generic_worker "
+            f"--config-path {synapse.SYNAPSE_CONFIG_PATH} "
+            f"--config-path {synapse.SYNAPSE_WORKER_CONFIG_PATH}"
+        )
+
     layer = {
         "summary": "Synapse layer",
         "description": "pebble config layer for Synapse",
@@ -245,7 +267,7 @@ def _pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
                 "override": "replace",
                 "summary": "Synapse application service",
                 "startup": "enabled",
-                "command": synapse.SYNAPSE_COMMAND_PATH,
+                "command": command,
                 "environment": synapse.get_environment(charm_state),
             }
         },

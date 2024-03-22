@@ -210,6 +210,7 @@ def test_change_config(harness: Harness):
     act: add relation and trigger change config.
     assert: charm status is active.
     """
+    harness.set_leader(True)
     harness.begin()
 
     charm_state = harness.charm.build_charm_state()

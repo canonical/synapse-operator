@@ -32,6 +32,8 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
+MAIN_UNIT_ID = "main_unit_id"
+
 
 class SynapseCharm(CharmBaseWithState):
     """Charm the service.
@@ -79,12 +81,13 @@ class SynapseCharm(CharmBaseWithState):
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(
-            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_joined, self._on_relation_joined
-        )
+        self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed,
             self._on_relation_departed,
+        )
+        self.framework.observe(
+            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
@@ -111,19 +114,46 @@ class SynapseCharm(CharmBaseWithState):
             redis_config=self._redis.get_relation_as_redis_conf(),
         )
 
+    def is_main(self) -> bool:
+        """Verify if this unit is the main.
+
+        Returns:
+            bool: true if is the main unit.
+        """
+        return self.get_main_unit() == self.unit.name
+
+    def peer_addresses(self) -> list:
+        """Property to get addresses of the units in the cluster.
+
+        Returns:
+            List of peer IP addresses.
+        """
+        addresses = []
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if peer_relation:
+            relation = peer_relation[0]
+            for u in relation.units:
+                if "ingress-address" in relation.data[u]:
+                    addresses.append(relation.data[u]["ingress-address"])
+        logger.debug("peer_addresses values are: %s", str(addresses))
+        return addresses
+
     def change_config(self, charm_state: CharmState) -> None:
         """Change configuration.
 
         Args:
             charm_state: Instance of CharmState
         """
+        if self.get_main_unit() is None and self.unit.is_leader():
+            logging.debug("Change_config is setting main unit.")
+            self.set_main_unit(self.unit.name)
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            pebble.change_config(charm_state, container)
+            pebble.change_config(charm_state, container, is_main=self.is_main())
         except pebble.PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
@@ -186,23 +216,13 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             charm_state: The charm state.
         """
+        logger.debug("Found %d peer unit(s).", self.peer_units_total())
+        if charm_state.redis_config is None and self.peer_units_total() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            return
         self.change_config(charm_state)
         self._set_workload_version()
-
-    @inject_charm_state
-    def _on_relation_joined(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle Synapse peer relation joined event.
-
-        Args:
-            charm_state: The charm state.
-        """
-        if charm_state.redis_config is None:
-            logger.debug("Scaling is not allowed without Redis integration.")
-            self.model.unit.status = ops.BlockedStatus(
-                "Redis integration not found. Please, verify it."
-            )
-            return
-        self.model.unit.status = ops.ActiveStatus()
 
     @inject_charm_state
     def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
@@ -215,19 +235,22 @@ class SynapseCharm(CharmBaseWithState):
         if event.departing_unit == self.unit:
             # there is no action for the departing unit
             return
-        peer_relation = self.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
-        if peer_relation is not None:
-            # if more than 1, check for Redis integration
-            synapse_units = len(peer_relation.units)
-            if synapse_units > 1:
-                logger.debug("Found %d units, checking for Redis integration.", synapse_units)
-                if charm_state.redis_config is None:
-                    logger.debug("Scaling is not allowed without Redis integration.")
-                    self.model.unit.status = ops.BlockedStatus(
-                        "Redis integration not found. Please, verify it."
-                    )
-                    return
-        self.model.unit.status = ops.ActiveStatus()
+        if (
+            event.departing_unit
+            and event.departing_unit.name == self.get_main_unit()
+            and self.unit.is_leader()
+        ):
+            # Main is gone so I'm the leader and will be the new main
+            self.set_main_unit(self.unit.name)
+            self.change_config(charm_state)
+
+    def peer_units_total(self) -> int:
+        """Get peer units total.
+
+        Returns:
+            total of units in peer relation or None if there is no peer relation.
+        """
+        return self.app.planned_units()
 
     @inject_charm_state
     def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
@@ -236,7 +259,69 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             charm_state: The charm state.
         """
+        logger.debug("Found %d peer unit(s).", self.peer_units_total())
+        if charm_state.redis_config is None and self.peer_units_total() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            return
+        self.unit.status = ops.ActiveStatus()
         self.change_config(charm_state)
+
+    def get_main_unit(self) -> typing.Optional[str]:
+        """Get main unit.
+
+        Returns:
+            main unit or none if there was an error.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to get main unit: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return None
+        return peer_relation[0].data[self.app].get(MAIN_UNIT_ID)
+
+    def set_main_unit(self, unit: str) -> None:
+        """Create/Renew an admin access token and put it in the peer relation.
+
+        Args:
+            unit: Unit to be the main.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to get main unit: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+        else:
+            logging.info("Setting main unit to be %s", unit)
+            peer_relation[0].data[self.app].update({MAIN_UNIT_ID: unit})
+
+    @inject_charm_state
+    def _on_leader_elected(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle Synapse peer relation created event.
+
+        Args:
+            charm_state: The charm state.
+        """
+        # assuming that this event will be fired only at the setup phase
+        # check if main is already set if not, this unit will be the main
+        if self.get_main_unit() is None and self.unit.is_leader():
+            logging.debug("On_leader_elected is setting main unit.")
+            self.set_main_unit(self.unit.name)
+            self.change_config(charm_state)
+
+    @inject_charm_state
+    def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle Synapse peer relation changed event.
+
+        Args:
+            charm_state: The charm state.
+        """
+        # the main unit has changed so workers must be restarted
+        if self.get_main_unit() != self.unit.name:
+            self.change_config(charm_state)
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
@@ -279,7 +364,7 @@ class SynapseCharm(CharmBaseWithState):
                 container=container, charm_state=charm_state, datasource=datasource
             )
             logger.info("Start Synapse")
-            pebble.restart_synapse(charm_state, container)
+            pebble.restart_synapse(charm_state, container, self.is_main())
             results["reset-instance"] = True
         except (pebble.PebbleServiceError, actions.ResetInstanceError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
