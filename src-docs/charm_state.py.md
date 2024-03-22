@@ -154,6 +154,7 @@ State of the Charm.
  - <b>`smtp_config`</b>:  smtp configuration. 
  - <b>`redis_config`</b>:  redis configuration. 
  - <b>`proxy`</b>:  proxy information. 
+ - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
 
 
 ---
@@ -171,7 +172,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -181,7 +182,8 @@ from_charm(
     datasource: Optional[DatasourcePostgreSQL],
     saml_config: Optional[SAMLConfiguration],
     smtp_config: Optional[SMTPConfiguration],
-    redis_config: Optional[RedisConfiguration]
+    redis_config: Optional[RedisConfiguration],
+    instance_map_config: Optional[Dict]
 ) → CharmState
 ```
 
@@ -196,6 +198,7 @@ Initialize a new instance of the CharmState class from the associated charm.
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
  - <b>`redis_config`</b>:  Redis configuration to be used by Synapse. 
+ - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
 
 Return: The CharmState instance created by the provided charm. 
 

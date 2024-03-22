@@ -7,6 +7,7 @@
 
 
 import logging
+import re
 import typing
 
 import ops
@@ -106,13 +107,15 @@ class SynapseCharm(CharmBaseWithState):
         Returns:
             The current charm state.
         """
-        return CharmState.from_charm(
+        charm_state = CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
+            instance_map_config=self.instance_map(),
         )
+        return charm_state
 
     def is_main(self) -> bool:
         """Verify if this unit is the main.
@@ -122,21 +125,38 @@ class SynapseCharm(CharmBaseWithState):
         """
         return self.get_main_unit() == self.unit.name
 
-    def peer_addresses(self) -> list:
-        """Property to get addresses of the units in the cluster.
+    def instance_map(self) -> typing.Dict:
+        """Build instance_map config.
 
         Returns:
-            List of peer IP addresses.
+            Instance map configuration as a dict.
         """
-        addresses = []
+        unit_name = self.unit.name.replace("/", "-")
+        app_name = self.app.name
+        model_name = self.model.name
+        addresses = [f"{unit_name}.{app_name}-endpoints.{model_name}.svc.cluster.local"]
         peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
         if peer_relation:
             relation = peer_relation[0]
             for u in relation.units:
-                if "ingress-address" in relation.data[u]:
-                    addresses.append(relation.data[u]["ingress-address"])
-        logger.debug("peer_addresses values are: %s", str(addresses))
-        return addresses
+                # <unit-name>.<app-name>-endpoints.<model-name>.svc.cluster.local
+                unit_name = u.name.replace("/", "-")
+                address = f"{unit_name}.{app_name}-endpoints.{model_name}.svc.cluster.local"
+                addresses.append(address)
+        logger.debug("addresses values are: %s", str(addresses))
+        instance_map = {}
+        main_unit_name = self.unit.name.replace("/", "-")
+        if self.get_main_unit() is not None and isinstance(self.get_main_unit, str):
+            main_unit_name = self.get_main_unit().replace("/", "-")
+        main_unit_address = f"{main_unit_name}.{app_name}-endpoints.{model_name}.svc.cluster.local"
+        for address in addresses:
+            match = re.search(r"-(\d+)", address)
+            if match is not None:
+                unit_number = match.group(1)
+            instance_name = "main" if address == main_unit_address else f"worker{unit_number}"
+            instance_map[instance_name] = {"host": address, "port": 8034}
+        logger.debug("instance_map is: %s", str(instance_map))
+        return instance_map
 
     def change_config(self, charm_state: CharmState) -> None:
         """Change configuration.
@@ -271,7 +291,7 @@ class SynapseCharm(CharmBaseWithState):
         """Get main unit.
 
         Returns:
-            main unit or none if there was an error.
+            main unit if peer relation or self unit name.
         """
         peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
         if not peer_relation:

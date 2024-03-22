@@ -67,6 +67,7 @@ from .workload import (  # noqa: F401
     enable_allow_public_rooms_over_federation,
     enable_federation_domain_whitelist,
     enable_forgotten_room_retention,
+    enable_instance_map,
     enable_ip_range_whitelist,
     enable_metrics,
     enable_redis,

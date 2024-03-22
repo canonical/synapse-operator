@@ -35,6 +35,7 @@ class SimpleCharm(CharmBaseWithState):
             saml_config=None,
             smtp_config=None,
             redis_config=None,
+            instance_map_config=None,
         )
 
 

@@ -231,6 +231,7 @@ class CharmState:
         smtp_config: smtp configuration.
         redis_config: redis configuration.
         proxy: proxy information.
+        instance_map_config: Instance map configuration with main and worker addresses.
     """
 
     synapse_config: SynapseConfig
@@ -238,6 +239,7 @@ class CharmState:
     saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
     redis_config: typing.Optional[RedisConfiguration]
+    instance_map_config: typing.Optional[typing.Dict]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -264,6 +266,7 @@ class CharmState:
         saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
         redis_config: typing.Optional[RedisConfiguration],
+        instance_map_config: typing.Optional[typing.Dict],
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
@@ -273,6 +276,7 @@ class CharmState:
             saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
             redis_config: Redis configuration to be used by Synapse.
+            instance_map_config: Instance map configuration with main and worker addresses.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -296,4 +300,5 @@ class CharmState:
             saml_config=saml_config,
             smtp_config=smtp_config,
             redis_config=redis_config,
+            instance_map_config=instance_map_config,
         )

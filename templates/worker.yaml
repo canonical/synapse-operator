@@ -7,5 +7,9 @@ worker_listeners:
     x_forwarded: true
     resources:
       - names: [client, federation]
+  - type: http
+    port: 8034
+    resources:
+      - names: [replication]
 
 worker_log_config: /data/log.config
