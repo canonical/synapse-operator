@@ -144,8 +144,9 @@ class SynapseCharm(CharmBaseWithState):
         logger.debug("addresses values are: %s", str(addresses))
         instance_map = {}
         main_unit_name = self.unit.name.replace("/", "-")
-        if self.get_main_unit() is not None and isinstance(self.get_main_unit, str):
-            main_unit_name = self.get_main_unit().replace("/", "-")
+        if self.get_main_unit() is not None and isinstance(self.get_main_unit(), str):
+            # get_main_unit result is checked.
+            main_unit_name = self.get_main_unit().replace("/", "-")  # type: ignore[union-attr]
         main_unit_address = f"{main_unit_name}.{app_name}-endpoints"
         for address in addresses:
             match = re.search(r"-(\d+)", address)
