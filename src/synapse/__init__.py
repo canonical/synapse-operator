@@ -75,6 +75,7 @@ from .workload import (  # noqa: F401
     enable_saml,
     enable_serve_server_wellknown,
     enable_smtp,
+    enable_stream_writers,
     enable_trusted_key_servers,
     execute_migrate_config,
     get_environment,

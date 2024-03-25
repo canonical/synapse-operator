@@ -124,12 +124,15 @@ class SynapseCharm(CharmBaseWithState):
         """
         return self.get_main_unit() == self.unit.name
 
-    def instance_map(self) -> typing.Dict:
+    def instance_map(self) -> typing.Optional[typing.Dict]:
         """Build instance_map config.
 
         Returns:
-            Instance map configuration as a dict.
+            Instance map configuration as a dict or None if there is only one unit.
         """
+        if self.peer_units_total() == 1:
+            logger.debug("Only 1 unit found, skipping instance_map.")
+            return None
         unit_name = self.unit.name.replace("/", "-")
         app_name = self.app.name
         addresses = [f"{unit_name}.{app_name}-endpoints"]
