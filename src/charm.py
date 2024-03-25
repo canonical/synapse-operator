@@ -107,7 +107,7 @@ class SynapseCharm(CharmBaseWithState):
         Returns:
             The current charm state.
         """
-        charm_state = CharmState.from_charm(
+        return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
@@ -115,7 +115,6 @@ class SynapseCharm(CharmBaseWithState):
             redis_config=self._redis.get_relation_as_redis_conf(),
             instance_map_config=self.instance_map(),
         )
-        return charm_state
 
     def is_main(self) -> bool:
         """Verify if this unit is the main.
