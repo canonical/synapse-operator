@@ -291,7 +291,7 @@ class SynapseCharm(CharmBaseWithState):
         """Get main unit.
 
         Returns:
-            main unit if peer relation or self unit name.
+            main unit if main unit exists in peer relation data.
         """
         peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
         if not peer_relation:
