@@ -163,11 +163,11 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
         assert "instance_map" in content
         assert content["instance_map"] == {
             "main": {
-                "host": "synapse-0.synapse-endpoints.testmodel.svc.cluster.local",
+                "host": "synapse-0.synapse-endpoints",
                 "port": 8034,
             },
             "worker1": {
-                "host": "synapse-1.synapse-endpoints.testmodel.svc.cluster.local",
+                "host": "synapse-1.synapse-endpoints",
                 "port": 8034,
             },
         }
