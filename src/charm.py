@@ -150,9 +150,11 @@ class SynapseCharm(CharmBaseWithState):
         main_unit_address = f"{main_unit_name}.{app_name}-endpoints"
         for address in addresses:
             match = re.search(r"-(\d+)", address)
-            unit_number = "0"
-            if match is not None:
-                unit_number = match.group(1)
+            # A Juju unit name is s always named on the
+            # pattern <application>/<unit ID>, where <application> is the name
+            # of the application and the <unit ID> is its ID number.
+            # https://juju.is/docs/juju/unit
+            unit_number = match.group(1)  # type: ignore[union-attr]
             instance_name = "main" if address == main_unit_address else f"worker{unit_number}"
             instance_map[instance_name] = {"host": address, "port": 8034}
         logger.debug("instance_map is: %s", str(instance_map))

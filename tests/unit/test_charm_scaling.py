@@ -111,7 +111,7 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
     harness.add_relation(
         synapse.SYNAPSE_PEER_RELATION_NAME,
         harness.charm.app.name,
-        app_data={"main_unit_id": "foo"},
+        app_data={"main_unit_id": "synapse/0"},
     )
     relation = harness.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME][0]
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
@@ -126,7 +126,7 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
 
     harness.set_leader(True)
     unit = harness.charm.unit
-    unit.name = "foo"
+    unit.name = "synapse/0"
     harness.charm.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed.emit(
         relation=relation, app=harness.charm.app, unit=unit
     )
