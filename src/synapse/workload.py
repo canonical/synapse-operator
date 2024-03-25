@@ -454,6 +454,28 @@ def enable_instance_map(container: ops.Container, charm_state: CharmState) -> No
         raise WorkloadError(f"Error interacting with Pebble filesystem, {str(exc)}") from exc
 
 
+def enable_stream_writers(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to stream_writers config.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        persisters = []
+        if charm_state.instance_map_config is not None:
+            persisters = [key for key in charm_state.instance_map_config.keys() if key != "main"]
+        current_yaml["stream_writers"] = {"events": persisters}
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(f"Error interacting with Pebble filesystem, {str(exc)}") from exc
+
+
 def enable_federation_domain_whitelist(container: ops.Container, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable federation_domain_whitelist.
 
