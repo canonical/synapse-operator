@@ -451,7 +451,7 @@ def enable_instance_map(container: ops.Container, charm_state: CharmState) -> No
         current_yaml["instance_map"] = charm_state.instance_map_config
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
-        raise WorkloadError(str(exc)) from exc
+        raise WorkloadError(f"Error interacting with Pebble filesystem, {str(exc)}") from exc
 
 
 def enable_federation_domain_whitelist(container: ops.Container, charm_state: CharmState) -> None:
