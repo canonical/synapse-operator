@@ -124,6 +124,24 @@ class SynapseCharm(CharmBaseWithState):
         """
         return self.get_main_unit() == self.unit.name
 
+    def get_unit_number(self, unit_name: str = "") -> str:
+        """Get unit number from unit name.
+
+        Args:
+            unit_name: unit name. E.g.: synapse/0
+
+        Returns:
+            Unit number. E.g.: 0
+        """
+        if not unit_name:
+            unit_name = self.unit.name
+        match = re.search(r"[-\/](\d+)", unit_name)
+        # A Juju unit name is s always named on the
+        # pattern <application>/<unit ID>, where <application> is the name
+        # of the application and the <unit ID> is its ID number.
+        # https://juju.is/docs/juju/unit
+        return match.group(1)  # type: ignore[union-attr]
+
     def instance_map(self) -> typing.Dict:
         """Build instance_map config.
 
@@ -149,12 +167,7 @@ class SynapseCharm(CharmBaseWithState):
             main_unit_name = self.get_main_unit().replace("/", "-")  # type: ignore[union-attr]
         main_unit_address = f"{main_unit_name}.{app_name}-endpoints"
         for address in addresses:
-            match = re.search(r"-(\d+)", address)
-            # A Juju unit name is s always named on the
-            # pattern <application>/<unit ID>, where <application> is the name
-            # of the application and the <unit ID> is its ID number.
-            # https://juju.is/docs/juju/unit
-            unit_number = match.group(1)  # type: ignore[union-attr]
+            unit_number = self.get_unit_number(address)
             instance_name = "main" if address == main_unit_address else f"worker{unit_number}"
             instance_map[instance_name] = {"host": address, "port": 8034}
         logger.debug("instance_map is: %s", str(instance_map))
@@ -175,7 +188,9 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            pebble.change_config(charm_state, container, is_main=self.is_main())
+            pebble.change_config(
+                charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
+            )
         except pebble.PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
