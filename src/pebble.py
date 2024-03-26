@@ -124,6 +124,7 @@ def change_config(  # noqa: C901
         synapse.enable_replication(container=container)
         synapse.enable_forgotten_room_retention(container=container)
         synapse.enable_serve_server_wellknown(container=container)
+        synapse.enable_instance_map(container=container, charm_state=charm_state)
         if charm_state.saml_config is not None:
             logger.debug("pebble.change_config: Enabling SAML")
             synapse.enable_saml(container=container, charm_state=charm_state)

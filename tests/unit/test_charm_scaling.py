@@ -6,6 +6,7 @@
 import unittest
 
 import ops
+import yaml
 from ops.testing import Harness
 
 import synapse
@@ -110,7 +111,7 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
     harness.add_relation(
         synapse.SYNAPSE_PEER_RELATION_NAME,
         harness.charm.app.name,
-        app_data={"main_unit_id": "foo"},
+        app_data={"main_unit_id": "synapse/0"},
     )
     relation = harness.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME][0]
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
@@ -125,7 +126,7 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
 
     harness.set_leader(True)
     unit = harness.charm.unit
-    unit.name = "foo"
+    unit.name = "synapse/0"
     harness.charm.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed.emit(
         relation=relation, app=harness.charm.app, unit=unit
     )
@@ -134,3 +135,39 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
         "services"
     ][synapse.SYNAPSE_SERVICE_NAME]
     assert "/start.py" == synapse_layer["command"]
+
+
+def test_scaling_instance_map_configured(harness: Harness) -> None:
+    """
+    arrange: charm deployed, integrated with Redis and set as leader.
+    act: scale charm to more than 1 unit.
+    assert: Synapse charm is configured with instance_map.
+    """
+    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.begin_with_initial_hooks()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+    harness.set_leader(True)
+
+    harness.charm.on.config_changed.emit()
+
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert "instance_map" in content
+        assert content["instance_map"] == {
+            "main": {
+                "host": "synapse-0.synapse-endpoints",
+                "port": 8034,
+            },
+            "worker1": {
+                "host": "synapse-1.synapse-endpoints",
+                "port": 8034,
+            },
+        }

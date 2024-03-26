@@ -435,6 +435,25 @@ def enable_serve_server_wellknown(container: ops.Container) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_instance_map(container: ops.Container, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to instance_map config.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        config = container.pull(SYNAPSE_CONFIG_PATH).read()
+        current_yaml = yaml.safe_load(config)
+        current_yaml["instance_map"] = charm_state.instance_map_config
+        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
+    except ops.pebble.PathError as exc:
+        raise WorkloadError(f"Error interacting with Pebble filesystem, {str(exc)}") from exc
+
+
 def enable_federation_domain_whitelist(container: ops.Container, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable federation_domain_whitelist.
 

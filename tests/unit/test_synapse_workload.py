@@ -267,6 +267,7 @@ def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pyte
             smtp_config=None,
             redis_config=None,
             synapse_config=synapse_config,
+            instance_map_config=None,
         ),
     )
 
@@ -372,6 +373,7 @@ listeners:
             smtp_config=None,
             redis_config=None,
             synapse_config=synapse_config,
+            instance_map_config=None,
         ),
     )
 
@@ -790,6 +792,7 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
             server_name="example.com",
             trusted_key_servers=None,
         ),
+        instance_map_config=None,
     )
     synapse.enable_smtp(container_mock, charm_state)
 
@@ -839,6 +842,7 @@ def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
             server_name="example.com",
             trusted_key_servers=None,
         ),
+        instance_map_config=None,
     )
     with pytest.raises(synapse.WorkloadError, match=error_message):
         synapse.enable_smtp(container_mock, charm_state)
