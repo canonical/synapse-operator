@@ -178,7 +178,7 @@ def test_scaling_instance_map_not_configured(harness: Harness) -> None:
     """
     arrange: charm deployed, integrated with Redis and set as leader.
     act: emit config-changed event.
-    assert: Synapse charm is configured with instance_map.
+    assert: Synapse charm is not configured with instance_map.
     """
     harness.begin_with_initial_hooks()
     relation = harness.charm.framework.model.get_relation("redis", 0)
