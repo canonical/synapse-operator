@@ -23,6 +23,7 @@ from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
+from media_observer import MediaObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
@@ -54,6 +55,7 @@ class SynapseCharm(CharmBaseWithState):
         super().__init__(*args)
         self._backup = BackupObserver(self)
         self._database = DatabaseObserver(self)
+        self._media = MediaObserver(self)
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
