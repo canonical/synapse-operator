@@ -30,11 +30,6 @@ options:
     description: |
       When disabled, blocks searching local and remote room lists for local and
       remote users by always returning an empty list for all queries.
-  enable_s3_provider:
-    type: boolean
-    default: true
-    description: |
-      Configures whether to enable S3 storage provider for media storage.
   federation_domain_whitelist:
     type: string
     description: Comma separated list of domains to be allowed to federate.

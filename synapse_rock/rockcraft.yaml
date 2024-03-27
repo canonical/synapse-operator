@@ -125,3 +125,11 @@ parts:
         source: attributemaps
         organize:
             login_ubuntu.py: /usr/local/attributemaps/login_ubuntu.py
+    synapse-media:
+        plugin: nil
+        source: https://github.com/matrix-org/synapse-s3-storage-provider
+        source-type: git
+        override-prime: |
+            craftctl default
+            git clone https://github.com/matrix-org/synapse-s3-storage-provider
+            cp -r synapse-s3-storage-provider /usr/local/lib/python3.10/dist-packages/
