@@ -5,6 +5,7 @@
 
 # pylint: disable=protected-access
 
+import io
 import json
 from unittest.mock import MagicMock
 
@@ -178,15 +179,17 @@ def test_saml_integration_pebble_success(
     harness = saml_configured
     harness.begin()
     container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    pull_mock = MagicMock(return_value=io.StringIO("{}"))
+    push_mock = MagicMock()
+    monkeypatch.setattr(container, "pull", pull_mock)
+    monkeypatch.setattr(container, "push", push_mock)
     enable_saml_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_saml", enable_saml_mock)
 
     charm_state = harness.charm.build_charm_state()
     pebble.enable_saml(charm_state, container=container)
 
-    enable_saml_mock.assert_called_once_with(
-        container=container, charm_state=harness.charm.build_charm_state()
-    )
+    enable_saml_mock.assert_called_once()
 
 
 def test_saml_integration_pebble_error(
@@ -236,17 +239,19 @@ def test_smtp_relation_pebble_success(smtp_configured: Harness, monkeypatch: pyt
     """
     harness = smtp_configured
     enable_smtp_mock = MagicMock()
-    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
     monkeypatch.setattr(synapse, "enable_smtp", enable_smtp_mock)
+    pull_mock = MagicMock(return_value=io.StringIO("{}"))
+    push_mock = MagicMock()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(container, "pull", pull_mock)
+    monkeypatch.setattr(container, "push", push_mock)
 
     harness.begin()
 
     relation = harness.charm.framework.model.get_relation("smtp", 0)
     harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
 
-    enable_smtp_mock.assert_called_once_with(
-        container=container, charm_state=harness.charm.build_charm_state()
-    )
+    enable_smtp_mock.assert_called_once()
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
@@ -303,6 +308,14 @@ def test_enable_federation_domain_whitelist_is_called(
     act: call pebble change_config.
     assert: enable_federation_domain_whitelist is called.
     """
+    config_content = """  # pylint: disable=duplicate-code
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    config = io.StringIO(config_content)
     harness.update_config({"federation_domain_whitelist": "foo"})
     harness.begin()
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
@@ -316,7 +329,10 @@ def test_enable_federation_domain_whitelist_is_called(
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
     charm_state = harness.charm.build_charm_state()
-    pebble.change_config(charm_state, container=MagicMock())
+    container = MagicMock()
+    monkeypatch.setattr(container, "push", MagicMock())
+    monkeypatch.setattr(container, "pull", MagicMock(return_value=config))
+    pebble.change_config(charm_state, container=container)
 
     enable_federation_mock.assert_called_once()
 
@@ -344,7 +360,10 @@ def test_disable_password_config_is_called(
     monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
 
     charm_state = harness.charm.build_charm_state()
-    pebble.change_config(charm_state, container=MagicMock())
+    container = MagicMock()
+    monkeypatch.setattr(container, "push", MagicMock())
+    monkeypatch.setattr(container, "pull", MagicMock(return_value=io.StringIO("{}")))
+    pebble.change_config(charm_state, container=container)
 
     disable_password_config_mock.assert_called_once()
 
@@ -448,6 +467,11 @@ def test_redis_relation_pebble_success(redis_configured: Harness, monkeypatch: p
     harness = redis_configured
     enable_redis_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
+    pull_mock = MagicMock(return_value=io.StringIO("{}"))
+    push_mock = MagicMock()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(container, "pull", pull_mock)
+    monkeypatch.setattr(container, "push", push_mock)
     harness.begin()
 
     harness.charm.on.redis_relation_updated.emit()

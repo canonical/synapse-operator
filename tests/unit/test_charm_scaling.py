@@ -173,6 +173,36 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
         }
 
 
+def test_scaling_stream_writers_configured(harness: Harness) -> None:
+    """
+    arrange: charm deployed, integrated with Redis and set as leader.
+    act: scale charm to more than 1 unit.
+    assert: Synapse charm is configured with stream_writer.
+    """
+    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.add_relation_unit(rel_id, "synapse/2")
+    harness.begin_with_initial_hooks()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+    harness.set_leader(True)
+
+    harness.charm.on.config_changed.emit()
+
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert "stream_writers" in content
+        expected_events = ["worker1", "worker2"]
+        actual_events = content["stream_writers"]["events"]
+        assert sorted(actual_events) == sorted(expected_events)
+
+
 def test_scaling_worker_name_configured(harness: Harness) -> None:
     """
     arrange: charm deployed, integrated with Redis, not set as leader and unit
