@@ -73,6 +73,25 @@ Replan Synapse Mjolnir service.
 
 <a href="../src/pebble.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+## <kbd>function</kbd> `replan_irc_bridge`
+
+```python
+replan_irc_bridge(container: Container) → None
+```
+
+Replan Synapse IRC bridge service. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+
+
+---
+
+<a href="../src/pebble.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ## <kbd>function</kbd> `replan_stats_exporter`
 
 ```python
@@ -91,7 +110,7 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L102"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `change_config`
 
@@ -117,7 +136,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_redis`
 
@@ -143,7 +162,7 @@ Enable Redis while receiving on_redis_relation_updated event.
 
 ---
 
-<a href="../src/pebble.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L177"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_saml`
 
@@ -169,7 +188,7 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_smtp`
 
@@ -195,7 +214,7 @@ Enable SMTP while receiving on_smtp_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

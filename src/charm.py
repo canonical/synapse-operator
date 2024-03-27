@@ -23,6 +23,7 @@ from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
+from irc_bridge import IRCBridgeObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
@@ -53,7 +54,8 @@ class SynapseCharm(CharmBaseWithState):
         """
         super().__init__(*args)
         self._backup = BackupObserver(self)
-        self._database = DatabaseObserver(self)
+        self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
+        self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
@@ -77,6 +79,7 @@ class SynapseCharm(CharmBaseWithState):
             strip_prefix=True,
         )
         self._observability = Observability(self)
+        self._irc_bridge = IRCBridgeObserver(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
@@ -99,6 +102,7 @@ class SynapseCharm(CharmBaseWithState):
         return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
+            irc_bridge_datasource=self._irc_bridge_database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),

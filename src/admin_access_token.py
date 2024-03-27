@@ -22,7 +22,8 @@ SECRET_ID = "secret-id"  # nosec
 SECRET_KEY = "secret-key"  # nosec
 
 
-class AdminAccessTokenService:
+class AdminAccessTokenService:  # pragma: no cover
+    # TODO: Remove pragma: no cover once we get to test this class pylint: disable=fixme
     """The Admin Access Token Service.
 
     Attrs:

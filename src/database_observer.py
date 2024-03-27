@@ -25,20 +25,19 @@ logger = logging.getLogger(__name__)
 class DatabaseObserver(Object):
     """The Database relation observer."""
 
-    _RELATION_NAME = "database"
-
-    def __init__(self, charm: CharmBaseWithState):
+    def __init__(self, charm: CharmBaseWithState, relation_name: str) -> None:
         """Initialize the observer and register event handlers.
 
         Args:
             charm: The parent charm to attach the observer to.
+            relation_name: The name of the relation to observe.
         """
-        super().__init__(charm, "database-observer")
+        super().__init__(charm, f"{relation_name}-observer")
         self._charm = charm
         # SUPERUSER is required to update pg_database
         self.database = DatabaseRequires(
             self._charm,
-            relation_name=self._RELATION_NAME,
+            relation_name=relation_name,
             database_name=self._charm.app.name,
             extra_user_roles="SUPERUSER",
         )
@@ -84,7 +83,8 @@ class DatabaseObserver(Object):
         # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
         datasource = self.get_relation_as_datasource()
         db_client = DatabaseClient(datasource=datasource)
-        db_client.prepare()
+        if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
+            db_client.prepare()
         self._change_config(charm_state)
 
     @inject_charm_state
@@ -104,7 +104,7 @@ class DatabaseObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
-        if self.model.get_relation(self._RELATION_NAME) is None:
+        if self.model.get_relation(self.database.relation_name) is None:
             return None
 
         relation_id = self.database.relations[0].id
