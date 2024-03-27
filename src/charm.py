@@ -7,7 +7,6 @@
 
 
 import logging
-import re
 import typing
 
 import ops
@@ -132,19 +131,21 @@ class SynapseCharm(CharmBaseWithState):
         """Get unit number from unit name.
 
         Args:
-            unit_name: unit name. E.g.: synapse/0
+            unit_name: unit name or address. E.g.: synapse/0 or synapse-0.synapse-endpoints.
 
         Returns:
             Unit number. E.g.: 0
         """
         if not unit_name:
             unit_name = self.unit.name
-        match = re.search(r"[-\/](\d+)", unit_name)
-        # A Juju unit name is s always named on the
-        # pattern <application>/<unit ID>, where <application> is the name
-        # of the application and the <unit ID> is its ID number.
-        # https://juju.is/docs/juju/unit
-        return match.group(1)  # type: ignore[union-attr]
+        unit_part = unit_name.split(".")[0]
+        index = unit_part.rfind("/")  # synapse/0 pattern
+        if index == -1:
+            index = unit_part.rfind("-")  # synapse-0 pattern
+        begin = index + 1
+        unit_id = unit_part[begin:]
+        logger.debug("Unit id from %s is %s", unit_name, unit_id)
+        return unit_id
 
     def instance_map(self) -> typing.Optional[typing.Dict]:
         """Build instance_map config.
