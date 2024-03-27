@@ -272,6 +272,7 @@ class SynapseCharm(CharmBaseWithState):
             # Main is gone so I'm the leader and will be the new main
             self.set_main_unit(self.unit.name)
             self.change_config(charm_state)
+            self._generate_nginx_config()
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -352,15 +353,9 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() != self.unit.name:
             self.change_config(charm_state)
 
-    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle synapse nginx pebble ready event."""
+    def _generate_nginx_config(self) -> None:
+        """Generate NGINX configuration based on templates."""
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not container.can_connect():
-            logger.debug("synapse_nginx_pebble_ready failed to connect")
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
-            return
-        logger.debug("synapse_nginx_pebble_ready replanning nginx")
-        pebble.replan_nginx(container)
         container.exec(
             [
                 "cp",
@@ -388,6 +383,17 @@ class SynapseCharm(CharmBaseWithState):
             ],
         ).wait()
         container.exec(["/usr/sbin/nginx", "-s", "reload"]).wait()
+
+    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse nginx pebble ready event."""
+        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        if not container.can_connect():
+            logger.debug("synapse_nginx_pebble_ready failed to connect")
+            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
+            return
+        logger.debug("synapse_nginx_pebble_ready replanning nginx")
+        pebble.replan_nginx(container)
+        self._generate_nginx_config()
         self._set_unit_status()
 
     @inject_charm_state
