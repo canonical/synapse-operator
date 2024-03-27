@@ -361,6 +361,33 @@ class SynapseCharm(CharmBaseWithState):
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
         pebble.replan_nginx(container)
+        container.exec(
+            [
+                "cp",
+                "/etc/nginx/main_location.conf.template",
+                "/etc/nginx/main_location.conf",
+            ],
+        ).wait()
+        main_unit_address = f"{self.get_main_unit()}.{self.app.name}-endpoints"
+        container.exec(
+            ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
+        ).wait()
+        container.exec(
+            [
+                "cp",
+                "/etc/nginx/abuse_report_location.conf.template",
+                "/etc/nginx/abuse_report_location.conf",
+            ],
+        ).wait()
+        container.exec(
+            [
+                "sed",
+                "-i",
+                f"s/main-unit/{main_unit_address}/g",
+                "/etc/nginx/abuse_report_location.conf",
+            ],
+        ).wait()
+        container.exec(["/usr/sbin/nginx", "-s", "reload"]).wait()
         self._set_unit_status()
 
     @inject_charm_state
