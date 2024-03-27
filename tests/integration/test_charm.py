@@ -390,6 +390,50 @@ async def test_synapse_enable_mjolnir(
     assert res.status_code == 200
 
 
+@pytest.mark.irc
+@pytest.mark.usefixtures("synapse_app", "irc_postgresql_app")
+async def test_synapse_irc_bridge_is_up(
+    ops_test: OpsTest,
+    model: Model,
+    pytestconfig: pytest.Config,
+    synapse_app: Application,
+    irc_postgresql_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: Build and deploy the Synapse charm.
+    act: Enable the IRC bridge.
+    assert: Synapse and IRC bridge health points should return correct responses.
+    """
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if not use_existing:
+        await model.add_relation(
+            irc_postgresql_app.name, f"{synapse_app.name}:irc-bridge-database"
+        )
+        await model.wait_for_idle(apps=[irc_postgresql_app.name], status=ACTIVE_STATUS_NAME)
+    await synapse_app.set_config({"enable_irc_bridge": "true"})
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    async with ops_test.fast_forward():
+        # using fast_forward otherwise would wait for model config update-status-hook-interval
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_app.name], status="active"
+        )
+
+    response = requests.get(
+        f"http://{synapse_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+    )
+    assert response.status_code == 200
+    assert "Welcome to the Matrix" in response.text
+
+    irc_bridge_response = requests.get(
+        f"http://{synapse_ip}:{synapse.IRC_BRIDGE_HEALTH_PORT}/health", timeout=5
+    )
+    assert irc_bridge_response.status_code == 200
+
+
 @pytest.mark.mjolnir
 async def test_synapse_with_mjolnir_from_refresh_is_up(
     ops_test: OpsTest,
