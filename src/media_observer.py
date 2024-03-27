@@ -64,3 +64,33 @@ class MediaObserver(Object):
         self._charm.unit.status = ops.ActiveStatus()
 
         # change config homeserver
+
+    @inject_charm_state
+    def _on_media_relation_data_available(
+        self, _: SmtpDataAvailableEvent, charm_state: CharmState
+    ) -> None:
+        """Handle Media data available
+
+        Args:
+            charm_state: The charm state.
+        """
+        self.model.unit.status = ops.MaintenanceStatus("Preparing the S3 Media integration")
+        logger.debug("_on_media_data_available: Enabling Media")
+        self._enable_media(charm_state)
+
+    def _enable_media(self, charm_state: CharmState) -> None:
+        """Enable Media.
+
+        Args:
+            charm_state: The charm state
+        """
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            return
+        try:
+            pebble.enable_media(charm_state, container)
+        except pebble.PebbleServiceError as exc:
+            self._charm.model.unit.status = ops.BlockedStatus(f"Media integration failed: {exc}")
+            return
+        self._charm.unit.status = ops.ActiveStatus()
