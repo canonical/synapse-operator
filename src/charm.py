@@ -362,6 +362,11 @@ class SynapseCharm(CharmBaseWithState):
             self.change_config(charm_state)
         # Reload NGINX configuration with new main address
         nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        if not nginx_container.can_connect():
+            logger.warning(
+                "Relation changed received but NGINX container is not available for reloading."
+            )
+            return
         pebble.replan_nginx(nginx_container, self.get_main_unit_address())
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
