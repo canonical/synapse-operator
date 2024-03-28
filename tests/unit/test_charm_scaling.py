@@ -139,8 +139,9 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
 
 def test_scaling_instance_map_configured(harness: Harness) -> None:
     """
-    arrange: charm deployed, integrated with Redis and set as leader.
-    act: scale charm to more than 1 unit.
+    arrange: charm deployed, integrated with Redis, one more unit in peer relation
+        and set as leader.
+    act: emit config-changed event.
     assert: Synapse charm is configured with instance_map.
     """
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
@@ -173,10 +174,35 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
         }
 
 
-def test_scaling_stream_writers_configured(harness: Harness) -> None:
+def test_scaling_instance_map_not_configured(harness: Harness) -> None:
     """
     arrange: charm deployed, integrated with Redis and set as leader.
-    act: scale charm to more than 1 unit.
+    act: emit config-changed event.
+    assert: Synapse charm is not configured with instance_map.
+    """
+    harness.begin_with_initial_hooks()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+    harness.set_leader(True)
+
+    harness.charm.on.config_changed.emit()
+
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert "instance_map" not in content
+
+
+def test_scaling_stream_writers_configured(harness: Harness) -> None:
+    """
+    arrange: charm deployed, integrated with Redis, two more units in peer relation
+        and set as leader.
+    act: emit config-changed event.
     assert: Synapse charm is configured with stream_writer.
     """
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
@@ -201,3 +227,56 @@ def test_scaling_stream_writers_configured(harness: Harness) -> None:
         expected_events = ["worker1", "worker2"]
         actual_events = content["stream_writers"]["events"]
         assert sorted(actual_events) == sorted(expected_events)
+
+
+def test_scaling_stream_writers_not_configured(harness: Harness) -> None:
+    """
+    arrange: charm deployed, integrated with Redis and set as leader.
+    act: emit config-changed event.
+    assert: Synapse charm is not configured with stream_writer.
+    """
+    harness.begin_with_initial_hooks()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+    harness.set_leader(True)
+
+    harness.charm.on.config_changed.emit()
+
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert "stream_writers" not in content
+
+
+def test_scaling_worker_name_configured(harness: Harness) -> None:
+    """
+    arrange: charm deployed, integrated with Redis, not set as leader and unit
+        name is worker1.
+    act: emit config-changed event.
+    assert: Worker configuration is configured with expected worker name.
+    """
+    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.begin_with_initial_hooks()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+    harness.set_leader(False)
+    harness.charm.unit.name = "synapse/1"
+
+    harness.charm.on.config_changed.emit()
+
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_WORKER_CONFIG_PATH[1:]
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert "worker_name" in content
+        assert content["worker_name"] == "worker1"
