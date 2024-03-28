@@ -353,8 +353,13 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() != self.unit.name:
             self.change_config(charm_state)
 
-    def _generate_nginx_config(self) -> None:
-        """Generate NGINX configuration based on templates."""
+    def _generate_and_reload_nginx_config(self) -> None:
+        """Generate NGINX configuration based on templates.
+
+        1. Copy template files as configuration files to be used.
+        2. Run sed command to replace string main-unit in configuration files.
+        3. Reload NGINX.
+        """
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         container.exec(
             [
@@ -363,7 +368,8 @@ class SynapseCharm(CharmBaseWithState):
                 "/etc/nginx/main_location.conf",
             ],
         ).wait()
-        main_unit_address = f"{self.get_main_unit()}.{self.app.name}-endpoints"
+        main_unit_formatted = self.get_main_unit().replace("/","-")
+        main_unit_address = f"{main_unit_formatted}.{self.app.name}-endpoints"
         container.exec(
             ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
         ).wait()
@@ -392,8 +398,10 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
+        # Replan pebble layer
         pebble.replan_nginx(container)
-        self._generate_nginx_config()
+        # Generate configuration with main unit address
+        self._generate_and_reload_nginx_config()
         self._set_unit_status()
 
     @inject_charm_state
