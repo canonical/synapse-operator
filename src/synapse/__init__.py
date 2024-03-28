@@ -82,6 +82,7 @@ from .workload import (  # noqa: F401
     enable_stream_writers,
     enable_trusted_key_servers,
     execute_migrate_config,
+    generate_nginx_config,
     get_environment,
     get_media_store_path,
     get_registration_shared_secret,

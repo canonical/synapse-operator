@@ -823,3 +823,41 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
             environment[proxy_variable] = str(proxy_value)
             environment[proxy_variable.upper()] = str(proxy_value)
     return environment
+
+
+def generate_nginx_config(container: ops.Container, main_unit_address: str) -> None:
+    """Generate NGINX configuration based on templates.
+
+    1. Copy template files as configuration files to be used.
+    2. Run sed command to replace string main-unit in configuration files.
+    3. Reload NGINX.
+
+    Args:
+        container: Container of the charm.
+        main_unit_address: Main unit address to be used in configuration.
+    """
+    container.exec(
+        [
+            "cp",
+            "/etc/nginx/main_location.conf.template",
+            "/etc/nginx/main_location.conf",
+        ],
+    ).wait()
+    container.exec(
+        ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
+    ).wait()
+    container.exec(
+        [
+            "cp",
+            "/etc/nginx/abuse_report_location.conf.template",
+            "/etc/nginx/abuse_report_location.conf",
+        ],
+    ).wait()
+    container.exec(
+        [
+            "sed",
+            "-i",
+            f"s/main-unit/{main_unit_address}/g",
+            "/etc/nginx/abuse_report_location.conf",
+        ],
+    ).wait()
