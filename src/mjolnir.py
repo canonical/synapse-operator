@@ -77,6 +77,10 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         if not charm_state.synapse_config.enable_mjolnir:
             return
+        peer_relation = self._charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        main_unit_id = peer_relation[0].data[self._charm.app].get("main_unit_id")
+        if not self._charm.unit.name == main_unit_id:
+            logger.info("This is not the main unit, skipping Mjolnir configuration")
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")

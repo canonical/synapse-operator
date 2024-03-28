@@ -108,12 +108,13 @@ def test_replan_nginx_container_down(harness: Harness) -> None:
 def test_server_name_empty() -> None:
     """
     arrange: charm deployed.
-    act: start the Synapse charm and set Synapse container to be ready.
+    act: emit config-changed event.
     assert: Synapse charm waits for server_name to be set.
     """
     harness = Harness(SynapseCharm)
+    harness.begin()
 
-    harness.begin_with_initial_hooks()
+    harness.charm.on.config_changed.emit()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "invalid configuration: server_name" in str(harness.model.unit.status)

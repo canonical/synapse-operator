@@ -272,6 +272,7 @@ class SynapseCharm(CharmBaseWithState):
             # Main is gone so I'm the leader and will be the new main
             self.set_main_unit(self.unit.name)
             self.change_config(charm_state)
+            self._generate_and_reload_nginx_config()
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -352,6 +353,46 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() != self.unit.name:
             self.change_config(charm_state)
 
+    def _generate_and_reload_nginx_config(self) -> None:
+        """Generate NGINX configuration based on templates.
+
+        1. Copy template files as configuration files to be used.
+        2. Run sed command to replace string main-unit in configuration files.
+        3. Reload NGINX.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        container.exec(
+            [
+                "cp",
+                "/etc/nginx/main_location.conf.template",
+                "/etc/nginx/main_location.conf",
+            ],
+        ).wait()
+        main_unit_name = self.get_main_unit()
+        if main_unit_name is None:
+            main_unit_name = self.unit.name
+        main_unit_formatted = main_unit_name.replace("/", "-")
+        main_unit_address = f"{main_unit_formatted}.{self.app.name}-endpoints"
+        container.exec(
+            ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
+        ).wait()
+        container.exec(
+            [
+                "cp",
+                "/etc/nginx/abuse_report_location.conf.template",
+                "/etc/nginx/abuse_report_location.conf",
+            ],
+        ).wait()
+        container.exec(
+            [
+                "sed",
+                "-i",
+                f"s/main-unit/{main_unit_address}/g",
+                "/etc/nginx/abuse_report_location.conf",
+            ],
+        ).wait()
+        container.exec(["/usr/sbin/nginx", "-s", "reload"]).wait()
+
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
         container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
@@ -360,7 +401,10 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
+        # Replan pebble layer
         pebble.replan_nginx(container)
+        # Generate configuration with main unit address
+        self._generate_and_reload_nginx_config()
         self._set_unit_status()
 
     @inject_charm_state
