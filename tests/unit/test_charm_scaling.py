@@ -202,7 +202,7 @@ def test_scaling_stream_writers_configured(harness: Harness) -> None:
     """
     arrange: charm deployed, integrated with Redis, two more units in peer relation
         and set as leader.
-    act: emit config-changed event..
+    act: emit config-changed event.
     assert: Synapse charm is configured with stream_writer.
     """
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
