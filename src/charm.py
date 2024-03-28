@@ -272,7 +272,7 @@ class SynapseCharm(CharmBaseWithState):
             # Main is gone so I'm the leader and will be the new main
             self.set_main_unit(self.unit.name)
             self.change_config(charm_state)
-            self._generate_nginx_config()
+            self._generate_and_reload_nginx_config()
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -368,7 +368,10 @@ class SynapseCharm(CharmBaseWithState):
                 "/etc/nginx/main_location.conf",
             ],
         ).wait()
-        main_unit_formatted = self.get_main_unit().replace("/","-")
+        main_unit_name = self.get_main_unit()
+        if main_unit_name is None:
+            main_unit_name = self.unit.name
+        main_unit_formatted = main_unit_name.replace("/", "-")
         main_unit_address = f"{main_unit_formatted}.{self.app.name}-endpoints"
         container.exec(
             ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
