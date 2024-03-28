@@ -269,9 +269,6 @@ class SynapseCharm(CharmBaseWithState):
             # Main is gone so I'm the leader and will be the new main
             self.set_main_unit(self.unit.name)
             self.change_config(charm_state)
-            # Reload NGINX configuration with new main address
-            nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-            pebble.replan_nginx(nginx_container, self.get_main_unit_address())
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -363,6 +360,9 @@ class SynapseCharm(CharmBaseWithState):
         # the main unit has changed so workers must be restarted
         if self.get_main_unit() != self.unit.name:
             self.change_config(charm_state)
+        # Reload NGINX configuration with new main address
+        nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        pebble.replan_nginx(nginx_container, self.get_main_unit_address())
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
