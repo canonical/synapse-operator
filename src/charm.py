@@ -128,6 +128,26 @@ class SynapseCharm(CharmBaseWithState):
         """
         return self.get_main_unit() == self.unit.name
 
+    def get_unit_number(self, unit_name: str = "") -> str:
+        """Get unit number from unit name.
+
+        Args:
+            unit_name: unit name or address. E.g.: synapse/0 or synapse-0.synapse-endpoints.
+
+        Returns:
+            Unit number. E.g.: 0
+        """
+        if not unit_name:
+            unit_name = self.unit.name
+        unit_part = unit_name.split(".")[0]
+        index = unit_part.rfind("/")  # synapse/0 pattern
+        if index == -1:
+            index = unit_part.rfind("-")  # synapse-0 pattern
+        begin = index + 1
+        unit_id = unit_part[begin:]
+        logger.debug("Unit id from %s is %s", unit_name, unit_id)
+        return unit_id
+
     def instance_map(self) -> typing.Optional[typing.Dict]:
         """Build instance_map config.
 
@@ -179,7 +199,9 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            pebble.change_config(charm_state, container, is_main=self.is_main())
+            pebble.change_config(
+                charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
+            )
         except pebble.PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return

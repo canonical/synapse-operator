@@ -222,7 +222,10 @@ def _push_synapse_config(container: ops.model.Container, current_synapse_config:
 
 # The complexity of this method will be reviewed.
 def change_config(  # noqa: C901
-    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+    charm_state: CharmState,
+    container: ops.model.Container,
+    is_main: bool = True,
+    unit_number: str = "",
 ) -> None:
     """Change the configuration (main and worker).
 
@@ -230,6 +233,7 @@ def change_config(  # noqa: C901
         charm_state: Instance of CharmState
         container: Charm container.
         is_main: if unit is main.
+        unit_number: unit number id to set the worker name.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
@@ -273,6 +277,7 @@ def change_config(  # noqa: C901
             replan_stats_exporter(container=container, charm_state=charm_state)
         with open("templates/worker.yaml", encoding="utf-8") as worker_config_file:
             config = yaml.safe_load(worker_config_file)
+            config["worker_name"] = f"worker{unit_number}"
             container.push(synapse.SYNAPSE_WORKER_CONFIG_PATH, yaml.safe_dump(config))
         _push_synapse_config(container, current_synapse_config)
         synapse.validate_config(container=container)
