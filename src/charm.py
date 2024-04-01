@@ -252,7 +252,7 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            synapse_version = synapse.get_version()
+            synapse_version = synapse.get_version(self.get_main_unit_address())
             self.unit.set_workload_version(synapse_version)
         except synapse.APIError as exc:
             logger.debug("Cannot set workload version at this time: %s", exc)
