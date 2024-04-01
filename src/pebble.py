@@ -45,7 +45,7 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": synapse.VERSION_URL}
+    check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
     return check.to_dict()
 
 
