@@ -295,7 +295,7 @@ def _get_nonce() -> str:
     return nonce
 
 
-def get_version() -> str:
+def get_version(main_unit_address: str) -> str:
     """Get version.
 
     Expected API output:
@@ -306,6 +306,10 @@ def get_version() -> str:
 
     We're using retry here because after the config change, Synapse is restarted.
 
+    Args:
+        main_unit_address: main unit address to be used instead of localhost in
+            case of horizontal scaling.
+
     Returns:
         The version returned by Synapse API.
 
@@ -313,7 +317,7 @@ def get_version() -> str:
         GetVersionError: if there was an error while reading version.
         VersionUnexpectedContentError: if the version has unexpected content.
     """
-    res = _do_request("GET", VERSION_URL, retry=True)
+    res = _do_request("GET", VERSION_URL.replace("localhost", main_unit_address), retry=True)
     try:
         server_version = res.json()["server_version"]
     except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:

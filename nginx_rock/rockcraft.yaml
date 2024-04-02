@@ -22,6 +22,11 @@ parts:
     source: etc
     organize:
       nginx.conf: etc/nginx/nginx.conf
+      worker_location.conf: etc/nginx/worker_location.conf
+      abuse_report_location.conf.template: etc/nginx/abuse_report_location.conf.template
+      abuse_report_location.conf: etc/nginx/abuse_report_location.conf
+      main_location.conf.template: etc/nginx/main_location.conf.template
+      main_location.conf: etc/nginx/main_location.conf
   nginx:
     stage-packages:
       - nginx

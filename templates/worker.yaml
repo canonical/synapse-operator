@@ -3,11 +3,13 @@ worker_name: generic_worker1
 
 worker_listeners:
   - type: http
-    port: 8083
+    bind_addresses: ['::']
+    port: 8008
     x_forwarded: true
     resources:
       - names: [client, federation]
   - type: http
+    bind_addresses: ['::']
     port: 8034
     resources:
       - names: [replication]

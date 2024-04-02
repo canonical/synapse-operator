@@ -7,6 +7,7 @@
 
 
 import logging
+import re
 import typing
 
 import ops
@@ -169,14 +170,16 @@ class SynapseCharm(CharmBaseWithState):
                 addresses.append(address)
         logger.debug("addresses values are: %s", str(addresses))
         instance_map = {}
-        main_unit_name = self.unit.name.replace("/", "-")
-        if self.get_main_unit() is not None and isinstance(self.get_main_unit(), str):
-            # get_main_unit result is checked.
-            main_unit_name = self.get_main_unit().replace("/", "-")  # type: ignore[union-attr]
-        main_unit_address = f"{main_unit_name}.{app_name}-endpoints"
         for address in addresses:
-            unit_number = self.get_unit_number(address)
-            instance_name = "main" if address == main_unit_address else f"worker{unit_number}"
+            match = re.search(r"-(\d+)", address)
+            # A Juju unit name is s always named on the
+            # pattern <application>/<unit ID>, where <application> is the name
+            # of the application and the <unit ID> is its ID number.
+            # https://juju.is/docs/juju/unit
+            unit_number = match.group(1)  # type: ignore[union-attr]
+            instance_name = (
+                "main" if address == self.get_main_unit_address() else f"worker{unit_number}"
+            )
             instance_map[instance_name] = {"host": address, "port": 8034}
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
@@ -249,7 +252,7 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            synapse_version = synapse.get_version()
+            synapse_version = synapse.get_version(self.get_main_unit_address())
             self.unit.set_workload_version(synapse_version)
         except synapse.APIError as exc:
             logger.debug("Cannot set workload version at this time: %s", exc)
@@ -327,6 +330,18 @@ class SynapseCharm(CharmBaseWithState):
             return None
         return peer_relation[0].data[self.app].get(MAIN_UNIT_ID)
 
+    def get_main_unit_address(self) -> str:
+        """Get main unit address. If main unit is None, use unit name.
+
+        Returns:
+            main unit address as unit-0.synapse-endpoints.
+        """
+        main_unit_name = self.get_main_unit()
+        if main_unit_name is None:
+            main_unit_name = self.unit.name
+        main_unit_formatted = main_unit_name.replace("/", "-")
+        return f"{main_unit_formatted}.{self.app.name}-endpoints"
+
     def set_main_unit(self, unit: str) -> None:
         """Create/Renew an admin access token and put it in the peer relation.
 
@@ -367,6 +382,14 @@ class SynapseCharm(CharmBaseWithState):
         # the main unit has changed so workers must be restarted
         if self.get_main_unit() != self.unit.name:
             self.change_config(charm_state)
+        # Reload NGINX configuration with new main address
+        nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
+        if not nginx_container.can_connect():
+            logger.warning(
+                "Relation changed received but NGINX container is not available for reloading."
+            )
+            return
+        pebble.replan_nginx(nginx_container, self.get_main_unit_address())
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
@@ -376,7 +399,8 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
-        pebble.replan_nginx(container)
+        # Replan pebble layer
+        pebble.replan_nginx(container, self.get_main_unit_address())
         self._set_unit_status()
 
     @inject_charm_state

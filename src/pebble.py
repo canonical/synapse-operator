@@ -45,7 +45,7 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": synapse.VERSION_URL}
+    check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
     return check.to_dict()
 
 
@@ -123,13 +123,15 @@ def check_irc_bridge_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def replan_nginx(container: ops.model.Container) -> None:
-    """Replan Synapse NGINX service.
+def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None:
+    """Replan Synapse NGINX service and regenerate configuration.
 
     Args:
         container: Charm container.
+        main_unit_address: Main unit address to be used in configuration.
     """
     container.add_layer("synapse-nginx", _nginx_pebble_layer(), combine=True)
+    synapse.generate_nginx_config(container=container, main_unit_address=main_unit_address)
     container.replan()
 
 
