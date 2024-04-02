@@ -8,7 +8,7 @@ ircService:
       name: "LiberaChat"
       onlyAdditionalAddresses: false
       networkId: "libera"
-      port: 7000
+      port: 6697
       ssl: true
       sslselfsign: true
       sasl: true
