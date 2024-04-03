@@ -68,7 +68,7 @@ Register user.
 ## <kbd>function</kbd> `get_version`
 
 ```python
-get_version() → str
+get_version(main_unit_address: str) → str
 ```
 
 Get version. 
@@ -79,8 +79,14 @@ We're using retry here because after the config change, Synapse is restarted.
 
 
 
+**Args:**
+ 
+ - <b>`main_unit_address`</b>:  main unit address to be used instead of localhost in  case of horizontal scaling. 
+
+
+
 **Returns:**
-  The version returned by Synapse API. 
+ The version returned by Synapse API. 
 
 
 
@@ -92,7 +98,7 @@ We're using retry here because after the config change, Synapse is restarted.
 
 ---
 
-<a href="../src/synapse/api.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_access_token`
 
@@ -126,7 +132,7 @@ This is a way to do actions on behalf of a user.
 
 ---
 
-<a href="../src/synapse/api.py#L359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L363"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `override_rate_limit`
 
@@ -151,7 +157,7 @@ Override user's rate limit.
 
 ---
 
-<a href="../src/synapse/api.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_room_id`
 
@@ -182,7 +188,7 @@ Get room id.
 
 ---
 
-<a href="../src/synapse/api.py#L411"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `deactivate_user`
 
@@ -203,7 +209,7 @@ Deactivate user.
 
 ---
 
-<a href="../src/synapse/api.py#L431"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L435"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_management_room`
 
@@ -233,7 +239,7 @@ Create the management room to be used by Mjolnir.
 
 ---
 
-<a href="../src/synapse/api.py#L483"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `make_room_admin`
 
@@ -260,7 +266,7 @@ Make user a room's admin.
 
 ---
 
-<a href="../src/synapse/api.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L502"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `promote_user_admin`
 
@@ -281,7 +287,7 @@ Promote user to admin.
 
 ---
 
-<a href="../src/synapse/api.py#L518"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/synapse/api.py#L522"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_token_valid`
 

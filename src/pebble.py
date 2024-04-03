@@ -202,22 +202,57 @@ def _get_synapse_config(container: ops.model.Container) -> dict:
         raise PebbleServiceError(str(exc)) from exc
 
 
-def _push_synapse_config(container: ops.model.Container, current_synapse_config: dict) -> None:
+def _push_synapse_config(
+    container: ops.model.Container,
+    current_synapse_config: dict,
+    config_path: str = synapse.SYNAPSE_CONFIG_PATH,
+) -> None:
     """Push the Synapse configuration to the container.
 
     Args:
         container: Synapse container.
         current_synapse_config: Synapse configuration.
+        config_path: Synapse configuration file path.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        container.push(
-            synapse.SYNAPSE_CONFIG_PATH, yaml.dump(current_synapse_config).encode("utf-8")
-        )
+        container.push(config_path, yaml.dump(current_synapse_config).encode("utf-8"))
     except ops.pebble.PathError as exc:
         raise PebbleServiceError(str(exc)) from exc
+
+
+def get_worker_config(unit_number: str) -> dict:
+    """Get worker configuration.
+
+    Args:
+        unit_number: Unit number to be used in the worker_name field.
+
+    Returns:
+        Worker configuration.
+    """
+    worker_config = {
+        "worker_app": "synapse.app.generic_worker",
+        "worker_name": f"worker{unit_number}",
+        "worker_listeners": [
+            {
+                "type": "http",
+                "bind_addresses": ["::"],
+                "port": 8008,
+                "x_forwarded": True,
+                "resources": [{"names": ["client", "federation"]}],
+            },
+            {
+                "type": "http",
+                "bind_addresses": ["::"],
+                "port": 8034,
+                "resources": [{"names": ["replication"]}],
+            },
+        ],
+        "worker_log_config": "/data/log.config",
+    }
+    return worker_config
 
 
 # The complexity of this method will be reviewed.
@@ -275,10 +310,13 @@ def change_config(  # noqa: C901
         if charm_state.datasource:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
-        with open("templates/worker.yaml", encoding="utf-8") as worker_config_file:
-            config = yaml.safe_load(worker_config_file)
-            config["worker_name"] = f"worker{unit_number}"
-            container.push(synapse.SYNAPSE_WORKER_CONFIG_PATH, yaml.safe_dump(config))
+        # Push worker configuration
+        _push_synapse_config(
+            container,
+            get_worker_config(unit_number),
+            config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
+        )
+        # Push main configuration
         _push_synapse_config(container, current_synapse_config)
         synapse.validate_config(container=container)
         restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
