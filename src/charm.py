@@ -290,7 +290,9 @@ class SynapseCharm(CharmBaseWithState):
         ):
             # Main is gone so I'm the leader and will be the new main
             self.set_main_unit(self.unit.name)
-            self.change_config(charm_state)
+        # Call change_config to restart unit. By design,every change in the
+        # number of workers requires restart.
+        self.change_config(charm_state)
 
     def peer_units_total(self) -> int:
         """Get peer units total.
