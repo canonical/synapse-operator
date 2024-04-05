@@ -34,7 +34,7 @@ async def test_synapse_scaling_nginx_configured(
         apps=[synapse_app.name, redis_app.name],
         status=ACTIVE_STATUS_NAME,
     )
-    synapse_app.add_unit(1)
+    await synapse_app.add_unit(1)
     await model.wait_for_idle(
         idle_period=30,
         apps=[synapse_app.name, redis_app.name],
