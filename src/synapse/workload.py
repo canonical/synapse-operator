@@ -706,6 +706,9 @@ def enable_media(container: ops.Container, charm_state: CharmState) -> None:
         # current_yaml["media_store"]["s3"]["path_template"] = synapse_config.s3_path_template
         # store synchronous consideration, document here
 
+        # log the current yaml
+        logger.debug("ENABLE MEDIA current yaml: %s", current_yaml)
+
         container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         # enabling s3

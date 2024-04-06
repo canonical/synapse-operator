@@ -91,6 +91,9 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
         if charm_state.smtp_config is not None:
             logger.debug("pebble.change_config: Enabling SMTP")
             synapse.enable_smtp(container=container, charm_state=charm_state)
+        if charm_state.media_config is not None:
+            logger.debug("pebble.change_config: Enabling Media")
+            synapse.enable_media(container=container, charm_state=charm_state)
         if charm_state.redis_config is not None:
             logger.debug("pebble.change_config: Enabling Redis")
             synapse.enable_redis(container=container, charm_state=charm_state)
@@ -163,6 +166,24 @@ def enable_smtp(charm_state: CharmState, container: ops.model.Container) -> None
     try:
         logger.debug("pebble.enable_smtp: Enabling SMTP")
         synapse.enable_smtp(container=container, charm_state=charm_state)
+        restart_synapse(container=container, charm_state=charm_state)
+    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
+def enable_media(charm_state: CharmState, container: ops.model.Container) -> None:
+    """Enable S3 Media while receiving on_media_data_available event.
+
+    Args:
+        charm_state: Instance of CharmState
+        container: Charm container.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        logger.debug("pebble.enable_media: Enabling Media")
+        synapse.enable_media(container=container, charm_state=charm_state)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc

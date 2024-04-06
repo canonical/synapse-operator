@@ -9,12 +9,14 @@
 import logging
 
 import ops
+from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent
 from ops.framework import Object
 
+import pebble
+import synapse
 from backup import S3Parameters
 from backup_observer import S3_INVALID_CONFIGURATION
-from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent
-from charm_state import CharmBaseWithState
+from charm_state import CharmBaseWithState, CharmState
 from lib.charms.data_platform_libs.v0.s3 import S3Requirer
 
 logger = logging.getLogger(__name__)
@@ -60,23 +62,10 @@ class MediaObserver(Object):
             return
 
         # enable s3 media / config change
-
+        self._enable_media(CharmState(s3_parameters=s3_parameters))
         self._charm.unit.status = ops.ActiveStatus()
-
         # change config homeserver
 
-    @inject_charm_state
-    def _on_media_relation_data_available(
-        self, _: SmtpDataAvailableEvent, charm_state: CharmState
-    ) -> None:
-        """Handle Media data available
-
-        Args:
-            charm_state: The charm state.
-        """
-        self.model.unit.status = ops.MaintenanceStatus("Preparing the S3 Media integration")
-        logger.debug("_on_media_data_available: Enabling Media")
-        self._enable_media(charm_state)
 
     def _enable_media(self, charm_state: CharmState) -> None:
         """Enable Media.
