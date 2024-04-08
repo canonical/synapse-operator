@@ -52,5 +52,5 @@ async def test_synapse_scaling_nginx_configured(
         f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5
     )
 
-    assert response_worker.status_code == "404"
-    assert response_nginx.status_code == "200"
+    assert response_worker.status_code == 404
+    assert response_nginx.status_code == 200
