@@ -66,6 +66,13 @@ class SMTPConfiguration(typing.TypedDict):
 
 
 @dataclass(frozen=True)
+class MediaConfiguration(typing.TypedDict):
+    """Todo."""
+
+    pass
+
+
+@dataclass(frozen=True)
 class RedisConfiguration(typing.TypedDict):
     """A named tuple representing Redis configuration.
 

@@ -66,7 +66,6 @@ class MediaObserver(Object):
         self._charm.unit.status = ops.ActiveStatus()
         # change config homeserver
 
-
     def _enable_media(self, charm_state: CharmState) -> None:
         """Enable Media.
 
