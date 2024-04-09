@@ -103,6 +103,7 @@ class SynapseCharm(CharmBaseWithState):
             datasource=self._database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
+            media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
         )
 

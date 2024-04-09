@@ -7,6 +7,7 @@
 # pylint: disable=R0801
 
 import logging
+from typing import Optional
 
 import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent
@@ -17,6 +18,7 @@ import synapse
 from backup import S3Parameters
 from backup_observer import S3_INVALID_CONFIGURATION
 from charm_state import CharmBaseWithState, CharmState
+from charm_types import MediaConfiguration
 from lib.charms.data_platform_libs.v0.s3 import S3Requirer
 
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ logger = logging.getLogger(__name__)
 class MediaObserver(Object):
     """The media relation observer."""
 
-    _RELATION_NAME = "media"
+    _S3_RELATION_NAME = "media"
 
     def __init__(self, charm: CharmBaseWithState):
         """Initialize the observer and register event handlers.
@@ -34,9 +36,9 @@ class MediaObserver(Object):
             charm: The parent charm to attach the observer to.
         """
         super().__init__(charm, "media-observer")
-        self._charm = charm
 
-        self._s3_client = S3Requirer(self._charm, "media")
+        self._charm = charm
+        self._s3_client = S3Requirer(self._charm, self._S3_RELATION_NAME)
         self.framework.observe(
             self._s3_client.on.credentials_changed, self._on_s3_credentials_changed
         )
@@ -62,9 +64,21 @@ class MediaObserver(Object):
             return
 
         # enable s3 media / config change
-        self._enable_media(CharmState(s3_parameters=s3_parameters))
+        # self._enable_media(CharmState(s3_parameters=s3_parameters))
         self._charm.unit.status = ops.ActiveStatus()
         # change config homeserver
+
+    def get_relation_as_media_conf(self) -> Optional[MediaConfiguration]:
+        """Get Media data from relation."""
+        # try:
+        #     relation_data: Optional[MediaRelationData] = self.media.get_relation_data()
+        # except ValidationError:
+        #     # ValidationError happens in the smtp(_legacy)relation_created event, as
+        #     # the relation databag is empty at that point.
+        #     logger.info("S3 Media databag is empty. Information will be set in the next event.")
+        #     return None
+
+        pass
 
     def _enable_media(self, charm_state: CharmState) -> None:
         """Enable Media.
