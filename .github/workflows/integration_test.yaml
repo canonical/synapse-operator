@@ -16,4 +16,3 @@ jobs:
       modules: '["test_charm", "test_nginx", "test_s3", "test_redis"]'
       self-hosted-runner: true
       self-hosted-runner-label: "edge"
-      tmate-debug: true
