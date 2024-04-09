@@ -678,38 +678,21 @@ def enable_smtp(container: ops.Container, charm_state: CharmState) -> None:
         raise EnableSMTPError(str(exc)) from exc
 
 
-def enable_media(container: ops.Container, charm_state: CharmState) -> None:
+def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable S3.
 
     Args:
-        container: Container of the charm.
+        current_yaml: Current Configuration.
         charm_state: Instance of CharmState.
 
     Raises:
         WorkloadError: something went wrong enabling S3.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-        # synapse_config = charm_state.synapse_config
-        # current_yaml["media_store_path"] = synapse_config.media_store_path
-        # current_yaml["media_store"] = {}
-        # current_yaml["media_store"]["store_type"] = "s3"
-        # current_yaml["media_store"]["s3"] = {}
-        # current_yaml["media_store"]["s3"]["bucket"] = synapse_config.s3_bucket
-        # current_yaml["media_store"]["s3"]["endpoint_url"] = synapse_config.s3_endpoint_url
-        # current_yaml["media_store"]["s3"]["access_key_id"] = synapse_config.s3_access_key_id
-        # current_yaml["media_store"]["s3"][
-        #     "secret_access_key"
-        # ] = synapse_config.s3_secret_access_key
-        # current_yaml["media_store"]["s3"]["region_name"] = synapse_config.s3_region_name
-        # current_yaml["media_store"]["s3"]["path_template"] = synapse_config.s3_path_template
-        # store synchronous consideration, document here
+        current_yaml["media"] = {}
+        current_yaml["media"]["bucket"] = charm_state.media_config.bucket
 
-        # log the current yaml
-        logger.debug("ENABLE MEDIA current yaml: %s", current_yaml)
 
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
     except ops.pebble.PathError as exc:
         # enabling s3
         raise WorkloadError(str(exc)) from exc

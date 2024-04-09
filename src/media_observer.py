@@ -10,16 +10,15 @@ import logging
 from typing import Optional
 
 import ops
-from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent
+from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
 from ops.framework import Object
 
 import pebble
 import synapse
-from backup import S3Parameters
 from backup_observer import S3_INVALID_CONFIGURATION
 from charm_state import CharmBaseWithState, CharmState
 from charm_types import MediaConfiguration
-from lib.charms.data_platform_libs.v0.s3 import S3Requirer
+from s3_parameters import S3Parameters
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ class MediaObserver(Object):
             event: The event object
         """
         try:
-            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
+            _ = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
