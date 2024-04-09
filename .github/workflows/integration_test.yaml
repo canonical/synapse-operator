@@ -16,3 +16,4 @@ jobs:
       modules: '["test_charm", "test_nginx", "test_s3", "test_redis"]'
       self-hosted-runner: true
       self-hosted-runner-label: "edge"
+      tmate-debug: ${{ contains(github.event.pull_request.labels.*.name, 'tmate-debug') }}
