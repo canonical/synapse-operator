@@ -509,17 +509,10 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> None:
         [
             "/bin/bash",
             "-c",
-            f"[[ -f {IRC_BRIDGE_REGISTRATION_PATH} ]] || " "/bin/node",
-            "/app/app.js",
-            "-r",
-            "-f",
-            IRC_BRIDGE_REGISTRATION_PATH,
-            "-u",
-            f"http://localhost:{IRC_BRIDGE_HEALTH_PORT}",
-            "-c",
-            IRC_BRIDGE_CONFIG_PATH,
-            "-l",
-            IRC_BRIDGE_BOT_NAME,
+            f"[[ -f {IRC_BRIDGE_REGISTRATION_PATH} ]] || "
+            f"/bin/node /app/app.js -r -f {IRC_BRIDGE_REGISTRATION_PATH} "
+            f"-u http://localhost:{IRC_BRIDGE_HEALTH_PORT} "
+            f"-c {IRC_BRIDGE_CONFIG_PATH} -l {IRC_BRIDGE_BOT_NAME}",
         ],
     )
     if registration_result.exit_code:
