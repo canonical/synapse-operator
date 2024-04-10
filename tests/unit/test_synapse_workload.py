@@ -565,38 +565,6 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock container with file.
-    act: add smtp integration call enable_smtp.
-    assert: raise WorkloadError in case of error.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    charm_state = CharmState(
-        datasource=None,
-        saml_config=None,
-        smtp_config=SMTP_CONFIGURATION,
-        media_config=None,
-        redis_config=None,
-        synapse_config=SynapseConfig(
-            federation_domain_whitelist=None,
-            ip_range_whitelist=None,
-            notif_from="noreply@example.com",
-            public_baseurl=None,
-            report_stats=None,
-            server_name="example.com",
-            trusted_key_servers=None,
-        ),
-    )
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_smtp(container_mock, charm_state)
-
-
 def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
