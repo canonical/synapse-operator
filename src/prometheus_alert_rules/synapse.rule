@@ -37,13 +37,13 @@ groups:
       summary: Synapse High CPU utilization (instance {{ $labels.instance }})
       description: "Synapse CPU utilization is above 90% for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: SynapseHighMemoryUtilization
-    expr: process_resident_memory_bytes{juju_charm="synapse"} / 1024 / 1024 > 1024
+    expr: process_resident_memory_bytes{juju_charm="synapse"} / 1024 / 1024 > 3072
     for: 2m
     labels:
       severity: critical
     annotations:
       summary: Synapse High Memory utilization (instance {{ $labels.instance }})
-      description: "Synapse Memory utilization is above 1GB for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      description: "Synapse Memory utilization is above 3GB for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: SynapseTooManyOpenFiles
     expr: process_open_fds{juju_charm="synapse"} > 1024
     for: 2m

@@ -30,7 +30,7 @@ Synapse requires connections to PostgreSQL. Deploy both charm applications.
 
 ### Deploy the charms:
 ```
-juju deploy postgresql-k8s
+juju deploy postgresql-k8s --trust
 juju deploy synapse
 ```
 

@@ -17,7 +17,7 @@ The Database relation observer.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBaseWithState)
+__init__(charm: CharmBaseWithState, relation_name: str = 'database')
 ```
 
 Initialize the observer and register event handlers. 
@@ -27,6 +27,7 @@ Initialize the observer and register event handlers.
 **Args:**
  
  - <b>`charm`</b>:  The parent charm to attach the observer to. 
+ - <b>`relation_name`</b>:  The name of the relation to observe. 
 
 
 ---
@@ -39,7 +40,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/database_observer.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -56,7 +57,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/database_observer.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_datasource`
 

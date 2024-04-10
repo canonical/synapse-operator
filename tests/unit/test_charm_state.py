@@ -32,6 +32,7 @@ class SimpleCharm(CharmBaseWithState):
         return CharmState(
             synapse_config=synapse_config,
             datasource=None,
+            irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
             media_config=None,

@@ -24,6 +24,7 @@ from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
 from media_observer import MediaObserver
+from irc_bridge import IRCBridgeObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
@@ -54,8 +55,9 @@ class SynapseCharm(CharmBaseWithState):
         """
         super().__init__(*args)
         self._backup = BackupObserver(self)
-        self._database = DatabaseObserver(self)
         self._media = MediaObserver(self)
+        self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
+        self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
@@ -79,6 +81,7 @@ class SynapseCharm(CharmBaseWithState):
             strip_prefix=True,
         )
         self._observability = Observability(self)
+        self._irc_bridge = IRCBridgeObserver(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
@@ -101,6 +104,7 @@ class SynapseCharm(CharmBaseWithState):
         return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
+            irc_bridge_datasource=self._irc_bridge_database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),
@@ -225,6 +229,10 @@ class SynapseCharm(CharmBaseWithState):
             return
         try:
             self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
+            try:
+                container.stop(pebble.STATS_EXPORTER_SERVICE_NAME)
+            except (ops.pebble.Error, RuntimeError) as e:
+                event.fail(f"Failed to stop Synapse Stats Exporter: {str(e)}")
             pebble.reset_instance(charm_state, container)
             datasource = self._database.get_relation_as_datasource()
             actions.reset_instance(

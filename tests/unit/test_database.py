@@ -15,6 +15,7 @@ from ops.testing import Harness
 from psycopg2 import sql
 
 import database_observer
+import pebble
 import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
@@ -254,3 +255,32 @@ def test_on_database_created(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     harness.charm._database._on_database_created(unittest.mock.MagicMock())
 
     db_client_mock.prepare.assert_called_once()
+
+
+def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
+    """
+    arrange: charm deployed.
+    act: get synapse layer data.
+    assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
+    """
+    harness.begin_with_initial_hooks()
+
+    synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
+        "services"
+    ][pebble.STATS_EXPORTER_SERVICE_NAME]
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+    synapse_env = synapse.get_environment(harness.charm.build_charm_state())
+    assert synapse_layer == {
+        "override": "replace",
+        "summary": "Synapse Stats Exporter service",
+        "command": "synapse-stats-exporter",
+        "startup": "disabled",
+        "environment": {
+            "PROM_SYNAPSE_USER": synapse_env["POSTGRES_USER"],
+            "PROM_SYNAPSE_PASSWORD": synapse_env["POSTGRES_PASSWORD"],
+            "PROM_SYNAPSE_HOST": synapse_env["POSTGRES_HOST"],
+            "PROM_SYNAPSE_PORT": synapse_env["POSTGRES_PORT"],
+            "PROM_SYNAPSE_DATABASE": synapse_env["POSTGRES_DB"],
+        },
+        "on-failure": "ignore",
+    }
