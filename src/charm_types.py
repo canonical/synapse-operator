@@ -67,9 +67,21 @@ class SMTPConfiguration(typing.TypedDict):
 
 @dataclass(frozen=True)
 class MediaConfiguration(typing.TypedDict):
-    """Todo."""
+    """A named tuple representing media configuration.
 
-    pass
+    Attributes:
+        bucket: The name of the bucket.
+        region_name: The region name.
+        endpoint_url: The endpoint URL.
+        access_key_id: The access key ID.
+        secret_access_key: The secret access key.
+    """
+
+    bucket: str
+    region_name: str
+    endpoint_url: str
+    access_key_id: str
+    secret_access_key: str
 
 
 @dataclass(frozen=True)

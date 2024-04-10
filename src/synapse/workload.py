@@ -691,8 +691,10 @@ def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
     try:
         current_yaml["media"] = {}
         current_yaml["media"]["bucket"] = charm_state.media_config.bucket
-
-
+        current_yaml["media"]["region_name"] = charm_state.media_config.region_name
+        current_yaml["media"]["endpoint_url"] = charm_state.media_config.endpoint_url
+        current_yaml["media"]["access_key_id"] = charm_state.media_config.access_key_id
+        current_yaml["media"]["secret_access_key"] = charm_state.media_config.secret_access_key
     except ops.pebble.PathError as exc:
         # enabling s3
         raise WorkloadError(str(exc)) from exc
