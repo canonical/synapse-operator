@@ -15,7 +15,7 @@ from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 
-from .api import SYNAPSE_PORT, SYNAPSE_URL
+from .api import SYNAPSE_URL
 
 SYNAPSE_CONFIG_DIR = "/data"
 
@@ -31,6 +31,7 @@ IRC_BRIDGE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/irc_bridge.yaml"
 IRC_BRIDGE_REGISTRATION_PATH = f"{SYNAPSE_CONFIG_DIR}/config/appservice-registration-irc.yaml"
 IRC_BRIDGE_HEALTH_PORT = "5446"
 IRC_BRIDGE_SERVICE_NAME = "irc"
+IRC_BRIDGE_BOT_NAME = "irc_bot"
 CHECK_IRC_BRIDGE_READY_NAME = "synapse-irc-ready"
 PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -553,17 +554,12 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> None:
     registration_result = _exec(
         container,
         [
-            "/bin/node",
-            "/app/app.js",
-            "-r",
-            "-f",
-            IRC_BRIDGE_REGISTRATION_PATH,
-            "-u",
-            f"http://localhost:{SYNAPSE_PORT}",
+            "/bin/bash",
             "-c",
-            IRC_BRIDGE_CONFIG_PATH,
-            "-l",
-            "irc_bot",
+            f"[[ -f {IRC_BRIDGE_REGISTRATION_PATH} ]] || "
+            f"/bin/node /app/app.js -r -f {IRC_BRIDGE_REGISTRATION_PATH} "
+            f"-u http://localhost:{IRC_BRIDGE_HEALTH_PORT} "
+            f"-c {IRC_BRIDGE_CONFIG_PATH} -l {IRC_BRIDGE_BOT_NAME}",
         ],
     )
     if registration_result.exit_code:
