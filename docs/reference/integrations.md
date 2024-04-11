@@ -1,5 +1,18 @@
 # Integrations
 
+### backup
+
+_Interface_: s3
+_Supported charms_: [s3-integrator](https://charmhub.io/s3-integrator/)
+
+In order to perform backups, Synapse has to be integrated with the s3-integrator charm using the
+endpoint backup. Backups will be stored, listed and recovered from the location
+indicated in the S3 compatible object storage provider configuration provided by the integration.
+The Synapse charm will back up the media files, signing keys and sqlite database file if applicable.
+If Synapse database integration is used, the Synapse charm will not back up the related database.
+
+Example backup integrate command: `juju integrate synapse:backup s3-integrator`
+
 ### db
 
 _Interface_: pgsql
@@ -59,6 +72,17 @@ relation becomes active. For more information about the metrics exposed, refer t
 
 Metrics-endpoint integrate command: `juju integrate synapse prometheus-k8s`
 
+### redis
+
+_Interface_: redis
+_Supported charms_: [redis-k8s](https://charmhub.io/redis-k8s)
+
+Integrating Synapse with Redis is required by horizontal scaling the charm.
+
+See more information in [Scaling synapse via workers](https://matrix-org.github.io/synapse/latest/workers.html) in documentation repository for Synapse.
+
+Example redis integrate command: `juju integrate synapse redis-k8s`
+
 ### saml
 
 _Interface_: saml
@@ -72,5 +96,25 @@ Example saml integrate command: `juju integrate synapse saml-integrator:saml`
 Note that `public_baseurl` configuration set the public-facing base URL that
 clients use to access this Homeserver. It's used as `entity_id` if set instead of
 https://server_name.
+
+See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
+
+
+### smtp
+
+_Interface_: smtp
+_Supported charms_: [smtp-integrator](https://charmhub.io/smtp-integrator/)
+
+Integrating Synapse with SMTP Integrator provides SMTP configuration details so
+a smtp server can be used in Synapse.
+
+Example smtp integrate command: `juju integrate synapse smtp-integrator:smtp`
+
+Note that the smtp-integrator provides two interfaces, `smtp` and `smtp-legacy`. 
+Only use the first one if the Juju version used supports secrets. The "From" email
+is set with the Synapse configuration option `notif_from`.
+
+For the smtp-integrator, insecure configurations with `transport_security=none` or not
+authenticated connections with `auth_type=none` are not supported.
 
 See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
