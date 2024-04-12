@@ -5,20 +5,11 @@
 
 # pylint: disable=protected-access
 
-import datetime
-import os
-import pathlib
 from secrets import token_hex
-from unittest.mock import MagicMock
 
 import pytest
-import yaml
-from botocore.exceptions import ClientError
-from dateutil.tz import tzutc  # type: ignore
-from ops.testing import Harness
 
 from s3_parameters import S3Parameters
-import synapse
 
 
 def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():

@@ -16,14 +16,14 @@ from ops.framework import Object
 import pebble
 import synapse
 from backup_observer import S3_INVALID_CONFIGURATION
-from charm_state import CharmBaseWithState, CharmState
+from charm_state import CharmBaseWithState, CharmConfigInvalidError, CharmState
 from charm_types import MediaConfiguration
 from s3_parameters import S3Parameters
 
 logger = logging.getLogger(__name__)
 
 S3_CANNOT_ACCESS_BUCKET = "Media: S3 bucket does not exist or cannot be accessed"
-S3_INVALID_CONFIGURATION = "Media: S3 configuration is invalid"
+
 
 class MediaObserver(Object):
     """The media relation observer."""
@@ -65,7 +65,7 @@ class MediaObserver(Object):
             return
 
         self.model.unit.status = ops.MaintenanceStatus("Preparing the Media integration")
-        self._enable_media(self._charm.state)
+        self._enable_media(self._charm.build_charm_state())
 
     def get_relation_as_media_conf(self) -> Optional[MediaConfiguration]:
         """Get Media data from relation.
@@ -81,18 +81,22 @@ class MediaObserver(Object):
         except ValueError:
             logger.info("Media databag is empty. Media information will be set in the next event.")
             return None
-        
+
         if relation_data is None:
             return None
-        
+
+        if relation_data.region is None and relation_data.endpoint is None:
+            raise CharmConfigInvalidError('one of "region" or "endpoint" needs to be set')
+
+        rel_region = relation_data.region or ""
+        rel_endpoint = relation_data.endpoint or ""
+
         return MediaConfiguration(
-            access_key=relation_data.access_key,
-            secret_key=relation_data.secret_key,
-            region=relation_data.region,
             bucket=relation_data.bucket,
-            endpoint=relation_data.endpoint,
-            path=relation_data.path,
-            s3_uri_style=relation_data.s3_uri_style,
+            region_name=rel_region,
+            endpoint_url=rel_endpoint,
+            access_key_id=relation_data.access_key,
+            secret_access_key=relation_data.secret_key,
         )
 
     def _enable_media(self, charm_state: CharmState) -> None:

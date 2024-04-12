@@ -23,8 +23,8 @@ from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
-from media_observer import MediaObserver
 from irc_bridge import IRCBridgeObserver
+from media_observer import MediaObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver

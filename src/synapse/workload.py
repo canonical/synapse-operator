@@ -703,6 +703,13 @@ def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
     """
     try:
         current_yaml["media"] = {}
+
+        if charm_state.media_config is None:
+            raise WorkloadError(
+                "Media Configuration not found. "
+                "Please verify the integration between Media and Synapse."
+            )
+
         current_yaml["media"]["bucket"] = charm_state.media_config.bucket
         current_yaml["media"]["region_name"] = charm_state.media_config.region_name
         current_yaml["media"]["endpoint_url"] = charm_state.media_config.endpoint_url
