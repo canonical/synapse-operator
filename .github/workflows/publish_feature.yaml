@@ -1,0 +1,13 @@
+name: Publish to feature branch
+
+on:
+  push:
+    branches:
+      - feat/*
+
+jobs:
+  publish-to-edge:
+    uses: canonical/operator-workflows/.github/workflows/publish_charm.yaml@main
+    secrets: inherit
+    with:
+      channel: latest/edge/${"${{ github.ref_name }}"//\//-}
