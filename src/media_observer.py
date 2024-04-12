@@ -52,12 +52,8 @@ class MediaObserver(Object):
         """
         return self._charm
 
-    def _on_s3_credentials_changed(self, event: CredentialsChangedEvent) -> None:
-        """Handle the S3 credentials changed event.
-
-        Args:
-            event: The event object
-        """
+    def _on_s3_credentials_changed(self, _: CredentialsChangedEvent) -> None:
+        """Handle the S3 credentials changed event."""
         try:
             _ = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
@@ -77,7 +73,7 @@ class MediaObserver(Object):
             CharmConfigInvalidError: If the Media configurations is not supported.
         """
         try:
-            relation_data: Optional[S3Parameters] = self._s3_client.get_s3_connection_info()
+            relation_data = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             logger.info("Media databag is empty. Media information will be set in the next event.")
             return None

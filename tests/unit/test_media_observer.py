@@ -4,27 +4,41 @@
 """Synapse backup unit tests."""
 
 # pylint: disable=protected-access
-
 from secrets import token_hex
 
+import ops
 import pytest
 
-from s3_parameters import S3Parameters
+# from s3_parameters import S3Parameters
+from ops.testing import Harness
 
 
-def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
-    """
-    arrange: Create s3 relation data without region nor endpoint.
-    act: Create S3Parameters pydantic BaseModel from relation data.
-    assert: Raises ValueError as one of those two fields should be set.
-    """
-    s3_relation_data = {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
-        "bucket": "backup-bucket",
-        "path": "/synapse-backups",
-        "s3-uri-style": "path",
-    }
+def test_enable_media(s3_relation_data_media, harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """Test enabling media with valid S3 configuration."""
+    s3_relation_data_media["access-key"] = token_hex(16)
+    s3_relation_data_media["secret-key"] = token_hex(16)
+    s3_relation_data_media["bucket"] = "test-bucket"
+    s3_relation_data_media["region"] = "us-east-1"
+    s3_relation_data_media["endpoint"] = "https://s3.us-east-1.amazonaws.com"
+    s3_relation_data_media["path"] = "test-path"
+    s3_relation_data_media["s3-uri-style"] = "host"
+    s3_relation_data_media["addressing-style"] = "virtual"
 
-    with pytest.raises(ValueError):
-        S3Parameters(**s3_relation_data)
+    monkeypatch.setattr("media_observer.S3_INVALID_CONFIGURATION", "Invalid S3 configuration")
+
+    harness.update_relation_data(0, "media", s3_relation_data_media)
+
+    harness.begin_with_initial_hooks()
+
+    assert harness.charm.unit.status == ops.ActiveStatus()
+    assert harness.charm.unit.status.message == "Invalid S3 configuration"
+
+    harness.update_relation_data(0, "media", {})
+
+    harness.begin_with_initial_hooks()
+
+    assert harness.charm.unit.status == ops.BlockedStatus("S3 configuration is invalid")
+    assert (
+        harness.charm.unit.status.message
+        == "Media: S3 bucket does not exist or cannot be accessed"
+    )
