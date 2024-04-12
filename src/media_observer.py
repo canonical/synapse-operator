@@ -22,6 +22,8 @@ from s3_parameters import S3Parameters
 
 logger = logging.getLogger(__name__)
 
+S3_CANNOT_ACCESS_BUCKET = "Media: S3 bucket does not exist or cannot be accessed"
+S3_INVALID_CONFIGURATION = "Media: S3 configuration is invalid"
 
 class MediaObserver(Object):
     """The media relation observer."""
@@ -62,22 +64,36 @@ class MediaObserver(Object):
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
-        # enable s3 media / config change
-        # self._enable_media(CharmState(s3_parameters=s3_parameters))
-        self._charm.unit.status = ops.ActiveStatus()
-        # change config homeserver
+        self.model.unit.status = ops.MaintenanceStatus("Preparing the Media integration")
+        self._enable_media(self._charm.state)
 
     def get_relation_as_media_conf(self) -> Optional[MediaConfiguration]:
-        """Get Media data from relation."""
-        # try:
-        #     relation_data: Optional[MediaRelationData] = self.media.get_relation_data()
-        # except ValidationError:
-        #     # ValidationError happens in the smtp(_legacy)relation_created event, as
-        #     # the relation databag is empty at that point.
-        #     logger.info("S3 Media databag is empty. Information will be set in the next event.")
-        #     return None
+        """Get Media data from relation.
 
-        pass
+        Returns:
+            Dict: Information needed for setting environment variables.
+
+        Raises:
+            CharmConfigInvalidError: If the Media configurations is not supported.
+        """
+        try:
+            relation_data: Optional[S3Parameters] = self._s3_client.get_s3_connection_info()
+        except ValueError:
+            logger.info("Media databag is empty. Media information will be set in the next event.")
+            return None
+        
+        if relation_data is None:
+            return None
+        
+        return MediaConfiguration(
+            access_key=relation_data.access_key,
+            secret_key=relation_data.secret_key,
+            region=relation_data.region,
+            bucket=relation_data.bucket,
+            endpoint=relation_data.endpoint,
+            path=relation_data.path,
+            s3_uri_style=relation_data.s3_uri_style,
+        )
 
     def _enable_media(self, charm_state: CharmState) -> None:
         """Enable Media.

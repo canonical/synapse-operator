@@ -338,7 +338,9 @@ def enable_media(charm_state: CharmState, container: ops.model.Container) -> Non
     """
     try:
         logger.debug("pebble.enable_media: Enabling Media")
-        synapse.enable_media(container=container, charm_state=charm_state)
+        current_yaml = _get_synapse_config(container)
+        synapse.enable_media(current_yaml, charm_state=charm_state)
+        _push_synapse_config(container, current_yaml)
         restart_synapse(container=container, charm_state=charm_state)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
