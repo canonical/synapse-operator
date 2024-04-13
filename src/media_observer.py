@@ -36,7 +36,7 @@ class MediaObserver(Object):
         Args:
             charm: The parent charm to attach the observer to.
         """
-        super().__init__(charm, "media-observer")
+        super().__init__(charm, "media")
 
         self._charm = charm
         self._s3_client = S3Requirer(self._charm, self._S3_RELATION_NAME)
