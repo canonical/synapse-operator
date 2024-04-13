@@ -114,7 +114,7 @@ def check_irc_bridge_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_IRC_BRIDGE_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": f"http://localhost:{synapse.IRC_BRIDGE_HEALTH_PORT}"}
+    check.http = {"url": f"http://localhost:{synapse.IRC_BRIDGE_HEALTH_PORT}/health"}
     return check.to_dict()
 
 
