@@ -53,7 +53,7 @@ def test_get_relation_as_media_conf(harness: Harness, relation_data, expected_co
     act: get MediaConfiguration from media observer.
     assert: expected media configuration matches returned one.
     """
-    harness.add_relation("media", "media-integrator", app_data=relation_data)
+    harness.add_relation("media", "s3-integrator", app_data=relation_data)
     harness.begin()
 
     media_configuration = harness.charm._media.get_relation_as_media_conf()
@@ -80,7 +80,7 @@ def test_get_relation_fails_invalid_config(harness: Harness, relation_data):
     act: get MediaConfiguration from media observer.
     assert: raises exception CharmConfigInvalidError
     """
-    harness.add_relation("media", "media-integrator", app_data=relation_data)
+    harness.add_relation("media", "s3-integrator", app_data=relation_data)
     harness.begin()
 
     with pytest.raises(CharmConfigInvalidError):
