@@ -136,7 +136,7 @@ def test_media_configurations(harness: Harness, relation_data, valid):
                 "Please verify the integration between Media and Synapse."
             ),
             False,
-            id="correct media configuration",
+            id="incorrect media configuration",
         ),
     ],
 )
