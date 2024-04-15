@@ -471,3 +471,66 @@ async def s3_integrator_app_backup_fixture(
     yield s3_integrator_app
     await model.remove_application(s3_integrator_app_name)
     await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
+
+@pytest.fixture(scope="function", name="s3_media_bucket")
+def s3_media_bucket_fixture(
+    s3_media_configuration: dict, s3_media_credentials: dict, boto_s3_client: typing.Any
+):
+    """Creates a bucket using S3 configuration."""
+    bucket_name = s3_media_configuration["bucket"]
+    boto_s3_client.create_bucket(Bucket=bucket_name)
+    yield
+    objectsresponse = boto_s3_client.list_objects(Bucket=bucket_name)
+    if "Contents" in objectsresponse:
+        for c in objectsresponse["Contents"]:
+            boto_s3_client.delete_object(Bucket=bucket_name, Key=c["Key"])
+    boto_s3_client.delete_bucket(Bucket=bucket_name)
+
+@pytest.fixture(scope="function", name="s3_media_configuration")
+def s3_media_configuration_fixture(localstack_address: str) -> dict:
+    """Return the S3 configuration to use for media
+
+    Returns:
+        The S3 configuration as a dict
+    """
+    return {
+        "endpoint": f"http://{localstack_address}:4566",
+        "bucket": "media-bucket",
+        "region": "us-east-1",
+        "s3-uri-style": "path",
+    }
+
+@pytest.fixture(scope="function", name="s3_media_credentials")
+def s3_media_credentials_fixture(localstack_address: str) -> dict:
+    """Return the S3 AWS credentials to use for media
+
+    Returns:
+        The S3 credentials as a dict
+    """
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+    }
+
+@pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
+async def s3_integrator_app_media_fixture(
+    model: Model, s3_media_configuration: dict, s3_media_credentials: dict
+):
+    """Returns a s3-integrator app configured with media parameters."""
+    s3_integrator_app_name = "s3-integrator-media"
+    s3_integrator_app = await model.deploy(
+        "s3-integrator",
+        application_name=s3_integrator_app_name,
+        channel="latest/edge",
+        config=s3_media_configuration,
+    )
+    await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
+    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
+        "sync-s3-credentials",
+        **s3_media_credentials,
+    )
+    await action_sync_s3_credentials.wait()
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    yield s3_integrator_app
+    await model.remove_application(s3_integrator_app_name)
+    await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
