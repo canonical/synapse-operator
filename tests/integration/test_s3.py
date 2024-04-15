@@ -244,7 +244,7 @@ async def test_synapse_backup_delete(
 
 
 @pytest.mark.s3
-@pytest.mark.usefixtures("s3_storage")
+@pytest.mark.usefixtures("s3_media_bucket")
 async def test_synapse_media_upload(
     model: Model,
     synapse_app: Application,
