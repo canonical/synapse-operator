@@ -16,7 +16,7 @@ from ops.testing import Harness
 
 import synapse
 import synapse.workload
-from irc_bridge import IRCBridgeObserver, PEMCreateError
+from irc_bridge import enable_irc_bridge, PEMCreateError
 from synapse.workload import (
     IRC_BRIDGE_CONFIG_PATH,
     SYNAPSE_CONFIG_PATH,

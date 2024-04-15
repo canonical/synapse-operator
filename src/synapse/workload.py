@@ -32,6 +32,7 @@ IRC_BRIDGE_REGISTRATION_PATH = f"{SYNAPSE_CONFIG_DIR}/config/appservice-registra
 IRC_BRIDGE_HEALTH_PORT = "5446"
 IRC_BRIDGE_SERVICE_NAME = "irc"
 IRC_BRIDGE_BOT_NAME = "irc_bot"
+IRC_BRIDGE_RELATION_NAME = "irc-bridge-database"
 CHECK_IRC_BRIDGE_READY_NAME = "synapse-irc-ready"
 PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -469,7 +470,7 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     config["database"]["connectionString"] = db_connect_string
     if charm_state.synapse_config.irc_bridge_admins:
         for admin in (a.strip() for a in charm_state.synapse_config.irc_bridge_admins.split(",")):
-            config["ircService"]["permissions"][admin] = "admin"
+            config["ircService"]["permissions"][f"@{admin}"] = "admin"
     return config
 
 
@@ -535,29 +536,23 @@ def create_irc_bridge_app_registration(container: ops.Container) -> None:
     """
     try:
         _get_irc_bridge_app_registration(container=container)
-        _add_app_service_config_field(container=container)
     except ops.pebble.PathError as exc:
         raise CreateIRCBridgeRegistrationError(str(exc)) from exc
 
 
-def _add_app_service_config_field(container: ops.Container) -> None:
+def add_app_service_config_field(current_yaml: dict) -> None:
     """Add app_service_config_files to the Synapse configuration.
 
     Args:
-        container: Container of the charm.
+        current_yaml: current configuration.
 
     Raises:
         WorkloadError: something went wrong updating the configuration.
     """
     try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-
         current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
-
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(f"An error occurred while updating the configuration: {exc}") from exc
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:

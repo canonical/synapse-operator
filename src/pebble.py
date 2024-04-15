@@ -14,6 +14,7 @@ from ops.pebble import Check
 
 import synapse
 from charm_state import CharmState
+from irc_bridge import enable_irc_bridge
 
 logger = logging.getLogger(__name__)
 
@@ -256,6 +257,11 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
         if charm_state.datasource:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
+        if charm_state.synapse_config.enable_irc_bridge:
+            logger.info("Synapse IRC bridge enabled.")
+            synapse.add_app_service_config_field(current_synapse_config)
+            enable_irc_bridge(container=container, charm_state=charm_state)
+            replan_irc_bridge(container=container)
         _push_synapse_config(container, current_synapse_config)
         synapse.validate_config(container)
         restart_synapse(container=container, charm_state=charm_state)

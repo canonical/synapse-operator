@@ -23,7 +23,7 @@ from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
-from irc_bridge import IRCBridgeObserver
+from irc_bridge import IRCBridge
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
@@ -79,7 +79,7 @@ class SynapseCharm(CharmBaseWithState):
             strip_prefix=True,
         )
         self._observability = Observability(self)
-        self._irc_bridge = IRCBridgeObserver(self)
+        self._irc_bridge = IRCBridge(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
