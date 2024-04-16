@@ -54,6 +54,7 @@ def enable_irc_bridge(charm_state: CharmState, container: ops.model.Container) -
     synapse.create_irc_bridge_config(
         container=container, charm_state=charm_state, db_connect_string=db_connect_string
     )
+    synapse.create_irc_bridge_app_registration(container=container)
     _create_pem_file(container=container)
 
 

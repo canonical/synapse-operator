@@ -259,8 +259,8 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
             replan_stats_exporter(container=container, charm_state=charm_state)
         if charm_state.synapse_config.enable_irc_bridge:
             logger.info("Synapse IRC bridge enabled.")
-            synapse.add_app_service_config_field(current_synapse_config)
             enable_irc_bridge(container=container, charm_state=charm_state)
+            synapse.add_app_service_config_field(current_synapse_config)
             replan_irc_bridge(container=container)
         _push_synapse_config(container, current_synapse_config)
         synapse.validate_config(container)
