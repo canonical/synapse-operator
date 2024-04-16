@@ -7,10 +7,9 @@ import logging
 import typing
 from secrets import token_hex
 
-import requests
-
 import magic
 import pytest
+import requests
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -18,7 +17,7 @@ from juju.unit import Unit
 from ops.model import ActiveStatus
 
 # caused by pytest fixtures
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, duplicate-code
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
@@ -294,12 +293,12 @@ async def test_synapse_enable_media(
     headers = {"Authorization": authorization_token}
 
     room_id = "test_room_id"
-    
+
     # Create dummy media file
     media_file = "test_media_file.txt"
-    with open(media_file, "w") as f:
+    with open(media_file, "w", encoding="utf-8") as f:
         f.write("test media file")
-    
+
     # Upload media file
     with open(media_file, "rb") as f:
         files = {"file": (media_file, f)}
@@ -307,12 +306,15 @@ async def test_synapse_enable_media(
             f"http://{synapse_ip}:8008/_matrix/media/{room_id}/upload?filename={media_file}",
             headers=headers,
             files=files,
+            timeout=5,
         )
     assert response.status_code == 200
 
     # Check if media file is uploaded using admin API
     response = requests.get(
-        f"http://{synapse_ip}:8008/_synapse/admin/{room_id}/media/{response.json()['content_uri']}",
+        f"http://{synapse_ip}:8008/_synapse/admin/{room_id}"
+        "/media/{response.json()['content_uri']}",
         headers=headers,
+        timeout=5,
     )
     assert response.status_code == 200
