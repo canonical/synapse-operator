@@ -472,6 +472,7 @@ async def s3_integrator_app_backup_fixture(
     await model.remove_application(s3_integrator_app_name)
     await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
 
+
 @pytest.fixture(scope="function", name="s3_media_bucket")
 def s3_media_bucket_fixture(
     s3_media_configuration: dict, s3_media_credentials: dict, boto_s3_client: typing.Any
@@ -485,6 +486,7 @@ def s3_media_bucket_fixture(
         for c in objectsresponse["Contents"]:
             boto_s3_client.delete_object(Bucket=bucket_name, Key=c["Key"])
     boto_s3_client.delete_bucket(Bucket=bucket_name)
+
 
 @pytest.fixture(scope="function", name="s3_media_configuration")
 def s3_media_configuration_fixture(localstack_address: str) -> dict:
@@ -500,6 +502,7 @@ def s3_media_configuration_fixture(localstack_address: str) -> dict:
         "s3-uri-style": "path",
     }
 
+
 @pytest.fixture(scope="function", name="s3_media_credentials")
 def s3_media_credentials_fixture(localstack_address: str) -> dict:
     """Return the S3 AWS credentials to use for media
@@ -511,6 +514,7 @@ def s3_media_credentials_fixture(localstack_address: str) -> dict:
         "access-key": token_hex(16),
         "secret-key": token_hex(16),
     }
+
 
 @pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
 async def s3_integrator_app_media_fixture(
