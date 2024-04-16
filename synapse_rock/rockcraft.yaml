@@ -120,6 +120,7 @@ parts:
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
         overlay-packages:
             - ca-certificates
+            - libjemalloc2
     synapse-conf:
         plugin: dump
         source: attributemaps
