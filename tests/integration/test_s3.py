@@ -250,7 +250,6 @@ async def test_synapse_enable_media(
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
-    relation_name: str,
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -274,6 +273,7 @@ async def test_synapse_enable_media(
             "endpoint": "https:/example.com",
         },
     )
+    relation_name = "media"
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     await model.add_relation(f"{s3_integrator_app.name}:{relation_name}", synapse_app.name)
     await model.wait_for_idle(

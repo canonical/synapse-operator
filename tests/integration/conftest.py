@@ -498,4 +498,3 @@ async def s3_media_fixture(
     await model.wait_for_idle()
     yield synapse_app
     await model.wait_for_idle()
-    await model.remove_relation(synapse_app.name, relation_name)
