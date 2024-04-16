@@ -279,6 +279,7 @@ def change_config(  # noqa: C901
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
         synapse.enable_serve_server_wellknown(current_synapse_config)
+        synapse.enable_replication(current_synapse_config)
         if charm_state.instance_map_config is not None:
             logger.debug("pebble.change_config: Enabling instance_map")
             synapse.enable_instance_map(current_synapse_config, charm_state=charm_state)

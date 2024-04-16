@@ -311,7 +311,7 @@ def enable_replication(current_yaml: dict) -> None:
     try:
         resources = {"names": ["replication"]}
         metric_listener = {
-            "port": 9093,
+            "port": 8034,
             "type": "http",
             "bind_addresses": ["::"],
             "resources": [resources],
