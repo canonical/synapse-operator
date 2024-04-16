@@ -498,27 +498,4 @@ async def s3_media_fixture(
     await model.wait_for_idle()
     yield synapse_app
     await model.wait_for_idle()
-
-
-@pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
-async def s3_integrator_app_media_fixture(
-    model: Model, s3_media_configuration: dict, s3_media_credentials: dict
-):
-    """Returns a s3-integrator app configured with media parameters."""
-    s3_integrator_app_name = "s3-integrator-media"
-    s3_integrator_app = await model.deploy(
-        "s3-integrator",
-        application_name=s3_integrator_app_name,
-        channel="latest/edge",
-        config=s3_media_configuration,
-    )
-    await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
-    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
-        "sync-s3-credentials",
-        **s3_media_credentials,
-    )
-    await action_sync_s3_credentials.wait()
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    yield s3_integrator_app
-    await model.remove_application(s3_integrator_app_name)
-    await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
+    await model.remove_relation(synapse_app.name, relation_name)
