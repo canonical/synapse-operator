@@ -45,6 +45,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
             "SYNAPSE_NO_TLS": "True",
             "SYNAPSE_REPORT_STATS": "no",
             "SYNAPSE_SERVER_NAME": TEST_SERVER_NAME,
+            "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
         },
         "startup": "enabled",
     }

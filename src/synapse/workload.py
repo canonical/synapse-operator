@@ -805,6 +805,7 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
         # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
         "SYNAPSE_NO_TLS": str(True),
+        "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
     }
     datasource = charm_state.datasource
     if datasource is not None:
