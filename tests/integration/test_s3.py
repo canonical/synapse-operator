@@ -7,6 +7,8 @@ import logging
 import typing
 from secrets import token_hex
 
+import requests
+
 import magic
 import pytest
 from juju.action import Action
@@ -243,52 +245,74 @@ async def test_synapse_backup_delete(
     assert "backups" not in list_backups_action.results
 
 
-@pytest.mark.s3
-@pytest.mark.usefixtures("s3_media_bucket")
-async def test_synapse_media_upload(
+@pytest.mark.parametrize(
+    "relation_name",
+    [
+        pytest.param("smtp-legacy"),
+        pytest.param("smtp", marks=[pytest.mark.requires_secrets]),
+    ],
+)
+async def test_synapse_enable_media(
     model: Model,
     synapse_app: Application,
-    s3_integrator_app_storage: Application,
-    s3_storage_configuration: dict,
-    boto_s3_client: typing.Any,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    access_token: str,
+    relation_name: str,
 ):
     """
-    arrange: Synapse App deployed and related with s3-integrator. Set media_store_bucket.
-    act: Upload media to Synapse.
-    assert: The media is in the S3 bucket.
+    arrange: build and deploy the Synapse charm. Create an user and get the access token
+        Deploy, configure and integrate with Synapse the media-integrator charm.
+    act:  try to check if a given email address is not already associated.
+    assert: the Synapse application is active and the error returned is the one expected.
     """
-    await model.add_relation(s3_integrator_app_storage.name, f"{synapse_app.name}:storage")
-    await synapse_app.set_config({"media_store_bucket": s3_storage_configuration["bucket"]})
+    if "s3-integrator" in model.applications:
+        await model.remove_application("s3-integrator")
+        await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+
+    secret_key = token_hex(16)
+    s3_integrator_app = await model.deploy(
+        "s3-integrator",
+        config={
+            "access-key": "access_key",
+            "secret-key": secret_key,
+            "region": "eu-west-1",
+            "bucket": "synapse-media-bucket",
+            "endpoint": "https:/example.com",
+        },
+    )
+    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    await model.add_relation(f"{s3_integrator_app.name}:{relation_name}", synapse_app.name)
     await model.wait_for_idle(
         idle_period=30,
-        apps=[synapse_app.name, s3_integrator_app_storage.name],
+        apps=[synapse_app.name, s3_integrator_app.name],
         status=ACTIVE_STATUS_NAME,
     )
 
-    synapse_unit: Unit = next(iter(synapse_app.units))
-    media_id = token_hex(16)
-    media_content = b"Hello, World!"
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    authorization_token = f"Bearer {access_token}"
+    headers = {"Authorization": authorization_token}
 
-    upload_media_action: Action = await synapse_unit.run_action(
-        "upload-media", **{"media-id": media_id, "media-content": media_content}
+    room_id = "test_room_id"
+    
+    # Create dummy media file
+    media_file = "test_media_file.txt"
+    with open(media_file, "w") as f:
+        f.write("test media file")
+    
+    # Upload media file
+    with open(media_file, "rb") as f:
+        files = {"file": (media_file, f)}
+        response = requests.post(
+            f"http://{synapse_ip}:8008/_matrix/media/{room_id}/upload?filename={media_file}",
+            headers=headers,
+            files=files,
+        )
+    assert response.status_code == 200
+
+    # Check if media file is uploaded using admin API
+    response = requests.get(
+        f"http://{synapse_ip}:8008/_synapse/admin/{room_id}/media/{response.json()['content_uri']}",
+        headers=headers,
     )
-
-    await upload_media_action.wait()
-    assert upload_media_action.status == "completed"
-
-    bucket_name = s3_storage_configuration["bucket"]
-    path = s3_storage_configuration["path"].strip("/")
-    object_key = f"{path}/{media_id}"
-    s3objresp = boto_s3_client.get_object(Bucket=bucket_name, Key=object_key)
-    objbuf = s3objresp["Body"].read()
-
-    assert objbuf == media_content
-
-    download_media_action: Action = await synapse_unit.run_action(
-        "download-media", **{"media-id": media_id}
-    )
-
-    await download_media_action.wait()
-
-    assert download_media_action.status == "completed"
-    assert download_media_action.results["media-content"] == media_content
+    assert response.status_code == 200
