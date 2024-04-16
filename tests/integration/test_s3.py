@@ -288,7 +288,7 @@ async def test_synapse_enable_media(
 
     room_id = "test_room_id"
 
-    # Create dummy media file
+    # Create placeholder media file
     media_file = "test_media_file.txt"
     with open(media_file, "w", encoding="utf-8") as f:
         f.write("test media file")
