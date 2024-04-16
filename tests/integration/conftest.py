@@ -473,47 +473,27 @@ async def s3_integrator_app_backup_fixture(
     await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
 
 
-@pytest.fixture(scope="function", name="s3_media_bucket")
-def s3_media_bucket_fixture(
-    s3_media_configuration: dict, s3_media_credentials: dict, boto_s3_client: typing.Any
+@pytest.fixture(scope="function", name="s3_media")
+async def s3_media_bucket_fixture(
+    model: Model,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    access_token: str,
+    relation_name: str,
 ):
     """Creates a bucket using S3 configuration."""
-    bucket_name = s3_media_configuration["bucket"]
-    boto_s3_client.create_bucket(Bucket=bucket_name)
+    bucket_name = "media-bucket"
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    await synapse_app.set_config({"media_store_bucket": bucket_name})
+    await model.wait_for_idle()
     yield
-    objectsresponse = boto_s3_client.list_objects(Bucket=bucket_name)
-    if "Contents" in objectsresponse:
-        for c in objectsresponse["Contents"]:
-            boto_s3_client.delete_object(Bucket=bucket_name, Key=c["Key"])
-    boto_s3_client.delete_bucket(Bucket=bucket_name)
-
-
-@pytest.fixture(scope="function", name="s3_media_configuration")
-def s3_media_configuration_fixture(localstack_address: str) -> dict:
-    """Return the S3 configuration to use for media
-
-    Returns:
-        The S3 configuration as a dict
-    """
-    return {
-        "endpoint": f"http://{localstack_address}:4566",
-        "bucket": "media-bucket",
-        "region": "us-east-1",
-        "s3-uri-style": "path",
-    }
-
-
-@pytest.fixture(scope="function", name="s3_media_credentials")
-def s3_media_credentials_fixture(localstack_address: str) -> dict:
-    """Return the S3 AWS credentials to use for media
-
-    Returns:
-        The S3 credentials as a dict
-    """
-    return {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
-    }
+    action_delete_media_bucket: Action = await synapse_app.units[0].run_action(
+        "delete-media-bucket",
+        access_token=access_token,
+        relation_name=relation_name,
+    )
+    await action_delete_media_bucket.wait()
+    await model.wait_for_idle()
 
 
 @pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")

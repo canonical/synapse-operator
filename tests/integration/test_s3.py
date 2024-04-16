@@ -244,13 +244,7 @@ async def test_synapse_backup_delete(
     assert "backups" not in list_backups_action.results
 
 
-@pytest.mark.parametrize(
-    "relation_name",
-    [
-        pytest.param("smtp-legacy"),
-        pytest.param("smtp", marks=[pytest.mark.requires_secrets]),
-    ],
-)
+@pytest.mark.usefixtures("s3_media")
 async def test_synapse_enable_media(
     model: Model,
     synapse_app: Application,
