@@ -474,25 +474,30 @@ async def s3_integrator_app_backup_fixture(
 
 
 @pytest.fixture(scope="function", name="s3_media")
-async def s3_media_bucket_fixture(
+async def s3_media_fixture(
     model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
     relation_name: str,
 ):
-    """Creates a bucket using S3 configuration."""
-    bucket_name = "media-bucket"
+    """Return the Synapse application with the media configuration."""
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    await synapse_app.set_config({"media_store_bucket": bucket_name})
-    await model.wait_for_idle()
-    yield
-    action_delete_media_bucket: Action = await synapse_app.units[0].run_action(
-        "delete-media-bucket",
-        access_token=access_token,
-        relation_name=relation_name,
+    await synapse_app.set_config(
+        {
+            "media_store": "s3",
+            "media_store_bucket": "media-bucket",
+            "media_store_path": "/media",
+            "media_store_s3_endpoint": f"http://{synapse_ip}:4566",
+            "media_store_s3_access_key": token_hex(16),
+            "media_store_s3_secret_key": token_hex(16),
+            "media_store_s3_region": "us-east-1",
+            "media_store_s3_uri_style": "path",
+        }
     )
-    await action_delete_media_bucket.wait()
+    await model.wait_for_idle()
+    yield synapse_app
+    await model.remove_relation(relation_name)
     await model.wait_for_idle()
 
 
