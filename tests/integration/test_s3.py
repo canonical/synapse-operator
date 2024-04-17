@@ -297,7 +297,7 @@ async def test_synapse_enable_media(
     with open(media_file, "rb") as f:
         files = {"file": (media_file, f)}
         response = requests.post(
-            f"http://{synapse_ip}:8008/_matrix/media/{room_id}/upload?filename={media_file}",
+            f"http://{synapse_ip}:4566/_matrix/media/{room_id}/upload?filename={media_file}",
             headers=headers,
             files=files,
             timeout=5,
@@ -306,7 +306,7 @@ async def test_synapse_enable_media(
 
     # Check if media file is uploaded using admin API
     response = requests.get(
-        f"http://{synapse_ip}:8008/_synapse/admin/{room_id}"
+        f"http://{synapse_ip}:4566/_synapse/admin/{room_id}"
         "/media/{response.json()['content_uri']}",
         headers=headers,
         timeout=5,

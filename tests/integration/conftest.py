@@ -485,14 +485,13 @@ async def s3_media_fixture(
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     await synapse_app.set_config(
         {
-            "media_store": "s3",
-            "media_store_bucket": "media-bucket",
-            "media_store_path": "/media",
-            "media_store_s3_endpoint": f"http://{synapse_ip}:4566",
-            "media_store_s3_access_key": token_hex(16),
-            "media_store_s3_secret_key": token_hex(16),
-            "media_store_s3_region": "us-east-1",
-            "media_store_s3_uri_style": "path",
+            "access-key": "access_key",
+            "secret-key": token_hex(16),
+            "region": "eu-west-1",
+            "bucket": "synapse-media-bucket",
+            "endpoint": "https:/example.com",
+            "path": "/synapse-media",
+            "s3-uri-style": "path",
         }
     )
     await model.wait_for_idle()
