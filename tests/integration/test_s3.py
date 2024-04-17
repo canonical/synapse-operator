@@ -253,7 +253,6 @@ async def test_synapse_enable_media(
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
     localstack_address: str,
-    boto_s3_client: typing.Any,
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -355,7 +354,6 @@ async def test_synapse_enable_media(
     assert response.status_code == 200
     media_id = response.json().get("content_uri")
 
-    response = s3_client.list_objects_v2(Bucket=bucket_name)
-    objects = response.get('Contents', [])
-    media_exists = any(obj['Key'] == media_id for obj in objects)
-    assert media_exists
+    s3objres = s3_client.get_object(Bucket=bucket_name, Key=media_id)
+    objbuf = s3objres["Body"].read()
+    assert objbuf == b"test media file"
