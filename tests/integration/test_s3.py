@@ -352,9 +352,10 @@ async def test_synapse_enable_media(
             files=files,
             timeout=5,
         )
-    breakpoint()
     assert response.status_code == 200
+    media_id = response.json().get("content_uri")
 
-    s3_client.list_objects_v2(Bucket="synapse-media-bucket")
-    # TODO CHECK THAT THE OBJECT IS THERE. MAYBE CHECK IT WITH
-    # THE PREVIOUS RESPONSE NAME
+    response = s3_client.list_objects_v2(Bucket=bucket_name)
+    objects = response.get('Contents', [])
+    media_exists = any(obj['Key'] == media_id for obj in objects)
+    assert media_exists
