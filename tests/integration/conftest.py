@@ -483,13 +483,14 @@ async def s3_media_fixture(
 ):
     """Return the Synapse application with the media configuration."""
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    secret_key = token_hex(16)
     await synapse_app.set_config(
         {
             "access-key": "access_key",
-            "secret-key": token_hex(16),
+            "secret-key": secret_key,
             "region": "eu-west-1",
             "bucket": "synapse-media-bucket",
-            "endpoint": "https:/example.com",
+            "endpoint": f"http://{synapse_ip}:4566",
             "path": "/synapse-media",
             "s3-uri-style": "path",
         }
