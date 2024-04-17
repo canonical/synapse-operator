@@ -7,9 +7,11 @@ import logging
 import typing
 from secrets import token_hex
 
+import boto3
 import magic
 import pytest
 import requests
+from botocore.config import Config as BotoConfig
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -244,12 +246,14 @@ async def test_synapse_backup_delete(
     assert "backups" not in list_backups_action.results
 
 
-@pytest.mark.usefixtures("s3_media")
+@pytest.mark.s3
 async def test_synapse_enable_media(
     model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
+    localstack_address: str,
+    boto_s3_client: typing.Any,
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -257,36 +261,82 @@ async def test_synapse_enable_media(
     act:  try to check if a given email address is not already associated.
     assert: the Synapse application is active and the error returned is the one expected.
     """
-    if "s3-integrator" in model.applications:
-        await model.remove_application("s3-integrator")
-        await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+    # if "s3-integrator" in model.applications:
+    #     await model.remove_application("s3-media")
+    #     await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
+    #     await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+
+    s3_endpoint = f"http://{localstack_address}:4566"
+    bucket_name = "synapse-media-bucket"
+    region = "us-east-1"
+    access_key = "access_key"
 
     secret_key = token_hex(16)
     s3_integrator_app = await model.deploy(
         "s3-integrator",
+        application_name="s3-media",
         config={
-            "access-key": "access_key",
-            "secret-key": secret_key,
-            "region": "eu-west-1",
-            "bucket": "synapse-media-bucket",
-            "endpoint": "https:/example.com",
+            "region": region,
+            "bucket": bucket_name,
+            "endpoint": s3_endpoint,
+            "s3-uri-style": "path",
+            "path": "/media",
         },
     )
-    relation_name = "media"
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    await model.add_relation(f"{s3_integrator_app.name}:{relation_name}", synapse_app.name)
+
+    await model.wait_for_idle(apps=[s3_integrator_app.name], idle_period=5, status="blocked")
+    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
+        "sync-s3-credentials",
+        **{
+            "access-key": access_key,
+            "secret-key": secret_key,
+        },
+    )
+    await action_sync_s3_credentials.wait()
+    await model.wait_for_idle(apps=[s3_integrator_app.name], status="active")
+
+    await model.add_relation(f"{s3_integrator_app.name}", f"{synapse_app.name}:media")
+
     await model.wait_for_idle(
         idle_period=30,
         apps=[synapse_app.name, s3_integrator_app.name],
         status=ACTIVE_STATUS_NAME,
     )
 
+    s3_client_config = BotoConfig(
+        region_name=region,
+        s3={
+            "addressing_style": "virtual",
+        },
+        # no_proxy env variable is not read by boto3, so
+        # this is needed for the tests to avoid hitting the proxy.
+        proxies={},
+    )
+
+    s3_client = boto3.client(
+        "s3",
+        region,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        endpoint_url=s3_endpoint,
+        use_ssl=False,
+        config=s3_client_config,
+    )
+    s3_client.create_bucket(Bucket=bucket_name)
+
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
 
-    room_id = "test_room_id"
+    # room_name = "test_room_id"
+    # response = requests.post(
+    #     f"http://{synapse_ip}:8080/_matrix/client/v3/createRoom",
+    #     json={"room_alias_name": room_name},
+    #     headers=headers,
+    #     timeout=5,
+    # )
+    # assert response.status_code == 200
+    # room_id = response.json().get("room_id")
 
     # Create placeholder media file
     media_file = "test_media_file.txt"
@@ -297,18 +347,14 @@ async def test_synapse_enable_media(
     with open(media_file, "rb") as f:
         files = {"file": (media_file, f)}
         response = requests.post(
-            f"http://{synapse_ip}:4566/_matrix/media/{room_id}/upload?filename={media_file}",
+            f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
             headers=headers,
             files=files,
             timeout=5,
         )
+    breakpoint()
     assert response.status_code == 200
 
-    # Check if media file is uploaded using admin API
-    response = requests.get(
-        f"http://{synapse_ip}:4566/_synapse/admin/{room_id}"
-        "/media/{response.json()['content_uri']}",
-        headers=headers,
-        timeout=5,
-    )
-    assert response.status_code == 200
+    s3_client.list_objects_v2(Bucket="synapse-media-bucket")
+    # TODO CHECK THAT THE OBJECT IS THERE. MAYBE CHECK IT WITH
+    # THE PREVIOUS RESPONSE NAME

@@ -471,30 +471,3 @@ async def s3_integrator_app_backup_fixture(
     yield s3_integrator_app
     await model.remove_application(s3_integrator_app_name)
     await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
-
-
-@pytest.fixture(scope="function", name="s3_media")
-async def s3_media_fixture(
-    model: Model,
-    synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-    access_token: str,
-    relation_name: str,
-):
-    """Return the Synapse application with the media configuration."""
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    secret_key = token_hex(16)
-    await synapse_app.set_config(
-        {
-            "access-key": "access_key",
-            "secret-key": secret_key,
-            "region": "eu-west-1",
-            "bucket": "synapse-media-bucket",
-            "endpoint": f"http://{synapse_ip}:4566",
-            "path": "/synapse-media",
-            "s3-uri-style": "path",
-        }
-    )
-    await model.wait_for_idle()
-    yield synapse_app
-    await model.wait_for_idle()
