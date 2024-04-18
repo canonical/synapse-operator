@@ -282,8 +282,7 @@ async def test_synapse_enable_media(
     boto_s3_media_client.create_bucket(Bucket=bucket_name)
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    authorization_token = f"Bearer {access_token}"
-    headers = {"Authorization": authorization_token}
+    headers = {"Authorization": f"Bearer {access_token}"}
     media_file = "test_media_file.txt"
 
     with open(media_file, "w", encoding="utf-8") as f:
@@ -291,28 +290,15 @@ async def test_synapse_enable_media(
 
     # Upload media file
     with open(media_file, "rb") as f:
-        files = {"file": (media_file, f)}
         response = requests.post(
             f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
             headers=headers,
-            files=files,
+            files={"file": (media_file, f)},
             timeout=5,
         )
     assert response.status_code == 200
-    media_id = response.json().get("content_uri")
-    print(media_id)
 
-    # response = boto_s3_media_client.list_objects_v2(Bucket=bucket_name)
-    print(boto_s3_media_client.list_objects_v2(Bucket=bucket_name))
-
-    # s3objres = s3_client.get_object(Bucket=bucket_name, Key=media_id)
-    # objbuf = s3objres["Body"].read()
-    # assert objbuf == b"test media file"
-
-    # # try to download the media file
-    # response = requests.get(
-    #     f"http://{synapse_ip}:8080/_matrix/media/v3/download/{media_id}",
-    #     headers=headers,
-    #     timeout=5,
-    # )
-    # assert response.status_code == 200
+    # Check if the uploaded file is in the bucket
+    bucket_objects = boto_s3_media_client.list_objects(Bucket=bucket_name)
+    object_keys = [obj["Key"] for obj in bucket_objects.get("Contents", [])]
+    assert media_file in object_keys
