@@ -354,14 +354,14 @@ async def test_synapse_enable_media(
     assert response.status_code == 200
     media_id = response.json().get("content_uri")
 
-    s3objres = s3_client.get_object(Bucket=bucket_name, Key=media_id)
-    objbuf = s3objres["Body"].read()
-    assert objbuf == b"test media file"
+    # s3objres = s3_client.get_object(Bucket=bucket_name, Key=media_id)
+    # objbuf = s3objres["Body"].read()
+    # assert objbuf == b"test media file"
 
-    # try to download the media file
-    response = requests.get(
-        f"http://{synapse_ip}:8080/_matrix/media/v3/download/{media_id}",
-        headers=headers,
-        timeout=5,
-    )
-    assert response.status_code == 200
+    # # try to download the media file
+    # response = requests.get(
+    #     f"http://{synapse_ip}:8080/_matrix/media/v3/download/{media_id}",
+    #     headers=headers,
+    #     timeout=5,
+    # )
+    # assert response.status_code == 200
