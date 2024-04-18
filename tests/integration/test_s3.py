@@ -259,15 +259,15 @@ async def test_synapse_enable_media(
     act:  try to check if a given email address is not already associated.
     assert: the Synapse application is active and the error returned is the one expected.
     """
-    # if "s3-integrator" in model.applications:
-    #     await model.remove_application("s3-integrator")
-    #     await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
-    #     await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+    if "s3-integrator" in model.applications:
+        await model.remove_application("s3-integrator")
+        await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
 
-    # if "s3-media" in model.applications:
-    #     await model.remove_application("s3-media")
-    #     await model.block_until(lambda: "s3-media" not in model.applications, timeout=60)
-    #     await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+    if "s3-media" in model.applications:
+        await model.remove_application("s3-media")
+        await model.block_until(lambda: "s3-media" not in model.applications, timeout=60)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
 
     bucket_name = "synapse-media-bucket"
 
@@ -297,6 +297,11 @@ async def test_synapse_enable_media(
             timeout=5,
         )
     assert response.status_code == 200
+    # get the media id
+    media_id = response.json()["content_uri"].split("/")[3]
+    print(response.json()["content_uri"])
+    print(media_id)
+    print(boto_s3_media_client.list_objects(Bucket=bucket_name))
 
     # Check if the uploaded file is in the bucket
     bucket_objects = boto_s3_media_client.list_objects(Bucket=bucket_name)
