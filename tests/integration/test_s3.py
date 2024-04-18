@@ -7,11 +7,9 @@ import logging
 import typing
 from secrets import token_hex
 
-import boto3
 import magic
 import pytest
 import requests
-from botocore.config import Config as BotoConfig
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -252,7 +250,8 @@ async def test_synapse_enable_media(
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
-    localstack_address: str,
+    s3_integrator_app_media: Application,
+    boto_s3_media_client: typing.Any,
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -261,86 +260,31 @@ async def test_synapse_enable_media(
     assert: the Synapse application is active and the error returned is the one expected.
     """
     # if "s3-integrator" in model.applications:
-    #     await model.remove_application("s3-media")
+    #     await model.remove_application("s3-integrator")
     #     await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
     #     await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
 
-    s3_endpoint = f"http://{localstack_address}:4566"
+    # if "s3-media" in model.applications:
+    #     await model.remove_application("s3-media")
+    #     await model.block_until(lambda: "s3-media" not in model.applications, timeout=60)
+    #     await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
+
     bucket_name = "synapse-media-bucket"
-    region = "us-east-1"
-    access_key = "access_key"
 
-    secret_key = token_hex(16)
-    s3_integrator_app = await model.deploy(
-        "s3-integrator",
-        application_name="s3-media",
-        config={
-            "region": region,
-            "bucket": bucket_name,
-            "endpoint": s3_endpoint,
-            "s3-uri-style": "path",
-            "path": "/media",
-        },
-    )
-
-    await model.wait_for_idle(apps=[s3_integrator_app.name], idle_period=5, status="blocked")
-    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
-        "sync-s3-credentials",
-        **{
-            "access-key": access_key,
-            "secret-key": secret_key,
-        },
-    )
-    await action_sync_s3_credentials.wait()
-    await model.wait_for_idle(apps=[s3_integrator_app.name], status="active")
-
-    await model.add_relation(f"{s3_integrator_app.name}", f"{synapse_app.name}:media")
+    await model.add_relation(f"{s3_integrator_app_media.name}", f"{synapse_app.name}:media")
 
     await model.wait_for_idle(
         idle_period=30,
-        apps=[synapse_app.name, s3_integrator_app.name],
+        apps=[synapse_app.name, s3_integrator_app_media.name],
         status=ACTIVE_STATUS_NAME,
     )
 
-    s3_client_config = BotoConfig(
-        region_name=region,
-        s3={
-            "addressing_style": "virtual",
-        },
-        # no_proxy env variable is not read by boto3, so
-        # this is needed for the tests to avoid hitting the proxy.
-        proxies={},
-    )
-
-    s3_client = boto3.client(
-        "s3",
-        region,
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-        endpoint_url=s3_endpoint,
-        use_ssl=False,
-        config=s3_client_config,
-    )
-    s3_client.create_bucket(Bucket=bucket_name)
+    boto_s3_media_client.create_bucket(Bucket=bucket_name)
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
-
-    # room_name = "test_room_id"
-    # response = requests.post(
-    #     f"http://{synapse_ip}:8080/_matrix/client/v3/createRoom",
-    #     json={"room_alias_name": room_name},
-    #     headers=headers,
-    #     timeout=5,
-    # )
-    # assert response.status_code == 200
-    # room_id = response.json().get("room_id")
-
-    # Create placeholder media file
     media_file = "test_media_file.txt"
-    with open(media_file, "w", encoding="utf-8") as f:
-        f.write("test media file")
 
     # Upload media file
     with open(media_file, "rb") as f:
@@ -353,15 +297,7 @@ async def test_synapse_enable_media(
         )
     assert response.status_code == 200
     media_id = response.json().get("content_uri")
+    print(media_id)
 
-    # s3objres = s3_client.get_object(Bucket=bucket_name, Key=media_id)
-    # objbuf = s3objres["Body"].read()
-    # assert objbuf == b"test media file"
-
-    # # try to download the media file
-    # response = requests.get(
-    #     f"http://{synapse_ip}:8080/_matrix/media/v3/download/{media_id}",
-    #     headers=headers,
-    #     timeout=5,
-    # )
-    # assert response.status_code == 200
+    # response = boto_s3_media_client.list_objects_v2(Bucket=bucket_name)
+    print(boto_s3_media_client.list_objects_v2(Bucket=bucket_name))
