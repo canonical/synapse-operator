@@ -503,7 +503,7 @@ def s3_media_credentials_fixture(localstack_address: str) -> dict:
 
 
 @pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
-async def s3_integrator_app_backup_fixture(
+async def s3_integrator_app_media_fixture(
     model: Model, s3_media_configuration: dict, s3_media_credentials: dict
 ):
     """Returns a s3-integrator app configured with backup parameters."""

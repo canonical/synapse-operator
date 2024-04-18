@@ -7,11 +7,9 @@ import logging
 import typing
 from secrets import token_hex
 
-import boto3
 import magic
 import pytest
 import requests
-from botocore.config import Config as BotoConfig
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -252,10 +250,8 @@ async def test_synapse_enable_media(
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     access_token: str,
-    localstack_address: str,
     s3_integrator_app_media: Application,
     boto_s3_media_client: typing.Any,
-
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -273,13 +269,8 @@ async def test_synapse_enable_media(
     #     await model.block_until(lambda: "s3-media" not in model.applications, timeout=60)
     #     await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
 
-    s3_endpoint = f"http://{localstack_address}:4566"
     bucket_name = "synapse-media-bucket"
-    region = "us-east-1"
-    access_key = "access_key"
 
-    secret_key = token_hex(16)
-    
     await model.add_relation(f"{s3_integrator_app_media.name}", f"{synapse_app.name}:media")
 
     await model.wait_for_idle(
@@ -310,7 +301,6 @@ async def test_synapse_enable_media(
 
     # response = boto_s3_media_client.list_objects_v2(Bucket=bucket_name)
     print(boto_s3_media_client.list_objects_v2(Bucket=bucket_name))
-
 
     # s3objres = s3_client.get_object(Bucket=bucket_name, Key=media_id)
     # objbuf = s3objres["Body"].read()
