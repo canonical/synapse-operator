@@ -259,20 +259,9 @@ async def test_synapse_enable_media(
     act:  try to check if a given email address is not already associated.
     assert: the Synapse application is active and the error returned is the one expected.
     """
-    if "s3-integrator" in model.applications:
-        await model.remove_application("s3-integrator")
-        await model.block_until(lambda: "s3-integrator" not in model.applications, timeout=60)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
-
-    if "s3-media" in model.applications:
-        await model.remove_application("s3-media")
-        await model.block_until(lambda: "s3-media" not in model.applications, timeout=60)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=5)
-
     bucket_name = "synapse-media-bucket"
 
     await model.add_relation(f"{s3_integrator_app_media.name}", f"{synapse_app.name}:media")
-
     await model.wait_for_idle(
         idle_period=30,
         apps=[synapse_app.name, s3_integrator_app_media.name],
