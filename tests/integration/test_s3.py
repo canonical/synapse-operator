@@ -304,7 +304,7 @@ async def test_synapse_enable_media(
     # Key is in the format local_content/AA/BB/CCCC..
     # The media_id is concatenation of AABBCCCC..
     file_found = any(
-        "/".join(obj["Key"].split("/")[1:]) == media_id
+        "".join(obj["Key"].split("/")[1:]) == media_id
         # There should be only one object in the bucket
         for obj in bucket_objects.get("Contents", [])
     )
