@@ -302,8 +302,11 @@ async def test_synapse_enable_media(
     print(response.json()["content_uri"])
     print(media_id)
     print(boto_s3_media_client.list_objects(Bucket=bucket_name))
-
     # Check if the uploaded file is in the bucket
     bucket_objects = boto_s3_media_client.list_objects(Bucket=bucket_name)
+    #print content of bucket
+    for obj in bucket_objects.get("Contents", []):
+        print(obj)
+
     object_keys = [obj["Key"] for obj in bucket_objects.get("Contents", [])]
     assert media_file in object_keys
