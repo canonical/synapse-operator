@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm needing the s3_backup_bucket fixture."""
+import io
 import logging
 import typing
 from secrets import token_hex
@@ -252,6 +253,7 @@ async def test_synapse_enable_media(
     access_token: str,
     s3_integrator_app_media: Application,
     boto_s3_media_client: typing.Any,
+    s3_media_configuration: dict,
 ):
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
@@ -259,8 +261,8 @@ async def test_synapse_enable_media(
     act:  try to check if a given email address is not already associated.
     assert: the Synapse application is active and the error returned is the one expected.
     """
-    bucket_name = "synapse-media-bucket"
-
+    bucket_name = s3_media_configuration["bucket"]
+    print(f"bucket_name: {bucket_name}")
     await model.add_relation(f"{s3_integrator_app_media.name}", f"{synapse_app.name}:media")
     await model.wait_for_idle(
         idle_period=30,
@@ -268,23 +270,17 @@ async def test_synapse_enable_media(
         status=ACTIVE_STATUS_NAME,
     )
 
-    boto_s3_media_client.create_bucket(Bucket=bucket_name)
-
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     headers = {"Authorization": f"Bearer {access_token}"}
     media_file = "test_media_file.txt"
 
-    with open(media_file, "w", encoding="utf-8") as f:
-        f.write("test media file")
-
     # Upload media file
-    with open(media_file, "rb") as f:
-        response = requests.post(
-            f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
-            headers=headers,
-            files={"file": (media_file, f)},
-            timeout=5,
-        )
+    response = requests.post(
+        f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
+        headers=headers,
+        files={"file": (media_file, io.BytesIO(b"some text"))},
+        timeout=5,
+    )
     assert response.status_code == 200
 
     media_id = response.json()["content_uri"].split("/")[3]

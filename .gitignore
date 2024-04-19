@@ -50,6 +50,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Integration test 
+test_media_file.txt
+
 # Translations
 *.mo
 *.pot

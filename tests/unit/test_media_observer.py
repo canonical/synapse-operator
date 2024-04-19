@@ -107,7 +107,11 @@ def test_media_configurations(harness: Harness, relation_data, valid):
     harness.add_relation("media", "s3-integrator", app_data=relation_data)
     harness.begin()
 
-    assert (harness.charm._media.get_relation_as_media_conf() is None) == (not valid)
+    media_conf = harness.charm._media.get_relation_as_media_conf()
+    if valid:
+        assert media_conf is not None
+    else:
+        assert media_conf is None
 
 
 @pytest.mark.parametrize(

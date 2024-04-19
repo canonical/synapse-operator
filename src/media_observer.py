@@ -16,7 +16,7 @@ from ops.framework import Object
 import pebble
 import synapse
 from backup_observer import S3_INVALID_CONFIGURATION
-from charm_state import CharmBaseWithState, CharmConfigInvalidError, CharmState
+from charm_state import CharmBaseWithState, CharmState
 from charm_types import MediaConfiguration
 from s3_parameters import S3Parameters
 
@@ -68,21 +68,15 @@ class MediaObserver(Object):
 
         Returns:
             Dict: Information needed for setting environment variables.
-
-        Raises:
-            CharmConfigInvalidError: If the Media configurations is not supported.
         """
         try:
             relation_data = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
-            logger.info("Media databag is empty. Media information will be set in the next event.")
+            logger.info("Relation data for S3 Media is not valid S3 Parameters.")
             return None
 
         if relation_data is None:
             return None
-
-        if relation_data.region is None and relation_data.endpoint is None:
-            raise CharmConfigInvalidError('one of "region" or "endpoint" needs to be set')
 
         rel_region = relation_data.region or ""
         rel_endpoint = relation_data.endpoint or ""

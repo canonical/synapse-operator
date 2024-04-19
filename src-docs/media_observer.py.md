@@ -77,9 +77,3 @@ Get Media data from relation.
  - <b>`Dict`</b>:  Information needed for setting environment variables. 
 
 
-
-**Raises:**
- 
- - <b>`CharmConfigInvalidError`</b>:  If the Media configurations is not supported. 
-
-
