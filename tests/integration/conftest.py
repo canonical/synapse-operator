@@ -534,7 +534,7 @@ async def s3_integrator_app_media_fixture(
 
 
 @pytest.fixture(scope="function", name="boto_s3_media_client")
-async def boto_s3_media_client_fixture(
+def boto_s3_media_client_fixture(
     model: Model, s3_media_configuration: dict, s3_media_credentials: dict
 ):
     """Return a S# boto3 client ready to use

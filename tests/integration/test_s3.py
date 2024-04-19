@@ -262,7 +262,7 @@ async def test_synapse_enable_media(
     assert: the Synapse application is active and the error returned is the one expected.
     """
     bucket_name = s3_media_configuration["bucket"]
-    print(f"bucket_name: {bucket_name}")
+
     await model.add_relation(f"{s3_integrator_app_media.name}", f"{synapse_app.name}:media")
     await model.wait_for_idle(
         idle_period=30,
@@ -273,12 +273,11 @@ async def test_synapse_enable_media(
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     headers = {"Authorization": f"Bearer {access_token}"}
     media_file = "test_media_file.txt"
-
     # Upload media file
     response = requests.post(
         f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
         headers=headers,
-        files={"file": (media_file, io.BytesIO(b"some text"))},
+        files={"file": (media_file, io.BytesIO(b""))},
         timeout=5,
     )
     assert response.status_code == 200
