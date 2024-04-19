@@ -535,7 +535,7 @@ async def s3_integrator_app_media_fixture(
 
 @pytest.fixture(scope="function", name="boto_s3_media_client")
 async def boto_s3_media_client_fixture(
-    model: Model, s3_media_configuration: dict, s3_media_credentials: dict, s3_integrator_name: str
+    model: Model, s3_media_configuration: dict, s3_media_credentials: dict
 ):
     """Return a S# boto3 client ready to use
 
@@ -563,5 +563,4 @@ async def boto_s3_media_client_fixture(
     )
     s3_client.create_bucket(Bucket=s3_media_configuration["bucket"])
     yield s3_client
-    await model.remove_application(s3_integrator_name)
-    s3_client.delete_bucket(Bucket=s3_media_configuration["bucket"])
+    await s3_client.delete_bucket(Bucket=s3_media_configuration["bucket"])
