@@ -563,4 +563,3 @@ async def boto_s3_media_client_fixture(
     )
     s3_client.create_bucket(Bucket=s3_media_configuration["bucket"])
     yield s3_client
-    await s3_client.delete_bucket(Bucket=s3_media_configuration["bucket"])
