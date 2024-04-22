@@ -564,5 +564,4 @@ def boto_s3_media_client_fixture(
         use_ssl=False,
         config=s3_client_config,
     )
-    s3_client.create_bucket(Bucket=s3_media_configuration["bucket"])
     yield s3_client
