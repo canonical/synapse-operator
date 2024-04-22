@@ -293,5 +293,3 @@ async def test_synapse_enable_media(
         for obj in bucket_objects.get("Contents", [])
     )
     assert file_found
-
-    boto_s3_media_client.delete_object(Bucket=bucket_name, Key=f"local_content/{media_id}")
