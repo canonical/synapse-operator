@@ -87,6 +87,7 @@ class MediaObserver(Object):
             endpoint_url=rel_endpoint,
             access_key_id=relation_data.access_key,
             secret_access_key=relation_data.secret_key,
+            prefix=relation_data.path,
         )
 
     def _enable_media(self, charm_state: CharmState) -> None:

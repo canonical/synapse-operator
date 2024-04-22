@@ -40,6 +40,7 @@ A named tuple representing media configuration.
  - <b>`endpoint_url`</b>:  The endpoint URL. 
  - <b>`access_key_id`</b>:  The access key ID. 
  - <b>`secret_access_key`</b>:  The secret access key. 
+ - <b>`prefix`</b>:  File path prefix for the media. 
 
 
 

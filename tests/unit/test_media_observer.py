@@ -31,7 +31,7 @@ def _test_get_relation_data_to_media_conf_parameters():
                 "region": "eu-west-1",
                 "bucket": "synapse-media-bucket",
                 "endpoint": "https:/example.com",
-                "path": "/synapse-media",
+                "path": "media",
                 "s3-uri-style": "path",
             },
             MediaConfiguration(
@@ -40,6 +40,7 @@ def _test_get_relation_data_to_media_conf_parameters():
                 bucket="synapse-media-bucket",
                 region_name="eu-west-1",
                 endpoint_url="https:/example.com",
+                prefix="media",
             ),
             id="media config test",
         )
@@ -73,6 +74,7 @@ def test_get_relation_as_media_conf(harness: Harness, relation_data, expected_co
                 "endpoint": "endpoint1",
                 "access-key": "access_key1",
                 "secret-key": token_hex(16),
+                "path": "media",
             },
             True,
             id="complete media configuration",
@@ -124,6 +126,7 @@ def test_media_configurations(harness: Harness, relation_data, valid):
                 "endpoint": "endpoint1",
                 "access-key": "access_key1",
                 "secret-key": token_hex(16),
+                "path": "media",
             },
             ops.ActiveStatus(),
             True,

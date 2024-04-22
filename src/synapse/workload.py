@@ -715,6 +715,7 @@ def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
                     "endpoint_url": charm_state.media_config["endpoint_url"],
                     "access_key_id": charm_state.media_config["access_key_id"],
                     "secret_access_key": charm_state.media_config["secret_access_key"],
+                    "prefix": charm_state.media_config["prefix"],
                 },
             },
         ]

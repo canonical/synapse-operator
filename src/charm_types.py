@@ -75,6 +75,7 @@ class MediaConfiguration(typing.TypedDict):
         endpoint_url: The endpoint URL.
         access_key_id: The access key ID.
         secret_access_key: The secret access key.
+        prefix: File path prefix for the media.
     """
 
     bucket: str
@@ -82,6 +83,7 @@ class MediaConfiguration(typing.TypedDict):
     endpoint_url: str
     access_key_id: str
     secret_access_key: str
+    prefix: str
 
 
 @dataclass(frozen=True)
