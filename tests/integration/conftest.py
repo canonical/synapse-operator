@@ -502,18 +502,18 @@ def s3_media_credentials_fixture(localstack_address: str) -> dict:
     }
 
 
-@pytest.fixture(scope="module", name="s3_integrator_name")
-def s3_integrator_name_fixture() -> str:
+@pytest.fixture(scope="module", name="s3_media_integrator_name")
+def s3_media_integrator_name_fixture() -> str:
     """Return the name of the s3 integrator application deployed for tests."""
     return "s3-integrator-media"
 
 
 @pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
 async def s3_integrator_app_media_fixture(
-    model: Model, s3_media_configuration: dict, s3_media_credentials: dict, s3_integrator_name: str
+    model: Model, s3_media_configuration: dict, s3_media_credentials: dict, s3_media_integrator_name: str
 ):
     """Returns a s3-integrator app configured with backup parameters."""
-    s3_integrator_app_name = s3_integrator_name
+    s3_integrator_app_name = s3_media_integrator_name
     s3_integrator_app = await model.deploy(
         "s3-integrator",
         application_name=s3_integrator_app_name,
