@@ -565,3 +565,18 @@ def boto_s3_media_client_fixture(
         config=s3_client_config,
     )
     yield s3_client
+
+
+@pytest.fixture(scope="function", name="s3_media_bucket")
+def s3_media_bucket_fixture(
+    s3_media_configuration: dict, s3_media_credentials: dict, boto_s3_media_client: typing.Any
+):
+    """Creates a bucket using S3 configuration."""
+    bucket_name = s3_media_configuration["bucket"]
+    boto_s3_media_client.create_bucket(Bucket=bucket_name)
+    yield
+    objectsresponse = boto_s3_media_client.list_objects(Bucket=bucket_name)
+    if "Contents" in objectsresponse:
+        for c in objectsresponse["Contents"]:
+            boto_s3_media_client.delete_object(Bucket=bucket_name, Key=c["Key"])
+    boto_s3_media_client.delete_bucket(Bucket=bucket_name)

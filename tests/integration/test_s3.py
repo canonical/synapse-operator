@@ -246,6 +246,7 @@ async def test_synapse_backup_delete(
 
 
 @pytest.mark.s3
+@pytest.mark.usefixtures("s3_media_bucket")
 async def test_synapse_enable_media(
     model: Model,
     synapse_app: Application,
@@ -274,7 +275,7 @@ async def test_synapse_enable_media(
     headers = {"Authorization": f"Bearer {access_token}"}
     media_file = "test_media_file.txt"
 
-    boto_s3_media_client.create_bucket(Bucket=s3_media_configuration["bucket"])
+    # boto_s3_media_client.create_bucket(Bucket=s3_media_configuration["bucket"])
     # Upload media file
     response = requests.post(
         f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
@@ -285,17 +286,8 @@ async def test_synapse_enable_media(
     assert response.status_code == 200
 
     media_id = response.json()["content_uri"].split("/")[3]
-    # Check if the uploaded file is in the bucket
-    bucket_objects = boto_s3_media_client.list_objects(Bucket=bucket_name)
-    print(bucket_objects['Contents'])
-    # Key is in the format local_content/AA/BB/CCCC..
+    # Key is in the format /local_content/AA/BB/CCCC..
     # The media_id is concatenation of AABBCCCC..
-    file_found = any(
-        "".join(obj["Key"].split("/")[2:]) == media_id
-        # There should be only one object in the bucket
-        for obj in bucket_objects.get("Contents", [])
-    )
-    assert file_found
-
-    boto_s3_media_client.delete_object(Bucket=bucket_name, Key=f"local_content/{media_id}")
-    boto_s3_media_client.delete_bucket(Bucket=bucket_name)
+    key = f"/medialocal_content/{media_id[:2]}/{media_id[2:4]}/{media_id[4:]}"
+    s3objresp = boto_s3_media_client.get_object(Bucket=bucket_name, Key=key)
+    assert s3objresp["ResponseMetadata"]["HTTPStatusCode"] == 200
