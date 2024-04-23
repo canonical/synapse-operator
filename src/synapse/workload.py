@@ -714,6 +714,35 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_room_list_publication_rules(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable room_list_publication_rules.
+
+    This configuration is based on publish_rooms_allowlist charm configuration.
+    Once is set, a deny rule is added to prevent any other user to publish rooms.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling room_list_publication_rules.
+    """
+    room_list_publication_rules = []
+    # checking publish_rooms_allowlist to fix union-attr mypy error
+    publish_rooms_allowlist = charm_state.synapse_config.publish_rooms_allowlist
+    if publish_rooms_allowlist:
+        for user in (u.strip() for u in publish_rooms_allowlist.split(",")):
+            rule = {"user_id": user, "alias": "*", "room_id": "*", "action": "allow"}
+            room_list_publication_rules.append(rule)
+
+    if len(room_list_publication_rules) == 0:
+        raise WorkloadError("publish_rooms_allowlist has unexpected value. Please, verify it.")
+
+    last_rule = {"user_id": "*", "alias": "*", "room_id": "*", "action": "deny"}
+    room_list_publication_rules.append(last_rule)
+    current_yaml["room_list_publication_rules"] = room_list_publication_rules
+
+
 def reset_instance(container: ops.Container) -> None:
     """Erase data and config server_name.
 

@@ -159,6 +159,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         ip_range_whitelist: ip_range_whitelist config.
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
+        publish_rooms_allowlist: publish_rooms_allowlist config.
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
@@ -173,6 +174,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     federation_domain_whitelist: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
+    publish_rooms_allowlist: str | None = Field(None, regex=r"(@\w+:\w+\.\w+,?)+")
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     notif_from: str | None = Field(None)

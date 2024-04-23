@@ -172,7 +172,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L269"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -266,6 +266,7 @@ Represent Synapse builtin configuration values.
  - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
  - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
+ - <b>`publish_rooms_allowlist`</b>:  publish_rooms_allowlist config. 
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`server_name`</b>:  server_name config. 
  - <b>`trusted_key_servers`</b>:  trusted_key_servers config. 
@@ -275,7 +276,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L192"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -299,7 +300,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

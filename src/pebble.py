@@ -253,6 +253,10 @@ def change_config(charm_state: CharmState, container: ops.model.Container) -> No
             synapse.enable_trusted_key_servers(current_synapse_config, charm_state=charm_state)
         if charm_state.synapse_config.ip_range_whitelist:
             synapse.enable_ip_range_whitelist(current_synapse_config, charm_state=charm_state)
+        if charm_state.synapse_config.publish_rooms_allowlist:
+            synapse.enable_room_list_publication_rules(
+                current_synapse_config, charm_state=charm_state
+            )
         if charm_state.datasource:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
