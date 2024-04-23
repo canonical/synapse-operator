@@ -257,10 +257,9 @@ async def test_synapse_enable_media(
     s3_media_configuration: dict,
 ):
     """
-    arrange: build and deploy the Synapse charm. Create an user and get the access token
-        Deploy, configure and integrate with Synapse the media-integrator charm.
-    act:  try to check if a given email address is not already associated.
-    assert: the Synapse application is active and the error returned is the one expected.
+    arrange: Synapse App deployed and s3-integrator deployed with bucket created.
+    act:  Assert media can be uploaded, and retrieved, from the S3 media bucket.
+    assert: The media file is uploaded to the S3 bucket, and retrieved successfully.
     """
     bucket_name = s3_media_configuration["bucket"]
 

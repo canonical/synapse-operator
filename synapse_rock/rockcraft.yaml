@@ -106,7 +106,7 @@ parts:
             cd synapse_stats_exporter
             pip3 install --prefix="/install" --no-warn-script-location -U .
             cd ..
-            git clone https://github.com/matrix-org/synapse-s3-storage-provider
+            git clone --branch v1.4.0 --depth 1 https://github.com/matrix-org/synapse-s3-storage-provider
             cd synapse-s3-storage-provider
             pip3 install --prefix="/install" --no-warn-script-location -U .
             cd ..

@@ -529,7 +529,7 @@ async def s3_integrator_app_media_fixture(
         **s3_media_credentials,
     )
     await action_sync_s3_credentials.wait()
-    await model.wait_for_idle(apps=[s3_integrator_app.name], status="active")
+    await model.wait_for_idle(apps=[s3_integrator_app_name], status="active")
 
     yield s3_integrator_app
     await model.remove_application(s3_integrator_app_name)

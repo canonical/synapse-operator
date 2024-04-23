@@ -6,8 +6,8 @@ The process of backing up and restoring depends on whether an external database
 is used, so the step to run the backup for PostgreSQL must be done only if PostgreSQL
 is used in the original Synapse application.
 
-It is important to note that data inside the s3 bucket is important, and should be
-included as part of the backup/restore. 
+It is important to note that data inside the s3 bucket for media storage is essential
+to be included as part of the backup/restore. 
 
 ## Back up Synapse
 
