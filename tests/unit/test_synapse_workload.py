@@ -550,6 +550,7 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
         "email": {
+            "enable_notifs": False,
             "enable_tls": True,
             "force_tls": False,
             "require_transport_security": True,
