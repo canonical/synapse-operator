@@ -17,9 +17,9 @@ from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.pebble import ExecError
 from ops.testing import Harness
 
-import backup
 import synapse
 from charm import SynapseCharm
+from s3_parameters import S3Parameters
 
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
 TEST_SERVER_NAME_CHANGED = "pebble-layer-1.synapse.com"
@@ -290,9 +290,28 @@ def s3_relation_data_backup_fixture() -> dict:
 
 
 @pytest.fixture(name="s3_parameters_backup")
-def s3_parameters_backup_fixture(s3_relation_data_backup) -> backup.S3Parameters:
+def s3_parameters_backup_fixture(s3_relation_data_backup) -> S3Parameters:
     """Returns valid S3 Parameters."""
-    return backup.S3Parameters(**s3_relation_data_backup)
+    return S3Parameters(**s3_relation_data_backup)
+
+
+@pytest.fixture(name="s3_relation_data_media")
+def s3_relation_data_media_fixture() -> dict:
+    """Returns valid S3 relation data."""
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+        "bucket": "synapse-media-bucket",
+        "path": "/synapse-media",
+        "s3-uri-style": "path",
+        "endpoint": "https://s3.example.com",
+    }
+
+
+@pytest.fixture(name="s3_parameters_media")
+def s3_parameters_media_fixture(s3_relation_data_media) -> S3Parameters:
+    """Returns valid S3 Parameters."""
+    return S3Parameters(**s3_relation_data_media)
 
 
 @pytest.fixture(name="config_content")

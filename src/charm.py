@@ -25,6 +25,7 @@ from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
 from irc_bridge import IRCBridgeObserver
+from media_observer import MediaObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
@@ -57,6 +58,7 @@ class SynapseCharm(CharmBaseWithState):
         """
         super().__init__(*args)
         self._backup = BackupObserver(self)
+        self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
         self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
@@ -116,6 +118,7 @@ class SynapseCharm(CharmBaseWithState):
             irc_bridge_datasource=self._irc_bridge_database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
+            media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
             instance_map_config=self.instance_map(),
         )
