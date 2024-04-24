@@ -3,7 +3,7 @@
 
 """Synapse workload unit tests."""
 
-# pylint: disable=protected-access, too-many-lines
+# pylint: disable=protected-access, too-many-lines, duplicate-code
 
 
 import io
@@ -251,7 +251,8 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
             irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
-            redis_config=None,  # pylint: disable=duplicate-code
+            media_config=None,
+            redis_config=None,
             synapse_config=synapse_config,
         ),
     )
@@ -535,6 +536,7 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
         irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
+        media_config=None,
         redis_config=None,
         synapse_config=synapse_config,
     )

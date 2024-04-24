@@ -231,7 +231,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_redis`
 
@@ -257,7 +257,7 @@ Enable Redis while receiving on_redis_relation_updated event.
 
 ---
 
-<a href="../src/pebble.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L293"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_saml`
 
@@ -283,7 +283,7 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L310"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_smtp`
 
@@ -309,7 +309,33 @@ Enable SMTP while receiving on_smtp_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `enable_media`
+
+```python
+enable_media(charm_state: CharmState, container: Container) → None
+```
+
+Enable S3 Media while receiving on_media_data_available event. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+
+---
+
+<a href="../src/pebble.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

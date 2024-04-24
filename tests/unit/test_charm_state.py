@@ -35,6 +35,7 @@ class SimpleCharm(CharmBaseWithState):
             irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
+            media_config=None,
             redis_config=None,
         )
 

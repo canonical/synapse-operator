@@ -227,6 +227,7 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
         irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=None,
+        media_config=None,
         redis_config=None,
     )
     expected_url = (
@@ -262,6 +263,7 @@ def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
         irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=None,
+        media_config=None,
         redis_config=None,
     )
     expected_error_msg = "Failed to connect"
