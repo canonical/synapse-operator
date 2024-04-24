@@ -46,7 +46,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/mjolnir.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_mjolnir`
 
@@ -94,7 +94,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/mjolnir.py#L131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L140"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_membership_room_id`
 
