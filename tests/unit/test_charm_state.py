@@ -4,7 +4,7 @@
 """Synapse charm state unit tests."""
 
 # Disable attribute-defined-outside-init as this would imply many unnecessary init methods.
-# pylint: disable=attribute-defined-outside-init
+# pylint: disable=attribute-defined-outside-init, duplicate-code
 
 import ops
 import pytest

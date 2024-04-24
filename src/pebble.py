@@ -214,7 +214,9 @@ def _push_synapse_config(container: ops.model.Container, current_synapse_config:
 
 
 # The complexity of this method will be reviewed.
-def change_config(charm_state: CharmState, container: ops.model.Container) -> None:  # noqa: C901
+def change_config(  # noqa: C901 pylint: disable=too-many-branches
+    charm_state: CharmState, container: ops.model.Container
+) -> None:
     """Change the configuration.
 
     Args:
