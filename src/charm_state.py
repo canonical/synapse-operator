@@ -6,6 +6,7 @@ import dataclasses
 import itertools
 import logging
 import os
+import re
 import typing
 from abc import ABC, abstractmethod
 
@@ -174,7 +175,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     federation_domain_whitelist: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
-    publish_rooms_allowlist: str | None = Field(None, regex=r"(@\w+:\w+\.\w+,?)+")
+    publish_rooms_allowlist: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     notif_from: str | None = Field(None)
@@ -224,6 +225,30 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         if value == str(True):
             return "yes"
         return "no"
+
+    @validator("publish_rooms_allowlist")
+    @classmethod
+    def publish_rooms_allowlist_to_list(cls, value: str) -> typing.List[str]:
+        """Convert the publish_rooms_allowlist field to list.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The string converted to list.
+
+        Raises:
+            ValidationError: if user_id is not as expected.
+        """
+        if value is None:
+            return []
+        allow_list = [user_id.strip() for user_id in value.split(",")]
+        for user_id in allow_list:
+            if not re.match(r"@\w+:\w+\.\w+", user_id):
+                raise ValidationError(
+                    f"Invalid user ID format in publish_rooms_allowlist: {user_id}", cls
+                )
+        return allow_list
 
 
 @dataclasses.dataclass(frozen=True)

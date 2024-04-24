@@ -15,6 +15,7 @@ import ops
 import pytest
 import yaml
 from ops.testing import Harness
+from pydantic import ValidationError
 
 import synapse
 from charm import SynapseCharm
@@ -725,3 +726,20 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
         ],
     }
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
+def test_publish_rooms_allowlist_error():
+    """
+    arrange: mock Synapse current configuration with config_content and
+        add publish_rooms_allowlist to the charm configuration.
+    act: call enable_room_list_publication_rules.
+    assert: new configuration file is pushed and room_list_publication_rules is set.
+    """
+    synapse_with_notif_config = {
+        "publish_rooms_allowlist": "@userinvaliddomainX.com",
+        "server_name": "example.com",
+    }
+    with pytest.raises(ValidationError):
+        # Prevent mypy error:
+        # Argument 1 to "SynapseConfig" has incompatible type "**dict[str, str]"; expected "bool"
+        SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]

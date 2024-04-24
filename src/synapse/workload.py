@@ -731,7 +731,7 @@ def enable_room_list_publication_rules(current_yaml: dict, charm_state: CharmSta
     # checking publish_rooms_allowlist to fix union-attr mypy error
     publish_rooms_allowlist = charm_state.synapse_config.publish_rooms_allowlist
     if publish_rooms_allowlist:
-        for user in (u.strip() for u in publish_rooms_allowlist.split(",")):
+        for user in publish_rooms_allowlist:
             rule = {"user_id": user, "alias": "*", "room_id": "*", "action": "allow"}
             room_list_publication_rules.append(rule)
 
