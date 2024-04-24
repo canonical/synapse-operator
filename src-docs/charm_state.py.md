@@ -8,7 +8,7 @@ State of the Charm.
 
 ---
 
-<a href="../src/charm_state.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `inject_charm_state`
 
@@ -84,7 +84,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm_state.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -96,7 +96,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm_state.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -119,7 +119,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -153,6 +153,7 @@ State of the Charm.
  - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information. 
  - <b>`saml_config`</b>:  saml configuration. 
  - <b>`smtp_config`</b>:  smtp configuration. 
+ - <b>`media_config`</b>:  media configuration. 
  - <b>`redis_config`</b>:  redis configuration. 
  - <b>`proxy`</b>:  proxy information. 
 
@@ -172,7 +173,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L269"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L272"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -183,6 +184,7 @@ from_charm(
     irc_bridge_datasource: Optional[DatasourcePostgreSQL],
     saml_config: Optional[SAMLConfiguration],
     smtp_config: Optional[SMTPConfiguration],
+    media_config: Optional[MediaConfiguration],
     redis_config: Optional[RedisConfiguration]
 ) → CharmState
 ```
@@ -198,6 +200,7 @@ Initialize a new instance of the CharmState class from the associated charm.
  - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information to be used by Synapse. 
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
+ - <b>`media_config`</b>:  Media configuration to be used by Synapse. 
  - <b>`redis_config`</b>:  Redis configuration to be used by Synapse. 
 
 Return: The CharmState instance created by the provided charm. 
@@ -219,7 +222,7 @@ Protocol that defines a class that returns a CharmBaseWithState.
 
 ---
 
-<a href="../src/charm_state.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -275,7 +278,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L192"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -299,7 +302,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
