@@ -173,7 +173,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L299"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -303,35 +303,6 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `publish_rooms_allowlist_to_list`
-
-```python
-publish_rooms_allowlist_to_list(value: str) → List[str]
-```
-
-Convert the publish_rooms_allowlist field to list. 
-
-
-
-**Args:**
- 
- - <b>`value`</b>:  the input value. 
-
-
-
-**Returns:**
- The string converted to list. 
-
-
-
-**Raises:**
- 
- - <b>`ValidationError`</b>:  if user_id is not as expected. 
-
----
-
 <a href="../src/charm_state.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
@@ -352,5 +323,34 @@ Convert the report_stats field to yes or no.
 
 **Returns:**
  The string converted to yes or no. 
+
+---
+
+<a href="../src/charm_state.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `userids_to_list`
+
+```python
+userids_to_list(value: str) → List[str]
+```
+
+Convert a comma separated list of users to list. 
+
+
+
+**Args:**
+ 
+ - <b>`value`</b>:  the input value. 
+
+
+
+**Returns:**
+ The string converted to list. 
+
+
+
+**Raises:**
+ 
+ - <b>`ValidationError`</b>:  if user_id is not as expected. 
 
 

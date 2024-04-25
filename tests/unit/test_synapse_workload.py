@@ -731,7 +731,18 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
 
 
-def test_publish_rooms_allowlist_error():
+@pytest.mark.parametrize(
+    "invalid_config",
+    [
+        "@userinvaliddomainX.com",
+        "@user*:domainX.com",
+        "@user1:domainX.com,@user$:domainX.com",
+        "@user1:domainX.com,@user#:domainX.com,@user2:domainX.com",
+        "@user1:domainX.com;@user2:domainX.com",
+        "@:domainX.com;@user2:domainX.com",
+    ],
+)
+def test_publish_rooms_allowlist_error(invalid_config):
     """
     arrange: mock Synapse current configuration with config_content and
         add publish_rooms_allowlist to the charm configuration.
@@ -739,7 +750,7 @@ def test_publish_rooms_allowlist_error():
     assert: new configuration file is pushed and room_list_publication_rules is set.
     """
     synapse_with_notif_config = {
-        "publish_rooms_allowlist": "@userinvaliddomainX.com",
+        "publish_rooms_allowlist": invalid_config,
         "server_name": "example.com",
     }
     with pytest.raises(ValidationError):

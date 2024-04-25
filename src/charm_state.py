@@ -169,7 +169,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     allow_public_rooms_over_federation: bool = False
     enable_irc_bridge: bool = False
-    irc_bridge_admins: str | None = Field(None, regex=r"(@\w+:\w+\.\w+,?)+")
+    irc_bridge_admins: str | None = Field(None)
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
@@ -227,10 +227,10 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
             return "yes"
         return "no"
 
-    @validator("publish_rooms_allowlist")
+    @validator("irc_bridge_admins", "publish_rooms_allowlist")
     @classmethod
-    def publish_rooms_allowlist_to_list(cls, value: str) -> typing.List[str]:
-        """Convert the publish_rooms_allowlist field to list.
+    def userids_to_list(cls, value: str) -> typing.List[str]:
+        """Convert a comma separated list of users to list.
 
         Args:
             value: the input value.
@@ -241,15 +241,16 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         Raises:
             ValidationError: if user_id is not as expected.
         """
+        # Based on documentation
+        # https://spec.matrix.org/v1.10/appendices/#user-identifiers
+        userid_regex = r"@[a-z0-9._=/+-]+:\w+\.\w+"
         if value is None:
             return []
-        allow_list = [user_id.strip() for user_id in value.split(",")]
-        for user_id in allow_list:
-            if not re.match(r"@\w+:\w+\.\w+", user_id):
-                raise ValidationError(
-                    f"Invalid user ID format in publish_rooms_allowlist: {user_id}", cls
-                )
-        return allow_list
+        value_list = [user_id.strip() for user_id in value.split(",")]
+        for user_id in value_list:
+            if not re.fullmatch(userid_regex, user_id):
+                raise ValidationError(f"Invalid user ID format: {user_id}", cls)
+        return value_list
 
 
 @dataclasses.dataclass(frozen=True)

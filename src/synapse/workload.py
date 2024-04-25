@@ -468,7 +468,7 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     config["homeserver"]["domain"] = charm_state.synapse_config.server_name
     config["database"]["connectionString"] = db_connect_string
     if charm_state.synapse_config.irc_bridge_admins:
-        for admin in (a.strip() for a in charm_state.synapse_config.irc_bridge_admins.split(",")):
+        for admin in charm_state.synapse_config.irc_bridge_admins:
             config["ircService"]["permissions"][admin] = "admin"
     return config
 
