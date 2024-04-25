@@ -24,6 +24,7 @@ from pydantic import (  # pylint: disable=no-name-in-module,import-error
 
 from charm_types import (
     DatasourcePostgreSQL,
+    MediaConfiguration,
     RedisConfiguration,
     SAMLConfiguration,
     SMTPConfiguration,
@@ -236,6 +237,7 @@ class CharmState:
         irc_bridge_datasource: irc bridge datasource information.
         saml_config: saml configuration.
         smtp_config: smtp configuration.
+        media_config: media configuration.
         redis_config: redis configuration.
         proxy: proxy information.
     """
@@ -245,6 +247,7 @@ class CharmState:
     irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL]
     saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
+    media_config: typing.Optional[MediaConfiguration]
     redis_config: typing.Optional[RedisConfiguration]
 
     @property
@@ -276,6 +279,7 @@ class CharmState:
         irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL],
         saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
+        media_config: typing.Optional[MediaConfiguration],
         redis_config: typing.Optional[RedisConfiguration],
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
@@ -286,6 +290,7 @@ class CharmState:
             irc_bridge_datasource: irc bridge datasource information to be used by Synapse.
             saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
+            media_config: Media configuration to be used by Synapse.
             redis_config: Redis configuration to be used by Synapse.
 
         Return:
@@ -310,5 +315,6 @@ class CharmState:
             irc_bridge_datasource=irc_bridge_datasource,
             saml_config=saml_config,
             smtp_config=smtp_config,
+            media_config=media_config,
             redis_config=redis_config,
         )
