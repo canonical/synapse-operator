@@ -72,6 +72,7 @@ from .workload import (  # noqa: F401
     enable_federation_domain_whitelist,
     enable_forgotten_room_retention,
     enable_ip_range_whitelist,
+    enable_media,
     enable_metrics,
     enable_redis,
     enable_saml,

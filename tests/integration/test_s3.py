@@ -3,12 +3,14 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm needing the s3_backup_bucket fixture."""
+import io
 import logging
 import typing
 from secrets import token_hex
 
 import magic
 import pytest
+import requests
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -16,7 +18,7 @@ from juju.unit import Unit
 from ops.model import ActiveStatus
 
 # caused by pytest fixtures
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, duplicate-code
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
@@ -241,3 +243,50 @@ async def test_synapse_backup_delete(
     await list_backups_action.wait()
     assert list_backups_action.status == "completed"
     assert "backups" not in list_backups_action.results
+
+
+@pytest.mark.s3
+@pytest.mark.usefixtures("s3_media_bucket")
+async def test_synapse_enable_media(
+    model: Model,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    access_token: str,
+    s3_integrator_app_media: Application,
+    boto_s3_media_client: typing.Any,
+    s3_media_configuration: dict,
+):
+    """
+    arrange: Synapse App deployed and s3-integrator deployed with bucket created.
+    act:  Assert media can be uploaded, and retrieved, from the S3 media bucket.
+    assert: The media file is uploaded to the S3 bucket, and retrieved successfully.
+    """
+    bucket_name = s3_media_configuration["bucket"]
+
+    await model.add_relation(f"{s3_integrator_app_media.name}", f"{synapse_app.name}:media")
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_media.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    headers = {"Authorization": f"Bearer {access_token}"}
+    media_file = "test_media_file.txt"
+
+    # boto_s3_media_client.create_bucket(Bucket=s3_media_configuration["bucket"])
+    # Upload media file
+    response = requests.post(
+        f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
+        headers=headers,
+        files={"file": (media_file, io.BytesIO(b""))},
+        timeout=5,
+    )
+    assert response.status_code == 200
+
+    media_id = response.json()["content_uri"].split("/")[3]
+    # Key is in the format /local_content/AA/BB/CCCC..
+    # The media_id is concatenation of AABBCCCC..
+    key = f"/medialocal_content/{media_id[:2]}/{media_id[2:4]}/{media_id[4:]}"
+    s3objresp = boto_s3_media_client.get_object(Bucket=bucket_name, Key=key)
+    assert s3objresp["ResponseMetadata"]["HTTPStatusCode"] == 200

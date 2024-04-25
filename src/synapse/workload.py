@@ -685,6 +685,42 @@ def enable_smtp(current_yaml: dict, charm_state: CharmState) -> None:
         raise EnableSMTPError(str(exc)) from exc
 
 
+def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable S3.
+
+    Args:
+        current_yaml: Current Configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling S3.
+    """
+    try:
+        if charm_state.media_config is None:
+            raise WorkloadError(
+                "Media Configuration not found. "
+                "Please verify the integration between Media and Synapse."
+            )
+        current_yaml["media_storage_providers"] = [
+            {
+                "module": "s3_storage_provider.S3StorageProviderBackend",
+                "store_local": True,
+                "store_remote": True,
+                "store_synchronous": True,
+                "config": {
+                    "bucket": charm_state.media_config["bucket"],
+                    "region_name": charm_state.media_config["region_name"],
+                    "endpoint_url": charm_state.media_config["endpoint_url"],
+                    "access_key_id": charm_state.media_config["access_key_id"],
+                    "secret_access_key": charm_state.media_config["secret_access_key"],
+                    "prefix": charm_state.media_config["prefix"],
+                },
+            },
+        ]
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable Redis.
 
@@ -756,6 +792,7 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
         # TLS disabled so the listener is HTTP. HTTPS will be handled by Traefik.
         # TODO verify support to HTTPS backend before changing this  # pylint: disable=fixme
         "SYNAPSE_NO_TLS": str(True),
+        "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
     }
     datasource = charm_state.datasource
     if datasource is not None:

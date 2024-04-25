@@ -49,6 +49,7 @@ def charm_state_fixture():
             saml_config=None,
             smtp_config=None,
             redis_config=None,
+            media_config=None,
         )
 
     return charm_state_with_db

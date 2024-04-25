@@ -28,6 +28,26 @@ A named tuple representing a Datasource PostgreSQL.
 
 ---
 
+## <kbd>class</kbd> `MediaConfiguration`
+A named tuple representing media configuration. 
+
+
+
+**Attributes:**
+ 
+ - <b>`bucket`</b>:  The name of the bucket. 
+ - <b>`region_name`</b>:  The region name. 
+ - <b>`endpoint_url`</b>:  The endpoint URL. 
+ - <b>`access_key_id`</b>:  The access key ID. 
+ - <b>`secret_access_key`</b>:  The secret access key. 
+ - <b>`prefix`</b>:  File path prefix for the media. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `RedisConfiguration`
 A named tuple representing Redis configuration. 
 
