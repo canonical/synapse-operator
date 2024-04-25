@@ -6,9 +6,9 @@ summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
 version: "1.0"
 base: ubuntu@22.04
-# renovate: base: ubuntu:22.04@sha256:193c13d13beb11bedfc07587d208f880bce5535dc5f5cbb277e22a3847cc84a8
+# renovate: base: ubuntu:22.04@sha256:1b8d8ff4777f36f19bfe73ee4df61e3a0b789caeff29caa019539ec7c9a57f95
 build-base: ubuntu@22.04
-# renovate: build-base: ubuntu:22.04@sha256:193c13d13beb11bedfc07587d208f880bce5535dc5f5cbb277e22a3847cc84a8
+# renovate: build-base: ubuntu:22.04@sha256:1b8d8ff4777f36f19bfe73ee4df61e3a0b789caeff29caa019539ec7c9a57f95
 license: Apache-2.0
 platforms:
   amd64:
@@ -106,6 +106,10 @@ parts:
             cd synapse_stats_exporter
             pip3 install --prefix="/install" --no-warn-script-location -U .
             cd ..
+            git clone --branch v1.4.0 --depth 1 https://github.com/matrix-org/synapse-s3-storage-provider
+            cd synapse-s3-storage-provider
+            pip3 install --prefix="/install" --no-warn-script-location -U .
+            cd ..
             cp -r synapse /synapse/
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
@@ -120,6 +124,7 @@ parts:
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
         overlay-packages:
             - ca-certificates
+            - libjemalloc2
     synapse-conf:
         plugin: dump
         source: attributemaps

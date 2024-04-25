@@ -17,7 +17,7 @@ Provides backup functionality for Synapse.
 
 ---
 
-<a href="../src/backup.py#L258"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_backup`
 
@@ -53,7 +53,7 @@ Create a backup for Synapse running it in the workload.
 
 ---
 
-<a href="../src/backup.py#L306"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restore_backup`
 
@@ -115,7 +115,7 @@ Information about a backup file from S3.
 ## <kbd>class</kbd> `S3Client`
 S3 Client Wrapper around boto3 library. 
 
-<a href="../src/backup.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -136,7 +136,7 @@ Initialize the S3 client.
 
 ---
 
-<a href="../src/backup.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `can_use_bucket`
 
@@ -153,7 +153,7 @@ Check if a bucket exists and is accessible in an S3 compatible object store.
 
 ---
 
-<a href="../src/backup.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `delete_backup`
 
@@ -177,7 +177,7 @@ Delete a backup stored in S3 in the current s3 configuration.
 
 ---
 
-<a href="../src/backup.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `exists_backup`
 
@@ -206,7 +206,7 @@ Check if a backup-id exists in S3.
 
 ---
 
-<a href="../src/backup.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/backup.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `list_backups`
 
@@ -229,63 +229,5 @@ Generic S3 Exception.
 
 
 
-
-
----
-
-## <kbd>class</kbd> `S3Parameters`
-Configuration for accessing S3 bucket. 
-
-
-
-**Attributes:**
- 
- - <b>`access_key`</b>:  AWS access key. 
- - <b>`secret_key`</b>:  AWS secret key. 
- - <b>`region`</b>:  The region to connect to the object storage. 
- - <b>`bucket`</b>:  The bucket name. 
- - <b>`endpoint`</b>:  The endpoint used to connect to the object storage. 
- - <b>`path`</b>:  The path inside the bucket to store objects. 
- - <b>`s3_uri_style`</b>:  The S3 protocol specific bucket path lookup type. Can be "path" or "host". 
- - <b>`addressing_style`</b>:  S3 protocol addressing style, can be "path" or "virtual". 
-
-
----
-
-#### <kbd>property</kbd> addressing_style
-
-Translates s3_uri_style to AWS addressing_style. 
-
-
-
----
-
-<a href="../src/backup.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `check_endpoint_or_region_set`
-
-```python
-check_endpoint_or_region_set(endpoint: str, values: dict[str, Any]) → str
-```
-
-Validate that either region or endpoint is set. 
-
-
-
-**Args:**
- 
- - <b>`endpoint`</b>:  endpoint attribute 
- - <b>`values`</b>:  all attributes in S3 configuration 
-
-
-
-**Returns:**
- value of the endpoint attribute 
-
-
-
-**Raises:**
- 
- - <b>`ValueError`</b>:  if the configuration is invalid. 
 
 
