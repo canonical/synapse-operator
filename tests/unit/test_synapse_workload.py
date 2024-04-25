@@ -744,10 +744,9 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
 )
 def test_publish_rooms_allowlist_error(invalid_config):
     """
-    arrange: mock Synapse current configuration with config_content and
-        add publish_rooms_allowlist to the charm configuration.
-    act: call enable_room_list_publication_rules.
-    assert: new configuration file is pushed and room_list_publication_rules is set.
+    arrange: set configuration with invalid value for publish_rooms_allowlist.
+    act: set SynapseConfig.
+    assert: ValidationError is raised.
     """
     synapse_with_notif_config = {
         "publish_rooms_allowlist": invalid_config,
