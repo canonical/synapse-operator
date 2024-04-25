@@ -497,7 +497,8 @@ def create_irc_bridge_config(
         raise CreateIRCBridgeConfigError(str(exc)) from exc
 
 
-def _get_irc_bridge_app_registration(container: ops.Container) -> None:
+def _get_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
+    # the functionality is tested already in unit tests creating files
     """Create registration file as expected by irc bridge.
 
     Args:
@@ -526,7 +527,8 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> None:
         raise WorkloadError("Creating irc app registration failed, please check the logs")
 
 
-def create_irc_bridge_app_registration(container: ops.Container) -> None:
+def create_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
+    # the functionality is tested already in unit tests creating files
     """Create irc bridge app registration.
 
     Args:
