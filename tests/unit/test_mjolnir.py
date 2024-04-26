@@ -350,6 +350,3 @@ def test_enable_mjolnir_admin_access_token(
     monkeypatch.setattr(container, "can_connect", MagicMock(return_value=False))
 
     assert harness.charm._mjolnir._admin_access_token is None
-
-    monkeypatch.setattr(token_service, "get", MagicMock(return_value=token_mock))
-    monkeypatch.setattr(harness.charm._mjolnir, "_token_service", token_service)
