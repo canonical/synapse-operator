@@ -33,6 +33,6 @@ If there’s a particular area of documentation that you’d like to see that’
   1. [Contribute](how-to/contribute.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
-  2. [Integrations](reference/integrations.md)
+  1. [Integrations](reference/integrations.md)
 1. [Explanation](explanation)
   1. [Charm architecture](explanation/charm-architecture.md)
