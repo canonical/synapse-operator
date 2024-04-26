@@ -253,6 +253,7 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
             media_config=None,
             redis_config=None,
             synapse_config=synapse_config,
+            instance_map_config=None,
         ),
     )
 
@@ -544,6 +545,7 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
             server_name="example.com",
             trusted_key_servers=None,
         ),
+        instance_map_config=None,
     )
     synapse.enable_smtp(content, charm_state)
 

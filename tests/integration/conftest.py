@@ -473,6 +473,25 @@ async def s3_integrator_app_backup_fixture(
     await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
 
 
+@pytest_asyncio.fixture(scope="module", name="redis_app")
+async def redis_fixture(
+    ops_test: OpsTest,
+    model: Model,
+):
+    """Deploy redis."""
+    async with ops_test.fast_forward():
+        app = await model.deploy(
+            "redis-k8s",
+            application_name="redis",
+            channel="latest/edge",
+        )
+        await model.wait_for_idle(
+            raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
+        )
+
+    return app
+
+
 @pytest.fixture(scope="function", name="s3_media_configuration")
 def s3_media_configuration_fixture(localstack_address: str) -> dict:
     """Return the S3 configuration to use for media

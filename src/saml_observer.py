@@ -80,7 +80,7 @@ class SAMLObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
-        if self.model.get_relation(self._RELATION_NAME) is None:
+        if not self.model.relations.get(self._RELATION_NAME):
             return None
 
         relation_data = {}
