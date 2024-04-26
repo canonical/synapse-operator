@@ -400,7 +400,7 @@ def test_admin_access_token_success(
     harness.begin_with_initial_hooks()
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "can_connect", MagicMock(return_value=True))
-    access_token = "dummy_token"  # nosec
+    access_token = token_hex(16)
     token_service_mock = MagicMock(return_value=access_token)
     admin_user = AdminUser(access_token)
     monkeypatch.setattr(synapse, "create_admin_user", MagicMock(return_value=admin_user))

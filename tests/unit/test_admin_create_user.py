@@ -9,6 +9,7 @@ from ops.testing import Harness
 
 import synapse
 from synapse.admin import create_user
+from secrets import token_hex
 
 
 def test_create_user_success(harness: Harness, mocked_synapse_calls):
@@ -22,7 +23,7 @@ def test_create_user_success(harness: Harness, mocked_synapse_calls):
     container = harness.model.unit.containers["synapse"]
     username = "test_user"
     admin = True
-    admin_access_token = "admin_token"  # nosec
+    admin_access_token = token_hex(16)
     server = "test_server"
 
     with patch("synapse.api._do_request") as mock_request:
@@ -35,7 +36,7 @@ def test_create_user_success(harness: Harness, mocked_synapse_calls):
             container=container,
             username=username,
             admin=admin,
-            admin_access_token=admin_access_token,  # nosec
+            admin_access_token=admin_access_token,
             server=server,
         )
 
@@ -55,7 +56,7 @@ def test_create_user_no_shared_secret(harness: Harness, monkeypatch):
     container = harness.model.unit.containers["synapse"]
     username = "test_user"
     admin = True
-    admin_access_token = "admin_token"  # nosec
+    admin_access_token = token_hex(16)
     server = "test_server"
 
     monkeypatch.setattr(

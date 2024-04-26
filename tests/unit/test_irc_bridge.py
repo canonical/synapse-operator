@@ -14,6 +14,7 @@ from charm_state import CharmState, SynapseConfig
 from charm_types import DatasourcePostgreSQL
 from irc_bridge import enable_irc_bridge
 from synapse import ExecResult
+from secrets import token_hex
 
 
 @pytest.fixture(name="state")
@@ -33,15 +34,15 @@ def charm_state_fixture():
         synapse_config = SynapseConfig(  # type: ignore
             server_name="foo",
         )
-        db_config = DatasourcePostgreSQL(
-            user="bar",
-            password="baz",  # nosec
-            host="qux",
-            port="quux",
-            db="quuz",
-        )
-        if not with_db_config:
-            db_config = None  # type: ignore
+        db_config = None
+        if with_db_config:
+            db_config = DatasourcePostgreSQL(
+                user="bar",
+                password=token_hex(16),
+                host="qux",
+                port="quux",
+                db="quuz",
+            )
         return CharmState(
             synapse_config=synapse_config,
             datasource=None,

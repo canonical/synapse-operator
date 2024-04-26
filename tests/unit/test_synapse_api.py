@@ -15,6 +15,7 @@ import requests
 import synapse
 from charm_state import CharmState, SynapseConfig
 from synapse.api import WHOAMI_URL
+from secrets import token_hex
 from user import User
 
 

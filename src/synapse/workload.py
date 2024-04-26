@@ -552,10 +552,7 @@ def add_app_service_config_field(current_yaml: dict) -> None:
     Raises:
         WorkloadError: something went wrong updating the configuration.
     """
-    try:
-        current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
-    except KeyError as exc:
-        raise WorkloadError(str(exc)) from exc
+    current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
