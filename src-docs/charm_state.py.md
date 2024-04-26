@@ -173,7 +173,8 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -260,6 +261,7 @@ Represent Synapse builtin configuration values.
 **Attributes:**
  
  - <b>`allow_public_rooms_over_federation`</b>:  allow_public_rooms_over_federation config. 
+ - <b>`enable_email_notifs`</b>:  enable_email_notifs config. 
  - <b>`enable_irc_bridge`</b>:  creates a registration file in Synapse and starts an irc bridge app. 
  - <b>`irc_bridge_admins`</b>:  a comma separated list of user IDs who are admins of the IRC bridge. 
  - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
@@ -279,7 +281,9 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+<a href="../src/charm_state.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -303,7 +307,9 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+<a href="../src/charm_state.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

@@ -11,6 +11,11 @@ options:
   backup_passphrase:
     type: string
     description: Passphrase used to encrypt a backup using gpg with symmetric key.
+  enable_email_notifs:
+    type: boolean
+    default: false
+    description: |
+      Configures whether to enable e-mail notifications. Requires SMTP integration.
   enable_mjolnir:
     type: boolean
     default: false

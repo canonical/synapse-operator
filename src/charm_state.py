@@ -152,6 +152,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     Attributes:
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
+        enable_email_notifs: enable_email_notifs config.
         enable_irc_bridge: creates a registration file in Synapse and starts an irc bridge app.
         irc_bridge_admins: a comma separated list of user IDs who are admins of the IRC bridge.
         enable_mjolnir: enable_mjolnir config.
@@ -168,6 +169,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """
 
     allow_public_rooms_over_federation: bool = False
+    enable_email_notifs: bool = False
     enable_irc_bridge: bool = False
     irc_bridge_admins: str | None = Field(None)
     enable_mjolnir: bool = False
