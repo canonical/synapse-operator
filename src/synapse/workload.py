@@ -663,6 +663,7 @@ def enable_smtp(current_yaml: dict, charm_state: CharmState) -> None:
     """
     try:
         current_yaml["email"] = {}
+        current_yaml["email"]["enable_notifs"] = charm_state.synapse_config.enable_email_notifs
         current_yaml["email"]["notif_from"] = charm_state.synapse_config.notif_from
 
         if charm_state.smtp_config is None:
