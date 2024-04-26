@@ -35,7 +35,7 @@ def charm_state_fixture():
         )
         db_config = DatasourcePostgreSQL(
             user="bar",
-            password="baz",
+            password="baz",  # nosec
             host="qux",
             port="quux",
             db="quuz",

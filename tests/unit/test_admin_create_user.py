@@ -11,26 +11,19 @@ import synapse
 from synapse.admin import create_user
 
 
-def test_create_user_success(harness: Harness, monkeypatch):
+def test_create_user_success(harness: Harness, mocked_synapse_calls):
     """
     arrange: start the Synapse charm and set the necessary parameters.
     act: call the create_user function.
     assert: user is created successfully and the access token is generated.
     """
+    # pylint: disable=unused-argument
     harness.begin_with_initial_hooks()
     container = harness.model.unit.containers["synapse"]
     username = "test_user"
     admin = True
-    admin_access_token = "admin_token"
+    admin_access_token = "admin_token"  # nosec
     server = "test_server"
-
-    monkeypatch.setattr(
-        synapse.workload, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(
-        synapse.workload, "_get_configuration_field", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(synapse.api, "register_user", MagicMock(return_value="access_token"))
 
     with patch("synapse.api._do_request") as mock_request:
         mock_request.return_value.status_code = 200
@@ -42,7 +35,7 @@ def test_create_user_success(harness: Harness, monkeypatch):
             container=container,
             username=username,
             admin=admin,
-            admin_access_token=admin_access_token,
+            admin_access_token=admin_access_token,  # nosec
             server=server,
         )
 
@@ -62,7 +55,7 @@ def test_create_user_no_shared_secret(harness: Harness, monkeypatch):
     container = harness.model.unit.containers["synapse"]
     username = "test_user"
     admin = True
-    admin_access_token = "admin_token"
+    admin_access_token = "admin_token"  # nosec
     server = "test_server"
 
     monkeypatch.setattr(

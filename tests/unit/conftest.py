@@ -9,6 +9,7 @@ import time
 import typing
 import unittest.mock
 from secrets import token_hex
+from unittest.mock import MagicMock
 
 import ops
 import pytest
@@ -309,3 +310,16 @@ def config_content_fixture() -> dict:
         bind_addresses: ['::']
     """
     return yaml.safe_load(config_content)
+
+
+@pytest.fixture(name="mocked_synapse_calls")
+def mocked_synapse_calls_fixture(monkeypatch):
+    """Mock synapse calls functions."""
+    monkeypatch.setattr(
+        synapse.workload, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
+    )
+    monkeypatch.setattr(
+        synapse.workload, "_get_configuration_field", MagicMock(return_value="shared_secret")
+    )
+    monkeypatch.setattr(synapse.api, "register_user", MagicMock(return_value="access_token"))
+    monkeypatch.setattr(synapse, "create_management_room", MagicMock(return_value=token_hex(16)))
