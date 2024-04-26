@@ -703,7 +703,7 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     assert: new configuration file is pushed and room_list_publication_rules is set.
     """
     synapse_with_notif_config = {
-        "publish_rooms_allowlist": "@user1:domainX.com,@user2:domainY.com",
+        "publish_rooms_allowlist": "user1:domainX.com,user2:domainY.com",
         "server_name": "example.com",
     }
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
@@ -735,12 +735,12 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
 @pytest.mark.parametrize(
     "invalid_config",
     [
-        "@userinvaliddomainX.com",
-        "@user*:domainX.com",
-        "@user1:domainX.com,@user$:domainX.com",
-        "@user1:domainX.com,@user#:domainX.com,@user2:domainX.com",
-        "@user1:domainX.com;@user2:domainX.com",
-        "@:domainX.com;@user2:domainX.com",
+        "userinvaliddomainX.com",
+        "user*:domainX.com",
+        "user1:domainX.com,user$:domainX.com",
+        "user1:domainX.com,user#:domainX.com,user2:domainX.com",
+        "user1:domainX.com;user2:domainX.com",
+        ":domainX.com;@user2:domainX.com",
     ],
 )
 def test_publish_rooms_allowlist_error(invalid_config):

@@ -54,7 +54,7 @@ options:
     type: string
     description: |
       Comma separated list of admins to be allowed to manage the bridge.
-      This takes the form of @user1:domainX.com,@user2:domainY.com...
+      This takes the form of user1:domainX.com,user2:domainY.com...
   notif_from:
     type: string
     description: defines the "From" address to use when sending emails.
@@ -75,7 +75,7 @@ options:
       description: |
         Comma separated list of users allowed to publish rooms. Once is set, no
         other users will be allowed to publish rooms.
-        This takes the form of @user1:domainX.com,@user2:domainY.com...
+        This takes the form of user1:domainX.com,user2:domainY.com...
   server_name:
     type: string
     description: |

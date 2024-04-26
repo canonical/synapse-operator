@@ -248,7 +248,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         userid_regex = r"@[a-z0-9._=/+-]+:\w+\.\w+"
         if value is None:
             return []
-        value_list = [user_id.strip() for user_id in value.split(",")]
+        value_list = ["@" + user_id.strip() for user_id in value.split(",")]
         for user_id in value_list:
             if not re.fullmatch(userid_regex, user_id):
                 raise ValidationError(f"Invalid user ID format: {user_id}", cls)
