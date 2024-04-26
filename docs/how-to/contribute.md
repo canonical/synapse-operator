@@ -9,7 +9,7 @@ enhancements to the Synapse operator.
 [opening an issue](https://github.com/canonical/synapse-operator/issues)
 explaining your use case.
 - If you would like to chat with us about your use-cases or proposed
-implementation, you can reach us at [Canonical Mattermost public channel](https://chat.charmhub.io/charmhub/channels/charm-dev)
+implementation, you can reach us at [Canonical Matrix public channel](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 or [Discourse](https://discourse.charmhub.io/).
 - Familiarising yourself with the [Charmed Operator Framework](https://juju.is/docs/sdk)
 library will help you a lot when working on new features or bug fixes.
@@ -80,12 +80,10 @@ and synapse-nginx images are required in the microk8s registry. To enable it:
 The following commands import the images in the Docker daemon and push them into
 the registry:
 
-    cd [project_dir]/synapse_rock && rockcraft pack rockcraft.yaml
-    skopeo --insecure-policy copy oci-archive:synapse_1.0_amd64.rock docker-daemon:localhost:32000/synapse:latest
-    docker push localhost:32000/synapse:latest
-    cd [project_dir]/nginx_rock && rockcraft pack rockcraft.yaml
-    skopeo --insecure-policy copy oci-archive:synapse_nginx_1.0_amd64.rock docker-daemon:localhost:32000/synapse-nginx:latest
-    docker push localhost:32000/synapse-nginx:latest
+    cd [project_dir]/synapse_rock && rockcraft pack
+    skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:synapse_1.0_amd64.rock docker://localhost:32000/synapse:latest
+    cd [project_dir]/nginx_rock && rockcraft pack
+    skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:synapse-nginx_1.0_amd64.rock docker://localhost:32000/synapse-nginx:latest
 
 ### Deploy
 
@@ -95,7 +93,7 @@ juju add-model synapse-dev
 # Enable DEBUG logging
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
 # Deploy the charm (assuming you're on amd64)
-juju deploy ./synapse_ubuntu-20.04-amd64.charm \
+juju deploy ./synapse_ubuntu-22.04-amd64.charm \
   --resource synapse-image=localhost:32000/synapse:latest \
   --resource synapse-nginx-image=localhost:32000/synapse-nginx:latest
 ```

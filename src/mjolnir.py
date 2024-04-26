@@ -11,9 +11,10 @@ import typing
 
 import ops
 
-import actions
+import pebble
 import synapse
-from charm_state import CharmState
+from admin_access_token import AdminAccessTokenService
+from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -29,26 +30,25 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
     See https://github.com/matrix-org/mjolnir/ for more details about it.
     """
 
-    def __init__(self, charm: ops.CharmBase, charm_state: CharmState):
+    def __init__(self, charm: CharmBaseWithState, token_service: AdminAccessTokenService):
         """Initialize a new instance of the Mjolnir class.
 
         Args:
             charm: The charm object that the Mjolnir instance belongs to.
-            charm_state: Instance of CharmState.
+            token_service: Instance of Admin Access Token Service.
         """
         super().__init__(charm, "mjolnir")
         self._charm = charm
-        self._charm_state = charm_state
+        self._token_service = token_service
         self.framework.observe(charm.on.collect_unit_status, self._on_collect_status)
 
-    @property
-    def _pebble_service(self) -> typing.Any:
-        """Return instance of pebble service.
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
 
         Returns:
-            instance of pebble service or none.
+           The current charm
         """
-        return getattr(self._charm, "pebble_service", None)
+        return self._charm
 
     @property
     def _admin_access_token(self) -> typing.Optional[str]:
@@ -57,19 +57,25 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         Returns:
             admin access token or None if fails.
         """
-        get_admin_access_token = getattr(self._charm, "get_admin_access_token", None)
-        if not get_admin_access_token:
-            logging.error("Failed to get method get_admin_access_token.")
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            logger.exception("Failed to connect to Synapse")
             return None
-        return get_admin_access_token()
+        access_token = self._token_service.get(container)
+        if not access_token:
+            logging.error("Admin Access Token was not found, please check the logs.")
+            return None
+        return access_token
 
-    def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:
+    @inject_charm_state
+    def _on_collect_status(self, event: ops.CollectStatusEvent, charm_state: CharmState) -> None:
         """Collect status event handler.
 
         Args:
             event: Collect status event.
+            charm_state: The charm state.
         """
-        if not self._charm_state.synapse_config.enable_mjolnir:
+        if not charm_state.synapse_config.enable_mjolnir:
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
@@ -115,7 +121,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
                 exc,
             )
             return
-        self.enable_mjolnir(self._admin_access_token)
+        self.enable_mjolnir(charm_state, self._admin_access_token)
         event.add_status(ops.ActiveStatus())
 
     def get_membership_room_id(self, admin_access_token: str) -> typing.Optional[str]:
@@ -131,7 +137,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             room_name=synapse.MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
         )
 
-    def enable_mjolnir(self, admin_access_token: str) -> None:
+    def enable_mjolnir(self, charm_state: CharmState, admin_access_token: str) -> None:
         """Enable mjolnir service.
 
         The required steps to enable Mjolnir are:
@@ -147,6 +153,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
          - Finally, add Mjolnir pebble layer.
 
         Args:
+            charm_state: Instance of CharmState.
             admin_access_token: not empty admin access token.
         """
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
@@ -154,13 +161,16 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self._charm.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
-        mjolnir_user = actions.register_user(
+        mjolnir_user = synapse.create_user(
             container,
             USERNAME,
             True,
             admin_access_token,
-            str(self._charm_state.synapse_config.server_name),
+            str(charm_state.synapse_config.server_name),
         )
+        if mjolnir_user is None:
+            logger.error("Failed to create Mjolnir user. Mjolnir will not be configured")
+            return
         mjolnir_access_token = mjolnir_user.access_token
         room_id = synapse.get_room_id(
             room_name=synapse.MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
@@ -171,7 +181,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         # Add the Mjolnir user to the management room
         synapse.make_room_admin(
             user=mjolnir_user,
-            server=str(self._charm_state.synapse_config.server_name),
+            server=str(charm_state.synapse_config.server_name),
             admin_access_token=admin_access_token,
             room_id=room_id,
         )
@@ -181,7 +191,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         synapse.override_rate_limit(
             user=mjolnir_user,
             admin_access_token=admin_access_token,
-            charm_state=self._charm_state,
+            charm_state=charm_state,
         )
-        self._pebble_service.replan_mjolnir(container)
+        pebble.replan_mjolnir(container)
         self._charm.model.unit.status = ops.ActiveStatus()

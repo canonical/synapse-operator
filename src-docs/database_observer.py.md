@@ -12,14 +12,12 @@ The Database agent relation observer.
 ## <kbd>class</kbd> `DatabaseObserver`
 The Database relation observer. 
 
-Attrs:  _pebble_service: instance of pebble service. 
-
-<a href="../src/database_observer.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBase)
+__init__(charm: CharmBaseWithState, relation_name: str) → None
 ```
 
 Initialize the observer and register event handlers. 
@@ -29,6 +27,7 @@ Initialize the observer and register event handlers.
 **Args:**
  
  - <b>`charm`</b>:  The parent charm to attach the observer to. 
+ - <b>`relation_name`</b>:  The name of the relation to observe. 
 
 
 ---
@@ -41,31 +40,24 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/database_observer.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `get_database_name`
+### <kbd>function</kbd> `get_charm`
 
 ```python
-get_database_name() → str
+get_charm() → CharmBaseWithState
 ```
 
-Get database name. 
-
-
-
-**Raises:**
- 
- - <b>`CharmDatabaseRelationNotFoundError`</b>:  if there is no relation. 
+Return the current charm. 
 
 
 
 **Returns:**
- 
- - <b>`str`</b>:  database name. 
+  The current charm 
 
 ---
 
-<a href="../src/database_observer.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_datasource`
 

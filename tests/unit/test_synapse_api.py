@@ -14,6 +14,7 @@ import requests
 
 import synapse
 from charm_state import CharmState, SynapseConfig
+from synapse.api import WHOAMI_URL
 from user import User
 
 
@@ -223,7 +224,11 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
     charm_state = CharmState(
         synapse_config=synapse_config,
         datasource=None,
+        irc_bridge_datasource=None,
         saml_config=None,
+        smtp_config=None,
+        media_config=None,
+        redis_config=None,
     )
     expected_url = (
         f"http://localhost:8008/_synapse/admin/v1/users/@any-user:{server}/override_ratelimit"
@@ -255,7 +260,11 @@ def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
     charm_state = CharmState(
         synapse_config=synapse_config,
         datasource=None,
+        irc_bridge_datasource=None,
         saml_config=None,
+        smtp_config=None,
+        media_config=None,
+        redis_config=None,
     )
     expected_error_msg = "Failed to connect"
     do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))
@@ -712,3 +721,33 @@ def test_promote_user_admin_error(monkeypatch: pytest.MonkeyPatch):
 
     with pytest.raises(synapse.APIError, match=expected_error_msg):
         synapse.promote_user_admin(user, admin_access_token=admin_access_token, server=server)
+
+
+def test_is_token_valid_correct(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given an access token and mocking http requests not to fail.
+    act: call is_token_valid.
+    assert: token is valid.
+    """
+    token = token_hex(16)
+    do_request_mock = mock.MagicMock()
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+    assert synapse.is_token_valid(token)
+    do_request_mock.assert_called_once_with(
+        "GET", WHOAMI_URL, admin_access_token=token, retry=True
+    )
+
+
+def test_is_token_valid_invalid(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given an access token, and mocking to return UnauthorizedError on making request.
+    act: call is_token_valid
+    assert: token is not valid
+    """
+    token = token_hex(16)
+    do_request_mock = mock.MagicMock(side_effect=synapse.api.UnauthorizedError("error"))
+    monkeypatch.setattr("synapse.api._do_request", do_request_mock)
+    assert not synapse.is_token_valid(token)
+    do_request_mock.assert_called_once_with(
+        "GET", WHOAMI_URL, admin_access_token=token, retry=True
+    )

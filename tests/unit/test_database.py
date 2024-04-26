@@ -15,10 +15,10 @@ from ops.testing import Harness
 from psycopg2 import sql
 
 import database_observer
+import pebble
 import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
-from exceptions import CharmDatabaseRelationNotFoundError
 
 
 @pytest.fixture(autouse=True)
@@ -196,29 +196,12 @@ def test_relation_as_datasource(
         user="user",
     )
     assert expected == harness.charm._database.get_relation_as_datasource()
-    assert harness.charm.app.name == harness.charm._database.get_database_name()
-    synapse_env = synapse.get_environment(harness.charm._charm_state)
+    synapse_env = synapse.get_environment(harness.charm.build_charm_state())
     assert synapse_env["POSTGRES_DB"] == expected["db"]
     assert synapse_env["POSTGRES_HOST"] == expected["host"]
     assert synapse_env["POSTGRES_PORT"] == expected["port"]
     assert synapse_env["POSTGRES_USER"] == expected["user"]
     assert synapse_env["POSTGRES_PASSWORD"] == expected["password"]
-
-
-def test_relation_as_datasource_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: add relation and trigger change config.
-    assert: charm status is active.
-    """
-    harness.begin()
-
-    get_relation_as_datasource_mock = unittest.mock.MagicMock(return_value=None)
-    monkeypatch.setattr(
-        harness.charm._database, "get_relation_as_datasource", get_relation_as_datasource_mock
-    )
-    with pytest.raises(CharmDatabaseRelationNotFoundError):
-        harness.charm._database.get_database_name()
 
 
 def test_change_config(harness: Harness):
@@ -229,7 +212,8 @@ def test_change_config(harness: Harness):
     """
     harness.begin()
 
-    harness.charm._database._change_config()
+    charm_state = harness.charm.build_charm_state()
+    harness.charm._database._change_config(charm_state)
 
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
@@ -245,7 +229,8 @@ def test_change_config_error(
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
 
-    harness.charm._database._change_config()
+    charm_state = harness.charm.build_charm_state()
+    harness.charm._database._change_config(charm_state)
 
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 
@@ -270,3 +255,32 @@ def test_on_database_created(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     harness.charm._database._on_database_created(unittest.mock.MagicMock())
 
     db_client_mock.prepare.assert_called_once()
+
+
+def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
+    """
+    arrange: charm deployed.
+    act: get synapse layer data.
+    assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
+    """
+    harness.begin_with_initial_hooks()
+
+    synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
+        "services"
+    ][pebble.STATS_EXPORTER_SERVICE_NAME]
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+    synapse_env = synapse.get_environment(harness.charm.build_charm_state())
+    assert synapse_layer == {
+        "override": "replace",
+        "summary": "Synapse Stats Exporter service",
+        "command": "synapse-stats-exporter",
+        "startup": "disabled",
+        "environment": {
+            "PROM_SYNAPSE_USER": synapse_env["POSTGRES_USER"],
+            "PROM_SYNAPSE_PASSWORD": synapse_env["POSTGRES_PASSWORD"],
+            "PROM_SYNAPSE_HOST": synapse_env["POSTGRES_HOST"],
+            "PROM_SYNAPSE_PORT": synapse_env["POSTGRES_PORT"],
+            "PROM_SYNAPSE_DATABASE": synapse_env["POSTGRES_DB"],
+        },
+        "on-failure": "ignore",
+    }

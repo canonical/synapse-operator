@@ -5,17 +5,21 @@
 
 # pylint: disable=too-few-public-methods, protected-access
 
+import time
 import typing
 import unittest.mock
+from secrets import token_hex
 
 import ops
 import pytest
 import yaml
+from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.pebble import ExecError
 from ops.testing import Harness
 
 import synapse
 from charm import SynapseCharm
+from s3_parameters import S3Parameters
 
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
 TEST_SERVER_NAME_CHANGED = "pebble-layer-1.synapse.com"
@@ -65,6 +69,10 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
                 stderr=self._stderr,
             )
 
+        def wait(self):
+            """Simulate the wait method of the container object."""
+            self.wait_output()
+
     def exec_stub(command: list[str], **_kwargs):
         """A mock implementation of the `exec` method of the container object.
 
@@ -109,6 +117,8 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.set_model_name("testmodel")  # needed for testing Traefik
@@ -182,6 +192,39 @@ def saml_configured_fixture(harness: Harness) -> Harness:
     return harness
 
 
+@pytest.fixture(name="smtp_configured")
+def smtp_configured_fixture(harness: Harness) -> Harness:
+    """Harness fixture with smtp relation configured"""
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    password_id = harness.add_model_secret("smtp-integrator", {"password": token_hex(16)})
+    smtp_relation_data = {
+        "auth_type": AuthType.PLAIN,
+        "host": "127.0.0.1",
+        "password_id": password_id,
+        "port": "25",
+        "transport_security": TransportSecurity.TLS,
+        "user": "username",
+    }
+    harness.add_relation("smtp", "smtp-integrator", app_data=smtp_relation_data)
+    harness.grant_secret(password_id, "synapse")
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    return harness
+
+
+@pytest.fixture(name="redis_configured")
+def redis_configured_fixture(harness: Harness) -> Harness:
+    """Harness fixture with redis relation configured"""
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    redis_relation_id = harness.add_relation(
+        "redis", "redis", app_data={"hostname": "redis-host", "port": "1010"}
+    )
+    harness.add_relation_unit(redis_relation_id, "redis/0")
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    return harness
+
+
 @pytest.fixture(name="container_mocked")
 def container_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
     """Mock container base to others fixtures."""
@@ -216,3 +259,53 @@ def container_with_path_error_pass_fixture(
     remove_path_mock = unittest.mock.MagicMock(side_effect=path_error)
     monkeypatch.setattr(container_mocked, "remove_path", remove_path_mock)
     return container_mocked
+
+
+@pytest.fixture(name="s3_relation_data_backup")
+def s3_relation_data_backup_fixture() -> dict:
+    """Returns valid S3 relation data."""
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+        "bucket": "synapse-backup-bucket",
+        "path": "/synapse-backups",
+        "s3-uri-style": "path",
+        "endpoint": "https://s3.example.com",
+    }
+
+
+@pytest.fixture(name="s3_parameters_backup")
+def s3_parameters_backup_fixture(s3_relation_data_backup) -> S3Parameters:
+    """Returns valid S3 Parameters."""
+    return S3Parameters(**s3_relation_data_backup)
+
+
+@pytest.fixture(name="s3_relation_data_media")
+def s3_relation_data_media_fixture() -> dict:
+    """Returns valid S3 relation data."""
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+        "bucket": "synapse-media-bucket",
+        "path": "/synapse-media",
+        "s3-uri-style": "path",
+        "endpoint": "https://s3.example.com",
+    }
+
+
+@pytest.fixture(name="s3_parameters_media")
+def s3_parameters_media_fixture(s3_relation_data_media) -> S3Parameters:
+    """Returns valid S3 Parameters."""
+    return S3Parameters(**s3_relation_data_media)
+
+
+@pytest.fixture(name="config_content")
+def config_content_fixture() -> dict:
+    """Returns valid Synapse configuration."""
+    config_content = """
+    listeners:
+      - type: http
+        port: 8080
+        bind_addresses: ['::']
+    """
+    return yaml.safe_load(config_content)

@@ -5,15 +5,15 @@
 
 # pylint: disable=protected-access
 
+import io
 import json
-from secrets import token_hex
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import ops
 import pytest
 from ops.testing import Harness
 
-import actions
+import pebble
 import synapse
 from charm import SynapseCharm
 from pebble import PebbleServiceError
@@ -38,9 +38,13 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
         "summary": "Synapse application service",
         "command": synapse.SYNAPSE_COMMAND_PATH,
         "environment": {
+            "SYNAPSE_CONFIG_DIR": synapse.SYNAPSE_CONFIG_DIR,
+            "SYNAPSE_CONFIG_PATH": synapse.SYNAPSE_CONFIG_PATH,
+            "SYNAPSE_DATA_DIR": synapse.SYNAPSE_DATA_DIR,
             "SYNAPSE_NO_TLS": "True",
             "SYNAPSE_REPORT_STATS": "no",
             "SYNAPSE_SERVER_NAME": TEST_SERVER_NAME,
+            "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
         },
         "startup": "enabled",
     }
@@ -108,7 +112,7 @@ def test_server_name_empty() -> None:
     """
     harness = Harness(SynapseCharm)
 
-    harness.begin()
+    harness.begin_with_initial_hooks()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "invalid configuration: server_name" in str(harness.model.unit.status)
@@ -174,14 +178,17 @@ def test_saml_integration_pebble_success(
     harness = saml_configured
     harness.begin()
     container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    pull_mock = MagicMock(return_value=io.StringIO("{}"))
+    push_mock = MagicMock()
+    monkeypatch.setattr(container, "pull", pull_mock)
+    monkeypatch.setattr(container, "push", push_mock)
     enable_saml_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_saml", enable_saml_mock)
 
-    harness.charm._saml._pebble_service.enable_saml(container=container)
+    charm_state = harness.charm.build_charm_state()
+    pebble.enable_saml(charm_state, container=container)
 
-    enable_saml_mock.assert_called_once_with(
-        container=container, charm_state=harness.charm._charm_state
-    )
+    enable_saml_mock.assert_called_once()
 
 
 def test_saml_integration_pebble_error(
@@ -194,15 +201,76 @@ def test_saml_integration_pebble_error(
     """
     harness = saml_configured
     harness.begin()
+
     relation = harness.charm.framework.model.get_relation("saml", 0)
     enable_saml_mock = MagicMock(side_effect=PebbleServiceError("fail"))
-    monkeypatch.setattr(harness.charm._saml._pebble_service, "enable_saml", enable_saml_mock)
+    monkeypatch.setattr(pebble, "enable_saml", enable_saml_mock)
 
     harness.charm._saml.saml.on.saml_data_available.emit(relation)
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "SAML integration failed" in str(harness.model.unit.status)
     harness.cleanup()
+
+
+def test_smtp_integration_container_down(smtp_configured: Harness) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, set Synapse container to be down.
+    act: emit smtp_data_available.
+    assert: Synapse charm should report maintenance status and waiting for pebble.
+    """
+    harness = smtp_configured
+    harness.begin()
+    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
+    relation = harness.charm.framework.model.get_relation("smtp", 0)
+
+    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+
+    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
+    assert "Waiting for" in str(harness.model.unit.status)
+
+
+def test_smtp_relation_pebble_success(smtp_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_smtp.
+    act: emit smtp_data_available
+    assert: synapse.enable_smtp is called once and unit is active.
+    """
+    harness = smtp_configured
+    enable_smtp_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_smtp", enable_smtp_mock)
+    pull_mock = MagicMock(return_value=io.StringIO("{}"))
+    push_mock = MagicMock()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(container, "pull", pull_mock)
+    monkeypatch.setattr(container, "push", push_mock)
+
+    harness.begin()
+
+    relation = harness.charm.framework.model.get_relation("smtp", 0)
+    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+
+    enable_smtp_mock.assert_called_once()
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+def test_smtp_relation_pebble_error(smtp_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit smtp_data_available.
+    assert: Synapse charm should submit the correct status (blocked).
+    """
+    harness = smtp_configured
+    harness.begin()
+
+    enable_smtp_mock = MagicMock(side_effect=PebbleServiceError("fail"))
+    monkeypatch.setattr(pebble, "enable_smtp", enable_smtp_mock)
+
+    relation = harness.charm.framework.model.get_relation("smtp", 0)
+    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "SMTP integration failed" in str(harness.model.unit.status)
 
 
 def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -218,179 +286,14 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
     )
     charm_state_mock = MagicMock()
     charm_state_mock.server_name = TEST_SERVER_NAME_CHANGED
-    monkeypatch.setattr(harness.charm.pebble_service, "_charm_state", charm_state_mock)
+    monkeypatch.setattr(
+        harness.charm, "build_charm_state", MagicMock(return_value=charm_state_mock)
+    )
 
     harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert "server_name modification is not allowed" in str(harness.model.unit.status)
-
-
-@patch("charm.JUJU_HAS_SECRETS", True)
-@patch.object(ops.Application, "add_secret")
-def test_get_admin_access_token_with_secrets(
-    mock_add_secret, harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start the Synapse charm, mock register_user and add_secret.
-    act: get admin access token.
-    assert: admin user is created, secret is created and the token is retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    # Mocking like the following doesn't get evaluated as expected
-    # mock_juju_env.return_value = MagicMock(has_secrets=True)
-    secret_mock = MagicMock
-    secret_id = token_hex(16)
-    secret_mock.id = secret_id
-    mock_add_secret.return_value = secret_mock
-    user_mock = MagicMock()
-    admin_access_token_expected = token_hex(16)
-    user_mock.access_token = admin_access_token_expected
-    register_user_mock = MagicMock(return_value=user_mock)
-    monkeypatch.setattr(actions, "register_user", register_user_mock)
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    register_user_mock.assert_called_once()
-    mock_add_secret.assert_called_once()
-    assert admin_access_token == admin_access_token_expected
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    assert (
-        harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
-        == secret_id
-    )
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
-@patch("charm.JUJU_HAS_SECRETS", False)
-@patch.object(ops.Application, "add_secret")
-def test_get_admin_access_token_no_secrets(
-    mock_add_secret, harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start the Synapse charm, mock register_user and add_secret.
-    act: get admin access token.
-    assert: admin user is created, relation is updated and the token is
-        retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    # Mocking like the following doesn't get evaluated as expected
-    # mock_juju_env.return_value = MagicMock(has_secrets=True)
-    user_mock = MagicMock()
-    admin_access_token_expected = token_hex(16)
-    user_mock.access_token = admin_access_token_expected
-    register_user_mock = MagicMock(return_value=user_mock)
-    monkeypatch.setattr(actions, "register_user", register_user_mock)
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    register_user_mock.assert_called_once()
-    mock_add_secret.assert_not_called()
-    assert admin_access_token == admin_access_token_expected
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    assert (
-        harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-key")
-        == admin_access_token_expected
-    )
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
-@patch("charm.JUJU_HAS_SECRETS", True)
-@patch.object(ops.Application, "add_secret")
-def test_get_admin_access_token_no_peer_relation(mock_add_secret, harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm without relations.
-    act: get admin access token.
-    assert: add secret is not called and None is retrieved.
-    """
-    harness.begin()
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    mock_add_secret.assert_not_called()
-    assert not admin_access_token
-
-
-@patch("charm.JUJU_HAS_SECRETS", True)
-@patch.object(ops.Model, "get_secret")
-def test_get_admin_access_token_existing_secret(mock_get_secret, harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm, mock relation.
-    act: get admin access token.
-    assert: secret is queried and the token is retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    secret_id = token_hex(16)
-    harness.update_relation_data(peer_relation.id, "synapse", {"secret-id": secret_id})
-    # Mocking like the following doesn't get evaluated as expected
-    # mock_juju_env.return_value = MagicMock(has_secrets=True)
-    secret_mock = MagicMock
-    secret_mock.id = secret_id
-    admin_access_token_expected = token_hex(16)
-    secret_mock.get_content = MagicMock(return_value={"secret-key": admin_access_token_expected})
-    mock_get_secret.return_value = secret_mock
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    assert admin_access_token == admin_access_token_expected
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    assert (
-        harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
-        == secret_id
-    )
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
-@patch("charm.JUJU_HAS_SECRETS", True)
-@patch.object(ops.Model, "get_secret")
-def test_get_admin_access_token_not_found_secret(mock_get_secret, harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm, mock relation.
-    act: get admin access token.
-    assert: secret is not found, peer data is erased and None is retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    secret_id = token_hex(16)
-    harness.update_relation_data(peer_relation.id, "synapse", {"secret-id": secret_id})
-    # Mocking like the following doesn't get evaluated as expected
-    # mock_juju_env.return_value = MagicMock(has_secrets=True)
-    mock_get_secret.side_effect = ops.model.SecretNotFoundError()
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    assert not admin_access_token
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    assert not harness.get_relation_data(peer_relation.id, harness.charm.app.name).get("secret-id")
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
-@patch("charm.JUJU_HAS_SECRETS", False)
-def test_get_admin_access_token_existing_peer_data(harness: Harness) -> None:
-    """
-    arrange: start the Synapse charm, mock relation.
-    act: get admin access token.
-    assert: secret is queried and the token is retrieved.
-    """
-    harness.begin_with_initial_hooks()
-    peer_relation = harness.model.get_relation("synapse-peers")
-    assert peer_relation
-    admin_access_token_expected = token_hex(16)
-    harness.update_relation_data(
-        peer_relation.id, "synapse", {"secret-key": admin_access_token_expected}
-    )
-
-    admin_access_token = harness.charm.get_admin_access_token()
-
-    assert admin_access_token == admin_access_token_expected
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
 
 
 def test_enable_federation_domain_whitelist_is_called(
@@ -403,17 +306,30 @@ def test_enable_federation_domain_whitelist_is_called(
     act: call pebble change_config.
     assert: enable_federation_domain_whitelist is called.
     """
+    config_content = """  # pylint: disable=duplicate-code
+    listeners:
+        - type: http
+          port: 8080
+          bind_addresses:
+            - "::"
+    """
+    config = io.StringIO(config_content)
     harness.update_config({"federation_domain_whitelist": "foo"})
     harness.begin()
     harness.set_leader(True)
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
+    monkeypatch.setattr(synapse, "enable_forgotten_room_retention", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
     monkeypatch.setattr(synapse, "validate_config", MagicMock())
     enable_federation_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
-    harness.charm.pebble_service.change_config(container=MagicMock())
+    charm_state = harness.charm.build_charm_state()
+    container = MagicMock()
+    monkeypatch.setattr(container, "push", MagicMock())
+    monkeypatch.setattr(container, "pull", MagicMock(return_value=config))
+    pebble.change_config(charm_state, container=container)
 
     enable_federation_mock.assert_called_once()
 
@@ -433,12 +349,17 @@ def test_disable_password_config_is_called(
     harness.set_leader(True)
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
+    monkeypatch.setattr(synapse, "enable_forgotten_room_retention", MagicMock())
     monkeypatch.setattr(synapse, "enable_serve_server_wellknown", MagicMock())
     monkeypatch.setattr(synapse, "validate_config", MagicMock())
     disable_password_config_mock = MagicMock()
     monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
 
-    harness.charm.pebble_service.change_config(container=MagicMock())
+    charm_state = harness.charm.build_charm_state()
+    container = MagicMock()
+    monkeypatch.setattr(container, "push", MagicMock())
+    monkeypatch.setattr(container, "pull", MagicMock(return_value=io.StringIO("{}")))
+    pebble.change_config(charm_state, container=container)
 
     disable_password_config_mock.assert_called_once()
 
@@ -451,7 +372,7 @@ def test_nginx_replan(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
     harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
@@ -467,7 +388,7 @@ def test_nginx_replan_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
     harness.set_can_connect(container, False)
@@ -503,7 +424,7 @@ def test_nginx_replan_with_synapse_container_down(
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
     harness.set_can_connect(container, False)
@@ -525,9 +446,72 @@ def test_nginx_replan_with_synapse_service_not_existing(
     """
     harness.begin()
     replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(harness.charm.pebble_service, "replan_nginx", replan_nginx_mock)
+    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
 
     harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
 
     replan_nginx_mock.assert_called_once()
     assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse")
+
+
+def test_redis_relation_pebble_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_redis.
+    act: emit redis_relation_updated
+    assert: synapse.enable_redis is called once and unit is active.
+    """
+    harness = redis_configured
+    enable_redis_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
+    pull_mock = MagicMock(return_value=io.StringIO("{}"))
+    push_mock = MagicMock()
+    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(container, "pull", pull_mock)
+    monkeypatch.setattr(container, "push", push_mock)
+    harness.begin()
+
+    harness.charm.on.redis_relation_updated.emit()
+
+    enable_redis_mock.assert_called_once()
+    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+def test_redis_relation_pebble_error(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit redis_relation_updated.
+    assert: Synapse charm should submit the correct status (blocked).
+    """
+    harness = redis_configured
+    harness.begin()
+
+    enable_redis_mock = MagicMock(side_effect=PebbleServiceError("fail"))
+    monkeypatch.setattr(pebble, "enable_redis", enable_redis_mock)
+
+    harness.charm.on.redis_relation_updated.emit()
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert "Redis integration failed" in str(harness.model.unit.status)
+
+
+def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm, set server_name, mock synapse.enable_redis.
+    act: emit redis_relation_updated.
+    assert: get_relation_as_redis_conf works as expected.
+    """
+    harness = redis_configured
+    enable_redis_mock = MagicMock()
+    monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
+
+    harness.begin()
+    relation = harness.charm.framework.model.get_relation("redis", 0)
+    # We need to bypass protected access to inject the relation data
+    # pylint: disable=protected-access
+    harness.charm._redis._stored.redis_relation = {
+        relation.id: ({"hostname": "redis-host", "port": 1010})
+    }
+
+    redis_config = harness.charm._redis.get_relation_as_redis_conf()
+    assert relation.data[relation.app]["hostname"] == redis_config["host"]
+    assert relation.data[relation.app]["port"] == str(redis_config["port"])

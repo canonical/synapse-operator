@@ -6,13 +6,41 @@ summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
 version: "1.0"
 base: ubuntu@22.04
-# renovate: base: ubuntu:22.04@sha256:6042500cf4b44023ea1894effe7890666b0c5c7871ed83a97c36c76ae560bb9b
+# renovate: base: ubuntu:22.04@sha256:6d7b5d3317a71adb5e175640150e44b8b9a9401a7dd394f44840626aff9fa94d
 build-base: ubuntu@22.04
-# renovate: build-base: ubuntu:22.04@sha256:6042500cf4b44023ea1894effe7890666b0c5c7871ed83a97c36c76ae560bb9b
+# renovate: build-base: ubuntu:22.04@sha256:6d7b5d3317a71adb5e175640150e44b8b9a9401a7dd394f44840626aff9fa94d
 license: Apache-2.0
 platforms:
   amd64:
 parts:
+    scripts:
+      plugin: dump
+      source: scripts
+      organize:
+        "*": usr/local/bin/
+      override-prime: |
+        craftctl default
+        chmod -R +x usr/local/bin/*
+    cron:
+      after:
+        - scripts
+      stage-packages:
+        - cron
+      plugin: dump
+      source: cron
+      organize:
+        "cron.hourly/*": /etc/cron.hourly
+        "cron.daily/*": /etc/cron.daily
+        "cron.weekly/*": /etc/cron.weekly
+        "cron.monthly/*": /etc/cron.monthly
+      override-prime: |
+        craftctl default
+        chmod -R +x etc/cron.*
+    add-user:
+        plugin: nil
+        overlay-script: |
+          groupadd -R $CRAFT_OVERLAY --gid 991 synapse
+          useradd -R $CRAFT_OVERLAY --system --gid 991 --uid 991 --home /srv/synapse -m synapse
     synapse:
         build-packages:
             - build-essential
@@ -37,6 +65,8 @@ parts:
             - coreutils
             - curl
             - gosu
+            - gpg
+            - gpg-agent
             - libffi-dev
             - libicu70
             - libjemalloc2
@@ -48,11 +78,16 @@ parts:
             - python3
             - xmlsec1
         stage-snaps:
+            - aws-cli
             - mjolnir/latest/edge
+            - matrix-appservice-irc/latest/edge
         plugin: nil
-        source: https://github.com/matrix-org/synapse/
+        source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.96.1
+        source-tag: v1.101.0
+        build-environment:
+          - RUST_VERSION: "1.76.0"
+          - POETRY_VERSION: "1.7.1"
         override-build: |
             craftctl default
             export RUSTUP_HOME=/rust
@@ -60,13 +95,21 @@ parts:
             export PATH=/cargo/bin:/rust/bin:$PATH
             export CARGO_NET_GIT_FETCH_WITH_CLI=false
             mkdir -p /rust /cargo /synapse /install
-            curl -m 30 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal
-            /rust/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc -V > $CRAFT_PART_INSTALL/rust-version
+            curl -m 30 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain=$RUST_VERSION --profile minimal
+            /rust/toolchains/$RUST_VERSION-x86_64-unknown-linux-gnu/bin/rustc -V > $CRAFT_PART_INSTALL/rust-version
             pip3 install -U pip setuptools
-            pip3 install --root-user-action=ignore "poetry==1.3.2"
+            pip3 install --root-user-action=ignore "poetry==$POETRY_VERSION"
             cp pyproject.toml poetry.lock /synapse/
             /usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
             pip3 install --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
+            git clone https://github.com/canonical/synapse_stats_exporter.git
+            cd synapse_stats_exporter
+            pip3 install --prefix="/install" --no-warn-script-location -U .
+            cd ..
+            git clone --branch v1.4.0 --depth 1 https://github.com/matrix-org/synapse-s3-storage-provider
+            cd synapse-s3-storage-provider
+            pip3 install --prefix="/install" --no-warn-script-location -U .
+            cd ..
             cp -r synapse /synapse/
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
@@ -81,6 +124,7 @@ parts:
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
         overlay-packages:
             - ca-certificates
+            - libjemalloc2
     synapse-conf:
         plugin: dump
         source: attributemaps

@@ -5,103 +5,132 @@
 # <kbd>module</kbd> `pebble.py`
 Class to interact with pebble. 
 
+**Global Variables**
+---------------
+- **STATS_EXPORTER_SERVICE_NAME**
+
+---
+
+<a href="../src/pebble.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `check_synapse_ready`
+
+```python
+check_synapse_ready() → CheckDict
+```
+
+Return the Synapse container ready check. 
+
+
+
+**Returns:**
+ 
+ - <b>`Dict`</b>:  check object converted to its dict representation. 
 
 
 ---
 
-## <kbd>class</kbd> `PebbleService`
-The charm pebble service manager. 
+<a href="../src/pebble.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-<a href="../src/pebble.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `__init__`
+## <kbd>function</kbd> `check_synapse_alive`
 
 ```python
-__init__(charm_state: CharmState)
+check_synapse_alive() → CheckDict
 ```
 
-Initialize the pebble service. 
+Return the Synapse container alive check. 
+
+
+
+**Returns:**
+ 
+ - <b>`Dict`</b>:  check object converted to its dict representation. 
+
+
+---
+
+<a href="../src/pebble.py#L65"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `restart_synapse`
+
+```python
+restart_synapse(charm_state: CharmState, container: Container) → None
+```
+
+Restart Synapse service. 
+
+This will force a restart even if its plan hasn't changed. 
 
 
 
 **Args:**
  
- - <b>`charm_state`</b>:  Instance of CharmState. 
-
-
+ - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`container`</b>:  Synapse container. 
 
 
 ---
 
-<a href="../src/pebble.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `change_config`
+## <kbd>function</kbd> `check_nginx_ready`
 
 ```python
-change_config(container: Container) → None
+check_nginx_ready() → CheckDict
 ```
 
-Change the configuration. 
+Return the Synapse NGINX container check. 
 
 
 
-**Args:**
+**Returns:**
  
- - <b>`container`</b>:  Charm container. 
+ - <b>`Dict`</b>:  check object converted to its dict representation. 
 
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
 
 ---
 
-<a href="../src/pebble.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `enable_saml`
+## <kbd>function</kbd> `check_mjolnir_ready`
 
 ```python
-enable_saml(container: Container) → None
+check_mjolnir_ready() → CheckDict
 ```
 
-Enable SAML while receiving on_saml_data_available event. 
+Return the Synapse Mjolnir service check. 
 
 
 
-**Args:**
+**Returns:**
  
- - <b>`container`</b>:  Charm container. 
+ - <b>`Dict`</b>:  check object converted to its dict representation. 
 
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
 
 ---
 
-<a href="../src/pebble.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `replan_mjolnir`
+## <kbd>function</kbd> `check_irc_bridge_ready`
 
 ```python
-replan_mjolnir(container: Container) → None
+check_irc_bridge_ready() → CheckDict
 ```
 
-Replan Synapse Mjolnir service. 
+Return the Synapse IRC bridge service check. 
 
 
 
-**Args:**
+**Returns:**
  
- - <b>`container`</b>:  Charm container. 
+ - <b>`Dict`</b>:  check object converted to its dict representation. 
+
 
 ---
 
-<a href="../src/pebble.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `replan_nginx`
+## <kbd>function</kbd> `replan_nginx`
 
 ```python
 replan_nginx(container: Container) → None
@@ -115,17 +144,18 @@ Replan Synapse NGINX service.
  
  - <b>`container`</b>:  Charm container. 
 
+
 ---
 
-<a href="../src/pebble.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `reset_instance`
+## <kbd>function</kbd> `replan_mjolnir`
 
 ```python
-reset_instance(container: Container) → None
+replan_mjolnir(container: Container) → None
 ```
 
-Reset instance. 
+Replan Synapse Mjolnir service. 
 
 
 
@@ -134,30 +164,199 @@ Reset instance.
  - <b>`container`</b>:  Charm container. 
 
 
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
-
 ---
 
-<a href="../src/pebble.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `restart_synapse`
+## <kbd>function</kbd> `replan_irc_bridge`
 
 ```python
-restart_synapse(container: Container) → None
+replan_irc_bridge(container: Container) → None
 ```
 
-Restart Synapse service. 
-
-This will force a restart even if its plan hasn't changed. 
+Replan Synapse IRC bridge service. 
 
 
 
 **Args:**
  
- - <b>`container`</b>:  Synapse container. 
+ - <b>`container`</b>:  Charm container. 
+
+
+---
+
+<a href="../src/pebble.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `replan_stats_exporter`
+
+```python
+replan_stats_exporter(container: Container, charm_state: CharmState) → None
+```
+
+Replan Synapse StatsExporter service. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+---
+
+<a href="../src/pebble.py#L217"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `change_config`
+
+```python
+change_config(charm_state: CharmState, container: Container) → None
+```
+
+Change the configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+
+---
+
+<a href="../src/pebble.py#L269"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `enable_redis`
+
+```python
+enable_redis(charm_state: CharmState, container: Container) → None
+```
+
+Enable Redis while receiving on_redis_relation_updated event. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+
+---
+
+<a href="../src/pebble.py#L289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `enable_saml`
+
+```python
+enable_saml(charm_state: CharmState, container: Container) → None
+```
+
+Enable SAML while receiving on_saml_data_available event. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+
+---
+
+<a href="../src/pebble.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `enable_smtp`
+
+```python
+enable_smtp(charm_state: CharmState, container: Container) → None
+```
+
+Enable SMTP while receiving on_smtp_data_available event. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+
+---
+
+<a href="../src/pebble.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `enable_media`
+
+```python
+enable_media(charm_state: CharmState, container: Container) → None
+```
+
+Enable S3 Media while receiving on_media_data_available event. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
+
+
+---
+
+<a href="../src/pebble.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `reset_instance`
+
+```python
+reset_instance(charm_state: CharmState, container: Container) → None
+```
+
+Reset instance. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`container`</b>:  Charm container. 
+
+
+
+**Raises:**
+ 
+ - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
 
 
 ---
@@ -167,7 +366,7 @@ Exception raised when something fails while interacting with Pebble.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/pebble.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

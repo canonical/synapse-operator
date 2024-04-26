@@ -5,6 +5,9 @@
 # <kbd>module</kbd> `observability.py`
 Provide the Observability class to represent the observability stack for Synapse. 
 
+**Global Variables**
+---------------
+- **STATS_EXPORTER_PORT**
 
 
 ---
@@ -12,7 +15,7 @@ Provide the Observability class to represent the observability stack for Synapse
 ## <kbd>class</kbd> `Observability`
 A class representing the observability stack for Synapse application. 
 
-<a href="../src/observability.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/observability.py#L18"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

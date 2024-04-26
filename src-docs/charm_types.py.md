@@ -28,6 +28,42 @@ A named tuple representing a Datasource PostgreSQL.
 
 ---
 
+## <kbd>class</kbd> `MediaConfiguration`
+A named tuple representing media configuration. 
+
+
+
+**Attributes:**
+ 
+ - <b>`bucket`</b>:  The name of the bucket. 
+ - <b>`region_name`</b>:  The region name. 
+ - <b>`endpoint_url`</b>:  The endpoint URL. 
+ - <b>`access_key_id`</b>:  The access key ID. 
+ - <b>`secret_access_key`</b>:  The secret access key. 
+ - <b>`prefix`</b>:  File path prefix for the media. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `RedisConfiguration`
+A named tuple representing Redis configuration. 
+
+
+
+**Attributes:**
+ 
+ - <b>`host`</b>:  The hostname of the Redis server. 
+ - <b>`port`</b>:  The port on the Redis server. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `SAMLConfiguration`
 A named tuple representing a SAML configuration. 
 
@@ -37,6 +73,27 @@ A named tuple representing a SAML configuration.
  
  - <b>`entity_id`</b>:  SAML entity ID. 
  - <b>`metadata_url`</b>:  URL to the metadata. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `SMTPConfiguration`
+A named tuple representing SMTP configuration. 
+
+
+
+**Attributes:**
+ 
+ - <b>`host`</b>:  The hostname of the outgoing SMTP server. 
+ - <b>`port`</b>:  The port on the mail server for outgoing SMTP. 
+ - <b>`user`</b>:  Optional username for authentication. 
+ - <b>`password`</b>:  Optional password for authentication. 
+ - <b>`enable_tls`</b>:  If enabled, if the server supports TLS, it will be used. 
+ - <b>`force_tls`</b>:  If this option is set to true, TLS is used from the start (Implicit TLS)  and the option require_transport_security is ignored. 
+ - <b>`require_transport_security`</b>:  Set to true to require TLS transport security for SMTP. 
 
 
 

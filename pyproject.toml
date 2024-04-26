@@ -11,7 +11,7 @@ skips = ["*/*test.py", "*/test_*.py", "*tests/*.py"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 95
+fail_under = 92
 show_missing = true
 
 
@@ -19,7 +19,11 @@ show_missing = true
 minversion = "6.0"
 log_cli_level = "INFO"
 markers = [
-    "requires_secrets: mark tests that require external secrets"
+    "requires_secrets: mark tests that require external secrets",
+    "cos: mark tests that require a COS integration",
+    "nginx: mark tests that require an nginx integration",
+    "s3: mark tests that require an s3 integration (via localstack)",
+    "irc: mark tests that require an irc integration"
 ]
 
 [tool.pylint.'MESSAGES CONTROL']

@@ -13,7 +13,7 @@ Synapse is an open-source project that welcomes community contributions, suggest
 
 * [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
 * [Join the Discourse forum](https://discourse.charmhub.io/tag/synapse)
-* [Discuss on the Mattermost chat service](https://chat.charmhub.io/charmhub/channels/charm-dev)
+* [Discuss on the Matrix chat service](https://chat.charmhub.io/charmhub/channels/charm-dev)
 * Contribute and report bugs to [the Synapse operator](https://github.com/canonical/synapse-operator)
 * Check the [release notes](https://github.com/canonical/synapse-operator/releases)
 
@@ -33,6 +33,6 @@ If there’s a particular area of documentation that you’d like to see that’
   1. [Contribute](how-to/contribute.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
-  1. [Integrations](reference/integrations.md)
+  2. [Integrations](reference/integrations.md)
 1. [Explanation](explanation)
   1. [Charm architecture](explanation/charm-architecture.md)
