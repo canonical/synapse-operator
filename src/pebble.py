@@ -255,6 +255,43 @@ def get_worker_config(unit_number: str) -> dict:
     return worker_config
 
 
+def enable_loadtest_config(current_yaml: dict) -> None:
+    """Change the Synapse configuration to enable loadtest config.
+
+    Args:
+    current_yaml: current configuration.
+    """
+    new_config = {
+        "enable_registration": True,
+        "enable_registration_without_verification": True,
+        "matrix_synapse_rc_message": {"per_second": 10000, "burst_count": 10000},
+        "matrix_synapse_rc_registration": {"per_second": 10000, "burst_count": 10000},
+        "matrix_synapse_rc_login": {
+            "address": {"per_second": 10000, "burst_count": 10000},
+            "account": {"per_second": 10000, "burst_count": 10000},
+            "failed_attempts": {"per_second": 10000, "burst_count": 10000},
+        },
+        "matrix_synapse_rc_admin_redaction": {"per_second": 10000, "burst_count": 10000},
+        "matrix_synapse_rc_joins": {
+            "local": {"per_second": 10000, "burst_count": 10000},
+            "remote": {"per_second": 10000, "burst_count": 10000},
+        },
+        "matrix_synapse_rc_invites": {
+            "per_room": {"per_second": 10000, "burst_count": 10000},
+            "per_user": {"per_second": 10000, "burst_count": 10000},
+            "per_issuer": {"per_second": 10000, "burst_count": 10000},
+        },
+        "matrix_synapse_rc_federation": {
+            "window_size": 1000,
+            "sleep_limit": 10,
+            "sleep_delay": 500,
+            "reject_limit": 10000,
+            "concurrent": 100,
+        },
+    }
+    current_yaml.update(new_config)
+
+
 # The complexity of this method will be reviewed.
 def change_config(  # noqa: C901 pylint: disable=too-many-branches
     charm_state: CharmState,
@@ -277,6 +314,7 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches
         synapse.execute_migrate_config(container=container, charm_state=charm_state)
         current_synapse_config = _get_synapse_config(container)
         synapse.enable_metrics(current_synapse_config)
+        enable_loadtest_config(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
         synapse.enable_serve_server_wellknown(current_synapse_config)
         synapse.enable_replication(current_synapse_config)
