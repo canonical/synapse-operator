@@ -404,6 +404,7 @@ def test_delete_backup_s3_error(
     delete_backup_mock = MagicMock(side_effect=backup.S3Error("Error"))
     monkeypatch.setattr(backup.S3Client, "delete_backup", delete_backup_mock)
 
+    harness.set_leader(True)
     harness.begin_with_initial_hooks()
 
     with pytest.raises(ActionFailed) as err:

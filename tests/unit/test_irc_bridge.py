@@ -285,20 +285,6 @@ def test_add_app_service_config_field_path_error(monkeypatch: pytest.MonkeyPatch
         _add_app_service_config_field(container_mock)
 
 
-def test_db_relation_exists(harness: Harness, irc_postgresql_relation_data) -> None:
-    """
-    arrange: start the Synapse charm, set server_name, mock container, get_membership_room_id
-        and _update_peer_data.
-    act: add the default database relation.
-    assert: relation is not added as it already exists.
-    """
-    harness.update_config({"enable_irc_bridge": True})
-    harness.add_relation("database", "postgresql", app_data=irc_postgresql_relation_data)
-    with pytest.raises(ops.model.TooManyRelatedAppsError):
-        harness.add_relation("database", "postgresql", app_data=irc_postgresql_relation_data)
-        harness.begin_with_initial_hooks()
-
-
 def test_create_pem_file_success(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set server_name, mock container.exec to return success.

@@ -16,7 +16,6 @@ import synapse
 logger = logging.getLogger(__name__)
 
 JUJU_HAS_SECRETS = JujuVersion.from_environ().has_secrets
-PEER_RELATION_NAME = "synapse-peers"
 # Disabling it since these are not hardcoded password
 SECRET_ID = "secret-id"  # nosec
 SECRET_KEY = "secret-key"  # nosec
@@ -63,10 +62,11 @@ class AdminAccessTokenService:  # pragma: no cover
         Returns:
             Admin access token or None if admin token was not found or there was an error.
         """
-        peer_relation = self._model.get_relation(PEER_RELATION_NAME)
+        peer_relation = self._model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
         if not peer_relation:
             logger.error(
-                "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
+                "Failed to get admin access token: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
             )
             return None
         admin_access_token = None
@@ -95,10 +95,11 @@ class AdminAccessTokenService:  # pragma: no cover
         Returns:
             admin access token or None if there was an error.
         """
-        peer_relation = self._model.get_relation(PEER_RELATION_NAME)
+        peer_relation = self._model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
         if not peer_relation:
             logger.error(
-                "Failed to get admin access token: no peer relation %s found", PEER_RELATION_NAME
+                "Failed to get admin access token: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
             )
             return None
         admin_user = synapse.create_admin_user(container)

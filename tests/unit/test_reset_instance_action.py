@@ -25,8 +25,8 @@ def test_reset_instance_action(harness: Harness) -> None:
     act: run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness.begin()
     harness.set_leader(True)
+    harness.begin()
     event = unittest.mock.Mock()
 
     # Calling to test the action since is not possible calling via harness
@@ -45,8 +45,8 @@ def test_reset_instance_action_container_down(harness: Harness) -> None:
     act: run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness.begin()
     harness.set_leader(True)
+    harness.begin()
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
     event = unittest.mock.Mock()
 
@@ -71,8 +71,8 @@ def test_reset_instance_action_failed(harness: Harness) -> None:
     act: change server_name and run reset-instance action.
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
-    harness.begin()
     harness.set_leader(True)
+    harness.begin()
     event = unittest.mock.Mock()
 
     # Calling to test the action since is not possible calling via harness
@@ -93,8 +93,8 @@ def test_reset_instance_action_path_error_blocked(
     act: change server_name and run reset-instance action.
     assert: Synapse charm should be blocked by error on remove_path.
     """
-    harness.begin()
     harness.set_leader(True)
+    harness.begin()
     harness.charm.unit.get_container = unittest.mock.MagicMock(
         return_value=container_with_path_error_blocked
     )
@@ -119,8 +119,8 @@ def test_reset_instance_action_path_error_pass(
     act: change server_name and run reset-instance action.
     assert: Synapse charm should reset the instance.
     """
-    harness.begin()
     harness.set_leader(True)
+    harness.begin()
     content = io.StringIO(f'server_name: "{TEST_SERVER_NAME}"')
     pull_mock = unittest.mock.MagicMock(return_value=content)
     monkeypatch.setattr(container_with_path_error_pass, "pull", pull_mock)
@@ -168,7 +168,6 @@ def test_reset_instance_action_erase_database(
     assert: since there is a datasource, erase should be called.
     """
     harness.begin()
-    harness.set_leader(True)
     db_erase_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(DatabaseClient, "erase", db_erase_mock)
     monkeypatch.setattr("synapse.execute_migrate_config", unittest.mock.MagicMock())

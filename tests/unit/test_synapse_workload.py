@@ -254,6 +254,7 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
             media_config=None,
             redis_config=None,
             synapse_config=synapse_config,
+            instance_map_config=None,
         ),
     )
 
@@ -538,6 +539,7 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
         smtp_config=SMTP_CONFIGURATION,
         media_config=None,
         redis_config=None,
+        instance_map_config=None,
         synapse_config=synapse_config,
     )
 
@@ -715,6 +717,7 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
         redis_config=None,
         synapse_config=synapse_config,
         media_config=None,
+        instance_map_config=None,
     )
 
     synapse.enable_room_list_publication_rules(config_content, charm_state)

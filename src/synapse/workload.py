@@ -44,8 +44,10 @@ SYNAPSE_GROUP = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
+SYNAPSE_PEER_RELATION_NAME = "synapse-peers"
 SYNAPSE_SERVICE_NAME = "synapse"
 SYNAPSE_USER = "synapse"
+SYNAPSE_WORKER_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/worker.yaml"
 SYNAPSE_DB_RELATION_NAME = "database"
 
 logger = logging.getLogger(__name__)
@@ -297,6 +299,28 @@ def enable_metrics(current_yaml: dict) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
+def enable_replication(current_yaml: dict) -> None:
+    """Change the Synapse configuration to enable replication.
+
+    Args:
+        current_yaml: current configuration.
+
+    Raises:
+        WorkloadError: something went wrong enabling replication.
+    """
+    try:
+        resources = {"names": ["replication"]}
+        metric_listener = {
+            "port": 8034,
+            "type": "http",
+            "bind_addresses": ["::"],
+            "resources": [resources],
+        }
+        current_yaml["listeners"].extend([metric_listener])
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def enable_forgotten_room_retention(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable forgotten_room_retention_period.
 
@@ -331,6 +355,29 @@ def enable_serve_server_wellknown(current_yaml: dict) -> None:
         current_yaml: current configuration.
     """
     current_yaml["serve_server_wellknown"] = True
+
+
+def enable_instance_map(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to instance_map config.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    current_yaml["instance_map"] = charm_state.instance_map_config
+
+
+def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to stream_writers config.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    persisters = []
+    if charm_state.instance_map_config is not None:
+        persisters = [key for key in charm_state.instance_map_config.keys() if key != "main"]
+    current_yaml["stream_writers"] = {"events": persisters}
 
 
 def enable_federation_domain_whitelist(current_yaml: dict, charm_state: CharmState) -> None:
@@ -839,3 +886,41 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
             environment[proxy_variable] = str(proxy_value)
             environment[proxy_variable.upper()] = str(proxy_value)
     return environment
+
+
+def generate_nginx_config(container: ops.Container, main_unit_address: str) -> None:
+    """Generate NGINX configuration based on templates.
+
+    1. Copy template files as configuration files to be used.
+    2. Run sed command to replace string main-unit in configuration files.
+    3. Reload NGINX.
+
+    Args:
+        container: Container of the charm.
+        main_unit_address: Main unit address to be used in configuration.
+    """
+    container.exec(
+        [
+            "cp",
+            "/etc/nginx/main_location.conf.template",
+            "/etc/nginx/main_location.conf",
+        ],
+    ).wait()
+    container.exec(
+        ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
+    ).wait()
+    container.exec(
+        [
+            "cp",
+            "/etc/nginx/abuse_report_location.conf.template",
+            "/etc/nginx/abuse_report_location.conf",
+        ],
+    ).wait()
+    container.exec(
+        [
+            "sed",
+            "-i",
+            f"s/main-unit/{main_unit_address}/g",
+            "/etc/nginx/abuse_report_location.conf",
+        ],
+    ).wait()

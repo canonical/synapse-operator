@@ -256,7 +256,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
 
 @dataclasses.dataclass(frozen=True)
-class CharmState:
+class CharmState:  # pylint: disable=too-many-instance-attributes
     """State of the Charm.
 
     Attributes:
@@ -268,6 +268,7 @@ class CharmState:
         media_config: media configuration.
         redis_config: redis configuration.
         proxy: proxy information.
+        instance_map_config: Instance map configuration with main and worker addresses.
     """
 
     synapse_config: SynapseConfig
@@ -277,6 +278,7 @@ class CharmState:
     smtp_config: typing.Optional[SMTPConfiguration]
     media_config: typing.Optional[MediaConfiguration]
     redis_config: typing.Optional[RedisConfiguration]
+    instance_map_config: typing.Optional[typing.Dict]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -309,6 +311,7 @@ class CharmState:
         smtp_config: typing.Optional[SMTPConfiguration],
         media_config: typing.Optional[MediaConfiguration],
         redis_config: typing.Optional[RedisConfiguration],
+        instance_map_config: typing.Optional[typing.Dict],
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
@@ -320,6 +323,7 @@ class CharmState:
             smtp_config: SMTP configuration to be used by Synapse.
             media_config: Media configuration to be used by Synapse.
             redis_config: Redis configuration to be used by Synapse.
+            instance_map_config: Instance map configuration with main and worker addresses.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -345,4 +349,5 @@ class CharmState:
             smtp_config=smtp_config,
             media_config=media_config,
             redis_config=redis_config,
+            instance_map_config=instance_map_config,
         )

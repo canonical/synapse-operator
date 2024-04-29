@@ -4,7 +4,7 @@
 """Synapse charm state unit tests."""
 
 # Disable attribute-defined-outside-init as this would imply many unnecessary init methods.
-# pylint: disable=attribute-defined-outside-init, duplicate-code
+# pylint: disable=attribute-defined-outside-init,duplicate-code
 
 import ops
 import pytest
@@ -37,6 +37,7 @@ class SimpleCharm(CharmBaseWithState):
             smtp_config=None,
             media_config=None,
             redis_config=None,
+            instance_map_config=None,
         )
 
 

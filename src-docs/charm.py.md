@@ -5,6 +5,9 @@
 # <kbd>module</kbd> `charm.py`
 Charm for Synapse on kubernetes. 
 
+**Global Variables**
+---------------
+- **MAIN_UNIT_ID**
 
 
 ---
@@ -14,7 +17,7 @@ Charm the service.
 
 Attrs:  on: listen to Redis events. 
 
-<a href="../src/charm.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -71,7 +74,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -88,7 +91,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -103,5 +106,133 @@ Change configuration.
 **Args:**
  
  - <b>`charm_state`</b>:  Instance of CharmState 
+
+---
+
+<a href="../src/charm.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_main_unit`
+
+```python
+get_main_unit() → Optional[str]
+```
+
+Get main unit. 
+
+
+
+**Returns:**
+  main unit if main unit exists in peer relation data. 
+
+---
+
+<a href="../src/charm.py#L338"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_main_unit_address`
+
+```python
+get_main_unit_address() → str
+```
+
+Get main unit address. If main unit is None, use unit name. 
+
+
+
+**Returns:**
+  main unit address as unit-0.synapse-endpoints. 
+
+---
+
+<a href="../src/charm.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_unit_number`
+
+```python
+get_unit_number(unit_name: str = '') → str
+```
+
+Get unit number from unit name. 
+
+
+
+**Args:**
+ 
+ - <b>`unit_name`</b>:  unit name or address. E.g.: synapse/0 or synapse-0.synapse-endpoints. 
+
+
+
+**Returns:**
+ 
+ - <b>`Unit number. E.g.`</b>:  0 
+
+---
+
+<a href="../src/charm.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `instance_map`
+
+```python
+instance_map() → Optional[Dict]
+```
+
+Build instance_map config. 
+
+
+
+**Returns:**
+  Instance map configuration as a dict or None if there is only one unit. 
+
+---
+
+<a href="../src/charm.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `is_main`
+
+```python
+is_main() → bool
+```
+
+Verify if this unit is the main. 
+
+
+
+**Returns:**
+ 
+ - <b>`bool`</b>:  true if is the main unit. 
+
+---
+
+<a href="../src/charm.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `peer_units_total`
+
+```python
+peer_units_total() → int
+```
+
+Get peer units total. 
+
+
+
+**Returns:**
+  total of units in peer relation or None if there is no peer relation. 
+
+---
+
+<a href="../src/charm.py#L350"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `set_main_unit`
+
+```python
+set_main_unit(unit: str) → None
+```
+
+Create/Renew an admin access token and put it in the peer relation. 
+
+
+
+**Args:**
+ 
+ - <b>`unit`</b>:  Unit to be the main. 
 
 

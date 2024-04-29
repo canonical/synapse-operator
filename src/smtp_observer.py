@@ -67,6 +67,8 @@ class SMTPObserver(Object):
         Raises:
             CharmConfigInvalidError: If the SMTP configurations is not supported.
         """
+        if not self.model.relations.get(self._RELATION_NAME):
+            return None
         try:
             relation_data: Optional[SmtpRelationData] = self.smtp.get_relation_data()
         except ValidationError:
