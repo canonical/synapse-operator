@@ -264,24 +264,24 @@ def enable_loadtest_config(current_yaml: dict) -> None:
     new_config = {
         "enable_registration": True,
         "enable_registration_without_verification": True,
-        "matrix_synapse_rc_message": {"per_second": 10000, "burst_count": 10000},
-        "matrix_synapse_rc_registration": {"per_second": 10000, "burst_count": 10000},
-        "matrix_synapse_rc_login": {
+        "rc_message": {"per_second": 10000, "burst_count": 10000},
+        "rc_registration": {"per_second": 10000, "burst_count": 10000},
+        "rc_login": {
             "address": {"per_second": 10000, "burst_count": 10000},
             "account": {"per_second": 10000, "burst_count": 10000},
             "failed_attempts": {"per_second": 10000, "burst_count": 10000},
         },
-        "matrix_synapse_rc_admin_redaction": {"per_second": 10000, "burst_count": 10000},
-        "matrix_synapse_rc_joins": {
+        "rc_admin_redaction": {"per_second": 10000, "burst_count": 10000},
+        "rc_joins": {
             "local": {"per_second": 10000, "burst_count": 10000},
             "remote": {"per_second": 10000, "burst_count": 10000},
         },
-        "matrix_synapse_rc_invites": {
+        "rc_invites": {
             "per_room": {"per_second": 10000, "burst_count": 10000},
             "per_user": {"per_second": 10000, "burst_count": 10000},
             "per_issuer": {"per_second": 10000, "burst_count": 10000},
         },
-        "matrix_synapse_rc_federation": {
+        "rc_federation": {
             "window_size": 1000,
             "sleep_limit": 10,
             "sleep_delay": 500,
