@@ -131,7 +131,7 @@ def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None
         main_unit_address: Main unit address to be used in configuration.
     """
     container.add_layer("synapse-nginx", _nginx_pebble_layer(), combine=True)
-    synapse.generate_nginx_config(container=container, main_unit_address=main_unit_address)
+    synapse.generate_nginx_config(main_unit_address=main_unit_address)
     container.replan()
 
 

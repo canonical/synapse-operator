@@ -9,9 +9,9 @@ import logging
 import typing
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
 import ops
 import yaml
+from jinja2 import Environment, FileSystemLoader
 from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
@@ -860,7 +860,7 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
     return environment
 
 
-def generate_nginx_config(container: ops.Container, main_unit_address: str) -> None:
+def generate_nginx_config(main_unit_address: str) -> None:
     """Generate NGINX configuration based on templates.
 
     1. Copy template files as configuration files to be used.
@@ -868,21 +868,20 @@ def generate_nginx_config(container: ops.Container, main_unit_address: str) -> N
     3. Reload NGINX.
 
     Args:
-        container: Container of the charm.
         main_unit_address: Main unit address to be used in configuration.
     """
-    file_loader = FileSystemLoader('../jinja_templates')
+    file_loader = FileSystemLoader("./nginx_rock/etc", followlinks=True)
     env = Environment(loader=file_loader)
 
     # List of templates and their corresponding output files
     templates = [
-        ('main_location.conf.j2', '/etc/nginx/main_location.conf'),
-        ('abuse_report_location.conf.j2', '/etc/nginx/abuse_report_location.conf')
+        ("main_location.conf.j2", "main_location.conf"),
+        ("abuse_report_location.conf.j2", "buse_report_location.conf"),
     ]
 
     for template_name, output_file in templates:
         template = env.get_template(template_name)
         output = template.render(main_unit_address=main_unit_address)
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(output)
