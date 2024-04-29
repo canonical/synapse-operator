@@ -29,6 +29,7 @@ parts:
       main_location.conf: etc/nginx/main_location.conf
   nginx:
     stage-packages:
+      - logrotate
       - nginx
       - sed
     plugin: nil
