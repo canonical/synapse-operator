@@ -9,6 +9,7 @@ import logging
 import typing
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
 import ops
 import yaml
 from ops.pebble import ExecError, PathError
@@ -870,28 +871,18 @@ def generate_nginx_config(container: ops.Container, main_unit_address: str) -> N
         container: Container of the charm.
         main_unit_address: Main unit address to be used in configuration.
     """
-    container.exec(
-        [
-            "cp",
-            "/etc/nginx/main_location.conf.template",
-            "/etc/nginx/main_location.conf",
-        ],
-    ).wait()
-    container.exec(
-        ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
-    ).wait()
-    container.exec(
-        [
-            "cp",
-            "/etc/nginx/abuse_report_location.conf.template",
-            "/etc/nginx/abuse_report_location.conf",
-        ],
-    ).wait()
-    container.exec(
-        [
-            "sed",
-            "-i",
-            f"s/main-unit/{main_unit_address}/g",
-            "/etc/nginx/abuse_report_location.conf",
-        ],
-    ).wait()
+    file_loader = FileSystemLoader('../jinja_templates')
+    env = Environment(loader=file_loader)
+
+    # List of templates and their corresponding output files
+    templates = [
+        ('main_location.conf.j2', '/etc/nginx/main_location.conf'),
+        ('abuse_report_location.conf.j2', '/etc/nginx/abuse_report_location.conf')
+    ]
+
+    for template_name, output_file in templates:
+        template = env.get_template(template_name)
+        output = template.render(main_unit_address=main_unit_address)
+
+        with open(output_file, 'w') as f:
+            f.write(output)
