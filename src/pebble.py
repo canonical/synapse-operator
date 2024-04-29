@@ -46,7 +46,7 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": synapse.VERSION_URL}
+    check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
     return check.to_dict()
 
 
@@ -63,7 +63,9 @@ def check_synapse_alive() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> None:
+def restart_synapse(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
     """Restart Synapse service.
 
     This will force a restart even if its plan hasn't changed.
@@ -71,9 +73,12 @@ def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> 
     Args:
         charm_state: Instance of CharmState
         container: Synapse container.
+        is_main: if unit is main.
     """
-    logger.debug("Restarting the Synapse container")
-    container.add_layer(synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state), combine=True)
+    logger.debug("Restarting the Synapse container. Main: %s", str(is_main))
+    container.add_layer(
+        synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state, is_main), combine=True
+    )
     container.add_layer(
         synapse.SYNAPSE_CRON_SERVICE_NAME, _cron_pebble_layer(charm_state), combine=True
     )
@@ -119,13 +124,15 @@ def check_irc_bridge_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def replan_nginx(container: ops.model.Container) -> None:
-    """Replan Synapse NGINX service.
+def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None:
+    """Replan Synapse NGINX service and regenerate configuration.
 
     Args:
         container: Charm container.
+        main_unit_address: Main unit address to be used in configuration.
     """
     container.add_layer("synapse-nginx", _nginx_pebble_layer(), combine=True)
+    synapse.generate_nginx_config(container=container, main_unit_address=main_unit_address)
     container.replan()
 
 
@@ -196,33 +203,73 @@ def _get_synapse_config(container: ops.model.Container) -> dict:
         raise PebbleServiceError(str(exc)) from exc
 
 
-def _push_synapse_config(container: ops.model.Container, current_synapse_config: dict) -> None:
+def _push_synapse_config(
+    container: ops.model.Container,
+    current_synapse_config: dict,
+    config_path: str = synapse.SYNAPSE_CONFIG_PATH,
+) -> None:
     """Push the Synapse configuration to the container.
 
     Args:
         container: Synapse container.
         current_synapse_config: Synapse configuration.
+        config_path: Synapse configuration file path.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        container.push(
-            synapse.SYNAPSE_CONFIG_PATH, yaml.dump(current_synapse_config).encode("utf-8")
-        )
+        container.push(config_path, yaml.dump(current_synapse_config).encode("utf-8"))
     except ops.pebble.PathError as exc:
         raise PebbleServiceError(str(exc)) from exc
 
 
+def get_worker_config(unit_number: str) -> dict:
+    """Get worker configuration.
+
+    Args:
+        unit_number: Unit number to be used in the worker_name field.
+
+    Returns:
+        Worker configuration.
+    """
+    worker_config = {
+        "worker_app": "synapse.app.generic_worker",
+        "worker_name": f"worker{unit_number}",
+        "worker_listeners": [
+            {
+                "type": "http",
+                "bind_addresses": ["::"],
+                "port": 8008,
+                "x_forwarded": True,
+                "resources": [{"names": ["client", "federation"]}],
+            },
+            {
+                "type": "http",
+                "bind_addresses": ["::"],
+                "port": 8034,
+                "resources": [{"names": ["replication"]}],
+            },
+        ],
+        "worker_log_config": "/data/log.config",
+    }
+    return worker_config
+
+
 # The complexity of this method will be reviewed.
-def change_config(  # noqa: C901  # pylint: disable=too-many-branches
-    charm_state: CharmState, container: ops.model.Container
+def change_config(  # noqa: C901 pylint: disable=too-many-branches
+    charm_state: CharmState,
+    container: ops.model.Container,
+    is_main: bool = True,
+    unit_number: str = "",
 ) -> None:
-    """Change the configuration.
+    """Change the configuration (main and worker).
 
     Args:
         charm_state: Instance of CharmState
         container: Charm container.
+        is_main: if unit is main.
+        unit_number: unit number id to set the worker name.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
@@ -233,6 +280,12 @@ def change_config(  # noqa: C901  # pylint: disable=too-many-branches
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
         synapse.enable_serve_server_wellknown(current_synapse_config)
+        synapse.enable_replication(current_synapse_config)
+        if charm_state.instance_map_config is not None:
+            logger.debug("pebble.change_config: Enabling instance_map")
+            synapse.enable_instance_map(current_synapse_config, charm_state=charm_state)
+            logger.debug("pebble.change_config: Enabling stream_writers")
+            synapse.enable_stream_writers(current_synapse_config, charm_state=charm_state)
         if charm_state.saml_config is not None:
             logger.debug("pebble.change_config: Enabling SAML")
             synapse.enable_saml(current_synapse_config, charm_state=charm_state)
@@ -267,9 +320,16 @@ def change_config(  # noqa: C901  # pylint: disable=too-many-branches
             enable_irc_bridge(container=container, charm_state=charm_state)
             synapse.add_app_service_config_field(current_synapse_config)
             replan_irc_bridge(container=container)
+        # Push worker configuration
+        _push_synapse_config(
+            container,
+            get_worker_config(unit_number),
+            config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
+        )
+        # Push main configuration
         _push_synapse_config(container, current_synapse_config)
-        synapse.validate_config(container)
-        restart_synapse(container=container, charm_state=charm_state)
+        synapse.validate_config(container=container)
+        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
@@ -382,15 +442,24 @@ def reset_instance(charm_state: CharmState, container: ops.model.Container) -> N
         raise PebbleServiceError(str(exc)) from exc
 
 
-def _pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
+def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.LayerDict:
     """Return a dictionary representing a Pebble layer.
 
     Args:
         charm_state: Instance of CharmState
+        is_main: if unit is main.
 
     Returns:
         pebble layer for Synapse
     """
+    command = synapse.SYNAPSE_COMMAND_PATH
+    if not is_main:
+        command = (
+            f"{command} run -m synapse.app.generic_worker "
+            f"--config-path {synapse.SYNAPSE_CONFIG_PATH} "
+            f"--config-path {synapse.SYNAPSE_WORKER_CONFIG_PATH}"
+        )
+
     layer = {
         "summary": "Synapse layer",
         "description": "pebble config layer for Synapse",
@@ -399,7 +468,7 @@ def _pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
                 "override": "replace",
                 "summary": "Synapse application service",
                 "startup": "enabled",
-                "command": synapse.SYNAPSE_COMMAND_PATH,
+                "command": command,
                 "environment": synapse.get_environment(charm_state),
             }
         },

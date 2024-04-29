@@ -230,6 +230,7 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
         smtp_config=None,
         media_config=None,
         redis_config=None,
+        instance_map_config=None,
     )
     expected_url = (
         f"http://localhost:8008/_synapse/admin/v1/users/@any-user:{server}/override_ratelimit"
@@ -266,6 +267,7 @@ def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
         smtp_config=None,
         media_config=None,
         redis_config=None,
+        instance_map_config=None,
     )
     expected_error_msg = "Failed to connect"
     do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))
@@ -628,7 +630,7 @@ def test_get_version_success(mock_session):
     }
     mock_session_instance.request.return_value = mock_response
 
-    assert synapse.api.get_version() == extracted_version
+    assert synapse.api.get_version("foo") == extracted_version
 
 
 @mock.patch("synapse.api.requests.Session")
@@ -643,7 +645,7 @@ def test_get_version_requests_error(mock_session):
     mock_requests.request.side_effect = mock_response_error
     mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="Failed to connect to"):
-        synapse.api.get_version()
+        synapse.api.get_version("foo")
 
     mock_response_exception = mock.MagicMock()
     mock_response_exception.text = "Fail"
@@ -654,7 +656,7 @@ def test_get_version_requests_error(mock_session):
     mock_requests.request.side_effect = mock_response_http_error
     mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="HTTP error from"):
-        synapse.api.get_version()
+        synapse.api.get_version("foo")
 
     mock_response = mock.MagicMock()
     mock_response.json.return_value = None
@@ -662,7 +664,7 @@ def test_get_version_requests_error(mock_session):
     mock_requests.request.return_value = mock_response
     mock_session.return_value = mock_requests
     with pytest.raises(synapse.APIError, match="object is not subscriptable"):
-        synapse.api.get_version()
+        synapse.api.get_version("foo")
 
 
 @mock.patch("synapse.api.requests.Session")
@@ -678,7 +680,7 @@ def test_get_version_regex_error(mock_session):
     mock_session_instance.request.return_value = mock_response
 
     with pytest.raises(synapse.APIError, match="server_version has unexpected content"):
-        synapse.api.get_version()
+        synapse.api.get_version("foo")
 
 
 def test_promote_user_admin_success(monkeypatch: pytest.MonkeyPatch):

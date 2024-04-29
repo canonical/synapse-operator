@@ -156,6 +156,7 @@ State of the Charm.
  - <b>`media_config`</b>:  media configuration. 
  - <b>`redis_config`</b>:  redis configuration. 
  - <b>`proxy`</b>:  proxy information. 
+ - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
 
 
 ---
@@ -173,9 +174,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-
-<a href="../src/charm_state.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
+<a href="../src/charm_state.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -187,7 +186,8 @@ from_charm(
     saml_config: Optional[SAMLConfiguration],
     smtp_config: Optional[SMTPConfiguration],
     media_config: Optional[MediaConfiguration],
-    redis_config: Optional[RedisConfiguration]
+    redis_config: Optional[RedisConfiguration],
+    instance_map_config: Optional[Dict]
 ) → CharmState
 ```
 
@@ -204,6 +204,7 @@ Initialize a new instance of the CharmState class from the associated charm.
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
  - <b>`media_config`</b>:  Media configuration to be used by Synapse. 
  - <b>`redis_config`</b>:  Redis configuration to be used by Synapse. 
+ - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
 
 Return: The CharmState instance created by the provided charm. 
 
@@ -281,8 +282,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
+<a href="../src/charm_state.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -306,8 +306,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
+<a href="../src/charm_state.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 

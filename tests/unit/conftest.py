@@ -167,12 +167,27 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
                 raise RuntimeError(f"unknown command: {argv}")
 
     inject_register_command_handler(monkeypatch, harness)
+    # Disabling no-member in the following lines due error:
+    # 'Harness[SynapseCharm] has no attribute "register_command_handler"
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container, executable=command_path, handler=start_cmd_handler
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
         executable="/usr/bin/python3",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    synapse_nginx_container: ops.Container = harness.model.unit.get_container(
+        synapse.SYNAPSE_NGINX_CONTAINER_NAME
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_nginx_container,
+        executable="cp",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_nginx_container,
+        executable="sed",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness

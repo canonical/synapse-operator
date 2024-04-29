@@ -67,8 +67,11 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             return None
         return access_token
 
+    # Ignoring complexity warning for now
     @inject_charm_state
-    def _on_collect_status(self, event: ops.CollectStatusEvent, charm_state: CharmState) -> None:
+    def _on_collect_status(  # noqa: C901
+        self, event: ops.CollectStatusEvent, charm_state: CharmState
+    ) -> None:
         """Collect status event handler.
 
         Args:
@@ -77,6 +80,16 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         if not charm_state.synapse_config.enable_mjolnir:
             return
+        # This check is the same done in get_main_unit. It should be refactored
+        # to a place where both Charm and Mjolnir can get it.
+        peer_relation = self._charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if peer_relation:
+            logger.debug(
+                "Peer relation found, checking if is main unit before configuring Mjolnir"
+            )
+            main_unit_id = peer_relation[0].data[self._charm.app].get("main_unit_id")
+            if not self._charm.unit.name == main_unit_id:
+                logger.info("This is not the main unit, skipping Mjolnir configuration")
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")

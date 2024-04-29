@@ -4,7 +4,8 @@
 """Register user action unit tests."""
 
 # Disabled to access _on_register_user_action
-# pylint: disable=protected-access
+# Disabled R0801 because has similar code to test_promote_user_admin_action
+# pylint: disable=protected-access, R0801
 
 import unittest.mock
 from secrets import token_hex

@@ -54,7 +54,11 @@ Return the Synapse container alive check.
 ## <kbd>function</kbd> `restart_synapse`
 
 ```python
-restart_synapse(charm_state: CharmState, container: Container) → None
+restart_synapse(
+    charm_state: CharmState,
+    container: Container,
+    is_main: bool = True
+) → None
 ```
 
 Restart Synapse service. 
@@ -67,11 +71,12 @@ This will force a restart even if its plan hasn't changed.
  
  - <b>`charm_state`</b>:  Instance of CharmState 
  - <b>`container`</b>:  Synapse container. 
+ - <b>`is_main`</b>:  if unit is main. 
 
 
 ---
 
-<a href="../src/pebble.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_nginx_ready`
 
@@ -90,7 +95,7 @@ Return the Synapse NGINX container check.
 
 ---
 
-<a href="../src/pebble.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_mjolnir_ready`
 
@@ -109,7 +114,7 @@ Return the Synapse Mjolnir service check.
 
 ---
 
-<a href="../src/pebble.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_irc_bridge_ready`
 
@@ -128,26 +133,27 @@ Return the Synapse IRC bridge service check.
 
 ---
 
-<a href="../src/pebble.py#L122"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_nginx`
 
 ```python
-replan_nginx(container: Container) → None
+replan_nginx(container: Container, main_unit_address: str) → None
 ```
 
-Replan Synapse NGINX service. 
+Replan Synapse NGINX service and regenerate configuration. 
 
 
 
 **Args:**
  
  - <b>`container`</b>:  Charm container. 
+ - <b>`main_unit_address`</b>:  Main unit address to be used in configuration. 
 
 
 ---
 
-<a href="../src/pebble.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_mjolnir`
 
@@ -166,7 +172,7 @@ Replan Synapse Mjolnir service.
 
 ---
 
-<a href="../src/pebble.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_irc_bridge`
 
@@ -185,7 +191,7 @@ Replan Synapse IRC bridge service.
 
 ---
 
-<a href="../src/pebble.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_stats_exporter`
 
@@ -205,15 +211,44 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_worker_config`
+
+```python
+get_worker_config(unit_number: str) → dict
+```
+
+Get worker configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`unit_number`</b>:  Unit number to be used in the worker_name field. 
+
+
+
+**Returns:**
+ Worker configuration. 
+
+
+---
+
+<a href="../src/pebble.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `change_config`
 
 ```python
-change_config(charm_state: CharmState, container: Container) → None
+change_config(
+    charm_state: CharmState,
+    container: Container,
+    is_main: bool = True,
+    unit_number: str = ''
+) → None
 ```
 
-Change the configuration. 
+Change the configuration (main and worker). 
 
 
 
@@ -221,6 +256,8 @@ Change the configuration.
  
  - <b>`charm_state`</b>:  Instance of CharmState 
  - <b>`container`</b>:  Charm container. 
+ - <b>`is_main`</b>:  if unit is main. 
+ - <b>`unit_number`</b>:  unit number id to set the worker name. 
 
 
 
@@ -231,7 +268,7 @@ Change the configuration.
 
 ---
 
-<a href="../src/pebble.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L337"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_redis`
 
@@ -257,7 +294,7 @@ Enable Redis while receiving on_redis_relation_updated event.
 
 ---
 
-<a href="../src/pebble.py#L295"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_saml`
 
@@ -283,7 +320,7 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L315"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L377"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_smtp`
 
@@ -309,7 +346,7 @@ Enable SMTP while receiving on_smtp_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L397"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_media`
 
@@ -335,7 +372,7 @@ Enable S3 Media while receiving on_media_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L355"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

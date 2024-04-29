@@ -25,7 +25,6 @@ def test_get_membership_room_id(harness: Harness, monkeypatch: pytest.MonkeyPatc
     act: call get_membership_room_id.
     assert: get_membership_room_id is called once with expected args.
     """
-    harness.set_leader(True)
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
     admin_access_token = token_hex(16)
@@ -51,7 +50,6 @@ def test_on_collect_status_blocked(
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     _admin_access_token_mock.__get__ = mock.Mock(return_value=token_hex(16))
     monkeypatch.setattr(Mjolnir, "get_membership_room_id", MagicMock(return_value=None))
     charm_state_mock = MagicMock()
@@ -78,7 +76,6 @@ def test_on_collect_status_service_exists(
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value=MagicMock()))
     enable_mjolnir_mock = MagicMock()
@@ -99,7 +96,6 @@ def test_on_collect_status_no_service(harness: Harness, monkeypatch: pytest.Monk
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "get_services", MagicMock(return_value={}))
     enable_mjolnir_mock = MagicMock()
@@ -143,7 +139,6 @@ def test_on_collect_status_active(harness: Harness, monkeypatch: pytest.MonkeyPa
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     admin_access_token = token_hex(16)
     monkeypatch.setattr(Mjolnir, "_admin_access_token", admin_access_token)
     membership_room_id_mock = MagicMock(return_value="123")
@@ -171,7 +166,6 @@ def test_on_collect_status_api_error(harness: Harness, monkeypatch: pytest.Monke
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     admin_access_token = token_hex(16)
     monkeypatch.setattr(Mjolnir, "_admin_access_token", admin_access_token)
     membership_room_id_mock = MagicMock(side_effect=synapse.APIError("error"))
@@ -198,7 +192,6 @@ def test_on_collect_status_admin_none(harness: Harness, monkeypatch: pytest.Monk
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     monkeypatch.setattr(Mjolnir, "_admin_access_token", None)
     enable_mjolnir_mock = MagicMock(return_value=None)
     monkeypatch.setattr(Mjolnir, "enable_mjolnir", enable_mjolnir_mock)
@@ -221,7 +214,6 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     admin_access_token = token_hex(16)
     monkeypatch.setattr(Mjolnir, "_admin_access_token", admin_access_token)
     mjolnir_user_mock = MagicMock()
@@ -266,7 +258,6 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     """
     harness.update_config({"enable_mjolnir": True})
     harness.begin_with_initial_hooks()
-    harness.set_leader(True)
     admin_access_token = token_hex(16)
     monkeypatch.setattr(Mjolnir, "_admin_access_token", admin_access_token)
     mjolnir_user_mock = MagicMock()
