@@ -595,9 +595,6 @@ def add_app_service_config_field(current_yaml: dict) -> None:
 
     Args:
         current_yaml: current configuration.
-
-    Raises:
-        WorkloadError: something went wrong updating the configuration.
     """
     current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
 

@@ -3,13 +3,13 @@
 
 """Tests for the create_user function in the synapse.admin module."""
 
+from secrets import token_hex
 from unittest.mock import MagicMock, patch
 
 from ops.testing import Harness
 
 import synapse
 from synapse.admin import create_user
-from secrets import token_hex
 
 
 def test_create_user_success(harness: Harness, mocked_synapse_calls):

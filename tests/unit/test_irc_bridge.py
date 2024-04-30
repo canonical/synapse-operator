@@ -3,6 +3,7 @@
 
 """Tests for the irc_bridge module."""
 
+from secrets import token_hex
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,7 +15,6 @@ from charm_state import CharmState, SynapseConfig
 from charm_types import DatasourcePostgreSQL
 from irc_bridge import enable_irc_bridge
 from synapse import ExecResult
-from secrets import token_hex
 
 
 @pytest.fixture(name="state")
