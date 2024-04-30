@@ -316,6 +316,34 @@ def test_enable_mjolnir_container_off(harness: Harness, monkeypatch: pytest.Monk
     register_user_mock.assert_not_called()
 
 
+def test_enable_mjolnir_admin_access_token(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm and mock token_service.
+    act: get the admin_access_token.
+    assert: admin_access_token is the same as the one from token_service except
+        if container is down or token_service returns None.
+    """
+    harness.begin_with_initial_hooks()
+    token_mock = token_hex(16)
+    token_service = MagicMock()
+    monkeypatch.setattr(token_service, "get", MagicMock(return_value=token_mock))
+    monkeypatch.setattr(harness.charm._mjolnir, "_token_service", token_service)
+
+    assert harness.charm._mjolnir._admin_access_token == token_mock
+
+    monkeypatch.setattr(token_service, "get", MagicMock(return_value=None))
+    monkeypatch.setattr(harness.charm._mjolnir, "_token_service", token_service)
+
+    assert harness.charm._mjolnir._admin_access_token is None
+
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    monkeypatch.setattr(container, "can_connect", MagicMock(return_value=False))
+
+    assert harness.charm._mjolnir._admin_access_token is None
+
+
 def test_admin_access_token_no_connection(
     harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:

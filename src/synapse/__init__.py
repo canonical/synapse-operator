@@ -79,6 +79,7 @@ from .workload import (  # noqa: F401
     enable_metrics,
     enable_redis,
     enable_replication,
+    enable_room_list_publication_rules,
     enable_saml,
     enable_serve_server_wellknown,
     enable_smtp,
