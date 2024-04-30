@@ -33,6 +33,7 @@ IRC_BRIDGE_REGISTRATION_PATH = f"{SYNAPSE_CONFIG_DIR}/config/appservice-registra
 IRC_BRIDGE_HEALTH_PORT = "5446"
 IRC_BRIDGE_SERVICE_NAME = "irc"
 IRC_BRIDGE_BOT_NAME = "irc_bot"
+IRC_BRIDGE_RELATION_NAME = "irc-bridge-database"
 CHECK_IRC_BRIDGE_READY_NAME = "synapse-irc-ready"
 PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -516,7 +517,8 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     config["homeserver"]["domain"] = charm_state.synapse_config.server_name
     config["database"]["connectionString"] = db_connect_string
     if charm_state.synapse_config.irc_bridge_admins:
-        for admin in (a.strip() for a in charm_state.synapse_config.irc_bridge_admins.split(",")):
+        config["ircService"]["permissions"] = {}
+        for admin in charm_state.synapse_config.irc_bridge_admins:
             config["ircService"]["permissions"][admin] = "admin"
     return config
 
@@ -543,7 +545,8 @@ def create_irc_bridge_config(
         raise CreateIRCBridgeConfigError(str(exc)) from exc
 
 
-def _get_irc_bridge_app_registration(container: ops.Container) -> None:
+def _get_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
+    # the functionality is tested already in unit tests creating files
     """Create registration file as expected by irc bridge.
 
     Args:
@@ -572,7 +575,8 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> None:
         raise WorkloadError("Creating irc app registration failed, please check the logs")
 
 
-def create_irc_bridge_app_registration(container: ops.Container) -> None:
+def create_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
+    # the functionality is tested already in unit tests creating files
     """Create irc bridge app registration.
 
     Args:
@@ -583,29 +587,17 @@ def create_irc_bridge_app_registration(container: ops.Container) -> None:
     """
     try:
         _get_irc_bridge_app_registration(container=container)
-        _add_app_service_config_field(container=container)
     except ops.pebble.PathError as exc:
         raise CreateIRCBridgeRegistrationError(str(exc)) from exc
 
 
-def _add_app_service_config_field(container: ops.Container) -> None:
+def add_app_service_config_field(current_yaml: dict) -> None:
     """Add app_service_config_files to the Synapse configuration.
 
     Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong updating the configuration.
+        current_yaml: current configuration.
     """
-    try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-
-        current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
-
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(f"An error occurred while updating the configuration: {exc}") from exc
+    current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
@@ -797,6 +789,35 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
         current_yaml["redis"]["port"] = redis_config["port"]
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
+
+
+def enable_room_list_publication_rules(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable room_list_publication_rules.
+
+    This configuration is based on publish_rooms_allowlist charm configuration.
+    Once is set, a deny rule is added to prevent any other user to publish rooms.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling room_list_publication_rules.
+    """
+    room_list_publication_rules = []
+    # checking publish_rooms_allowlist to fix union-attr mypy error
+    publish_rooms_allowlist = charm_state.synapse_config.publish_rooms_allowlist
+    if publish_rooms_allowlist:
+        for user in publish_rooms_allowlist:
+            rule = {"user_id": user, "alias": "*", "room_id": "*", "action": "allow"}
+            room_list_publication_rules.append(rule)
+
+    if len(room_list_publication_rules) == 0:
+        raise WorkloadError("publish_rooms_allowlist has unexpected value. Please, verify it.")
+
+    last_rule = {"user_id": "*", "alias": "*", "room_id": "*", "action": "deny"}
+    room_list_publication_rules.append(last_rule)
+    current_yaml["room_list_publication_rules"] = room_list_publication_rules
 
 
 def reset_instance(container: ops.Container) -> None:
