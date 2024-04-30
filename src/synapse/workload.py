@@ -877,7 +877,7 @@ def generate_nginx_config(container: ops.Container, main_unit_address: str) -> N
     # List of templates and their corresponding output files
     templates = [
         ("main_location.conf.j2", Path("main_location.conf")),
-        ("abuse_report_location.conf.j2", Path("buse_report_location.conf")),
+        ("abuse_report_location.conf.j2", Path("abuse_report_location.conf")),
     ]
 
     for template_name, output_file in templates:
