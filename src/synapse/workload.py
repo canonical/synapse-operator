@@ -871,18 +871,16 @@ def generate_nginx_config(container: ops.Container, main_unit_address: str) -> N
         container: Container of the charm.
         main_unit_address: Main unit address to be used in configuration.
     """
-    file_loader = FileSystemLoader(Path("./nginx_rock/etc"), followlinks=True)
+    file_loader = FileSystemLoader(Path("./templates"), followlinks=True)
     env = Environment(loader=file_loader, autoescape=True)
 
     # List of templates and their corresponding output files
     templates = [
-        ("main_location.conf.j2", Path("main_location.conf")),
-        ("abuse_report_location.conf.j2", Path("abuse_report_location.conf")),
+        ("main_location.conf.j2", "./nginx_rock/etc/main_location.conf"),
+        ("abuse_report_location.conf.j2", "./nginx_rock/etc/abuse_report_location.conf"),
     ]
 
     for template_name, output_file in templates:
         template = env.get_template(template_name)
         output = template.render(main_unit_address=main_unit_address)
-        output_file.write_text(output, encoding="utf-8")
-
-        container.push(f"/etc/nginx/{output_file.name}", output, make_dirs=True)
+        container.push(f"/etc/nginx/{output_file}", output, make_dirs=True)
