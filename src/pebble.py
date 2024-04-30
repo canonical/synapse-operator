@@ -14,6 +14,7 @@ from ops.pebble import Check
 
 import synapse
 from charm_state import CharmState
+from irc_bridge import enable_irc_bridge
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ def check_irc_bridge_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_IRC_BRIDGE_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": f"http://localhost:{synapse.IRC_BRIDGE_HEALTH_PORT}"}
+    check.http = {"url": f"http://localhost:{synapse.IRC_BRIDGE_HEALTH_PORT}/health"}
     return check.to_dict()
 
 
@@ -256,7 +257,7 @@ def get_worker_config(unit_number: str) -> dict:
 
 
 # The complexity of this method will be reviewed.
-def change_config(  # noqa: C901 pylint: disable=too-many-branches
+def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
     container: ops.model.Container,
     is_main: bool = True,
@@ -318,6 +319,11 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches
         if charm_state.datasource:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
+        if charm_state.synapse_config.enable_irc_bridge:
+            logger.info("Synapse IRC bridge enabled.")
+            enable_irc_bridge(container=container, charm_state=charm_state)
+            synapse.add_app_service_config_field(current_synapse_config)
+            replan_irc_bridge(container=container)
         # Push worker configuration
         _push_synapse_config(
             container,
