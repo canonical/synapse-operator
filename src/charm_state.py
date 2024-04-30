@@ -169,7 +169,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     allow_public_rooms_over_federation: bool = False
     enable_email_notifs: bool = False
     enable_irc_bridge: bool = False
-    irc_bridge_admins: str | None = Field(None, regex=r"(@\w+:\w+\.\w+,?)+")
+    irc_bridge_admins: str | None = Field(None, regex=r"(\w+:\w+\.\w+,?)+")
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
