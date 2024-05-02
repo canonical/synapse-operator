@@ -15,6 +15,7 @@ import ops
 import pytest
 import yaml
 from ops.testing import Harness
+from pydantic import ValidationError
 
 import synapse
 from charm import SynapseCharm
@@ -522,12 +523,15 @@ SMTP_CONFIGURATION = SMTPConfiguration(
 
 def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     """
-    arrange: set mock container with file.
+    arrange: set mock container with config file.
     act: update smtp_host config and call enable_smtp.
     assert: new configuration file is pushed and SMTP is enabled.
     """
-    content = config_content
-
+    synapse_with_notif_config = {
+        "notif_from": "noreply@example.com",
+        "server_name": "example.com",
+    }
+    synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
         irc_bridge_datasource=None,
@@ -535,19 +539,11 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
         smtp_config=SMTP_CONFIGURATION,
         media_config=None,
         redis_config=None,
-        synapse_config=SynapseConfig(
-            federation_domain_whitelist=None,
-            ip_range_whitelist=None,
-            irc_bridge_admins=None,
-            notif_from="noreply@example.com",
-            public_baseurl=None,
-            report_stats=None,
-            server_name="example.com",
-            trusted_key_servers=None,
-        ),
         instance_map_config=None,
+        synapse_config=synapse_config,
     )
-    synapse.enable_smtp(content, charm_state)
+
+    synapse.enable_smtp(config_content, charm_state)
 
     expected_config_content = {
         "listeners": [
@@ -565,7 +561,7 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
             "smtp_pass": SMTP_CONFIGURATION["password"],
         },
     }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
 
 
 def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.Any]):
@@ -699,3 +695,68 @@ def test_http_proxy(
     expected_env.update(expected)
     for env_name, env_value in expected_env.items():
         assert env.get(env_name) == env.get(env_name.upper()) == env_value
+
+
+def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
+    """
+    arrange: mock Synapse current configuration with config_content and
+        add publish_rooms_allowlist to the charm configuration.
+    act: call enable_room_list_publication_rules.
+    assert: new configuration file is pushed and room_list_publication_rules is set.
+    """
+    synapse_with_notif_config = {
+        "publish_rooms_allowlist": "user1:domainX.com,user2:domainY.com",
+        "server_name": "example.com",
+    }
+    synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
+    charm_state = CharmState(
+        datasource=None,
+        irc_bridge_datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+    )
+
+    synapse.enable_room_list_publication_rules(config_content, charm_state)
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "room_list_publication_rules": [
+            {"action": "allow", "alias": "*", "room_id": "*", "user_id": "@user1:domainX.com"},
+            {"action": "allow", "alias": "*", "room_id": "*", "user_id": "@user2:domainY.com"},
+            {"action": "deny", "alias": "*", "room_id": "*", "user_id": "*"},
+        ],
+    }
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
+@pytest.mark.parametrize(
+    "invalid_config",
+    [
+        "userinvaliddomainX.com",
+        "user*:domainX.com",
+        "user1:domainX.com,user$:domainX.com",
+        "user1:domainX.com,user#:domainX.com,user2:domainX.com",
+        "user1:domainX.com;user2:domainX.com",
+        ":domainX.com;@user2:domainX.com",
+    ],
+)
+def test_publish_rooms_allowlist_error(invalid_config):
+    """
+    arrange: set configuration with invalid value for publish_rooms_allowlist.
+    act: set SynapseConfig.
+    assert: ValidationError is raised.
+    """
+    synapse_with_notif_config = {
+        "publish_rooms_allowlist": invalid_config,
+        "server_name": "example.com",
+    }
+    with pytest.raises(ValidationError):
+        # Prevent mypy error:
+        # Argument 1 to "SynapseConfig" has incompatible type "**dict[str, str]"; expected "bool"
+        SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]

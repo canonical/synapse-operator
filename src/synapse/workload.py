@@ -11,6 +11,7 @@ from pathlib import Path
 
 import ops
 import yaml
+from jinja2 import Environment, FileSystemLoader
 from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
@@ -517,8 +518,8 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     config["database"]["connectionString"] = db_connect_string
     if charm_state.synapse_config.irc_bridge_admins:
         config["ircService"]["permissions"] = {}
-        for admin in (a.strip() for a in charm_state.synapse_config.irc_bridge_admins.split(",")):
-            config["ircService"]["permissions"][f"@{admin}"] = "admin"
+        for admin in charm_state.synapse_config.irc_bridge_admins:
+            config["ircService"]["permissions"][admin] = "admin"
     return config
 
 
@@ -790,6 +791,35 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_room_list_publication_rules(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable room_list_publication_rules.
+
+    This configuration is based on publish_rooms_allowlist charm configuration.
+    Once is set, a deny rule is added to prevent any other user to publish rooms.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling room_list_publication_rules.
+    """
+    room_list_publication_rules = []
+    # checking publish_rooms_allowlist to fix union-attr mypy error
+    publish_rooms_allowlist = charm_state.synapse_config.publish_rooms_allowlist
+    if publish_rooms_allowlist:
+        for user in publish_rooms_allowlist:
+            rule = {"user_id": user, "alias": "*", "room_id": "*", "action": "allow"}
+            room_list_publication_rules.append(rule)
+
+    if len(room_list_publication_rules) == 0:
+        raise WorkloadError("publish_rooms_allowlist has unexpected value. Please, verify it.")
+
+    last_rule = {"user_id": "*", "alias": "*", "room_id": "*", "action": "deny"}
+    room_list_publication_rules.append(last_rule)
+    current_yaml["room_list_publication_rules"] = room_list_publication_rules
+
+
 def reset_instance(container: ops.Container) -> None:
     """Erase data and config server_name.
 
@@ -862,28 +892,16 @@ def generate_nginx_config(container: ops.Container, main_unit_address: str) -> N
         container: Container of the charm.
         main_unit_address: Main unit address to be used in configuration.
     """
-    container.exec(
-        [
-            "cp",
-            "/etc/nginx/main_location.conf.template",
-            "/etc/nginx/main_location.conf",
-        ],
-    ).wait()
-    container.exec(
-        ["sed", "-i", f"s/main-unit/{main_unit_address}/g", "/etc/nginx/main_location.conf"],
-    ).wait()
-    container.exec(
-        [
-            "cp",
-            "/etc/nginx/abuse_report_location.conf.template",
-            "/etc/nginx/abuse_report_location.conf",
-        ],
-    ).wait()
-    container.exec(
-        [
-            "sed",
-            "-i",
-            f"s/main-unit/{main_unit_address}/g",
-            "/etc/nginx/abuse_report_location.conf",
-        ],
-    ).wait()
+    file_loader = FileSystemLoader(Path("./templates"), followlinks=True)
+    env = Environment(loader=file_loader, autoescape=True)
+
+    # List of templates and their corresponding output files
+    templates = [
+        ("main_location.conf.j2", "main_location.conf"),
+        ("abuse_report_location.conf.j2", "abuse_report_location.conf"),
+    ]
+
+    for template_name, output_file in templates:
+        template = env.get_template(template_name)
+        output = template.render(main_unit_address=main_unit_address)
+        container.push(f"/etc/nginx/{output_file}", output, make_dirs=True)
