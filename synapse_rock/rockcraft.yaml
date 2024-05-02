@@ -129,10 +129,15 @@ parts:
             login_ubuntu.py: /usr/local/attributemaps/login_ubuntu.py
     synapse-start:
         plugin: dump
+        after:
+          - synapse
         source: .
         # start.py is extracted from
         # https://github.com/matrix-org/synapse/blob/develop/docker/start.py
         # Our version does not use chown command that, depending of the /data
         # size, could take a long time to run.
         organize:
-            start.py: /start.py
+            start_custom.py: start.py
+        permissions:
+          - path: start.py
+            mode: "544"
