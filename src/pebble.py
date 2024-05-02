@@ -279,6 +279,8 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
         current_synapse_config = _get_synapse_config(container)
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
+        synapse.enable_media_retention(current_synapse_config)
+        synapse.delete_stale_devices(current_synapse_config)
         synapse.enable_serve_server_wellknown(current_synapse_config)
         synapse.enable_replication(current_synapse_config)
         if charm_state.instance_map_config is not None:
