@@ -344,7 +344,7 @@ def enable_media_retention(current_yaml: dict) -> None:
     }
 
 
-def delete_stale_devices(current_yaml: dict) -> None:
+def enable_stale_devices_deletion(current_yaml: dict) -> None:
     """Change the Synapse configuration to delete stale devices.
 
     Args:
