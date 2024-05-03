@@ -109,7 +109,7 @@ class AdminAccessTokenService:  # pragma: no cover
         if JUJU_HAS_SECRETS:
             logger.debug("Adding admin_access_token secret to peer relation")
             secret = self._app.add_secret({SECRET_KEY: admin_user.access_token})
-            peer_relation.data[self._app].update({SECRET_ID: secret.id})
+            peer_relation.data[self._app].update({SECRET_ID: typing.cast(str, secret.id)})
             admin_access_token = admin_user.access_token
         else:
             logger.debug("Adding admin_access_token to peer relation")
