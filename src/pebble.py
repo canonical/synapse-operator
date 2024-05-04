@@ -327,10 +327,11 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             synapse.add_app_service_config_field(current_synapse_config)
             replan_irc_bridge(container=container)
         config_has_changed = DeepDiff(
-            existing_synapse_config, current_synapse_config, ignore_order=True
+            existing_synapse_config, current_synapse_config, ignore_order=True, ignore_string_case=True
         )
         if config_has_changed:
             logging.info("Configuration has changed, Synapse will be restarted.")
+            logging.debug("The change is: %s", config_has_changed)
             # Push worker configuration
             _push_synapse_config(
                 container,
