@@ -10,6 +10,7 @@ import typing
 
 import ops
 import yaml
+from deepdiff import DeepDiff
 from ops.pebble import Check
 
 import synapse
@@ -276,6 +277,7 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
     """
     try:
         synapse.execute_migrate_config(container=container, charm_state=charm_state)
+        existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
@@ -324,16 +326,23 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             enable_irc_bridge(container=container, charm_state=charm_state)
             synapse.add_app_service_config_field(current_synapse_config)
             replan_irc_bridge(container=container)
-        # Push worker configuration
-        _push_synapse_config(
-            container,
-            get_worker_config(unit_number),
-            config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
+        config_has_changed = DeepDiff(
+            existing_synapse_config, current_synapse_config, ignore_order=True
         )
-        # Push main configuration
-        _push_synapse_config(container, current_synapse_config)
-        synapse.validate_config(container=container)
-        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
+        if config_has_changed:
+            logging.info("Configuration has changed, Synapse will be restarted.")
+            # Push worker configuration
+            _push_synapse_config(
+                container,
+                get_worker_config(unit_number),
+                config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
+            )
+            # Push main configuration
+            _push_synapse_config(container, current_synapse_config)
+            synapse.validate_config(container=container)
+            restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
+        else:
+            logging.info("Configuration has not changed, no action.")
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
