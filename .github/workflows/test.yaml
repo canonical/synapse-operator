@@ -8,5 +8,5 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/test.yaml@dependency-version-pin
     secrets: inherit
     with:
-      self-hosted-runner: true
+      self-hosted-runner: false
       self-hosted-runner-label: "edge"
