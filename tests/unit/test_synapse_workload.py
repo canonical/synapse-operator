@@ -3,7 +3,7 @@
 
 """Synapse workload unit tests."""
 
-# pylint: disable=protected-access, too-many-lines
+# pylint: disable=protected-access, too-many-lines, duplicate-code
 
 
 import io
@@ -15,6 +15,7 @@ import ops
 import pytest
 import yaml
 from ops.testing import Harness
+from pydantic import ValidationError
 
 import synapse
 from charm import SynapseCharm
@@ -24,54 +25,24 @@ from charm_types import SMTPConfiguration
 from .conftest import TEST_SERVER_NAME
 
 
-def test_allow_public_rooms_over_federation_sucess(monkeypatch: pytest.MonkeyPatch):
+def test_allow_public_rooms_over_federation_sucess(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: call enable_allow_public_rooms_over_federation.
     assert: new configuration file is pushed and
         allow_public_rooms_over_federation is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
+    current_yaml = config_content
 
-    synapse.enable_allow_public_rooms_over_federation(container_mock)
+    synapse.enable_allow_public_rooms_over_federation(current_yaml)
 
-    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
         "allow_public_rooms_over_federation": True,
     }
-    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
-
-
-def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock failing container with file.
-    act: call enable_allow_public_rooms_over_federation.
-    assert: raise WorkloadError in case of error.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_allow_public_rooms_over_federation(container_mock)
+    assert yaml.safe_dump(current_yaml) == yaml.safe_dump(expected_config_content)
 
 
 @pytest.mark.parametrize(
@@ -113,39 +84,29 @@ def test_allow_public_rooms_over_federation_error(monkeypatch: pytest.MonkeyPatc
     ],
 )
 def test_enable_trusted_key_servers_success(
-    trusted_key_servers: str, expected_trusted_key_servers: list[dict[str, str]], harness: Harness
+    trusted_key_servers: str,
+    expected_trusted_key_servers: list[dict[str, str]],
+    harness: Harness,
+    config_content: dict[str, typing.Any],
 ):
     """
     arrange: set mock container with file.
     act: update trusted_key_servers config and call enable_trusted_key_servers.
     assert: new configuration file is pushed and trusted_key_servers is enabled.
     """
-    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
-    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-    )
+    config = config_content
 
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     harness.update_config({"trusted_key_servers": trusted_key_servers})
     harness.begin()
-    synapse.enable_trusted_key_servers(container, harness.charm.build_charm_state())
+    synapse.enable_trusted_key_servers(config, harness.charm.build_charm_state())
 
-    content = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
         "trusted_key_servers": expected_trusted_key_servers,
     }
-    assert content == expected_config_content
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 @pytest.mark.parametrize(
@@ -183,40 +144,29 @@ listeners:
     ],
 )
 def test_enable_ip_range_whitelist_success(
-    ip_range_whitelist: str, expected_ip_range_whitelist: list[str], harness: Harness
+    ip_range_whitelist: str,
+    expected_ip_range_whitelist: list[str],
+    harness: Harness,
+    config_content: dict[str, typing.Any],
 ):
     """
     arrange: set mock container with file.
     act: update ip_range_whitelist config and call enable_ip_range_whitelist.
     assert: new configuration file is pushed and ip_range_whitelist is enabled.
     """
-    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
-    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-    )
+    config = config_content
 
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     harness.update_config({"ip_range_whitelist": ip_range_whitelist})
     harness.begin()
-    synapse.enable_ip_range_whitelist(container, harness.charm.build_charm_state())
+    synapse.enable_ip_range_whitelist(config, harness.charm.build_charm_state())
 
-    with open(config_path, encoding="utf-8") as config_file:
-        content = yaml.safe_load(config_file)
-        expected_config_content = {
-            "listeners": [
-                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            ],
-            "ip_range_whitelist": expected_ip_range_whitelist,
-        }
-        assert content == expected_config_content
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "ip_range_whitelist": expected_ip_range_whitelist,
+    }
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_enable_ip_range_whitelist_blocked(harness: Harness):
@@ -236,65 +186,35 @@ def test_enable_ip_range_whitelist_blocked(harness: Harness):
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
 
 
-def test_enable_ip_range_whitelist_no_action(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_enable_ip_range_whitelist_no_action(
+    harness: Harness, config_content: dict[str, typing.Any]
+):
     """
     arrange: set mock container with file.
     act: leave ip_range_whitelist config empty and call enable_ip_range_whitelist.
     assert: configuration file is not changed.
     """
-    container_mock = MagicMock(spec=ops.Container)
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
+    content = config_content
 
+    harness.update_config({"server_name": "foo", "ip_range_whitelist": None})  # type: ignore
     harness.begin()
-    config = {"server_name": "foo", "ip_range_whitelist": None}
-    # ignoring setting the other arguments
-    synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
     synapse.enable_ip_range_whitelist(
-        container_mock,
-        CharmState(
-            datasource=None,
-            saml_config=None,
-            smtp_config=None,
-            redis_config=None,
-            synapse_config=synapse_config,
-        ),
+        content,
+        harness.charm.build_charm_state(),
     )
 
-    container_mock.pull.assert_called_once()
-    container_mock.push.assert_not_called()
+    assert yaml.safe_dump(content) == yaml.safe_dump(config_content)
 
 
 def test_enable_federation_domain_whitelist_success(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
+    harness: Harness, config_content: dict[str, typing.Any]
 ):
     """
     arrange: set mock container with file.
     act: update federation_domain_whitelist config and call enable_federation_domain_whitelist.
     assert: new configuration file is pushed and federation_domain_whitelist is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
+    content = config_content
 
     expected_first_domain = "foo1"
     expected_second_domain = "foo2"
@@ -302,121 +222,67 @@ def test_enable_federation_domain_whitelist_success(
         {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
     )
     harness.begin()
-    synapse.enable_federation_domain_whitelist(container_mock, harness.charm.build_charm_state())
+    synapse.enable_federation_domain_whitelist(content, harness.charm.build_charm_state())
 
-    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
         "federation_domain_whitelist": [expected_first_domain, expected_second_domain],
     }
-    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_federation_domain_whitelist_error(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-):
-    """
-    arrange: set mock container with file.
-    act: update federation_domain_whitelist config and call enable_federation_domain_whitelist.
-    assert: raise WorkloadError in case of error.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    expected_first_domain = "foo1"
-    expected_second_domain = "foo2"
-    harness.update_config(
-        {"federation_domain_whitelist": f"{expected_first_domain},{expected_second_domain}"}
-    )
-    harness.begin()
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_federation_domain_whitelist(
-            container_mock, harness.charm.build_charm_state()
-        )
-
-
-def test_enable_trusted_key_servers_no_action(harness: Harness):
+def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: call enable_trusted_key_servers without changing the configuration.
     assert: configuration is not changed.
     """
-    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
-    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-    )
+    content = config_content
 
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     config = {"server_name": "foo"}
     synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
 
     synapse.enable_trusted_key_servers(
-        container,
-        CharmState(
+        content,
+        CharmState(  # pylint: disable=duplicate-code
             datasource=None,
+            irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
+            media_config=None,
             redis_config=None,
             synapse_config=synapse_config,
+            instance_map_config=None,
         ),
     )
 
-    with open(config_path, encoding="utf-8") as config_file:
-        content = yaml.safe_load(config_file)
-        expected_config_content = {
-            "listeners": [
-                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            ],
-        }
-        assert content == expected_config_content
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+    }
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_disable_room_list_search_success(harness: Harness):
+def test_disable_room_list_search_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
     assert: new configuration file is pushed and room_list_search is disabled.
     """
-    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
-    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-"""
-    )
+    config = config_content
 
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    synapse.disable_room_list_search(config)
 
-    synapse.disable_room_list_search(container)
-
-    with open(config_path, encoding="utf-8") as config_file:
-        content = yaml.safe_load(config_file)
-        expected_config_content = {
-            "listeners": [
-                {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            ],
-            "enable_room_list_search": False,
-        }
-        assert content == expected_config_content
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "enable_room_list_search": False,
+    }
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
@@ -434,41 +300,16 @@ def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
         synapse.validate_config(container_mock)
 
 
-def test_disable_room_list_search_path_error(harness: Harness):
-    """
-    arrange: dont add any configuration file to the container.
-    act: disable room list search.
-    assert: WorkloadError is raised.
-    """
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    with pytest.raises(synapse.WorkloadError, match="not-found"):
-        synapse.disable_room_list_search(container)
-
-
-def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
+def test_enable_metrics_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
     assert: new configuration file is pushed and metrics are enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
+    content = config_content
 
-    synapse.enable_metrics(container_mock)
+    synapse.enable_metrics(content)
 
-    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
@@ -476,46 +317,18 @@ def test_enable_metrics_success(monkeypatch: pytest.MonkeyPatch):
         ],
         "enable_metrics": True,
     }
-    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_metrics_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: raise WorkloadError in case of error.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_metrics(container_mock)
-
-
-def test_enable_forgotten_room_success(monkeypatch: pytest.MonkeyPatch):
+def test_enable_forgotten_room_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
     assert: new configuration file is pushed and forgotten_room_retention_period is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
+    content = config_content
 
-    synapse.enable_forgotten_room_retention(container_mock)
+    synapse.enable_forgotten_room_retention(content)
 
     expected_config_content = {
         "listeners": [
@@ -523,26 +336,7 @@ def test_enable_forgotten_room_success(monkeypatch: pytest.MonkeyPatch):
         ],
         "forgotten_room_retention_period": "28d",
     }
-    pull_mock.assert_called_with(synapse.SYNAPSE_CONFIG_PATH)
-    push_mock.assert_called_with(
-        synapse.SYNAPSE_CONFIG_PATH, yaml.safe_dump(expected_config_content)
-    )
-
-
-def test_enable_forgotten_room_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: raise WorkloadError in case of error.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_forgotten_room_retention(container_mock)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
 def test_enable_saml_success():
@@ -569,11 +363,7 @@ def test_enable_saml_success():
     )
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     harness.begin()
-    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
-    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
-    config_path.parent.mkdir(parents=True)
-    config_path.write_text(
-        """
+    current_config = """
 listeners:
     - type: http
       port: 8080
@@ -581,11 +371,10 @@ listeners:
         - "::"
       x_forwarded: false
 """
-    )
 
-    # Act: write the Synapse config file with SAML enabled
-    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    synapse.enable_saml(container, harness.charm.build_charm_state())
+    config = yaml.safe_load(current_config)
+
+    synapse.enable_saml(config, harness.charm.build_charm_state())
 
     # Assert: ensure config file was written correctly
     expected_config_content = {
@@ -615,7 +404,7 @@ listeners:
             },
         },
     }
-    assert config_path.read_text() == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_enable_saml_success_no_ubuntu_url():
@@ -625,7 +414,6 @@ def test_enable_saml_success_no_ubuntu_url():
     act: enable saml.
     assert: SAML configuration is created as expected.
     """
-    # Arrange: set up harness and container filesystem
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
     relation_id = harness.add_relation("saml", "saml-integrator")
@@ -641,11 +429,7 @@ def test_enable_saml_success_no_ubuntu_url():
     )
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     harness.begin()
-    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
-    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
-    config_path.parent.mkdir(parents=True)
-    config_path.write_text(
-        """
+    current_config = """
 listeners:
     - type: http
       port: 8080
@@ -653,13 +437,11 @@ listeners:
         - "::"
       x_forwarded: false
 """
-    )
 
-    # Act: write the Synapse config file with SAML enabled
-    container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    synapse.enable_saml(container, harness.charm.build_charm_state())
+    config = yaml.safe_load(current_config)
 
-    # Assert: ensure config file was written correctly
+    synapse.enable_saml(config, harness.charm.build_charm_state())
+
     expected_config_content = {
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
@@ -686,24 +468,7 @@ listeners:
             },
         },
     }
-    assert config_path.read_text() == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_saml_error(harness: Harness, monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: raise WorkloadError in case of error.
-    """
-    harness.begin()
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_saml(container_mock, harness.charm.build_charm_state())
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_get_mjolnir_config_success():
@@ -756,50 +521,36 @@ SMTP_CONFIGURATION = SMTPConfiguration(
 )
 
 
-def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
+def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     """
-    arrange: set mock container with file.
+    arrange: set mock container with config file.
     act: update smtp_host config and call enable_smtp.
     assert: new configuration file is pushed and SMTP is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
-
+    synapse_with_notif_config = {
+        "notif_from": "noreply@example.com",
+        "server_name": "example.com",
+    }
+    synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
+        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
+        media_config=None,
         redis_config=None,
-        synapse_config=SynapseConfig(
-            federation_domain_whitelist=None,
-            ip_range_whitelist=None,
-            notif_from="noreply@example.com",
-            public_baseurl=None,
-            report_stats=None,
-            server_name="example.com",
-            trusted_key_servers=None,
-        ),
+        instance_map_config=None,
+        synapse_config=synapse_config,
     )
-    synapse.enable_smtp(container_mock, charm_state)
 
-    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
+    synapse.enable_smtp(config_content, charm_state)
+
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
         "email": {
+            "enable_notifs": False,
             "enable_tls": True,
             "force_tls": False,
             "require_transport_security": True,
@@ -810,90 +561,29 @@ def test_enable_smtp_success(monkeypatch: pytest.MonkeyPatch):
             "smtp_pass": SMTP_CONFIGURATION["password"],
         },
     }
-    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_smtp_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock container with file.
-    act: add smtp integration call enable_smtp.
-    assert: raise WorkloadError in case of error.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    charm_state = CharmState(
-        datasource=None,
-        saml_config=None,
-        smtp_config=SMTP_CONFIGURATION,
-        redis_config=None,
-        synapse_config=SynapseConfig(
-            federation_domain_whitelist=None,
-            ip_range_whitelist=None,
-            notif_from="noreply@example.com",
-            public_baseurl=None,
-            report_stats=None,
-            server_name="example.com",
-            trusted_key_servers=None,
-        ),
-    )
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_smtp(container_mock, charm_state)
-
-
-def test_enable_serve_server_wellknown_success(monkeypatch: pytest.MonkeyPatch):
+def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: call enable_serve_server_wellknown.
     assert: new configuration file is pushed and serve_server_wellknown is enabled.
     """
-    config_content = """
-    listeners:
-        - type: http
-          port: 8080
-          bind_addresses:
-            - "::"
-    """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
+    content = config_content
 
-    synapse.enable_serve_server_wellknown(container_mock)
+    synapse.enable_serve_server_wellknown(content)
 
-    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
         ],
         "serve_server_wellknown": True,
     }
-    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
+    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_serve_server_wellknown_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock container with file.
-    act: call enable_serve_server_wellknown.
-    assert: raise WorkloadError.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.enable_serve_server_wellknown(container_mock)
-
-
-def test_disable_password_config_success(monkeypatch: pytest.MonkeyPatch):
+def test_disable_password_config_success():
     """
     arrange: set mock container with file.
     act: call disable_password_config.
@@ -903,39 +593,16 @@ def test_disable_password_config_success(monkeypatch: pytest.MonkeyPatch):
     password_config:
         enabled: true
     """
-    text_io_mock = io.StringIO(config_content)
-    pull_mock = Mock(return_value=text_io_mock)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-    monkeypatch.setattr(container_mock, "push", push_mock)
+    config = yaml.safe_load(config_content)
 
-    synapse.disable_password_config(container_mock)
+    synapse.disable_password_config(config)
 
-    assert pull_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
-    assert push_mock.call_args[0][0] == synapse.SYNAPSE_CONFIG_PATH
     expected_config_content = {
         "password_config": {
             "enabled": False,
         },
     }
-    assert push_mock.call_args[0][1] == yaml.safe_dump(expected_config_content)
-
-
-def test_disable_password_config_error(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set mock container with file.
-    act: call disable_password_config.
-    assert: raise WorkloadError.
-    """
-    error_message = "Error pulling file"
-    path_error = ops.pebble.PathError(kind="fake", message=error_message)
-    pull_mock = MagicMock(side_effect=path_error)
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "pull", pull_mock)
-
-    with pytest.raises(synapse.WorkloadError, match=error_message):
-        synapse.disable_password_config(container_mock)
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_get_registration_shared_secret_success(monkeypatch: pytest.MonkeyPatch):
@@ -1028,3 +695,68 @@ def test_http_proxy(
     expected_env.update(expected)
     for env_name, env_value in expected_env.items():
         assert env.get(env_name) == env.get(env_name.upper()) == env_value
+
+
+def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
+    """
+    arrange: mock Synapse current configuration with config_content and
+        add publish_rooms_allowlist to the charm configuration.
+    act: call enable_room_list_publication_rules.
+    assert: new configuration file is pushed and room_list_publication_rules is set.
+    """
+    synapse_with_notif_config = {
+        "publish_rooms_allowlist": "user1:domainX.com,user2:domainY.com",
+        "server_name": "example.com",
+    }
+    synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
+    charm_state = CharmState(
+        datasource=None,
+        irc_bridge_datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+    )
+
+    synapse.enable_room_list_publication_rules(config_content, charm_state)
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "room_list_publication_rules": [
+            {"action": "allow", "alias": "*", "room_id": "*", "user_id": "@user1:domainX.com"},
+            {"action": "allow", "alias": "*", "room_id": "*", "user_id": "@user2:domainY.com"},
+            {"action": "deny", "alias": "*", "room_id": "*", "user_id": "*"},
+        ],
+    }
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
+@pytest.mark.parametrize(
+    "invalid_config",
+    [
+        "userinvaliddomainX.com",
+        "user*:domainX.com",
+        "user1:domainX.com,user$:domainX.com",
+        "user1:domainX.com,user#:domainX.com,user2:domainX.com",
+        "user1:domainX.com;user2:domainX.com",
+        ":domainX.com;@user2:domainX.com",
+    ],
+)
+def test_publish_rooms_allowlist_error(invalid_config):
+    """
+    arrange: set configuration with invalid value for publish_rooms_allowlist.
+    act: set SynapseConfig.
+    assert: ValidationError is raised.
+    """
+    synapse_with_notif_config = {
+        "publish_rooms_allowlist": invalid_config,
+        "server_name": "example.com",
+    }
+    with pytest.raises(ValidationError):
+        # Prevent mypy error:
+        # Argument 1 to "SynapseConfig" has incompatible type "**dict[str, str]"; expected "bool"
+        SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]

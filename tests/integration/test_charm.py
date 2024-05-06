@@ -13,6 +13,7 @@ import pytest
 import requests
 from juju.action import Action
 from juju.application import Application
+from juju.errors import JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
 from ops.model import ActiveStatus
@@ -60,6 +61,49 @@ async def test_synapse_validate_configuration(synapse_app: Application):
     )
 
     await synapse_app.reset_config(["ip_range_whitelist"])
+
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+
+
+async def test_enable_stats_exporter(
+    synapse_app: Application,
+    synapse_app_name: str,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+) -> None:
+    """
+    arrange: Synapse is integrated with Postgresql.
+    act:  request Synapse Stats Exporter URL.
+    assert: Synapse Stats Exporter returns as expected.
+    """
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    response = requests.get(
+        f"http://{synapse_ip}:9877/", headers={"Host": synapse_app_name}, timeout=5
+    )
+
+    assert response.status_code == 200
+    assert "synapse_total_users" in response.text
+
+
+async def test_synapse_scale_blocked(synapse_app: Application):
+    """
+    arrange: build and deploy the Synapse charm.
+    act: scale Synapse.
+    assert: the Synapse application is blocked since there is no Redis integration.
+    """
+    await synapse_app.scale(2)
+
+    with pytest.raises(JujuUnitError):
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, timeout=120, apps=[synapse_app.name], raise_on_blocked=True
+        )
+
+    await synapse_app.scale(1)
 
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
@@ -346,6 +390,50 @@ async def test_synapse_enable_mjolnir(
     assert res.status_code == 200
 
 
+@pytest.mark.irc
+@pytest.mark.usefixtures("synapse_app", "irc_postgresql_app")
+async def test_synapse_irc_bridge_is_up(
+    ops_test: OpsTest,
+    model: Model,
+    pytestconfig: pytest.Config,
+    synapse_app: Application,
+    irc_postgresql_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: Build and deploy the Synapse charm.
+    act: Enable the IRC bridge.
+    assert: Synapse and IRC bridge health points should return correct responses.
+    """
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if not use_existing:
+        await model.add_relation(
+            irc_postgresql_app.name, f"{synapse_app.name}:irc-bridge-database"
+        )
+        await model.wait_for_idle(apps=[irc_postgresql_app.name], status=ACTIVE_STATUS_NAME)
+    await synapse_app.set_config({"enable_irc_bridge": "true"})
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    async with ops_test.fast_forward():
+        # using fast_forward otherwise would wait for model config update-status-hook-interval
+        await synapse_app.model.wait_for_idle(
+            idle_period=30, apps=[synapse_app.name], status="active"
+        )
+
+    response = requests.get(
+        f"http://{synapse_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
+    )
+    assert response.status_code == 200
+    assert "Welcome to the Matrix" in response.text
+
+    irc_bridge_response = requests.get(
+        f"http://{synapse_ip}:{synapse.IRC_BRIDGE_HEALTH_PORT}/health", timeout=5
+    )
+    assert irc_bridge_response.status_code == 200
+
+
 @pytest.mark.mjolnir
 async def test_synapse_with_mjolnir_from_refresh_is_up(
     ops_test: OpsTest,
@@ -395,3 +483,58 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
         f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
     )
     assert mjolnir_response.status_code == 200
+
+
+async def test_admin_token_refresh(model: Model, synapse_app: Application):
+    """
+    arrange: Build and deploy the Synapse charm from charmhub.
+             Create a user.
+             Promote it to admin (forces to get the admin token).
+             Reset the instance (wipes database and so admin token is invalid).
+             Create another user.
+    act: Promote the second user to admin.
+    assert: It should not fail as the admin token is refreshed.
+    """
+    action_register_initial_user: Action = await synapse_app.units[0].run_action(
+        "register-user", username="initial_user", admin=False
+    )
+    await action_register_initial_user.wait()
+    assert action_register_initial_user.status == "completed"
+    assert action_register_initial_user.results.get("register-user")
+    password = action_register_initial_user.results.get("user-password")
+    assert password
+    action_promote_initial_user: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "promote-user-admin", username="initial_user"
+    )
+    await action_promote_initial_user.wait()
+    assert action_promote_initial_user.status == "completed"
+
+    new_server_name = f"test-admin-token-refresh{token_hex(6)}"
+    await synapse_app.set_config({"server_name": new_server_name})
+    await model.wait_for_idle()
+
+    unit = model.applications[synapse_app.name].units[0]
+    assert unit.workload_status == "blocked"
+    assert "server_name modification is not allowed" in unit.workload_status_message
+    action_reset_instance: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "reset-instance"
+    )
+    await action_reset_instance.wait()
+    assert action_reset_instance.status == "completed"
+    assert action_reset_instance.results["reset-instance"]
+    assert unit.workload_status == "active"
+
+    action_register_after_reset: Action = await synapse_app.units[0].run_action(
+        "register-user", username="user2", admin=False
+    )
+    await action_register_after_reset.wait()
+    assert action_register_after_reset.status == "completed"
+    assert action_register_after_reset.results.get("register-user")
+    password = action_register_after_reset.results.get("user-password")
+    assert password
+
+    action_promote_after_reset: Action = await synapse_app.units[0].run_action(  # type: ignore
+        "promote-user-admin", username="user2"
+    )
+    await action_promote_after_reset.wait()
+    assert action_promote_after_reset.status == "completed"

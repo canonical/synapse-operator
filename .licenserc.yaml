@@ -12,6 +12,7 @@ header:
     - '**/.gitkeep'
     - '**/*.cfg'
     - '**/*.conf'
+    - '**/*.conf.template'
     - '**/*.j2'
     - '**/*.json'
     - '**/*.md'

@@ -4,6 +4,7 @@
 """S3 Backup relation observer for Synapse."""
 
 import logging
+import typing
 
 import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
@@ -13,6 +14,7 @@ from ops.pebble import APIError, ExecError
 
 import backup
 import synapse
+from s3_parameters import S3Parameters
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +51,7 @@ class BackupObserver(Object):
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Check new S3 credentials set the unit to blocked if they are wrong."""
         try:
-            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
@@ -78,13 +80,13 @@ class BackupObserver(Object):
             event: Event triggering the create backup action.
         """
         try:
-            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             logger.exception("Wrong S3 configuration in backup action")
             event.fail("Wrong S3 configuration on create backup action. Check S3 integration.")
             return
 
-        backup_passphrase = self._charm.config.get("backup_passphrase")
+        backup_passphrase = typing.cast(str, self._charm.config.get("backup_passphrase"))
         if not backup_passphrase:
             event.fail("Missing backup_passphrase config option.")
             return
@@ -126,7 +128,7 @@ class BackupObserver(Object):
             event: Event triggering the list backups action.
         """
         try:
-            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             logger.exception("Wrong S3 configuration in list backups action")
             event.fail("Wrong S3 configuration on list backups action. Check S3 integration.")
@@ -163,7 +165,7 @@ class BackupObserver(Object):
         logger.info("A restore with backup-id %s has been requested on unit.", backup_id)
 
         try:
-            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             logger.exception("Wrong S3 configuration in restore backup action")
             event.fail("Wrong S3 configuration on restore backup action. Check S3 integration.")
@@ -179,7 +181,7 @@ class BackupObserver(Object):
             event.fail("Error accessing S3 in restore backup action.")
             return
 
-        backup_passphrase = self._charm.config.get("backup_passphrase")
+        backup_passphrase = typing.cast(str, self._charm.config.get("backup_passphrase"))
         if not backup_passphrase:
             event.fail("Missing backup_passphrase config option.")
             return
@@ -205,7 +207,7 @@ class BackupObserver(Object):
         logger.info("backup-id %s is going to be deleted", backup_id)
 
         try:
-            s3_parameters = backup.S3Parameters(**self._s3_client.get_s3_connection_info())
+            s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
             logger.exception("Wrong S3 configuration in delete backup action")
             event.fail("Wrong S3 configuration in delete backup action. Check S3 integration.")

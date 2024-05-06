@@ -78,6 +78,7 @@ _Interface_: redis
 _Supported charms_: [redis-k8s](https://charmhub.io/redis-k8s)
 
 Integrating Synapse with Redis is required by horizontal scaling the charm.
+If the integration is not present, the charm will be blocked.
 
 See more information in [Scaling synapse via workers](https://matrix-org.github.io/synapse/latest/workers.html) in documentation repository for Synapse.
 

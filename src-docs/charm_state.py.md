@@ -8,7 +8,7 @@ State of the Charm.
 
 ---
 
-<a href="../src/charm_state.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `inject_charm_state`
 
@@ -84,7 +84,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm_state.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -96,7 +96,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm_state.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -119,7 +119,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -150,10 +150,13 @@ State of the Charm.
  
  - <b>`synapse_config`</b>:  synapse configuration. 
  - <b>`datasource`</b>:  datasource information. 
+ - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information. 
  - <b>`saml_config`</b>:  saml configuration. 
  - <b>`smtp_config`</b>:  smtp configuration. 
+ - <b>`media_config`</b>:  media configuration. 
  - <b>`redis_config`</b>:  redis configuration. 
  - <b>`proxy`</b>:  proxy information. 
+ - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
 
 
 ---
@@ -171,7 +174,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -179,9 +182,12 @@ Get charm proxy information from juju charm environment.
 from_charm(
     charm: CharmBase,
     datasource: Optional[DatasourcePostgreSQL],
+    irc_bridge_datasource: Optional[DatasourcePostgreSQL],
     saml_config: Optional[SAMLConfiguration],
     smtp_config: Optional[SMTPConfiguration],
-    redis_config: Optional[RedisConfiguration]
+    media_config: Optional[MediaConfiguration],
+    redis_config: Optional[RedisConfiguration],
+    instance_map_config: Optional[Dict]
 ) → CharmState
 ```
 
@@ -193,9 +199,12 @@ Initialize a new instance of the CharmState class from the associated charm.
  
  - <b>`charm`</b>:  The charm instance associated with this state. 
  - <b>`datasource`</b>:  datasource information to be used by Synapse. 
+ - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information to be used by Synapse. 
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
+ - <b>`media_config`</b>:  Media configuration to be used by Synapse. 
  - <b>`redis_config`</b>:  Redis configuration to be used by Synapse. 
+ - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
 
 Return: The CharmState instance created by the provided charm. 
 
@@ -216,7 +225,7 @@ Protocol that defines a class that returns a CharmBaseWithState.
 
 ---
 
-<a href="../src/charm_state.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -254,6 +263,9 @@ Represent Synapse builtin configuration values.
 **Attributes:**
  
  - <b>`allow_public_rooms_over_federation`</b>:  allow_public_rooms_over_federation config. 
+ - <b>`enable_email_notifs`</b>:  enable_email_notifs config. 
+ - <b>`enable_irc_bridge`</b>:  creates a registration file in Synapse and starts an irc bridge app. 
+ - <b>`irc_bridge_admins`</b>:  a comma separated list of user IDs who are admins of the IRC bridge. 
  - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
  - <b>`enable_password_config`</b>:  enable_password_config config. 
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
@@ -261,6 +273,7 @@ Represent Synapse builtin configuration values.
  - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
  - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
+ - <b>`publish_rooms_allowlist`</b>:  publish_rooms_allowlist config. 
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`server_name`</b>:  server_name config. 
  - <b>`trusted_key_servers`</b>:  trusted_key_servers config. 
@@ -270,7 +283,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -294,7 +307,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
@@ -314,5 +327,34 @@ Convert the report_stats field to yes or no.
 
 **Returns:**
  The string converted to yes or no. 
+
+---
+
+<a href="../src/charm_state.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `userids_to_list`
+
+```python
+userids_to_list(value: str) → List[str]
+```
+
+Convert a comma separated list of users to list. 
+
+
+
+**Args:**
+ 
+ - <b>`value`</b>:  the input value. 
+
+
+
+**Returns:**
+ The string converted to list. 
+
+
+
+**Raises:**
+ 
+ - <b>`ValidationError`</b>:  if user_id is not as expected. 
 
 

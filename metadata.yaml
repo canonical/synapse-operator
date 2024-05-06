@@ -49,6 +49,10 @@ requires:
         interface: ingress
         limit: 2
         optional: true
+    irc-bridge-database:
+        interface: postgresql_client
+        limit: 1
+        optional: true
     database:
         interface: postgresql_client
         limit: 1
@@ -63,6 +67,10 @@ requires:
         optional: true
     smtp:
         interface: smtp
+        limit: 1
+        optional: true
+    media:
+        interface: s3
         limit: 1
         optional: true
     backup:

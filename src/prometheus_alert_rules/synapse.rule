@@ -37,13 +37,13 @@ groups:
       summary: Synapse High CPU utilization (instance {{ $labels.instance }})
       description: "Synapse CPU utilization is above 90% for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: SynapseHighMemoryUtilization
-    expr: process_resident_memory_bytes{juju_charm="synapse"} / 1024 / 1024 > 1024
+    expr: process_resident_memory_bytes{juju_charm="synapse"} / 1024 / 1024 > 3072
     for: 2m
     labels:
       severity: critical
     annotations:
       summary: Synapse High Memory utilization (instance {{ $labels.instance }})
-      description: "Synapse Memory utilization is above 1GB for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      description: "Synapse Memory utilization is above 3GB for 2 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: SynapseTooManyOpenFiles
     expr: process_open_fds{juju_charm="synapse"} > 1024
     for: 2m
@@ -60,3 +60,10 @@ groups:
     annotations:
       summary: Synapse high HTTP 5xx error rate (instance {{ $labels.instance }})
       description: "Too many HTTP requests with status 5xx (> 5%).\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+  - alert: SynapseProcessNewPulledEventHighCPU
+    expr: (rate(synapse_background_process_ru_utime_seconds_total{name="_process_new_pulled_events_with_failed_pull_attempts"}[5m])+rate(synapse_background_process_ru_stime_seconds_total{name="_process_new_pulled_events_with_failed_pull_attempts"}[5m])) * 100 > 1
+    labels:
+      severity: critical
+    annotations:
+      summary: Synapse _process_new_pulled_events_with_failed_pull_attempts process CPU usage had an increase bigger than 1% \n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}
+      description: Synapse _process_new_pulled_events_with_failed_pull_attempts process CPU usage had an increase bigger than 1%. Verify CPU usage and logs to find the room triggering this.

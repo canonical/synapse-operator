@@ -9,6 +9,7 @@ import time
 import typing
 import unittest.mock
 from secrets import token_hex
+from unittest.mock import MagicMock
 
 import ops
 import pytest
@@ -17,9 +18,9 @@ from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.pebble import ExecError
 from ops.testing import Harness
 
-import backup
 import synapse
 from charm import SynapseCharm
+from s3_parameters import S3Parameters
 
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
 TEST_SERVER_NAME_CHANGED = "pebble-layer-1.synapse.com"
@@ -166,12 +167,27 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
                 raise RuntimeError(f"unknown command: {argv}")
 
     inject_register_command_handler(monkeypatch, harness)
+    # Disabling no-member in the following lines due error:
+    # 'Harness[SynapseCharm] has no attribute "register_command_handler"
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container, executable=command_path, handler=start_cmd_handler
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
         executable="/usr/bin/python3",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    synapse_nginx_container: ops.Container = harness.model.unit.get_container(
+        synapse.SYNAPSE_NGINX_CONTAINER_NAME
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_nginx_container,
+        executable="cp",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_nginx_container,
+        executable="sed",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness
@@ -275,6 +291,50 @@ def s3_relation_data_backup_fixture() -> dict:
 
 
 @pytest.fixture(name="s3_parameters_backup")
-def s3_parameters_backup_fixture(s3_relation_data_backup) -> backup.S3Parameters:
+def s3_parameters_backup_fixture(s3_relation_data_backup) -> S3Parameters:
     """Returns valid S3 Parameters."""
-    return backup.S3Parameters(**s3_relation_data_backup)
+    return S3Parameters(**s3_relation_data_backup)
+
+
+@pytest.fixture(name="s3_relation_data_media")
+def s3_relation_data_media_fixture() -> dict:
+    """Returns valid S3 relation data."""
+    return {
+        "access-key": token_hex(16),
+        "secret-key": token_hex(16),
+        "bucket": "synapse-media-bucket",
+        "path": "/synapse-media",
+        "s3-uri-style": "path",
+        "endpoint": "https://s3.example.com",
+    }
+
+
+@pytest.fixture(name="s3_parameters_media")
+def s3_parameters_media_fixture(s3_relation_data_media) -> S3Parameters:
+    """Returns valid S3 Parameters."""
+    return S3Parameters(**s3_relation_data_media)
+
+
+@pytest.fixture(name="config_content")
+def config_content_fixture() -> dict:
+    """Returns valid Synapse configuration."""
+    config_content = """
+    listeners:
+      - type: http
+        port: 8080
+        bind_addresses: ['::']
+    """
+    return yaml.safe_load(config_content)
+
+
+@pytest.fixture(name="mocked_synapse_calls")
+def mocked_synapse_calls_fixture(monkeypatch):
+    """Mock synapse calls functions."""
+    monkeypatch.setattr(
+        synapse.workload, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
+    )
+    monkeypatch.setattr(
+        synapse.workload, "_get_configuration_field", MagicMock(return_value="shared_secret")
+    )
+    monkeypatch.setattr(synapse.api, "register_user", MagicMock(return_value="access_token"))
+    monkeypatch.setattr(synapse, "create_management_room", MagicMock(return_value=token_hex(16)))

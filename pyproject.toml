@@ -22,8 +22,7 @@ markers = [
     "cos: mark tests that require a COS integration",
     "nginx: mark tests that require an nginx integration",
     "s3: mark tests that require an s3 integration (via localstack)",
-    "redis: mark tests that require a redis integration",
-    "mjolnir: mark tests that test mjolnir integration",
+    "irc: mark tests that require an irc integration"
 ]
 
 [tool.pylint.'MESSAGES CONTROL']

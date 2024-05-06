@@ -25,20 +25,19 @@ logger = logging.getLogger(__name__)
 class DatabaseObserver(Object):
     """The Database relation observer."""
 
-    _RELATION_NAME = "database"
-
-    def __init__(self, charm: CharmBaseWithState):
+    def __init__(self, charm: CharmBaseWithState, relation_name: str) -> None:
         """Initialize the observer and register event handlers.
 
         Args:
             charm: The parent charm to attach the observer to.
+            relation_name: The name of the relation to observe.
         """
-        super().__init__(charm, "database-observer")
+        super().__init__(charm, f"{relation_name}-observer")
         self._charm = charm
         # SUPERUSER is required to update pg_database
         self.database = DatabaseRequires(
             self._charm,
-            relation_name=self._RELATION_NAME,
+            relation_name=relation_name,
             database_name=self._charm.app.name,
             extra_user_roles="SUPERUSER",
         )
@@ -64,7 +63,10 @@ class DatabaseObserver(Object):
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            pebble.change_config(charm_state, container)
+            # getting information from charm if is main unit or not.
+            pebble.change_config(
+                charm_state, container, is_main=self._charm.is_main()  # type: ignore[attr-defined]
+            )
         # Avoiding duplication of code with _change_config in charm.py
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
@@ -84,7 +86,8 @@ class DatabaseObserver(Object):
         # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
         datasource = self.get_relation_as_datasource()
         db_client = DatabaseClient(datasource=datasource)
-        db_client.prepare()
+        if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
+            db_client.prepare()
         self._change_config(charm_state)
 
     @inject_charm_state
@@ -104,7 +107,9 @@ class DatabaseObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
-        if self.model.get_relation(self._RELATION_NAME) is None:
+        # not using get_relation due this issue
+        # https://github.com/canonical/operator/issues/1153
+        if not self.model.relations.get(self.database.relation_name):
             return None
 
         relation_id = self.database.relations[0].id
