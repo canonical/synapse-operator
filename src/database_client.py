@@ -81,8 +81,22 @@ class DatabaseClient:
             with self._conn.cursor() as curs:
                 curs.execute(
                     sql.SQL(
-                        "UPDATE pg_database SET datcollate='C', datctype='C' WHERE datname = {}"
+                        "SELECT datcollate, datctype FROM pg_database  WHERE datname = {};"
                     ).format(sql.Literal(self._database_name))
+                )
+                result = curs.fetchone()
+                if result and result != ("C", "C"):
+                    logging.info(
+                        "Database %s has collation as %s, updating", self._database_name, result
+                    )
+                    curs.execute(
+                        sql.SQL(
+                            "UPDATE pg_database SET datcollate='C', datctype='C' "
+                            "WHERE datname = {}"
+                        ).format(sql.Literal(self._database_name))
+                    )
+                logging.info(
+                    "Database %s has collation as %s, skipping", self._database_name, result
                 )
         except psycopg2.Error as exc:
             logger.exception("Failed to prepare database: %r", exc)
