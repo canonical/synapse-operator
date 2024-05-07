@@ -32,6 +32,7 @@ header:
     - 'CODEOWNERS'
     - 'icon.svg'
     - 'LICENSE'
+    - 'poetry.lock'
     - 'trivy.yaml'
     - 'zap_rules.tsv'
     - 'lib/**'
