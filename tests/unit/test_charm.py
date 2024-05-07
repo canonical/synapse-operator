@@ -58,13 +58,16 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     ],
     indirect=True,
 )
-def test_synapse_migrate_config_error(harness: Harness) -> None:
+def test_synapse_migrate_config_error(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: charm deployed.
     act: start the Synapse charm, set Synapse container to be ready and set server_name.
     assert: Synapse charm should be blocked by error on migrate_config command.
     """
     harness.set_leader(True)
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    exists_mock = MagicMock(return_value=False)
+    monkeypatch.setattr(container, "exists", exists_mock)
     harness.begin_with_initial_hooks()
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
@@ -283,8 +286,10 @@ def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -
     assert: Synapse charm should prevent the change with a BlockStatus.
     """
     harness.set_leader(True)
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    exists_mock = MagicMock(return_value=False)
+    monkeypatch.setattr(container, "exists", exists_mock)
     harness.begin_with_initial_hooks()
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     container.push(
         synapse.SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True
     )
@@ -521,3 +526,43 @@ def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pyt
     redis_config = harness.charm._redis.get_relation_as_redis_conf()
     assert relation.data[relation.app]["hostname"] == redis_config["host"]
     assert relation.data[relation.app]["port"] == str(redis_config["port"])
+
+
+def test_synapse_not_restarted(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: mock exists and pull container as if there is a configuration file already.
+    act: start charm with initial hooks.
+    assert: Synapse is not restarted because there is no changes in configuration.
+    """
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    exists_mock = MagicMock(return_value=True)
+    monkeypatch.setattr(container, "exists", exists_mock)
+    config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+            {"port": 9000, "type": "metrics", "bind_addresses": ["::"]},
+            {
+                "port": 8034,
+                "type": "http",
+                "bind_addresses": ["::"],
+                "resources": [{"names": ["replication"]}],
+            },
+        ],
+        "server_name": TEST_SERVER_NAME,
+        "enable_metrics": True,
+        "forgotten_room_retention_period": "28d",
+        "serve_server_wellknown": True,
+    }
+
+    # pylint: disable=unused-argument
+    def config_mock(*args, **kwargs):  # noqa: DCO010
+        return io.StringIO(str(config_content))
+
+    monkeypatch.setattr(container, "pull", config_mock)
+    monkeypatch.setattr(container, "push", MagicMock())
+    restart_synapse_mock = MagicMock()
+    monkeypatch.setattr(pebble, "restart_synapse", restart_synapse_mock)
+
+    harness.begin_with_initial_hooks()
+
+    restart_synapse_mock.assert_not_called()

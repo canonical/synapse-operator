@@ -97,12 +97,15 @@ def test_scaling_main_configured(harness: Harness) -> None:
     assert "/start.py" == synapse_layer["command"]
 
 
-def test_scaling_main_unit_departed(harness: Harness) -> None:
+def test_scaling_main_unit_departed(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: charm deployed, integrated with Redis and set as a no leader.
     act: set as a leader and emit relation departed for the previous main_unit.
     assert: Synapse charm is re-configured as the main unit.
     """
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    exists_mock = MagicMock(return_value=False)
+    monkeypatch.setattr(container, "exists", exists_mock)
     harness.begin_with_initial_hooks()
     relation = harness.charm.framework.model.get_relation("redis", 0)
     # We need to bypass protected access to inject the relation data

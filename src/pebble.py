@@ -267,7 +267,7 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
     """Change the configuration (main and worker).
 
     Args:
-        charm_state: Instance of CharmState
+        charm_state: Instance of CharmState.
         container: Charm container.
         is_main: if unit is main.
         unit_number: unit number id to set the worker name.
@@ -276,7 +276,9 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        synapse.execute_migrate_config(container=container, charm_state=charm_state)
+        if not container.exists(synapse.SYNAPSE_CONFIG_PATH):
+            logging.debug("Synapse configuration not found, creating")
+            synapse.execute_migrate_config(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
         synapse.enable_metrics(current_synapse_config)
@@ -326,6 +328,12 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             enable_irc_bridge(container=container, charm_state=charm_state)
             synapse.add_app_service_config_field(current_synapse_config)
             replan_irc_bridge(container=container)
+        # Push worker configuration
+        _push_synapse_config(
+            container,
+            get_worker_config(unit_number),
+            config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
+        )
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,
@@ -333,21 +341,17 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             ignore_string_case=True,
         )
         if config_has_changed:
-            logging.info("Configuration has changed, Synapse will be restarted.")
+            logging.info("Configuration has changed or doesn't exist, Synapse will be restarted.")
             logging.debug("The change is: %s", config_has_changed)
-            # Push worker configuration
-            _push_synapse_config(
-                container,
-                get_worker_config(unit_number),
-                config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
-            )
             # Push main configuration
             _push_synapse_config(container, current_synapse_config)
+            logging.debug("Validating configuration")
             synapse.validate_config(container=container)
+            logging.debug("Restarting Synapse")
             restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
         else:
             logging.info("Configuration has not changed, no action.")
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
+    except synapse.WorkloadError as exc:
         raise PebbleServiceError(str(exc)) from exc
 
 
