@@ -38,5 +38,4 @@ header:
     - 'templates/**'
     - 'synapse_rock/cron/**/*.py'
     - 'synapse_rock/scripts/**/*.py'
-    - 'synapse_rock/start_custom.py'
   comment: on-failure
