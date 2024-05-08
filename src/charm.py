@@ -119,6 +119,7 @@ class SynapseCharm(CharmBaseWithState):
             media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
             instance_map_config=self.instance_map(),
+            main_unit=self.is_main(),
         )
 
     def is_main(self) -> bool:
@@ -200,9 +201,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            pebble.change_config(
-                charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
-            )
+            pebble.change_config(charm_state, container, unit_number=self.get_unit_number())
         except pebble.PebbleServiceError as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
@@ -436,7 +435,7 @@ class SynapseCharm(CharmBaseWithState):
                 container=container, charm_state=charm_state, datasource=datasource
             )
             logger.info("Start Synapse")
-            pebble.restart_synapse(charm_state, container, self.is_main())
+            pebble.restart_synapse(charm_state, container)
             results["reset-instance"] = True
         except (pebble.PebbleServiceError, actions.ResetInstanceError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))

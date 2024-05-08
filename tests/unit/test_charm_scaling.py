@@ -80,7 +80,12 @@ def test_scaling_main_configured(harness: Harness) -> None:
     act: create peer relation.
     assert: Synapse charm is configured as main.
     """
-    harness.begin_with_initial_hooks()
+    harness.begin()
+    harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        harness.charm.app.name,
+        app_data={"main_unit_id": "synapse/0"},
+    )
     relation = harness.charm.framework.model.get_relation("redis", 0)
     # We need to bypass protected access to inject the relation data
     # pylint: disable=protected-access
@@ -89,7 +94,7 @@ def test_scaling_main_configured(harness: Harness) -> None:
     }
     harness.set_leader(True)
 
-    harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
+    harness.charm.on.config_changed.emit()
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"

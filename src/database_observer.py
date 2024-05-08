@@ -64,9 +64,7 @@ class DatabaseObserver(Object):
             return
         try:
             # getting information from charm if is main unit or not.
-            pebble.change_config(
-                charm_state, container, is_main=self._charm.is_main()  # type: ignore[attr-defined]
-            )
+            pebble.change_config(charm_state, container)  # type: ignore[attr-defined]
         # Avoiding duplication of code with _change_config in charm.py
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
