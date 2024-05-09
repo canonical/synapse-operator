@@ -51,17 +51,23 @@ def test_scaling_worker_configured(harness: Harness) -> None:
     act: scale charm to more than 1 unit.
     assert: Synapse charm is configured as worker.
     """
-    harness.begin_with_initial_hooks()
+    harness.begin()
+    synapse_relation = harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        harness.charm.app.name,
+        app_data={"main_unit_id": "synapse/1"},
+    )
+    harness.add_relation_unit(synapse_relation, "synapse/0")
     relation = harness.charm.framework.model.get_relation("redis", 0)
     # We need to bypass protected access to inject the relation data
     # pylint: disable=protected-access
     harness.charm._redis._stored.redis_relation = {
         relation.id: ({"hostname": "redis-host", "port": 1010})
     }
-    harness.set_leader(False)
 
-    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
-    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.model.unit.name = "synapse/1"
+    harness.set_leader(False)
+    harness.add_relation_unit(synapse_relation, "synapse/1")
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
@@ -108,36 +114,23 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
     act: set as a leader and emit relation departed for the previous main_unit.
     assert: Synapse charm is re-configured as the main unit.
     """
-    harness.begin_with_initial_hooks()
+    harness.set_leader(True)
+    harness.begin()
+    synapse_relation = harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        harness.charm.app.name,
+        app_data={"main_unit_id": "synapse/1"},
+    )
+    harness.add_relation_unit(synapse_relation, "synapse/0")
+    harness.add_relation_unit(synapse_relation, "synapse/1")
     relation = harness.charm.framework.model.get_relation("redis", 0)
     # We need to bypass protected access to inject the relation data
     # pylint: disable=protected-access
     harness.charm._redis._stored.redis_relation = {
         relation.id: ({"hostname": "redis-host", "port": 1010})
     }
-    harness.set_leader(False)
-    harness.add_relation(
-        synapse.SYNAPSE_PEER_RELATION_NAME,
-        harness.charm.app.name,
-        app_data={"main_unit_id": "synapse/0"},
-    )
-    relation = harness.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME][0]
-    synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
-        "services"
-    ][synapse.SYNAPSE_SERVICE_NAME]
-    command = (
-        f"/start.py run -m synapse.app.generic_worker "
-        f"--config-path {synapse.SYNAPSE_CONFIG_PATH} "
-        f"--config-path {synapse.SYNAPSE_WORKER_CONFIG_PATH}"
-    )
-    assert command == synapse_layer["command"]
 
-    harness.set_leader(True)
-    unit = harness.charm.unit
-    unit.name = "synapse/0"
-    harness.charm.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed.emit(
-        relation=relation, app=harness.charm.app, unit=unit
-    )
+    harness.remove_relation_unit(synapse_relation, "synapse/1")
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
@@ -245,14 +238,14 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
     act: update relation data to change the main_unit_id.
     assert: Synapse NGINX is replanned with the new main unit.
     """
-    peer_relation_id = harness.add_relation(
+    rel_id = harness.add_relation(
         synapse.SYNAPSE_PEER_RELATION_NAME,
         "synapse",
         app_data={"main_unit_id": "synapse/0"},
     )
-    harness.begin_with_initial_hooks()
-    nginx_container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
-    harness.set_can_connect(nginx_container, True)
+    harness.add_relation_unit(rel_id, "synapse/0")
+    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.begin()
     redis_relation = harness.charm.framework.model.get_relation("redis", 0)
     # We need to bypass protected access to inject the relation data
     # pylint: disable=protected-access
@@ -265,11 +258,11 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
     replan_nginx_mock = MagicMock()
     monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
     harness.charm.on.synapse_nginx_pebble_ready.emit(MagicMock())
+    nginx_container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
+    harness.set_can_connect(nginx_container, True)
     replan_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
 
-    harness.update_relation_data(
-        peer_relation_id, harness.charm.app.name, {"main_unit_id": "synapse/1"}
-    )
+    harness.update_relation_data(rel_id, harness.charm.app.name, {"main_unit_id": "synapse/1"})
 
     replan_nginx_mock.assert_called_with(nginx_container, "synapse-1.synapse-endpoints")
 

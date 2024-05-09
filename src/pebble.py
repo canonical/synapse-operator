@@ -73,7 +73,7 @@ def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> 
         charm_state: Instance of CharmState
         container: Synapse container.
     """
-    logger.debug("Restarting the Synapse container. Main: %s", str(charm_state.main_unit))
+    logger.debug("Restarting the Synapse container. main_unit: %s", str(charm_state.main_unit))
     container.add_layer(
         synapse.SYNAPSE_SERVICE_NAME,
         _pebble_layer(charm_state),
@@ -330,18 +330,22 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             ignore_string_case=True,
         )
         if config_has_changed:
-            logging.info("Configuration has changed, Synapse will be restarted.")
-            logging.debug("The change is: %s", config_has_changed)
+            logging.info("Configuration has changed.")
+            logging.debug("Configuration change. config_has_changed: %s", config_has_changed)
             # Push worker configuration
             _push_synapse_config(
                 container,
                 get_worker_config(unit_number),
                 config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
             )
+            logging.info("Worker configuration pushed to workload.")
             # Push main configuration
             _push_synapse_config(container, current_synapse_config)
+            logging.info("Main configuration pushed to workload.")
             synapse.validate_config(container=container)
+            logging.info("Configuration validated.")
             restart_synapse(container=container, charm_state=charm_state)
+            logging.info("Synapse restarted.")
         else:
             logging.info("Configuration has not changed, no action.")
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
@@ -441,16 +445,13 @@ def reset_instance(charm_state: CharmState, container: ops.model.Container) -> N
     # This is needed in the case of relation with Postgresql.
     # If there is open connections it won't be possible to drop the database.
     try:
-        logger.info("Replan service to not restart")
         container.add_layer(
             synapse.SYNAPSE_CONTAINER_NAME,
             _pebble_layer_without_restart(charm_state),
             combine=True,
         )
         container.replan()
-        logger.info("Stop Synapse instance")
         container.stop(synapse.SYNAPSE_SERVICE_NAME)
-        logger.info("Erase Synapse data")
         synapse.reset_instance(container)
     except ops.pebble.PathError as exc:
         raise PebbleServiceError(str(exc)) from exc

@@ -73,7 +73,7 @@ class RedisObserver(Object):
                 "Got redis connection details from relation of %s:%s", redis_hostname, redis_port
             )
         if not redis_config:
-            logger.info("Redis databag is empty.")
+            logger.info("Redis databag is empty. No action.")
         return redis_config
 
     def _enable_redis(self, charm_state: CharmState) -> None:

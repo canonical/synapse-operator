@@ -86,6 +86,7 @@ class DatabaseObserver(Object):
         db_client = DatabaseClient(datasource=datasource)
         if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
             db_client.prepare()
+        self.model.unit.status = ops.MaintenanceStatus("Database is ready")
         self._change_config(charm_state)
 
     @inject_charm_state

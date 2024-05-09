@@ -86,8 +86,10 @@ class DatabaseClient:
                 )
                 result = curs.fetchone()
                 if result and result != ("C", "C"):
-                    logging.info(
-                        "Database %s has collation as %s, updating", self._database_name, result
+                    logging.debug(
+                        "Prepare database. database_name: %s collation: %s",
+                        self._database_name,
+                        result,
                     )
                     curs.execute(
                         sql.SQL(
@@ -95,9 +97,13 @@ class DatabaseClient:
                             "WHERE datname = {}"
                         ).format(sql.Literal(self._database_name))
                     )
-                logging.info(
-                    "Database %s has collation as %s, skipping", self._database_name, result
-                )
+                    logging.info("Database %s is ready to be used.", self._database_name)
+                else:
+                    logging.info(
+                        "Database %s already has collation as %s, no action.",
+                        self._database_name,
+                        result,
+                    )
         except psycopg2.Error as exc:
             logger.exception("Failed to prepare database: %r", exc)
             raise
