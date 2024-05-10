@@ -38,6 +38,7 @@ class SimpleCharm(CharmBaseWithState):
             media_config=None,
             redis_config=None,
             instance_map_config=None,
+            leader=True,
         )
 
 

@@ -170,6 +170,7 @@ def test_enable_media(harness: Harness, relation_data, expected_status, can_conn
         media_config=harness.charm._media.get_relation_as_media_conf(),
         redis_config=None,
         instance_map_config=None,
+        leader=True,
     )
 
     harness.charm._media._enable_media(charm_state)

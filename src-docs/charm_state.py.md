@@ -157,6 +157,7 @@ State of the Charm.
  - <b>`redis_config`</b>:  redis configuration. 
  - <b>`proxy`</b>:  proxy information. 
  - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
+ - <b>`leader`</b>:  Is leader. 
 
 
 ---
@@ -174,7 +175,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L306"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -187,7 +188,8 @@ from_charm(
     smtp_config: Optional[SMTPConfiguration],
     media_config: Optional[MediaConfiguration],
     redis_config: Optional[RedisConfiguration],
-    instance_map_config: Optional[Dict]
+    instance_map_config: Optional[Dict],
+    leader: bool
 ) → CharmState
 ```
 
@@ -205,6 +207,7 @@ Initialize a new instance of the CharmState class from the associated charm.
  - <b>`media_config`</b>:  Media configuration to be used by Synapse. 
  - <b>`redis_config`</b>:  Redis configuration to be used by Synapse. 
  - <b>`instance_map_config`</b>:  Instance map configuration with main and worker addresses. 
+ - <b>`leader`</b>:  is leader. 
 
 Return: The CharmState instance created by the provided charm. 
 

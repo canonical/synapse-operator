@@ -230,6 +230,7 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
         media_config=None,
         redis_config=None,
         instance_map_config=None,
+        leader=True,
     )
     expected_url = (
         f"http://localhost:8008/_synapse/admin/v1/users/@any-user:{server}/override_ratelimit"
@@ -267,6 +268,7 @@ def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
         media_config=None,
         redis_config=None,
         instance_map_config=None,
+        leader=True,
     )
     expected_error_msg = "Failed to connect"
     do_request_mock = mock.MagicMock(side_effect=synapse.APIError(expected_error_msg))

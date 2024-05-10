@@ -91,7 +91,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L249"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `change_config`
 
@@ -109,12 +109,12 @@ Change configuration.
 
 ---
 
-<a href="../src/charm.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit`
 
 ```python
-get_main_unit() → Optional[str]
+get_main_unit() → str
 ```
 
 Get main unit. 
@@ -126,7 +126,7 @@ Get main unit.
 
 ---
 
-<a href="../src/charm.py#L336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit_address`
 
@@ -143,7 +143,25 @@ Get main unit address. If main unit is None, use unit name.
 
 ---
 
-<a href="../src/charm.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_peer_unit_addresses`
+
+```python
+get_peer_unit_addresses() → list[str]
+```
+
+Get peer unit addresses. 
+
+
+
+**Returns:**
+ 
+ - <b>`set`</b>:  Addresses like  <unit-name>.<app-name>-endpoints.<model-name>.svc.cluster.local 
+
+---
+
+<a href="../src/charm.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_unit_number`
 
@@ -167,7 +185,7 @@ Get unit number from unit name.
 
 ---
 
-<a href="../src/charm.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `instance_map`
 
@@ -184,25 +202,7 @@ Build instance_map config.
 
 ---
 
-<a href="../src/charm.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `is_main`
-
-```python
-is_main() → bool
-```
-
-Verify if this unit is the main. 
-
-
-
-**Returns:**
- 
- - <b>`bool`</b>:  true if is the main unit. 
-
----
-
-<a href="../src/charm.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `peer_units_total`
 
@@ -216,23 +216,5 @@ Get peer units total.
 
 **Returns:**
   total of units in peer relation or None if there is no peer relation. 
-
----
-
-<a href="../src/charm.py#L348"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `set_main_unit`
-
-```python
-set_main_unit(unit: str) → None
-```
-
-Create/Renew an admin access token and put it in the peer relation. 
-
-
-
-**Args:**
- 
- - <b>`unit`</b>:  Unit to be the main. 
 
 

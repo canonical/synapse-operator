@@ -4,14 +4,11 @@
 """Synapse charm scaling unit tests."""
 
 import unittest
-from unittest.mock import MagicMock
 
 import ops
-import pytest
 import yaml
 from ops.testing import Harness
 
-import pebble
 import synapse
 
 
@@ -232,43 +229,6 @@ def test_scaling_stream_writers_configured(harness: Harness) -> None:
         assert sorted(actual_events) == sorted(expected_events)
 
 
-def test_scaling_main_unit_changed_nginx_reconfigured(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: charm deployed, integrated with Redis, no leader, replan_nginx is mocked.
-    act: update relation data to change the main_unit_id.
-    assert: Synapse NGINX is replanned with the new main unit.
-    """
-    peer_relation_id = harness.add_relation(
-        synapse.SYNAPSE_PEER_RELATION_NAME,
-        "synapse",
-        app_data={"main_unit_id": "synapse/0"},
-    )
-    harness.begin_with_initial_hooks()
-    nginx_container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
-    harness.set_can_connect(nginx_container, True)
-    redis_relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        redis_relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
-    harness.set_leader(False)
-    # emit nginx ready
-    # assert was called with synapse/0
-    replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
-    harness.charm.on.synapse_nginx_pebble_ready.emit(MagicMock())
-    replan_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
-
-    harness.update_relation_data(
-        peer_relation_id, harness.charm.app.name, {"main_unit_id": "synapse/1"}
-    )
-
-    replan_nginx_mock.assert_called_with(nginx_container, "synapse-1.synapse-endpoints")
-
-
 def test_scaling_stream_writers_not_configured(harness: Harness) -> None:
     """
     arrange: charm deployed, integrated with Redis and set as leader.
@@ -320,30 +280,3 @@ def test_scaling_worker_name_configured(harness: Harness) -> None:
         content = yaml.safe_load(config_file)
         assert "worker_name" in content
         assert content["worker_name"] == "worker1"
-
-
-def test_scaling_relation_departed(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    arrange: charm deployed, integrated with Redis, two more units in peer relation
-        and set as no leader.
-    act: remove unit from relation.
-    assert: Synapse charm is re-configured.
-    """
-    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
-    harness.add_relation_unit(rel_id, "synapse/1")
-    harness.add_relation_unit(rel_id, "synapse/2")
-    harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
-    harness.set_leader(False)
-    harness.charm.unit.name = "synapse/1"
-    change_config_mock = MagicMock()
-    monkeypatch.setattr(harness.charm, "change_config", change_config_mock)
-
-    harness.remove_relation_unit(rel_id, "synapse/2")
-
-    change_config_mock.assert_called()

@@ -64,9 +64,7 @@ def check_synapse_alive() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def restart_synapse(
-    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
-) -> None:
+def restart_synapse(charm_state: CharmState, container: ops.model.Container) -> None:
     """Restart Synapse service.
 
     This will force a restart even if its plan hasn't changed.
@@ -74,12 +72,8 @@ def restart_synapse(
     Args:
         charm_state: Instance of CharmState
         container: Synapse container.
-        is_main: if unit is main.
     """
-    logger.debug("Restarting the Synapse container. Main: %s", str(is_main))
-    container.add_layer(
-        synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state, is_main), combine=True
-    )
+    container.add_layer(synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state), combine=True)
     container.add_layer(
         synapse.SYNAPSE_CRON_SERVICE_NAME, _cron_pebble_layer(charm_state), combine=True
     )
@@ -261,7 +255,6 @@ def get_worker_config(unit_number: str) -> dict:
 def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
     container: ops.model.Container,
-    is_main: bool = True,
     unit_number: str = "",
 ) -> None:
     """Change the configuration (main and worker).
@@ -269,7 +262,6 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
     Args:
         charm_state: Instance of CharmState
         container: Charm container.
-        is_main: if unit is main.
         unit_number: unit number id to set the worker name.
 
     Raises:
@@ -344,7 +336,7 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             # Push main configuration
             _push_synapse_config(container, current_synapse_config)
             synapse.validate_config(container=container)
-            restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
+            restart_synapse(container=container, charm_state=charm_state)
         else:
             logging.info("Configuration has not changed, no action.")
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
@@ -459,18 +451,18 @@ def reset_instance(charm_state: CharmState, container: ops.model.Container) -> N
         raise PebbleServiceError(str(exc)) from exc
 
 
-def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.LayerDict:
+def _pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
     """Return a dictionary representing a Pebble layer.
 
     Args:
         charm_state: Instance of CharmState
-        is_main: if unit is main.
 
     Returns:
         pebble layer for Synapse
     """
     command = synapse.SYNAPSE_COMMAND_PATH
-    if not is_main:
+
+    if not charm_state.leader:
         command = (
             f"{command} run -m synapse.app.generic_worker "
             f"--config-path {synapse.SYNAPSE_CONFIG_PATH} "
