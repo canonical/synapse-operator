@@ -65,6 +65,7 @@ from .workload import (  # noqa: F401
     ExecResult,
     WorkloadError,
     add_app_service_config_field,
+    check_server_name,
     create_irc_bridge_app_registration,
     create_irc_bridge_config,
     create_mjolnir_config,

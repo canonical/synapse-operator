@@ -175,7 +175,7 @@ def get_media_store_path(container: ops.Container) -> str:
     return media_store_path
 
 
-def _check_server_name(container: ops.Container, charm_state: CharmState) -> None:
+def check_server_name(container: ops.Container, charm_state: CharmState) -> None:
     """Check server_name.
 
     Check if server_name of the state has been modified in relation to the configuration file.
@@ -240,7 +240,6 @@ def execute_migrate_config(container: ops.Container, charm_state: CharmState) ->
     Raises:
         CommandMigrateConfigError: something went wrong running migrate_config.
     """
-    _check_server_name(container=container, charm_state=charm_state)
     # TODO validate if is possible to use SDK instead of command  # pylint: disable=fixme
     migrate_config_command = [SYNAPSE_COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
     migrate_config_result = _exec(
