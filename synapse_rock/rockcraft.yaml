@@ -116,8 +116,6 @@ parts:
             pip3 install --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
-            sed -i 's/#!\/usr\/local\/bin\/python/#!\/usr\/bin\/python3/' $CRAFT_PART_INSTALL/start.py
-            sed -i 's/\["chown", "-R", ownership, "\/data"\]/\["find", "\/data", "-maxdepth", "1", "-exec", "chown",ownership, "{}", ";"\]/g' $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
             cp -r /usr/local $CRAFT_PART_INSTALL/usr/
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
@@ -126,6 +124,20 @@ parts:
         overlay-packages:
             - ca-certificates
             - libjemalloc2
+    patches:
+      plugin: dump
+      after: [synapse]
+      source: patches
+      organize:
+        "*": srv/patches/
+    patch-start:
+        after:
+          - patches
+        plugin: nil
+        build-packages:
+          - git
+        override-stage: |
+            patch -f -u ./start.py -i srv/patches/start.patch
     synapse-conf:
         plugin: dump
         source: attributemaps
