@@ -86,8 +86,8 @@ class DatabaseObserver(Object):
             # if main, update signing key in relation data
             if self._charm.is_main():
                 with container.pull(signing_key_path) as f:
-                    signing_key = f.read().split("\n")
-                    self._charm.set_signing_key(signing_key)
+                    signing_key = f.read()
+                    self._charm.set_signing_key(signing_key.rstrip())
         # Avoiding duplication of code with _change_config in charm.py
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
