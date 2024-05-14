@@ -11,6 +11,7 @@ import re
 import typing
 
 import ops
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
@@ -35,6 +36,8 @@ from user import User
 logger = logging.getLogger(__name__)
 
 MAIN_UNIT_ID = "main_unit_id"
+CONTAINER_NAME = "synapse"
+LOG_PATHS = ["/debug.log*", "/errors.log*"]
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -60,6 +63,9 @@ class SynapseCharm(CharmBaseWithState):
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
         self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
+        self._logging = LogProxyConsumer(
+            self, relation_name="logging", log_files=LOG_PATHS, container_name=CONTAINER_NAME
+        )
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
