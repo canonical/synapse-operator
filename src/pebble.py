@@ -278,8 +278,9 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
     try:
         if not container.exists(synapse.SYNAPSE_CONFIG_PATH):
             logging.debug("Synapse configuration not found, creating")
-            synapse.check_server_name(container=container, charm_state=charm_state)
             synapse.execute_migrate_config(container=container, charm_state=charm_state)
+        logging.debug("Checking if server_name has changed")
+        synapse.check_server_name(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
         synapse.enable_metrics(current_synapse_config)

@@ -315,12 +315,13 @@ def test_enable_federation_domain_whitelist_is_called(
     act: call pebble change_config.
     assert: enable_federation_domain_whitelist is called.
     """
-    config_content = """  # pylint: disable=duplicate-code
+    config_content = f"""  # pylint: disable=duplicate-code
     listeners:
         - type: http
           port: 8080
           bind_addresses:
             - "::"
+    server_name: {TEST_SERVER_NAME}
     """
     config = io.StringIO(config_content)
     harness.update_config({"federation_domain_whitelist": "foo"})
@@ -369,7 +370,9 @@ def test_disable_password_config_is_called(
     charm_state = harness.charm.build_charm_state()
     container = MagicMock()
     monkeypatch.setattr(container, "push", MagicMock())
-    monkeypatch.setattr(container, "pull", MagicMock(return_value=io.StringIO("{}")))
+    monkeypatch.setattr(
+        container, "pull", MagicMock(return_value=io.StringIO(f"server_name: {TEST_SERVER_NAME}"))
+    )
     pebble.change_config(charm_state, container=container)
 
     disable_password_config_mock.assert_called_once()
