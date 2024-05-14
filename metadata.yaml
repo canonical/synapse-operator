@@ -61,6 +61,10 @@ requires:
         interface: postgresql_client
         limit: 1
         optional: true
+    logging:
+        interface: loki_push_api
+        limit: 1
+        optional: true
     media:
         interface: s3
         limit: 1
