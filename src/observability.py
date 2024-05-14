@@ -5,10 +5,13 @@
 
 import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 
 import synapse
 
+CONTAINER_NAME = "synapse"
+LOG_PATHS = ["/debug.log*", "/errors.log*"]
 STATS_EXPORTER_PORT = "9877"
 
 
@@ -39,4 +42,7 @@ class Observability:  # pylint: disable=too-few-public-methods
                     ]
                 }
             ],
+        )
+        self._logging = LogProxyConsumer(
+            self, relation_name="logging", log_files=LOG_PATHS, container_name=CONTAINER_NAME
         )
