@@ -439,107 +439,92 @@
         }
       },
       {
-        "aliasColors": {},
-        "bars": false,
-        "dashLength": 10,
-        "dashes": false,
         "datasource": "${prometheusds}",
         "fieldConfig": {
           "defaults": {
-            "links": []
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "line+area"
+              }
+            },
+            "mappings": [],
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
           },
           "overrides": []
         },
-        "fill": 1,
-        "fillGradient": 0,
         "gridPos": {
-          "h": 9,
+          "h": 8,
           "w": 12,
           "x": 0,
-          "y": 10
+          "y": 0
         },
-        "hiddenSeries": false,
-        "id": 75,
-        "legend": {
-          "avg": false,
-          "current": false,
-          "max": false,
-          "min": false,
-          "show": true,
-          "total": false,
-          "values": false
-        },
-        "lines": true,
-        "linewidth": 3,
-        "links": [],
-        "nullPointMode": "null",
+        "id": 256,
         "options": {
-          "alertThreshold": true
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
         },
-        "paceLength": 10,
-        "percentage": false,
-        "pluginVersion": "9.2.2",
-        "pointradius": 5,
-        "points": false,
-        "renderer": "flot",
-        "seriesOverrides": [],
-        "spaceLength": 10,
-        "stack": false,
-        "steppedLine": false,
         "targets": [
           {
             "datasource": "${prometheusds}",
-            "expr": "rate(process_cpu_seconds_total{instance=\"$instance\",job=~\"$job\",index=~\"$index\"}[$bucket_size])",
-            "format": "time_series",
-            "interval": "",
-            "intervalFactor": 1,
-            "legendFormat": "{{job}}-{{index}} ",
+            "editorMode": "code",
+            "expr": "rate(process_cpu_seconds_total{juju_charm=\"synapse\"}[$__rate_interval])",
+            "legendFormat": "__auto",
+            "range": true,
             "refId": "A"
           }
         ],
-        "thresholds": [
-          {
-            "$$hashKey": "object:566",
-            "colorMode": "critical",
-            "fill": true,
-            "line": true,
-            "op": "gt",
-            "value": 1,
-            "yaxis": "left"
-          }
-        ],
-        "timeRegions": [],
-        "title": "CPU usage",
-        "tooltip": {
-          "shared": false,
-          "sort": 0,
-          "value_type": "individual"
-        },
-        "type": "graph",
-        "xaxis": {
-          "mode": "time",
-          "show": true,
-          "values": []
-        },
-        "yaxes": [
-          {
-            "$$hashKey": "object:538",
-            "format": "percentunit",
-            "logBase": 1,
-            "max": "1.5",
-            "min": "0",
-            "show": true
-          },
-          {
-            "$$hashKey": "object:539",
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          }
-        ],
-        "yaxis": {
-          "align": false
-        }
+        "title": "CPU Usage",
+        "type": "timeseries"
       },
       {
         "aliasColors": {},
