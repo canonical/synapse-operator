@@ -44,5 +44,11 @@ class Observability:  # pylint: disable=too-few-public-methods
             ],
         )
         self._logging = LogProxyConsumer(
-            self, relation_name="logging", log_files=LOG_PATHS, container_name=CONTAINER_NAME
+            charm,
+            relation_name="logging",
+            logs_scheme={
+                f"{CONTAINER_NAME}": {
+                    "log_files": LOG_PATHS,
+                },
+            },
         )
