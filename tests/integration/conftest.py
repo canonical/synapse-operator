@@ -59,7 +59,9 @@ async def model_name_fixture(ops_test: OpsTest) -> str:
 async def synapse_charm_fixture(pytestconfig: Config):
     """Get value from parameter charm-file."""
     charm = pytestconfig.getoption("--charm-file")
-    assert charm, "--charm-file must be set"
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if not use_existing:
+        assert charm, "--charm-file must be set"
     return charm
 
 
@@ -67,7 +69,9 @@ async def synapse_charm_fixture(pytestconfig: Config):
 def synapse_image_fixture(pytestconfig: Config):
     """Get value from parameter synapse-image."""
     synapse_image = pytestconfig.getoption(SYNAPSE_IMAGE_PARAM)
-    assert synapse_image, f"{SYNAPSE_IMAGE_PARAM} must be set"
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if not use_existing:
+        assert synapse_image, f"{SYNAPSE_IMAGE_PARAM} must be set"
     return synapse_image
 
 
@@ -75,7 +79,9 @@ def synapse_image_fixture(pytestconfig: Config):
 def synapse_nginx_image_fixture(pytestconfig: Config):
     """Get value from parameter synapse-nginx-image."""
     synapse_nginx_image = pytestconfig.getoption(SYNAPSE_NGINX_IMAGE_PARAM)
-    assert synapse_nginx_image, f"{SYNAPSE_NGINX_IMAGE_PARAM} must be set"
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if not use_existing:
+        assert synapse_nginx_image, f"{SYNAPSE_NGINX_IMAGE_PARAM} must be set"
     return synapse_nginx_image
 
 
@@ -122,7 +128,8 @@ async def synapse_app_fixture(
     )
     async with ops_test.fast_forward():
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
+        if postgresql_app is not None:
+            await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     return app
 
@@ -246,11 +253,11 @@ async def postgresql_app_fixture(
 ):
     """Deploy postgresql."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing or postgresql_app_name in model.applications:
-        return model.applications[postgresql_app_name]
-    async with ops_test.fast_forward():
-        await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    if not use_existing and postgresql_app_name not in model.applications:
+        async with ops_test.fast_forward():
+            await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
+            await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    yield model.applications.get(postgresql_app_name)
 
 
 @pytest.fixture(scope="module", name="irc_postgresql_app_name")
@@ -477,6 +484,7 @@ async def s3_integrator_app_backup_fixture(
 async def redis_fixture(
     ops_test: OpsTest,
     model: Model,
+    synapse_app_name: str,
 ):
     """Deploy redis."""
     async with ops_test.fast_forward():
@@ -488,6 +496,7 @@ async def redis_fixture(
         await model.wait_for_idle(
             raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
         )
+        await model.add_relation(f"{app.name}:redis", synapse_app_name)
 
     return app
 
