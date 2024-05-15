@@ -520,6 +520,8 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
         config["ircService"]["permissions"] = {}
         for admin in charm_state.synapse_config.irc_bridge_admins:
             config["ircService"]["permissions"][admin] = "admin"
+    if charm_state.synapse_config.enable_irc_ident:
+        config["ircService"]["ident"]["enabled"] = charm_state.synapse_config.enable_irc_ident
     return config
 
 
