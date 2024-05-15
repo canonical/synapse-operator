@@ -4,6 +4,7 @@
 """S3 Backup relation observer for Synapse."""
 
 import logging
+import typing
 
 import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
@@ -85,7 +86,7 @@ class BackupObserver(Object):
             event.fail("Wrong S3 configuration on create backup action. Check S3 integration.")
             return
 
-        backup_passphrase = self._charm.config.get("backup_passphrase")
+        backup_passphrase = typing.cast(str, self._charm.config.get("backup_passphrase"))
         if not backup_passphrase:
             event.fail("Missing backup_passphrase config option.")
             return
@@ -180,7 +181,7 @@ class BackupObserver(Object):
             event.fail("Error accessing S3 in restore backup action.")
             return
 
-        backup_passphrase = self._charm.config.get("backup_passphrase")
+        backup_passphrase = typing.cast(str, self._charm.config.get("backup_passphrase"))
         if not backup_passphrase:
             event.fail("Missing backup_passphrase config option.")
             return
