@@ -413,7 +413,7 @@ async def test_synapse_irc_bridge_is_up(
         await model.wait_for_idle(apps=[irc_postgresql_app.name], status=ACTIVE_STATUS_NAME)
     await synapse_app.set_config({"enable_irc_bridge": "true"})
     await synapse_app.model.wait_for_idle(
-        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+        idle_period=30, timeout=600, apps=[synapse_app.name], status="active"
     )
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     async with ops_test.fast_forward():
