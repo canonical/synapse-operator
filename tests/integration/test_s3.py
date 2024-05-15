@@ -18,7 +18,7 @@ from juju.unit import Unit
 from ops.model import ActiveStatus
 
 # caused by pytest fixtures
-# pylint: disable=too-many-arguments, duplicate-code
+# pylint: disable=too-many-arguments, duplicate-code, unsupported-membership-test
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
