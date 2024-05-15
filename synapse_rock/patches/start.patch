@@ -1,0 +1,18 @@
+--- ./parts/synapse/src/docker/start.py       2024-05-08 06:40:43.257346707 +0000
++++ ./parts/synapse/install/start.py    2024-05-08 06:44:00.043177185 +0000
+@@ -1,4 +1,4 @@
+-#!/usr/local/bin/python
++#!/usr/bin/python3
+ 
+ import codecs
+ import glob
+@@ -136,7 +136,7 @@
+ 
+     if ownership is not None:
+         log(f"Setting ownership on /data to {ownership}")
+-        subprocess.run(["chown", "-R", ownership, "/data"], check=True)
++        subprocess.run(["find", "/data", "-maxdepth", "1", "-exec", "chown",ownership, "{}", ";"], check=True)
+         args = ["gosu", ownership] + args
+ 
+     subprocess.run(args, check=True)
+EOF
