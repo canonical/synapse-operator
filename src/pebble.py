@@ -65,7 +65,10 @@ def check_synapse_alive() -> ops.pebble.CheckDict:
 
 
 def restart_synapse(
-    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+    charm_state: CharmState,
+    container: ops.model.Container,
+    is_main: bool = True,
+    restart: bool = True,
 ) -> None:
     """Restart Synapse service.
 
@@ -75,15 +78,22 @@ def restart_synapse(
         charm_state: Instance of CharmState
         container: Synapse container.
         is_main: if unit is main.
+        restart: After adding layers, restart Synapse.
     """
-    logger.debug("Restarting the Synapse container. Main: %s", str(is_main))
+    logger.debug("Adding layer to Synapse container. Main: %s", str(is_main))
     container.add_layer(
         synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state, is_main), combine=True
     )
     container.add_layer(
         synapse.SYNAPSE_CRON_SERVICE_NAME, _cron_pebble_layer(charm_state), combine=True
     )
-    container.restart(synapse.SYNAPSE_SERVICE_NAME)
+    # For environment variables changes
+    logger.debug("Replanning Synapse layers, restart only if there are changes.")
+    container.replan()
+    if restart:
+        # For configuration file changes
+        logger.debug("Restarting Synapse")
+        container.restart(synapse.SYNAPSE_SERVICE_NAME)
 
 
 def check_nginx_ready() -> ops.pebble.CheckDict:
@@ -342,6 +352,7 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             ignore_order=True,
             ignore_string_case=True,
         )
+        restart = True
         if config_has_changed:
             logging.info("Configuration has changed or doesn't exist, Synapse will be restarted.")
             logging.debug("The change is: %s", config_has_changed)
@@ -350,9 +361,12 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             logging.debug("Validating configuration")
             synapse.validate_config(container=container)
             logging.debug("Restarting Synapse")
-            restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
         else:
+            restart = False
             logging.info("Configuration has not changed, no action.")
+        restart_synapse(
+            container=container, charm_state=charm_state, is_main=is_main, restart=restart
+        )
     except synapse.WorkloadError as exc:
         raise PebbleServiceError(str(exc)) from exc
 

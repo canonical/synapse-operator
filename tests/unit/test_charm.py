@@ -563,9 +563,9 @@ def test_synapse_not_restarted(harness: Harness, monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(container, "pull", config_mock)
     monkeypatch.setattr(container, "push", MagicMock())
-    restart_synapse_mock = MagicMock()
-    monkeypatch.setattr(pebble, "restart_synapse", restart_synapse_mock)
+    restart_mock = MagicMock()
+    monkeypatch.setattr(container, "restart", restart_mock)
 
     harness.begin_with_initial_hooks()
 
-    restart_synapse_mock.assert_not_called()
+    restart_mock.assert_not_called()
