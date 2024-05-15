@@ -27,7 +27,14 @@ options:
     default: false
     description: |
       Configures whether to enable IRC bridging for Matrix.
-      Reference: https://github.com/matrix-org/matrix-appservice-irc 
+      Reference: https://github.com/matrix-org/matrix-appservice-irc
+  enable_irc_ident:
+    type: boolean
+    default: false
+    description: |
+      Configures whether to enable IRC ident server.
+      Reference: |
+      https://github.com/matrix-org/matrix-appservice-irc/blob/develop/config.sample.yaml#L437
   enable_password_config:
     type: boolean
     default: true
