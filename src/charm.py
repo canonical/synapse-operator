@@ -418,7 +418,6 @@ class SynapseCharm(CharmBaseWithState):
             except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
                 logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
                 del peer_relation[0].data[self.app]["secret-signing-id"]
-                return None
         return None
 
     @inject_charm_state
