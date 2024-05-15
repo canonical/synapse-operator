@@ -155,27 +155,23 @@ def test_enable_media(harness: Harness, relation_data, expected_status, can_conn
     """
     harness.add_relation("media", "s3-integrator", app_data=relation_data)
     harness.begin_with_initial_hooks()
-
     container = Mock()
     container.can_connect.return_value = can_connect
-
+    synapse_config_items = {
+        "server_name": "example.com",
+    }
+    synapse_config = SynapseConfig(**synapse_config_items)  # type: ignore[arg-type]
     charm_state = CharmState(
-        synapse_config=SynapseConfig(
-            server_name="example.com",
-            public_baseurl="https://example.com",
-            irc_bridge_admins=None,
-            federation_domain_whitelist=None,
-            ip_range_whitelist=None,
-            report_stats=None,
-            notif_from=None,
-            trusted_key_servers=None,
-        ),
+        synapse_config=synapse_config,
         datasource=None,
         irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=None,
         media_config=harness.charm._media.get_relation_as_media_conf(),
         redis_config=None,
+        instance_map_config=None,
     )
+
     harness.charm._media._enable_media(charm_state)
+
     assert harness.charm.unit.status == expected_status

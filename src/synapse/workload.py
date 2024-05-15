@@ -11,6 +11,7 @@ from pathlib import Path
 
 import ops
 import yaml
+from jinja2 import Environment, FileSystemLoader
 from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
@@ -32,6 +33,7 @@ IRC_BRIDGE_REGISTRATION_PATH = f"{SYNAPSE_CONFIG_DIR}/config/appservice-registra
 IRC_BRIDGE_HEALTH_PORT = "5446"
 IRC_BRIDGE_SERVICE_NAME = "irc"
 IRC_BRIDGE_BOT_NAME = "irc_bot"
+IRC_BRIDGE_RELATION_NAME = "irc-bridge-database"
 CHECK_IRC_BRIDGE_READY_NAME = "synapse-irc-ready"
 PROMETHEUS_TARGET_PORT = "9000"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -44,8 +46,10 @@ SYNAPSE_GROUP = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
+SYNAPSE_PEER_RELATION_NAME = "synapse-peers"
 SYNAPSE_SERVICE_NAME = "synapse"
 SYNAPSE_USER = "synapse"
+SYNAPSE_WORKER_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/worker.yaml"
 SYNAPSE_DB_RELATION_NAME = "database"
 
 logger = logging.getLogger(__name__)
@@ -297,6 +301,28 @@ def enable_metrics(current_yaml: dict) -> None:
         raise EnableMetricsError(str(exc)) from exc
 
 
+def enable_replication(current_yaml: dict) -> None:
+    """Change the Synapse configuration to enable replication.
+
+    Args:
+        current_yaml: current configuration.
+
+    Raises:
+        WorkloadError: something went wrong enabling replication.
+    """
+    try:
+        resources = {"names": ["replication"]}
+        metric_listener = {
+            "port": 8034,
+            "type": "http",
+            "bind_addresses": ["::"],
+            "resources": [resources],
+        }
+        current_yaml["listeners"].extend([metric_listener])
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def enable_forgotten_room_retention(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable forgotten_room_retention_period.
 
@@ -331,6 +357,29 @@ def enable_serve_server_wellknown(current_yaml: dict) -> None:
         current_yaml: current configuration.
     """
     current_yaml["serve_server_wellknown"] = True
+
+
+def enable_instance_map(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to instance_map config.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    current_yaml["instance_map"] = charm_state.instance_map_config
+
+
+def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to stream_writers config.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    persisters = []
+    if charm_state.instance_map_config is not None:
+        persisters = [key for key in charm_state.instance_map_config.keys() if key != "main"]
+    current_yaml["stream_writers"] = {"events": persisters}
 
 
 def enable_federation_domain_whitelist(current_yaml: dict, charm_state: CharmState) -> None:
@@ -468,7 +517,8 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     config["homeserver"]["domain"] = charm_state.synapse_config.server_name
     config["database"]["connectionString"] = db_connect_string
     if charm_state.synapse_config.irc_bridge_admins:
-        for admin in (a.strip() for a in charm_state.synapse_config.irc_bridge_admins.split(",")):
+        config["ircService"]["permissions"] = {}
+        for admin in charm_state.synapse_config.irc_bridge_admins:
             config["ircService"]["permissions"][admin] = "admin"
     return config
 
@@ -495,7 +545,8 @@ def create_irc_bridge_config(
         raise CreateIRCBridgeConfigError(str(exc)) from exc
 
 
-def _get_irc_bridge_app_registration(container: ops.Container) -> None:
+def _get_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
+    # the functionality is tested already in unit tests creating files
     """Create registration file as expected by irc bridge.
 
     Args:
@@ -524,7 +575,8 @@ def _get_irc_bridge_app_registration(container: ops.Container) -> None:
         raise WorkloadError("Creating irc app registration failed, please check the logs")
 
 
-def create_irc_bridge_app_registration(container: ops.Container) -> None:
+def create_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
+    # the functionality is tested already in unit tests creating files
     """Create irc bridge app registration.
 
     Args:
@@ -535,29 +587,17 @@ def create_irc_bridge_app_registration(container: ops.Container) -> None:
     """
     try:
         _get_irc_bridge_app_registration(container=container)
-        _add_app_service_config_field(container=container)
     except ops.pebble.PathError as exc:
         raise CreateIRCBridgeRegistrationError(str(exc)) from exc
 
 
-def _add_app_service_config_field(container: ops.Container) -> None:
+def add_app_service_config_field(current_yaml: dict) -> None:
     """Add app_service_config_files to the Synapse configuration.
 
     Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong updating the configuration.
+        current_yaml: current configuration.
     """
-    try:
-        config = container.pull(SYNAPSE_CONFIG_PATH).read()
-        current_yaml = yaml.safe_load(config)
-
-        current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
-
-        container.push(SYNAPSE_CONFIG_PATH, yaml.safe_dump(current_yaml))
-    except ops.pebble.PathError as exc:
-        raise WorkloadError(f"An error occurred while updating the configuration: {exc}") from exc
+    current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
@@ -663,6 +703,7 @@ def enable_smtp(current_yaml: dict, charm_state: CharmState) -> None:
     """
     try:
         current_yaml["email"] = {}
+        current_yaml["email"]["enable_notifs"] = charm_state.synapse_config.enable_email_notifs
         current_yaml["email"]["notif_from"] = charm_state.synapse_config.notif_from
 
         if charm_state.smtp_config is None:
@@ -750,6 +791,35 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_room_list_publication_rules(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable room_list_publication_rules.
+
+    This configuration is based on publish_rooms_allowlist charm configuration.
+    Once is set, a deny rule is added to prevent any other user to publish rooms.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling room_list_publication_rules.
+    """
+    room_list_publication_rules = []
+    # checking publish_rooms_allowlist to fix union-attr mypy error
+    publish_rooms_allowlist = charm_state.synapse_config.publish_rooms_allowlist
+    if publish_rooms_allowlist:
+        for user in publish_rooms_allowlist:
+            rule = {"user_id": user, "alias": "*", "room_id": "*", "action": "allow"}
+            room_list_publication_rules.append(rule)
+
+    if len(room_list_publication_rules) == 0:
+        raise WorkloadError("publish_rooms_allowlist has unexpected value. Please, verify it.")
+
+    last_rule = {"user_id": "*", "alias": "*", "room_id": "*", "action": "deny"}
+    room_list_publication_rules.append(last_rule)
+    current_yaml["room_list_publication_rules"] = room_list_publication_rules
+
+
 def reset_instance(container: ops.Container) -> None:
     """Erase data and config server_name.
 
@@ -809,3 +879,29 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
             environment[proxy_variable] = str(proxy_value)
             environment[proxy_variable.upper()] = str(proxy_value)
     return environment
+
+
+def generate_nginx_config(container: ops.Container, main_unit_address: str) -> None:
+    """Generate NGINX configuration based on templates.
+
+    1. Copy template files as configuration files to be used.
+    2. Run sed command to replace string main-unit in configuration files.
+    3. Reload NGINX.
+
+    Args:
+        container: Container of the charm.
+        main_unit_address: Main unit address to be used in configuration.
+    """
+    file_loader = FileSystemLoader(Path("./templates"), followlinks=True)
+    env = Environment(loader=file_loader, autoescape=True)
+
+    # List of templates and their corresponding output files
+    templates = [
+        ("main_location.conf.j2", "main_location.conf"),
+        ("abuse_report_location.conf.j2", "abuse_report_location.conf"),
+    ]
+
+    for template_name, output_file in templates:
+        template = env.get_template(template_name)
+        output = template.render(main_unit_address=main_unit_address)
+        container.push(f"/etc/nginx/{output_file}", output, make_dirs=True)

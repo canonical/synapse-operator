@@ -6,6 +6,7 @@ import dataclasses
 import itertools
 import logging
 import os
+import re
 import typing
 from abc import ABC, abstractmethod
 
@@ -151,6 +152,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     Attributes:
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
+        enable_email_notifs: enable_email_notifs config.
         enable_irc_bridge: creates a registration file in Synapse and starts an irc bridge app.
         irc_bridge_admins: a comma separated list of user IDs who are admins of the IRC bridge.
         enable_mjolnir: enable_mjolnir config.
@@ -160,20 +162,23 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         ip_range_whitelist: ip_range_whitelist config.
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
+        publish_rooms_allowlist: publish_rooms_allowlist config.
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
     """
 
     allow_public_rooms_over_federation: bool = False
+    enable_email_notifs: bool = False
     enable_irc_bridge: bool = False
-    irc_bridge_admins: str | None = Field(None, regex=r"(@\w+:\w+\.\w+,?)+")
+    irc_bridge_admins: str | None = Field(None)
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
     federation_domain_whitelist: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
+    publish_rooms_allowlist: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     notif_from: str | None = Field(None)
@@ -224,9 +229,34 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
             return "yes"
         return "no"
 
+    @validator("irc_bridge_admins", "publish_rooms_allowlist")
+    @classmethod
+    def userids_to_list(cls, value: str) -> typing.List[str]:
+        """Convert a comma separated list of users to list.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The string converted to list.
+
+        Raises:
+            ValidationError: if user_id is not as expected.
+        """
+        # Based on documentation
+        # https://spec.matrix.org/v1.10/appendices/#user-identifiers
+        userid_regex = r"@[a-z0-9._=/+-]+:\w+\.\w+"
+        if value is None:
+            return []
+        value_list = ["@" + user_id.strip() for user_id in value.split(",")]
+        for user_id in value_list:
+            if not re.fullmatch(userid_regex, user_id):
+                raise ValidationError(f"Invalid user ID format: {user_id}", cls)
+        return value_list
+
 
 @dataclasses.dataclass(frozen=True)
-class CharmState:
+class CharmState:  # pylint: disable=too-many-instance-attributes
     """State of the Charm.
 
     Attributes:
@@ -238,6 +268,7 @@ class CharmState:
         media_config: media configuration.
         redis_config: redis configuration.
         proxy: proxy information.
+        instance_map_config: Instance map configuration with main and worker addresses.
     """
 
     synapse_config: SynapseConfig
@@ -247,6 +278,7 @@ class CharmState:
     smtp_config: typing.Optional[SMTPConfiguration]
     media_config: typing.Optional[MediaConfiguration]
     redis_config: typing.Optional[RedisConfiguration]
+    instance_map_config: typing.Optional[typing.Dict]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -279,6 +311,7 @@ class CharmState:
         smtp_config: typing.Optional[SMTPConfiguration],
         media_config: typing.Optional[MediaConfiguration],
         redis_config: typing.Optional[RedisConfiguration],
+        instance_map_config: typing.Optional[typing.Dict],
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
@@ -290,6 +323,7 @@ class CharmState:
             smtp_config: SMTP configuration to be used by Synapse.
             media_config: Media configuration to be used by Synapse.
             redis_config: Redis configuration to be used by Synapse.
+            instance_map_config: Instance map configuration with main and worker addresses.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -315,4 +349,5 @@ class CharmState:
             smtp_config=smtp_config,
             media_config=media_config,
             redis_config=redis_config,
+            instance_map_config=instance_map_config,
         )

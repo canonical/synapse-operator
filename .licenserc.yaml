@@ -12,6 +12,7 @@ header:
     - '**/.gitkeep'
     - '**/*.cfg'
     - '**/*.conf'
+    - '**/*.conf.template'
     - '**/*.j2'
     - '**/*.json'
     - '**/*.md'
@@ -37,4 +38,5 @@ header:
     - 'templates/**'
     - 'synapse_rock/cron/**/*.py'
     - 'synapse_rock/scripts/**/*.py'
+    - 'synapse_rock/patches/**'
   comment: on-failure

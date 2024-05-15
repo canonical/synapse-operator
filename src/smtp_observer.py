@@ -67,9 +67,11 @@ class SMTPObserver(Object):
         Raises:
             CharmConfigInvalidError: If the SMTP configurations is not supported.
         """
+        if not self.model.relations.get(self._RELATION_NAME):
+            return None
         try:
             relation_data: Optional[SmtpRelationData] = self.smtp.get_relation_data()
-        except ValidationError:
+        except (ValidationError, ValueError):
             # ValidationError happens in the smtp(_legacy)relation_created event, as
             # the relation databag is empty at that point.
             logger.info("SMTP databag is empty. SMTP information will be set in the next event.")

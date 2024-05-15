@@ -63,7 +63,10 @@ class DatabaseObserver(Object):
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            pebble.change_config(charm_state, container)
+            # getting information from charm if is main unit or not.
+            pebble.change_config(
+                charm_state, container, is_main=self._charm.is_main()  # type: ignore[attr-defined]
+            )
         # Avoiding duplication of code with _change_config in charm.py
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
@@ -104,7 +107,9 @@ class DatabaseObserver(Object):
         Returns:
             Dict: Information needed for setting environment variables.
         """
-        if self.model.get_relation(self.database.relation_name) is None:
+        # not using get_relation due this issue
+        # https://github.com/canonical/operator/issues/1153
+        if not self.model.relations.get(self.database.relation_name):
             return None
 
         relation_id = self.database.relations[0].id
