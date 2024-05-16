@@ -37,6 +37,7 @@ def enable_irc_bridge(charm_state: CharmState, container: ops.model.Container) -
     The required steps to enable the IRC bridge are:
      - Create the IRC bridge configuration file.
      - Generate a PEM file for the IRC bridge.
+     - Add the IRC bridge application in the homeserver config.
 
     Args:
         charm_state: Instance of CharmState.

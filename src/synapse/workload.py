@@ -534,13 +534,15 @@ def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> t
     """
     irc_config_file = Path("templates/irc_bridge_production.yaml").read_text(encoding="utf-8")
     config = yaml.safe_load(irc_config_file)
-    config["homeserver"]["url"] = SYNAPSE_URL
+    config["homeserver"]["url"] = f"https://{charm_state.synapse_config.server_name}"
     config["homeserver"]["domain"] = charm_state.synapse_config.server_name
     config["database"]["connectionString"] = db_connect_string
     if charm_state.synapse_config.irc_bridge_admins:
         config["ircService"]["permissions"] = {}
         for admin in charm_state.synapse_config.irc_bridge_admins:
             config["ircService"]["permissions"][admin] = "admin"
+    if charm_state.synapse_config.enable_irc_ident:
+        config["ircService"]["ident"]["enabled"] = charm_state.synapse_config.enable_irc_ident
     return config
 
 
