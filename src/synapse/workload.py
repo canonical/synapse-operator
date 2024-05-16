@@ -332,6 +332,27 @@ def enable_forgotten_room_retention(current_yaml: dict) -> None:
     current_yaml["forgotten_room_retention_period"] = "28d"
 
 
+def enable_media_retention(current_yaml: dict) -> None:
+    """Change the Synapse configuration to enable media retention.
+
+    Args:
+        current_yaml: current configuration.
+    """
+    current_yaml["media_retention"] = {
+        "remote_media_lifetime": "14d",
+        "local_media_lifetime": "28d",
+    }
+
+
+def enable_stale_devices_deletion(current_yaml: dict) -> None:
+    """Change the Synapse configuration to delete stale devices.
+
+    Args:
+        current_yaml: current configuration.
+    """
+    current_yaml["delete_stale_devices_after"] = "1y"
+
+
 def disable_password_config(current_yaml: dict) -> None:
     """Change the Synapse configuration to disable password config.
 
