@@ -45,6 +45,14 @@ provides:
     interface: prometheus_scrape
 
 requires:
+    backup:
+        interface: s3
+        limit: 1
+        optional: true
+    database:
+        interface: postgresql_client
+        limit: 1
+        optional: true
     ingress:
         interface: ingress
         limit: 2
@@ -53,12 +61,20 @@ requires:
         interface: postgresql_client
         limit: 1
         optional: true
-    database:
-        interface: postgresql_client
+    logging:
+        interface: loki_push_api
+        limit: 1
+        optional: true
+    media:
+        interface: s3
         limit: 1
         optional: true
     nginx-route:
         interface: nginx-route
+        limit: 1
+        optional: true
+    redis:
+        interface: redis
         limit: 1
         optional: true
     saml:
@@ -67,18 +83,6 @@ requires:
         optional: true
     smtp:
         interface: smtp
-        limit: 1
-        optional: true
-    media:
-        interface: s3
-        limit: 1
-        optional: true
-    backup:
-        interface: s3
-        limit: 1
-        optional: true
-    redis:
-        interface: redis
         limit: 1
         optional: true
 
