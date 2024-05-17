@@ -70,21 +70,20 @@ class DatabaseObserver(Object):
             return
         try:
             signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
-            # if not main, create signing key
             signing_key_from_secret = self._charm.get_signing_key()
-            if not self._charm.is_main() and signing_key_from_secret:
-                logger.debug("I'm not main and signing secret was found, creating it")
+            if signing_key_from_secret:
+                logger.debug("Signing key secret was found, pushing it to the container")
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
-            pebble.change_config(
+            pebble.change_config(  # pylint: disable=duplicate-code
                 charm_state,
                 container,
                 is_main=self._charm.is_main(),
                 unit_number=self._charm.get_unit_number(),
             )
-            # if main, update signing key in relation data
-            if self._charm.is_main():
+            if self._charm.is_main() and not signing_key_from_secret:
+                logger.debug("Signing key secret not found, creating secret")
                 with container.pull(signing_key_path) as f:
                     signing_key = f.read()
                     self._charm.set_signing_key(signing_key.rstrip())
