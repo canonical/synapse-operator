@@ -3,7 +3,6 @@
 
 """Synapse charm scaling unit tests."""
 
-import io
 import unittest
 from unittest.mock import ANY, MagicMock, call
 
@@ -394,36 +393,59 @@ def test_scaling_signing_key_pushed_worker(
     )
 
 
-def test_scaling_signing_key_pulled_main(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_scaling_signing_key_found(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    arrange: charm deployed, integrated with Redis and set as leader.
+    arrange: charm deployed, integrated with Redis and set as main.
     act: emit config changed.
-    assert: Signing key is pulled from the container and stored in the secret.
+    assert: Signing key secret is found and content is pushed.
     """
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
-    harness.set_leader(True)
-    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
     signing_key = "ed25519 a_ONyE 5YwXqh43qXKrwQa/9Vcjog66xYliBUzotClQ5SUt9tk"
-    pull_mock = MagicMock(return_value=io.StringIO(signing_key))
-    monkeypatch.setattr(container, "pull", pull_mock)
+    get_signing_key_mock = MagicMock(return_value=signing_key)
+    monkeypatch.setattr(harness.charm, "get_signing_key", get_signing_key_mock)
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    push_mock = MagicMock()
+    monkeypatch.setattr(container, "push", push_mock)
     monkeypatch.setattr(pebble, "change_config", MagicMock())
-    set_signing_key_mock = MagicMock()
-    monkeypatch.setattr(harness.charm, "set_signing_key", set_signing_key_mock)
 
     harness.charm.on.config_changed.emit()
 
-    pull_mock.assert_has_calls(
+    push_mock.assert_has_calls(
         [
-            call(f"/data/{TEST_SERVER_NAME}.signing.key"),
-        ],
-        any_order=True,
+            call(
+                f"/data/{TEST_SERVER_NAME}.signing.key",
+                signing_key,
+                make_dirs=True,
+                encoding="utf-8",
+            )
+        ]
     )
-    set_signing_key_mock.assert_called_once_with(signing_key)
+
+
+def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: charm deployed, integrated with Redis and set as main.
+    act: emit config changed.
+    assert: Signing key is pulled and secret is created.
+    """
+    harness.begin_with_initial_hooks()
+    signing_key = "ed25519 a_ONyE 5YwXqh43qXKrwQa/9Vcjog66xYliBUzotClQ5SUt9tk"
+    get_signing_key_mock = MagicMock(return_value=signing_key)
+    monkeypatch.setattr(harness.charm, "get_signing_key", get_signing_key_mock)
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    push_mock = MagicMock()
+    monkeypatch.setattr(container, "push", push_mock)
+    monkeypatch.setattr(pebble, "change_config", MagicMock())
+
+    harness.charm.on.config_changed.emit()
+
+    push_mock.assert_has_calls(
+        [
+            call(
+                f"/data/{TEST_SERVER_NAME}.signing.key",
+                signing_key,
+                make_dirs=True,
+                encoding="utf-8",
+            )
+        ]
+    )
