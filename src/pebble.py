@@ -366,6 +366,13 @@ def enable_redis(charm_state: CharmState, container: ops.model.Container) -> Non
     try:
         logger.debug("pebble.enable_redis: Enabling Redis")
         current_yaml = _get_synapse_config(container)
+        if (
+            charm_state.redis_config
+            and current_yaml["redis"]["host"] == charm_state.redis_config["host"]
+        ):
+            logging.debug("enable_redis existing host : %s", current_yaml["redis"]["host"])
+            logging.info("on_redis_relation_updated received but already configured, skipping.")
+            return
         synapse.enable_redis(current_yaml, charm_state=charm_state)
         _push_synapse_config(container, current_yaml)
         restart_synapse(container=container, charm_state=charm_state)
