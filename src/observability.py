@@ -48,7 +48,7 @@ class Observability:  # pylint: disable=too-few-public-methods
             relation_name="logging",
             logs_scheme={
                 f"{CONTAINER_NAME}": {
-                    "log_files": LOG_PATHS,
+                    "log-files": LOG_PATHS,
                 },
             },
         )
