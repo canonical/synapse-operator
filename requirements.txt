@@ -2,8 +2,8 @@ jsonschema ==4.22.0
 ops ==2.13.0
 pydantic ==1.10.15
 psycopg2-binary ==2.9.9
+boto3 ==1.34.109
 requests ==2.32.0
-boto3 ==1.34.108
 cosl ==0.0.11
 deepdiff ==7.0.1
 jinja2 ==3.1.4
