@@ -47,15 +47,20 @@ def test_scaling_redis_not_required(harness: Harness) -> None:
 
 def test_scaling_worker_configured(harness: Harness) -> None:
     """
-    arrange: charm deployed and set as no leader.
+    arrange: charm deployed, integrated with Redis and set as no leader.
     act: scale charm to more than 1 unit.
     assert: Synapse charm is configured as worker.
     """
     harness.begin_with_initial_hooks()
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
 
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
     harness.add_relation_unit(rel_id, "synapse/1")
+    relation = harness.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME, rel_id)
+    harness.charm.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed.emit(
+        relation, harness.charm.app, harness.charm.unit
+    )
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
