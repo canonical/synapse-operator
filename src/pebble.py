@@ -353,12 +353,15 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
         raise PebbleServiceError(str(exc)) from exc
 
 
-def enable_redis(charm_state: CharmState, container: ops.model.Container) -> None:
+def enable_redis(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
     """Enable Redis while receiving on_redis_relation_updated event.
 
     Args:
         container: Charm container.
         charm_state: Instance of CharmState.
+        is_main: if unit is main.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
@@ -366,26 +369,23 @@ def enable_redis(charm_state: CharmState, container: ops.model.Container) -> Non
     try:
         logger.debug("pebble.enable_redis: Enabling Redis")
         current_yaml = _get_synapse_config(container)
-        if (
-            charm_state.redis_config
-            and current_yaml["redis"]["host"] == charm_state.redis_config["host"]
-        ):
-            logging.debug("enable_redis existing host : %s", current_yaml["redis"]["host"])
-            logging.info("on_redis_relation_updated received but already configured, skipping.")
-            return
         synapse.enable_redis(current_yaml, charm_state=charm_state)
         _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
+        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
 
-def enable_saml(charm_state: CharmState, container: ops.model.Container) -> None:
+def enable_saml(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
     """Enable SAML while receiving on_saml_data_available event.
 
     Args:
         charm_state: Instance of CharmState
         container: Charm container.
+        is_main: if unit is main.
+
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
@@ -395,17 +395,20 @@ def enable_saml(charm_state: CharmState, container: ops.model.Container) -> None
         current_yaml = _get_synapse_config(container)
         synapse.enable_saml(current_yaml, charm_state=charm_state)
         _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
+        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
 
-def enable_smtp(charm_state: CharmState, container: ops.model.Container) -> None:
+def enable_smtp(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
     """Enable SMTP while receiving on_smtp_data_available event.
 
     Args:
         charm_state: Instance of CharmState
         container: Charm container.
+        is_main: if unit is main.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
@@ -415,17 +418,20 @@ def enable_smtp(charm_state: CharmState, container: ops.model.Container) -> None
         current_yaml = _get_synapse_config(container)
         synapse.enable_smtp(current_yaml, charm_state=charm_state)
         _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
+        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
 
-def enable_media(charm_state: CharmState, container: ops.model.Container) -> None:
+def enable_media(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
     """Enable S3 Media while receiving on_media_data_available event.
 
     Args:
         charm_state: Instance of CharmState
         container: Charm container.
+        is_main: if unit is main.
 
     Raises:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
@@ -435,7 +441,7 @@ def enable_media(charm_state: CharmState, container: ops.model.Container) -> Non
         current_yaml = _get_synapse_config(container)
         synapse.enable_media(current_yaml, charm_state=charm_state)
         _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
+        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 

@@ -3,6 +3,9 @@
 
 """The SAML integrator relation observer."""
 
+# Ignoring for the is_main call
+# mypy: disable-error-code="attr-defined"
+
 # ignoring duplicate-code with container connect check in the database observer.
 # pylint: disable=R0801
 
@@ -56,7 +59,7 @@ class SAMLObserver(Object):
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            pebble.enable_saml(charm_state, container)
+            pebble.enable_saml(charm_state, container, is_main=self._charm.is_main())
         except pebble.PebbleServiceError as exc:
             self._charm.model.unit.status = ops.BlockedStatus(f"SAML integration failed: {exc}")
             return

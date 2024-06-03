@@ -317,12 +317,7 @@ def test_scaling_signing_key_pushed_worker(
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
     harness.add_relation_unit(rel_id, "synapse/1")
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     harness.charm.unit.name = "synapse/1"
     signing_key = "ed25519 a_ONyE 5YwXqh43qXKrwQa/9Vcjog66xYliBUzotClQ5SUt9tk"

@@ -1,6 +1,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the is_main call
+# mypy: disable-error-code="attr-defined"
+
 """The Redis agent relation observer."""
 
 import logging
@@ -82,7 +85,9 @@ class RedisObserver(Object):
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            pebble.enable_redis(container=container, charm_state=charm_state)
+            pebble.enable_redis(
+                container=container, charm_state=charm_state, is_main=self._charm.is_main()
+            )
         except PebbleServiceError as exc:
             self._charm.model.unit.status = ops.BlockedStatus(f"Redis integration failed: {exc}")
             return
