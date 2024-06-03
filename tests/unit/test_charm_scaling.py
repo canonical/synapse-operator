@@ -47,7 +47,7 @@ def test_scaling_redis_not_required(harness: Harness) -> None:
 
 def test_scaling_worker_configured(harness: Harness) -> None:
     """
-    arrange: charm deployed, integrated with Redis and set as no leader.
+    arrange: charm deployed and set as no leader.
     act: scale charm to more than 1 unit.
     assert: Synapse charm is configured as worker.
     """
@@ -93,9 +93,6 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
     assert: Synapse charm is re-configured as the main unit.
     """
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
     harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     harness.add_relation(
