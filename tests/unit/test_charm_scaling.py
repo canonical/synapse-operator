@@ -52,12 +52,7 @@ def test_scaling_worker_configured(harness: Harness) -> None:
     assert: Synapse charm is configured as worker.
     """
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
 
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
@@ -81,12 +76,7 @@ def test_scaling_main_configured(harness: Harness) -> None:
     assert: Synapse charm is configured as main.
     """
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(True)
 
     harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
@@ -107,9 +97,7 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
     relation = harness.charm.framework.model.get_relation("redis", 0)
     # We need to bypass protected access to inject the relation data
     # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     harness.add_relation(
         synapse.SYNAPSE_PEER_RELATION_NAME,
@@ -150,12 +138,7 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
     harness.add_relation_unit(rel_id, "synapse/1")
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(True)
 
     harness.charm.on.config_changed.emit()
@@ -184,12 +167,7 @@ def test_scaling_instance_map_not_configured(harness: Harness) -> None:
     assert: Synapse charm is not configured with instance_map.
     """
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(True)
 
     harness.charm.on.config_changed.emit()
@@ -212,12 +190,7 @@ def test_scaling_stream_writers_configured(harness: Harness) -> None:
     harness.add_relation_unit(rel_id, "synapse/1")
     harness.add_relation_unit(rel_id, "synapse/2")
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(True)
 
     harness.charm.on.config_changed.emit()
@@ -248,12 +221,7 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
     harness.begin_with_initial_hooks()
     nginx_container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
     harness.set_can_connect(nginx_container, True)
-    redis_relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        redis_relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     # emit nginx ready
     # assert was called with synapse/0
@@ -276,12 +244,7 @@ def test_scaling_stream_writers_not_configured(harness: Harness) -> None:
     assert: Synapse charm is not configured with stream_writer.
     """
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(True)
 
     harness.charm.on.config_changed.emit()
@@ -303,12 +266,7 @@ def test_scaling_worker_name_configured(harness: Harness) -> None:
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
     harness.add_relation_unit(rel_id, "synapse/1")
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     harness.charm.unit.name = "synapse/1"
 
@@ -333,12 +291,7 @@ def test_scaling_relation_departed(harness: Harness, monkeypatch: pytest.MonkeyP
     harness.add_relation_unit(rel_id, "synapse/1")
     harness.add_relation_unit(rel_id, "synapse/2")
     harness.begin_with_initial_hooks()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     harness.charm.unit.name = "synapse/1"
     change_config_mock = MagicMock()

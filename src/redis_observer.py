@@ -51,22 +51,19 @@ class RedisObserver(Object):
             if not found.
         """
         redis_config = None
-        # This is the current recommended way of accessing the relation data.
-        for redis_unit in self._stored.redis_relation:  # type: ignore
-            # mypy fails to see that this is indexable
-            redis_unit_data = self._stored.redis_relation[redis_unit]  # type: ignore
-            try:
-                redis_hostname = str(redis_unit_data.get("hostname"))
-                redis_port = int(redis_unit_data.get("port"))
+        try:
+            if self.redis.relation_data:
+                redis_hostname = str(self.redis.relation_data.get("hostname"))
+                redis_port = int(self.redis.relation_data.get("port"))
+                logger.debug(
+                    "Got redis connection details from relation %s:%s", redis_hostname, redis_port
+                )
                 redis_config = RedisConfiguration(host=redis_hostname, port=redis_port)
-            except (ValueError, TypeError) as exc:
-                # the relation databag is empty at that point.
-                logger.exception("Failed to get Redis relation data: %s", str(exc))
-                return None
+        except (ValueError, TypeError) as exc:
+            # the relation databag is empty at that point.
+            logger.exception("Failed to get Redis relation data: %s", str(exc))
+            return None
 
-            logger.debug(
-                "Got redis connection details from relation of %s:%s", redis_hostname, redis_port
-            )
         if not redis_config:
             logger.info("Redis databag is empty.")
         return redis_config
