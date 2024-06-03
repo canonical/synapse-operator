@@ -8,7 +8,7 @@ from typing import Optional
 
 import ops
 from charms.redis_k8s.v0.redis import RedisRequires
-from ops.framework import Object, StoredState
+from ops.framework import Object
 
 import pebble
 import synapse
@@ -22,8 +22,6 @@ logger = logging.getLogger(__name__)
 class RedisObserver(Object):
     """The Redis relation observer."""
 
-    _stored = StoredState()
-
     def __init__(self, charm: CharmBaseWithState):
         """Initialize the observer and register event handlers.
 
@@ -32,10 +30,7 @@ class RedisObserver(Object):
         """
         super().__init__(charm, "redis-observer")
         self._charm = charm
-        self._stored.set_default(
-            redis_relation={},
-        )
-        self.redis = RedisRequires(self._charm, self._stored)
+        self.redis = RedisRequires(self._charm)
         self.framework.observe(
             self._charm.on.redis_relation_updated, self._on_redis_relation_updated
         )
