@@ -52,7 +52,6 @@ def test_scaling_worker_configured(harness: Harness) -> None:
     assert: Synapse charm is configured as worker.
     """
     harness.begin_with_initial_hooks()
-    # harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
 
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, harness.charm.app.name)
