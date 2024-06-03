@@ -233,10 +233,7 @@ def smtp_configured_fixture(harness: Harness) -> Harness:
 def redis_configured_fixture(harness: Harness) -> Harness:
     """Harness fixture with redis relation configured"""
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    redis_relation_id = harness.add_relation(
-        "redis", "redis", app_data={"hostname": "redis-host", "port": "1010"}
-    )
-    harness.add_relation_unit(redis_relation_id, "redis/0")
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     harness.set_leader(True)
     return harness

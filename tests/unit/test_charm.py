@@ -515,13 +515,7 @@ def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pyt
     monkeypatch.setattr(synapse, "enable_redis", enable_redis_mock)
 
     harness.begin()
-    relation = harness.charm.framework.model.get_relation("redis", 0)
-    # We need to bypass protected access to inject the relation data
-    # pylint: disable=protected-access
-    harness.charm._redis._stored.redis_relation = {
-        relation.id: ({"hostname": "redis-host", "port": 1010})
-    }
 
     redis_config = harness.charm._redis.get_relation_as_redis_conf()
-    assert relation.data[relation.app]["hostname"] == redis_config["host"]
-    assert relation.data[relation.app]["port"] == str(redis_config["port"])
+    assert "redis-host" == redis_config["host"]
+    assert "1010" == str(redis_config["port"])
