@@ -24,6 +24,7 @@ Enable irc service.
 The required steps to enable the IRC bridge are: 
  - Create the IRC bridge configuration file. 
  - Generate a PEM file for the IRC bridge. 
+ - Add the IRC bridge application in the homeserver config. 
 
 
 
