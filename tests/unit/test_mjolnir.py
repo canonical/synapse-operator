@@ -440,3 +440,28 @@ def test_admin_access_token_success(
         result = harness.charm._mjolnir._admin_access_token
 
         assert result == access_token
+
+
+def test_on_collect_status_not_main_unit(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, unit is not the main.
+    act: call _on_collect_status.
+    assert: no actions is taken because Mjolnir is enabled only in main unit.
+    """
+    harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        "synapse",
+        app_data={"main_unit_id": "synapse/1"},
+    )
+    harness.update_config({"enable_mjolnir": True})
+    harness.begin_with_initial_hooks()
+    enable_mjolnir_mock = MagicMock()
+    monkeypatch.setattr(Mjolnir, "enable_mjolnir", enable_mjolnir_mock)
+
+    event_mock = MagicMock()
+    harness.charm._mjolnir._on_collect_status(event_mock)
+
+    event_mock.add_status.assert_not_called()
+    enable_mjolnir_mock.assert_not_called()
