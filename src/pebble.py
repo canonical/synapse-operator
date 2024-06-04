@@ -258,7 +258,7 @@ def get_worker_config(unit_number: str) -> dict:
 
 
 # The complexity of this method will be reviewed.
-def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
+def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
     container: ops.model.Container,
     is_main: bool = True,

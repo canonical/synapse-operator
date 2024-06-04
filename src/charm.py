@@ -200,7 +200,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            pebble.change_config(
+            pebble.reconcile(
                 charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
             )
         except pebble.PebbleServiceError as exc:

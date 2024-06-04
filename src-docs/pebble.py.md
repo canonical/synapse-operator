@@ -237,10 +237,10 @@ Get worker configuration.
 
 <a href="../src/pebble.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `change_config`
+## <kbd>function</kbd> `reconcile`
 
 ```python
-change_config(
+reconcile(
     charm_state: CharmState,
     container: Container,
     is_main: bool = True,

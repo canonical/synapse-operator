@@ -64,7 +64,7 @@ class DatabaseObserver(Object):
             return
         try:
             # getting information from charm if is main unit or not.
-            pebble.change_config(
+            pebble.reconcile(
                 charm_state, container, is_main=self._charm.is_main()  # type: ignore[attr-defined]
             )
         # Avoiding duplication of code with _change_config in charm.py

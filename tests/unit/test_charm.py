@@ -307,7 +307,7 @@ def test_enable_federation_domain_whitelist_is_called(
     """
     arrange: start the Synapse charm, set Synapse container to be ready,
         set server_name and federation_domain_whitelist.
-    act: call pebble change_config.
+    act: call pebble reconcile.
     assert: enable_federation_domain_whitelist is called.
     """
     config_content = """  # pylint: disable=duplicate-code
@@ -336,7 +336,7 @@ def test_enable_federation_domain_whitelist_is_called(
     container = MagicMock()
     monkeypatch.setattr(container, "push", MagicMock())
     monkeypatch.setattr(container, "pull", MagicMock(return_value=config))
-    pebble.change_config(charm_state, container=container)
+    pebble.reconcile(charm_state, container=container)
 
     enable_federation_mock.assert_called_once()
 
@@ -348,7 +348,7 @@ def test_disable_password_config_is_called(
     """
     arrange: start the Synapse charm, set Synapse container to be ready,
         set server_name and enable_password_config.
-    act: call pebble change_config.
+    act: call pebble reconcile.
     assert: disable_password_config is called.
     """
     harness.update_config({"enable_password_config": False})
@@ -369,7 +369,7 @@ def test_disable_password_config_is_called(
     container = MagicMock()
     monkeypatch.setattr(container, "push", MagicMock())
     monkeypatch.setattr(container, "pull", MagicMock(return_value=io.StringIO("{}")))
-    pebble.change_config(charm_state, container=container)
+    pebble.reconcile(charm_state, container=container)
 
     disable_password_config_mock.assert_called_once()
 
