@@ -12,7 +12,7 @@ The SAML integrator relation observer.
 ## <kbd>class</kbd> `SAMLObserver`
 The SAML Integrator relation observer. 
 
-<a href="../src/saml_observer.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/saml_observer.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -39,7 +39,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/saml_observer.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/saml_observer.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -56,7 +56,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/saml_observer.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/saml_observer.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_saml_conf`
 

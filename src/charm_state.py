@@ -49,6 +49,14 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         """
         return self
 
+    @abstractmethod
+    def reconcile(self, charm_state: "CharmState") -> None:
+        """Reconcile Synapse configuration.
+
+        Args:
+            charm_state: The charm state.
+        """
+
 
 class HasCharmWithState(typing.Protocol):  # pylint: disable=too-few-public-methods
     """Protocol that defines a class that returns a CharmBaseWithState."""
