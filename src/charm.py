@@ -270,6 +270,7 @@ class SynapseCharm(CharmBaseWithState):
             logger.debug("More than 1 peer unit found. Redis is required.")
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
+        logger.debug("_on_config_changed emitting reconcile")
         self.reconcile(charm_state)
         self._set_workload_version()
 
@@ -293,6 +294,7 @@ class SynapseCharm(CharmBaseWithState):
             self.set_main_unit(self.unit.name)
         # Call change_config to restart unit. By design,every change in the
         # number of workers requires restart.
+        logger.debug("_on_relation_departed emitting reconcile")
         self.reconcile(charm_state)
 
     def peer_units_total(self) -> int:
@@ -316,6 +318,7 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
         self.unit.status = ops.ActiveStatus()
+        logger.debug("_on_synapse_pebble_ready emitting reconcile")
         self.reconcile(charm_state)
 
     def get_main_unit(self) -> typing.Optional[str]:
@@ -373,6 +376,7 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("On_leader_elected is setting main unit.")
             self.set_main_unit(self.unit.name)
+            logger.debug("_on_leader_elected emitting reconcile")
             self.reconcile(charm_state)
 
     @inject_charm_state
@@ -384,6 +388,7 @@ class SynapseCharm(CharmBaseWithState):
         """
         # the main unit has changed so workers must be restarted
         if self.get_main_unit() != self.unit.name:
+            logger.debug("_on_relation_changed emitting reconcile")
             self.reconcile(charm_state)
         # Reload NGINX configuration with new main address
         nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)

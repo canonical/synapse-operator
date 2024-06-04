@@ -257,6 +257,35 @@ def get_worker_config(unit_number: str) -> dict:
     return worker_config
 
 
+def _environment_has_changed(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> bool:
+    """Check if environment has changed.
+
+    Args:
+        charm_state: Instance of CharmState
+        container: Charm container.
+        is_main: if unit is main.
+
+    Returns:
+        True if environment has changed.
+    """
+    existing_services = container.get_plan().to_dict().get("services", {})
+    current_services = _pebble_layer(charm_state, is_main).get("services", {})
+
+    existing_env = existing_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
+    current_env = current_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
+
+    env_has_changed = DeepDiff(
+        existing_env,
+        current_env,
+        ignore_order=True,
+        ignore_string_case=True,
+    )
+    logging.debug("The environment change is: %s", env_has_changed)
+    return env_has_changed is not None
+
+
 # The complexity of this method will be reviewed.
 def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
@@ -276,7 +305,11 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        synapse.execute_migrate_config(container=container, charm_state=charm_state)
+        if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
+            # Configurations set via environment variables:
+            # synapse_report_stats, database, and proxy
+            logging.info("Environment has changed, configuration will be recreated.")
+            synapse.execute_migrate_config(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
         synapse.enable_metrics(current_synapse_config)
