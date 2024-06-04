@@ -91,24 +91,6 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `change_config`
-
-```python
-change_config(charm_state: CharmState) → None
-```
-
-Change configuration. 
-
-
-
-**Args:**
- 
- - <b>`charm_state`</b>:  Instance of CharmState 
-
----
-
 <a href="../src/charm.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit`
@@ -216,6 +198,24 @@ Get peer units total.
 
 **Returns:**
   total of units in peer relation or None if there is no peer relation. 
+
+---
+
+<a href="../src/charm.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `reconcile`
+
+```python
+reconcile(charm_state: CharmState) → None
+```
+
+Change configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState 
 
 ---
 

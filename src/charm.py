@@ -185,7 +185,7 @@ class SynapseCharm(CharmBaseWithState):
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
 
-    def change_config(self, charm_state: CharmState) -> None:
+    def reconcile(self, charm_state: CharmState) -> None:
         """Change configuration.
 
         Args:
@@ -270,7 +270,7 @@ class SynapseCharm(CharmBaseWithState):
             logger.debug("More than 1 peer unit found. Redis is required.")
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
-        self.change_config(charm_state)
+        self.reconcile(charm_state)
         self._set_workload_version()
 
     @inject_charm_state
@@ -293,7 +293,7 @@ class SynapseCharm(CharmBaseWithState):
             self.set_main_unit(self.unit.name)
         # Call change_config to restart unit. By design,every change in the
         # number of workers requires restart.
-        self.change_config(charm_state)
+        self.reconcile(charm_state)
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -316,7 +316,7 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
         self.unit.status = ops.ActiveStatus()
-        self.change_config(charm_state)
+        self.reconcile(charm_state)
 
     def get_main_unit(self) -> typing.Optional[str]:
         """Get main unit.
@@ -373,7 +373,7 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("On_leader_elected is setting main unit.")
             self.set_main_unit(self.unit.name)
-            self.change_config(charm_state)
+            self.reconcile(charm_state)
 
     @inject_charm_state
     def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
@@ -384,7 +384,7 @@ class SynapseCharm(CharmBaseWithState):
         """
         # the main unit has changed so workers must be restarted
         if self.get_main_unit() != self.unit.name:
-            self.change_config(charm_state)
+            self.reconcile(charm_state)
         # Reload NGINX configuration with new main address
         nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not nginx_container.can_connect():

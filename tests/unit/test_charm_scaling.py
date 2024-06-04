@@ -295,9 +295,9 @@ def test_scaling_relation_departed(harness: Harness, monkeypatch: pytest.MonkeyP
     harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     harness.charm.unit.name = "synapse/1"
-    change_config_mock = MagicMock()
-    monkeypatch.setattr(harness.charm, "change_config", change_config_mock)
+    reconcile_mock = MagicMock()
+    monkeypatch.setattr(harness.charm, "reconcile", reconcile_mock)
 
     harness.remove_relation_unit(rel_id, "synapse/2")
 
-    change_config_mock.assert_called()
+    reconcile_mock.assert_called()
