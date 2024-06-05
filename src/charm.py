@@ -396,7 +396,9 @@ class SynapseCharm(CharmBaseWithState):
         if self.unit.is_leader():
             logger.debug("Adding signing key to secret: %s", signing_key)
             secret = self.app.add_secret({"secret-signing-key": signing_key})
-            peer_relation[0].data[self.app].update({"secret-signing-id": typing.cast(str, secret.id)})
+            peer_relation[0].data[self.app].update(
+                {"secret-signing-id": typing.cast(str, secret.id)}
+            )
 
     def get_signing_key(self) -> typing.Optional[str]:
         """Get signing key from secret.
