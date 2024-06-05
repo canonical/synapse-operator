@@ -273,7 +273,11 @@ Change the configuration (main and worker).
 ## <kbd>function</kbd> `enable_redis`
 
 ```python
-enable_redis(charm_state: CharmState, container: Container) → None
+enable_redis(
+    charm_state: CharmState,
+    container: Container,
+    is_main: bool = True
+) → None
 ```
 
 Enable Redis while receiving on_redis_relation_updated event. 
@@ -284,6 +288,7 @@ Enable Redis while receiving on_redis_relation_updated event.
  
  - <b>`container`</b>:  Charm container. 
  - <b>`charm_state`</b>:  Instance of CharmState. 
+ - <b>`is_main`</b>:  if unit is main. 
 
 
 
@@ -294,12 +299,16 @@ Enable Redis while receiving on_redis_relation_updated event.
 
 ---
 
-<a href="../src/pebble.py#L376"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_saml`
 
 ```python
-enable_saml(charm_state: CharmState, container: Container) → None
+enable_saml(
+    charm_state: CharmState,
+    container: Container,
+    is_main: bool = True
+) → None
 ```
 
 Enable SAML while receiving on_saml_data_available event. 
@@ -310,6 +319,9 @@ Enable SAML while receiving on_saml_data_available event.
  
  - <b>`charm_state`</b>:  Instance of CharmState 
  - <b>`container`</b>:  Charm container. 
+ - <b>`is_main`</b>:  if unit is main. 
+
+
 
 
 
@@ -320,12 +332,16 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_smtp`
 
 ```python
-enable_smtp(charm_state: CharmState, container: Container) → None
+enable_smtp(
+    charm_state: CharmState,
+    container: Container,
+    is_main: bool = True
+) → None
 ```
 
 Enable SMTP while receiving on_smtp_data_available event. 
@@ -336,6 +352,7 @@ Enable SMTP while receiving on_smtp_data_available event.
  
  - <b>`charm_state`</b>:  Instance of CharmState 
  - <b>`container`</b>:  Charm container. 
+ - <b>`is_main`</b>:  if unit is main. 
 
 
 
@@ -346,12 +363,16 @@ Enable SMTP while receiving on_smtp_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L416"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_media`
 
 ```python
-enable_media(charm_state: CharmState, container: Container) → None
+enable_media(
+    charm_state: CharmState,
+    container: Container,
+    is_main: bool = True
+) → None
 ```
 
 Enable S3 Media while receiving on_media_data_available event. 
@@ -362,6 +383,7 @@ Enable S3 Media while receiving on_media_data_available event.
  
  - <b>`charm_state`</b>:  Instance of CharmState 
  - <b>`container`</b>:  Charm container. 
+ - <b>`is_main`</b>:  if unit is main. 
 
 
 
@@ -372,7 +394,7 @@ Enable S3 Media while receiving on_media_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

@@ -1,6 +1,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the config change call
+# mypy: disable-error-code="attr-defined"
+
 """The Database agent relation observer."""
 import logging
 import typing
@@ -58,15 +61,32 @@ class DatabaseObserver(Object):
         Args:
             charm_state: Instance of CharmState
         """
+        if self._charm.get_main_unit() is None and self._charm.unit.is_leader():
+            logging.debug("Database Observer is setting main unit.")
+            self._charm.set_main_unit(self._charm.unit.name)
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         try:
-            # getting information from charm if is main unit or not.
-            pebble.change_config(
-                charm_state, container, is_main=self._charm.is_main()  # type: ignore[attr-defined]
+            signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
+            signing_key_from_secret = self._charm.get_signing_key()
+            if signing_key_from_secret:
+                logger.debug("Signing key secret was found, pushing it to the container")
+                container.push(
+                    signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
+                )
+            pebble.change_config(  # pylint: disable=duplicate-code
+                charm_state,
+                container,
+                is_main=self._charm.is_main(),
+                unit_number=self._charm.get_unit_number(),
             )
+            if self._charm.is_main() and not signing_key_from_secret:
+                logger.debug("Signing key secret not found, creating secret")
+                with container.pull(signing_key_path) as f:
+                    signing_key = f.read()
+                    self._charm.set_signing_key(signing_key.rstrip())
         # Avoiding duplication of code with _change_config in charm.py
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
