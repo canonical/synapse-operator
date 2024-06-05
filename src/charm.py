@@ -170,17 +170,17 @@ class SynapseCharm(CharmBaseWithState):
                 address = f"{unit_name}.{app_name}-endpoints"
                 addresses.append(address)
         logger.debug("addresses values are: %s", str(addresses))
-        instance_map = {}
+        instance_map = {"main": {"host": self.get_main_unit_address(), "port": 8034}}
         for address in addresses:
             match = re.search(r"-(\d+)", address)
             # A Juju unit name is s always named on the
             # pattern <application>/<unit ID>, where <application> is the name
             # of the application and the <unit ID> is its ID number.
             # https://juju.is/docs/juju/unit
+            if address == self.get_main_unit_address():
+                continue
             unit_number = match.group(1)  # type: ignore[union-attr]
-            instance_name = (
-                "main" if address == self.get_main_unit_address() else f"worker{unit_number}"
-            )
+            instance_name = f"worker{unit_number}"
             instance_map[instance_name] = {"host": address, "port": 8034}
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
@@ -200,10 +200,22 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
+            signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
+            signing_key_from_secret = self.get_signing_key()
+            if signing_key_from_secret:
+                logger.debug("Signing key secret was found, pushing it to the container")
+                container.push(
+                    signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
+                )
             pebble.change_config(
                 charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
             )
-        except pebble.PebbleServiceError as exc:
+            if self.is_main() and not signing_key_from_secret:
+                logger.debug("Signing key secret not found, creating secret")
+                with container.pull(signing_key_path) as f:
+                    signing_key = f.read()
+                    self.set_signing_key(signing_key.rstrip())
+        except (pebble.PebbleServiceError, FileNotFoundError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
         self._set_unit_status()
@@ -360,6 +372,52 @@ class SynapseCharm(CharmBaseWithState):
         else:
             logging.info("Setting main unit to be %s", unit)
             peer_relation[0].data[self.app].update({MAIN_UNIT_ID: unit})
+
+    def set_signing_key(self, signing_key: str) -> None:
+        """Create secret with signing key content.
+
+        Args:
+            signing_key: signing key as string.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to set signing key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return
+
+        if signing_key == self.get_signing_key():
+            logger.info("Received signing key but there is no change, skipping")
+            return
+        logger.debug("Adding signing key to secret: %s", signing_key)
+        secret = self.app.add_secret({"secret-signing-key": signing_key})
+        peer_relation[0].data[self.app].update({"secret-signing-id": typing.cast(str, secret.id)})
+
+    def get_signing_key(self) -> typing.Optional[str]:
+        """Get signing key from secret.
+
+        Returns:
+            Signing key as string or None if not found.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to get signing key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return None
+
+        secret_id = peer_relation[0].data[self.app].get("secret-signing-id")
+        if secret_id:
+            try:
+                secret = self.model.get_secret(id=secret_id)
+                logging.debug(secret.get_content().get("secret-signing-key"))
+                return secret.get_content().get("secret-signing-key")
+            except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
+                logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
+                del peer_relation[0].data[self.app]["secret-signing-id"]
+        return None
 
     @inject_charm_state
     def _on_leader_elected(self, _: ops.HookEvent, charm_state: CharmState) -> None:

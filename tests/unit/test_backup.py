@@ -20,6 +20,8 @@ from ops.testing import Harness
 import backup
 import synapse
 
+from .conftest import TEST_SERVER_NAME
+
 
 def test_s3_relation_validation_fails_when_region_and_endpoint_not_set():
     """
@@ -740,7 +742,7 @@ def test_get_paths_to_backup_correct(harness: Harness):
 
     paths_to_backup = list(backup._get_paths_to_backup(container))
 
-    assert len(paths_to_backup) == 3
+    assert len(paths_to_backup) == 4
     assert os.path.join(synapse.SYNAPSE_CONFIG_DIR, "example.com.signing.key") in paths_to_backup
     assert os.path.join(synapse.SYNAPSE_DATA_DIR, "homeserver.db") in paths_to_backup
     assert os.path.join(synapse.SYNAPSE_DATA_DIR, "media", "local_content") in paths_to_backup
@@ -753,6 +755,7 @@ def test_get_paths_to_backup_empty(harness: Harness):
     assert: The paths to backup should be empty.
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    container.remove_path(f"/data/{TEST_SERVER_NAME}.signing.key")
     synapse_root = harness.get_filesystem_root(container)
     media_dir = synapse_root / "media_store"
     media_dir.mkdir()

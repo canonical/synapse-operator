@@ -44,9 +44,12 @@ async def test_synapse_scaling_nginx_configured(
     unit = list(status.applications[synapse_app.name].units)[1]
     address = status["applications"][synapse_app.name]["units"][unit]["address"]
 
+    logger.info("Units: %s", list(status.applications[synapse_app.name].units))
+    logger.info("Requesting %s", f"http://{address}:8008/")
     response_worker = requests.get(
         f"http://{address}:8008/", headers={"Host": synapse_app.name}, timeout=5
     )
+    logger.info("Requesting %s", f"http://{address}:8080/")
     response_nginx = requests.get(
         f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5
     )
