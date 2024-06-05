@@ -1,6 +1,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the config change call
+# mypy: disable-error-code="attr-defined"
+
 """The Database agent relation observer."""
 import logging
 import typing

@@ -131,6 +131,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME], True
     )
     synapse_container.make_dir("/data", make_parents=True)
+    synapse_container.push(f"/data/{TEST_SERVER_NAME}.signing.key", "123")
     # unused-variable disabled to pass constants values to inner function
     command_path = synapse.SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
     command_migrate_config = synapse.COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable

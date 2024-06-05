@@ -91,7 +91,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit`
 
@@ -108,7 +108,7 @@ Get main unit.
 
 ---
 
-<a href="../src/charm.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L351"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit_address`
 
@@ -122,6 +122,23 @@ Get main unit address. If main unit is None, use unit name.
 
 **Returns:**
   main unit address as unit-0.synapse-endpoints. 
+
+---
+
+<a href="../src/charm.py#L401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_signing_key`
+
+```python
+get_signing_key() → Optional[str]
+```
+
+Get signing key from secret. 
+
+
+
+**Returns:**
+  Signing key as string or None if not found. 
 
 ---
 
@@ -184,7 +201,7 @@ Verify if this unit is the main.
 
 ---
 
-<a href="../src/charm.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L312"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `peer_units_total`
 
@@ -219,7 +236,7 @@ Change configuration.
 
 ---
 
-<a href="../src/charm.py#L351"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L363"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `set_main_unit`
 
@@ -234,5 +251,23 @@ Create/Renew an admin access token and put it in the peer relation.
 **Args:**
  
  - <b>`unit`</b>:  Unit to be the main. 
+
+---
+
+<a href="../src/charm.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `set_signing_key`
+
+```python
+set_signing_key(signing_key: str) → None
+```
+
+Create secret with signing key content. 
+
+
+
+**Args:**
+ 
+ - <b>`signing_key`</b>:  signing key as string. 
 
 

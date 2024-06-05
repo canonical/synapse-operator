@@ -497,6 +497,7 @@ async def redis_fixture(
             raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
         )
         await model.add_relation(f"{app.name}:redis", synapse_app_name)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
 
     return app
 

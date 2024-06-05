@@ -1,6 +1,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the is_main call
+# mypy: disable-error-code="attr-defined"
+
 """The Redis agent relation observer."""
 
 import logging
