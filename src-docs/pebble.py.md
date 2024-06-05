@@ -135,13 +135,13 @@ Return the Synapse IRC bridge service check.
 
 <a href="../src/pebble.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `replan_nginx`
+## <kbd>function</kbd> `restart_nginx`
 
 ```python
-replan_nginx(container: Container, main_unit_address: str) → None
+restart_nginx(container: Container, main_unit_address: str) → None
 ```
 
-Replan Synapse NGINX service and regenerate configuration. 
+Restart Synapse NGINX service and regenerate configuration. 
 
 
 

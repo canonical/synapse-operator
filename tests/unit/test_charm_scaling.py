@@ -210,7 +210,7 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
-    arrange: charm deployed, integrated with Redis, no leader, replan_nginx is mocked.
+    arrange: charm deployed, integrated with Redis, no leader, restart_nginx is mocked.
     act: update relation data to change the main_unit_id.
     assert: Synapse NGINX is replanned with the new main unit.
     """
@@ -226,16 +226,16 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
     harness.set_leader(False)
     # emit nginx ready
     # assert was called with synapse/0
-    replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
+    restart_nginx_mock = MagicMock()
+    monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
     harness.charm.on.synapse_nginx_pebble_ready.emit(MagicMock())
-    replan_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
+    restart_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
 
     harness.update_relation_data(
         peer_relation_id, harness.charm.app.name, {"main_unit_id": "synapse/1"}
     )
 
-    replan_nginx_mock.assert_called_with(nginx_container, "synapse-1.synapse-endpoints")
+    restart_nginx_mock.assert_called_with(nginx_container, "synapse-1.synapse-endpoints")
 
 
 def test_scaling_stream_writers_not_configured(harness: Harness) -> None:

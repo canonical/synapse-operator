@@ -87,6 +87,8 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             logger.debug(
                 "Peer relation found, checking if is main unit before configuring Mjolnir"
             )
+            # The default is self._charm.unit.name to make tests that use Harness.begin() work.
+            # When not using begin_with_initial_hooks, the peer relation data is not created.
             main_unit_id = peer_relation[0].data[self._charm.app].get("main_unit_id")
             if not self._charm.unit.name == main_unit_id:
                 logger.info("This is not the main unit, skipping Mjolnir configuration")

@@ -125,8 +125,8 @@ def check_irc_bridge_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None:
-    """Replan Synapse NGINX service and regenerate configuration.
+def restart_nginx(container: ops.model.Container, main_unit_address: str) -> None:
+    """Restart Synapse NGINX service and regenerate configuration.
 
     Args:
         container: Charm container.
@@ -134,7 +134,7 @@ def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None
     """
     container.add_layer("synapse-nginx", _nginx_pebble_layer(), combine=True)
     synapse.generate_nginx_config(container=container, main_unit_address=main_unit_address)
-    container.replan()
+    container.restart(synapse.SYNAPSE_NGINX_SERVICE_NAME)
 
 
 def replan_mjolnir(container: ops.model.Container) -> None:

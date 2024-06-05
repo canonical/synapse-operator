@@ -397,7 +397,7 @@ class SynapseCharm(CharmBaseWithState):
                 "Relation changed received but NGINX container is not available for reloading."
             )
             return
-        pebble.replan_nginx(nginx_container, self.get_main_unit_address())
+        pebble.restart_nginx(nginx_container, self.get_main_unit_address())
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
@@ -408,7 +408,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
         # Replan pebble layer
-        pebble.replan_nginx(container, self.get_main_unit_address())
+        pebble.restart_nginx(container, self.get_main_unit_address())
         self._set_unit_status()
 
     @inject_charm_state
