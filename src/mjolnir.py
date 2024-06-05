@@ -89,9 +89,12 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             )
             # The default is self._charm.unit.name to make tests that use Harness.begin() work.
             # When not using begin_with_initial_hooks, the peer relation data is not created.
-            main_unit_id = peer_relation[0].data[self._charm.app].get("main_unit_id")
+            main_unit_id = (
+                peer_relation[0].data[self._charm.app].get("main_unit_id", self._charm.unit.name)
+            )
             if not self._charm.unit.name == main_unit_id:
                 logger.info("This is not the main unit, skipping Mjolnir configuration")
+                return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
