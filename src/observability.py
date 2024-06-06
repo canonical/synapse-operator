@@ -35,7 +35,8 @@ class Observability:  # pylint: disable=too-few-public-methods
                     "static_configs": [
                         {
                             "targets": [
-                                f"*:{synapse.PROMETHEUS_TARGET_PORT}",
+                                f"*:{synapse.PROMETHEUS_MAIN_TARGET_PORT}",
+                                f"*:{synapse.PROMETHEUS_WORKER_TARGET_PORT}",
                                 f"*:{STATS_EXPORTER_PORT}",
                             ]
                         }

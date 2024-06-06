@@ -225,38 +225,6 @@ def _push_synapse_config(
         raise PebbleServiceError(str(exc)) from exc
 
 
-def get_worker_config(unit_number: str) -> dict:
-    """Get worker configuration.
-
-    Args:
-        unit_number: Unit number to be used in the worker_name field.
-
-    Returns:
-        Worker configuration.
-    """
-    worker_config = {
-        "worker_app": "synapse.app.generic_worker",
-        "worker_name": f"worker{unit_number}",
-        "worker_listeners": [
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8008,
-                "x_forwarded": True,
-                "resources": [{"names": ["client", "federation"]}],
-            },
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8034,
-                "resources": [{"names": ["replication"]}],
-            },
-        ],
-        "worker_log_config": "/data/log.config",
-    }
-    return worker_config
-
-
 # The complexity of this method will be reviewed.
 def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
@@ -340,7 +308,7 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             # Push worker configuration
             _push_synapse_config(
                 container,
-                get_worker_config(unit_number),
+                synapse.generate_worker_config(unit_number),
                 config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
             )
             # Push main configuration

@@ -211,31 +211,7 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `get_worker_config`
-
-```python
-get_worker_config(unit_number: str) → dict
-```
-
-Get worker configuration. 
-
-
-
-**Args:**
- 
- - <b>`unit_number`</b>:  Unit number to be used in the worker_name field. 
-
-
-
-**Returns:**
- Worker configuration. 
-
-
----
-
-<a href="../src/pebble.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `change_config`
 
@@ -268,7 +244,7 @@ Change the configuration (main and worker).
 
 ---
 
-<a href="../src/pebble.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_redis`
 
@@ -299,7 +275,7 @@ Enable Redis while receiving on_redis_relation_updated event.
 
 ---
 
-<a href="../src/pebble.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_saml`
 
@@ -332,7 +308,7 @@ Enable SAML while receiving on_saml_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L371"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_smtp`
 
@@ -363,7 +339,7 @@ Enable SMTP while receiving on_smtp_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `enable_media`
 
@@ -394,7 +370,7 @@ Enable S3 Media while receiving on_media_data_available event.
 
 ---
 
-<a href="../src/pebble.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 
