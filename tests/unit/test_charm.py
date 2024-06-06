@@ -16,6 +16,7 @@ from ops.testing import Harness
 import pebble
 import synapse
 from charm import SynapseCharm
+from pebble import PebbleServiceError
 
 from .conftest import TEST_SERVER_NAME, TEST_SERVER_NAME_CHANGED
 
@@ -431,3 +432,65 @@ def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pyt
     redis_config = harness.charm._redis.get_relation_as_redis_conf()
     assert "redis-host" == redis_config["host"]
     assert "1010" == str(redis_config["port"])
+
+
+def test_saml_enabled_reconcile_pebble_error(
+    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit saml_data_available.
+    assert: Synapse charm should submit the correct status.
+    """
+    harness = saml_configured
+    harness.begin()
+    error_message = "Fail"
+    reconcile_mock = MagicMock(side_effect=PebbleServiceError(error_message))
+    monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
+
+    relation = harness.charm.framework.model.get_relation("saml", 0)
+    harness.charm._saml.saml.on.saml_data_available.emit(relation)
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert error_message in str(harness.model.unit.status)
+
+
+def test_smtp_enabled_reconcile_pebble_error(
+    smtp_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit smtp_data_available.
+    assert: Synapse charm should submit the correct status.
+    """
+    harness = smtp_configured
+    harness.begin()
+    error_message = "Fail"
+    reconcile_mock = MagicMock(side_effect=PebbleServiceError(error_message))
+    monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
+
+    relation = harness.charm.framework.model.get_relation("smtp", 0)
+    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert error_message in str(harness.model.unit.status)
+
+
+def test_redis_enabled_reconcile_pebble_error(
+    redis_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
+    act: emit redis_relation_updated.
+    assert: Synapse charm should submit the correct status.
+    """
+    harness = redis_configured
+    harness.begin()
+    error_message = "Fail"
+    reconcile_mock = MagicMock(side_effect=PebbleServiceError(error_message))
+    monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
+
+    harness.charm.on.redis_relation_updated.emit()
+
+    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
+    assert error_message in str(harness.model.unit.status)
