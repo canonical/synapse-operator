@@ -82,7 +82,7 @@ class SynapseCharm(CharmBaseWithState):
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
-        self._observability = Observability(self)
+        self._observability = Observability(self, is_main=self.is_main())
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)

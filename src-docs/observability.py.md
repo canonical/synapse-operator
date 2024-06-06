@@ -22,7 +22,7 @@ A class representing the observability stack for Synapse application.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBase)
+__init__(charm: CharmBase, is_main: bool = True)
 ```
 
 Initialize a new instance of the Observability class. 
@@ -32,6 +32,7 @@ Initialize a new instance of the Observability class.
 **Args:**
  
  - <b>`charm`</b>:  The charm object that the Observability instance belongs to. 
+ - <b>`is_main`</b>:  if unit is main. 
 
 
 
