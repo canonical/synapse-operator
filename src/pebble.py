@@ -288,7 +288,7 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             synapse.enable_room_list_publication_rules(
                 current_synapse_config, charm_state=charm_state
             )
-        if charm_state.datasource:
+        if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
         if charm_state.synapse_config.enable_irc_bridge:
