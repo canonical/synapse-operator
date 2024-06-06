@@ -186,7 +186,9 @@ class SynapseCharm(CharmBaseWithState):
         return instance_map
 
     def reconcile(self, charm_state: CharmState) -> None:
-        """Change configuration.
+        """Reconcile Synapse configuration with charm state.
+
+        This is the main entry for changes that require a restart.
 
         Args:
             charm_state: Instance of CharmState

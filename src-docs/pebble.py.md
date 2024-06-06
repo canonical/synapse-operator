@@ -248,7 +248,9 @@ reconcile(
 ) → None
 ```
 
-Change the configuration (main and worker). 
+Reconcile Synapse configuration with charm state. 
+
+This is the main entry for changes that require a restart done via Pebble. 
 
 
 
@@ -268,7 +270,7 @@ Change the configuration (main and worker).
 
 ---
 
-<a href="../src/pebble.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L391"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

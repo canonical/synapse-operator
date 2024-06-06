@@ -293,7 +293,9 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
     is_main: bool = True,
     unit_number: str = "",
 ) -> None:
-    """Change the configuration (main and worker).
+    """Reconcile Synapse configuration with charm state.
+
+    This is the main entry for changes that require a restart done via Pebble.
 
     Args:
         charm_state: Instance of CharmState

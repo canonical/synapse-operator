@@ -91,7 +91,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L338"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit`
 
@@ -108,7 +108,7 @@ Get main unit.
 
 ---
 
-<a href="../src/charm.py#L351"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit_address`
 
@@ -125,7 +125,7 @@ Get main unit address. If main unit is None, use unit name.
 
 ---
 
-<a href="../src/charm.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_signing_key`
 
@@ -201,7 +201,7 @@ Verify if this unit is the main.
 
 ---
 
-<a href="../src/charm.py#L312"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L314"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `peer_units_total`
 
@@ -226,7 +226,9 @@ Get peer units total.
 reconcile(charm_state: CharmState) → None
 ```
 
-Change configuration. 
+Reconcile Synapse configuration with charm state. 
+
+This is the main entry for changes that require a restart. 
 
 
 
@@ -236,7 +238,7 @@ Change configuration.
 
 ---
 
-<a href="../src/charm.py#L363"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L365"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `set_main_unit`
 
@@ -254,7 +256,7 @@ Create/Renew an admin access token and put it in the peer relation.
 
 ---
 
-<a href="../src/charm.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `set_signing_key`
 
