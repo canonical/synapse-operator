@@ -40,6 +40,13 @@ class SimpleCharm(CharmBaseWithState):
             instance_map_config=None,
         )
 
+    def reconcile(self, charm_state) -> None:
+        """Reconcile configuration.
+
+        Args:
+            charm_state: The charm state.
+        """
+
 
 def test_inject_charm_state_correct() -> None:
     """

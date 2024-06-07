@@ -212,7 +212,7 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
-    arrange: charm deployed, integrated with Redis, no leader, replan_nginx is mocked.
+    arrange: charm deployed, integrated with Redis, no leader, restart_nginx is mocked.
     act: update relation data to change the main_unit_id.
     assert: Synapse NGINX is replanned with the new main unit.
     """
@@ -228,16 +228,16 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
     harness.set_leader(False)
     # emit nginx ready
     # assert was called with synapse/0
-    replan_nginx_mock = MagicMock()
-    monkeypatch.setattr(pebble, "replan_nginx", replan_nginx_mock)
+    restart_nginx_mock = MagicMock()
+    monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
     harness.charm.on.synapse_nginx_pebble_ready.emit(MagicMock())
-    replan_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
+    restart_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
 
     harness.update_relation_data(
         peer_relation_id, harness.charm.app.name, {"main_unit_id": "synapse/1"}
     )
 
-    replan_nginx_mock.assert_called_with(nginx_container, "synapse-1.synapse-endpoints")
+    restart_nginx_mock.assert_called_with(nginx_container, "synapse-1.synapse-endpoints")
 
 
 def test_scaling_stream_writers_not_configured(harness: Harness) -> None:
@@ -297,12 +297,12 @@ def test_scaling_relation_departed(harness: Harness, monkeypatch: pytest.MonkeyP
     harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(False)
     harness.charm.unit.name = "synapse/1"
-    change_config_mock = MagicMock()
-    monkeypatch.setattr(harness.charm, "change_config", change_config_mock)
+    reconcile_mock = MagicMock()
+    monkeypatch.setattr(harness.charm, "reconcile", reconcile_mock)
 
     harness.remove_relation_unit(rel_id, "synapse/2")
 
-    change_config_mock.assert_called()
+    reconcile_mock.assert_called()
 
 
 def test_scaling_signing_key_pushed_worker(
@@ -355,7 +355,7 @@ def test_scaling_signing_key_found(harness: Harness, monkeypatch: pytest.MonkeyP
     container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
     push_mock = MagicMock()
     monkeypatch.setattr(container, "push", push_mock)
-    monkeypatch.setattr(pebble, "change_config", MagicMock())
+    monkeypatch.setattr(pebble, "reconcile", MagicMock())
 
     harness.charm.on.config_changed.emit()
 
@@ -384,7 +384,7 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
     container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
     push_mock = MagicMock()
     monkeypatch.setattr(container, "push", push_mock)
-    monkeypatch.setattr(pebble, "change_config", MagicMock())
+    monkeypatch.setattr(pebble, "reconcile", MagicMock())
 
     harness.charm.on.config_changed.emit()
 

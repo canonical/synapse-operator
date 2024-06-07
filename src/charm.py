@@ -185,8 +185,10 @@ class SynapseCharm(CharmBaseWithState):
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
 
-    def change_config(self, charm_state: CharmState) -> None:
-        """Change configuration.
+    def reconcile(self, charm_state: CharmState) -> None:
+        """Reconcile Synapse configuration with charm state.
+
+        This is the main entry for changes that require a restart.
 
         Args:
             charm_state: Instance of CharmState
@@ -217,7 +219,7 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
-            pebble.change_config(
+            pebble.reconcile(
                 charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
             )
             if self.is_main() and not signing_key_from_secret:
@@ -292,7 +294,8 @@ class SynapseCharm(CharmBaseWithState):
             logger.debug("More than 1 peer unit found. Redis is required.")
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
-        self.change_config(charm_state)
+        logger.debug("_on_config_changed emitting reconcile")
+        self.reconcile(charm_state)
         self._set_workload_version()
 
     @inject_charm_state
@@ -315,7 +318,8 @@ class SynapseCharm(CharmBaseWithState):
             self.set_main_unit(self.unit.name)
         # Call change_config to restart unit. By design,every change in the
         # number of workers requires restart.
-        self.change_config(charm_state)
+        logger.debug("_on_relation_departed emitting reconcile")
+        self.reconcile(charm_state)
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -338,7 +342,8 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
         self.unit.status = ops.ActiveStatus()
-        self.change_config(charm_state)
+        logger.debug("_on_synapse_pebble_ready emitting reconcile")
+        self.reconcile(charm_state)
 
     def get_main_unit(self) -> typing.Optional[str]:
         """Get main unit.
@@ -400,9 +405,12 @@ class SynapseCharm(CharmBaseWithState):
         if signing_key == self.get_signing_key():
             logger.info("Received signing key but there is no change, skipping")
             return
-        logger.debug("Adding signing key to secret: %s", signing_key)
-        secret = self.app.add_secret({"secret-signing-key": signing_key})
-        peer_relation[0].data[self.app].update({"secret-signing-id": typing.cast(str, secret.id)})
+        if self.unit.is_leader():
+            logger.debug("Adding signing key to secret: %s", signing_key)
+            secret = self.app.add_secret({"secret-signing-key": signing_key})
+            peer_relation[0].data[self.app].update(
+                {"secret-signing-id": typing.cast(str, secret.id)}
+            )
 
     def get_signing_key(self) -> typing.Optional[str]:
         """Get signing key from secret.
@@ -441,7 +449,8 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("On_leader_elected is setting main unit.")
             self.set_main_unit(self.unit.name)
-            self.change_config(charm_state)
+            logger.debug("_on_leader_elected emitting reconcile")
+            self.reconcile(charm_state)
 
     @inject_charm_state
     def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
@@ -452,7 +461,8 @@ class SynapseCharm(CharmBaseWithState):
         """
         # the main unit has changed so workers must be restarted
         if self.get_main_unit() != self.unit.name:
-            self.change_config(charm_state)
+            logger.debug("_on_relation_changed emitting reconcile")
+            self.reconcile(charm_state)
         # Reload NGINX configuration with new main address
         nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not nginx_container.can_connect():
@@ -460,7 +470,7 @@ class SynapseCharm(CharmBaseWithState):
                 "Relation changed received but NGINX container is not available for reloading."
             )
             return
-        pebble.replan_nginx(nginx_container, self.get_main_unit_address())
+        pebble.restart_nginx(nginx_container, self.get_main_unit_address())
 
     def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse nginx pebble ready event."""
@@ -471,7 +481,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         logger.debug("synapse_nginx_pebble_ready replanning nginx")
         # Replan pebble layer
-        pebble.replan_nginx(container, self.get_main_unit_address())
+        pebble.restart_nginx(container, self.get_main_unit_address())
         self._set_unit_status()
 
     @inject_charm_state

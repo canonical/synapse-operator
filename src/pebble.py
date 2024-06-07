@@ -125,8 +125,8 @@ def check_irc_bridge_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None:
-    """Replan Synapse NGINX service and regenerate configuration.
+def restart_nginx(container: ops.model.Container, main_unit_address: str) -> None:
+    """Restart Synapse NGINX service and regenerate configuration.
 
     Args:
         container: Charm container.
@@ -134,7 +134,7 @@ def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None
     """
     container.add_layer("synapse-nginx", _nginx_pebble_layer(), combine=True)
     synapse.generate_nginx_config(container=container, main_unit_address=main_unit_address)
-    container.replan()
+    container.restart(synapse.SYNAPSE_NGINX_SERVICE_NAME)
 
 
 def replan_mjolnir(container: ops.model.Container) -> None:
@@ -225,14 +225,45 @@ def _push_synapse_config(
         raise PebbleServiceError(str(exc)) from exc
 
 
+def _environment_has_changed(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> bool:
+    """Check if environment has changed.
+
+    Args:
+        charm_state: Instance of CharmState
+        container: Charm container.
+        is_main: if unit is main.
+
+    Returns:
+        True if environment has changed.
+    """
+    existing_services = container.get_plan().to_dict().get("services", {})
+    current_services = _pebble_layer(charm_state, is_main).get("services", {})
+
+    existing_env = existing_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
+    current_env = current_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
+
+    env_has_changed = DeepDiff(
+        existing_env,
+        current_env,
+        ignore_order=True,
+        ignore_string_case=True,
+    )
+    logging.debug("The environment change is: %s", env_has_changed)
+    return env_has_changed is not None
+
+
 # The complexity of this method will be reviewed.
-def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
+def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
     container: ops.model.Container,
     is_main: bool = True,
     unit_number: str = "",
 ) -> None:
-    """Change the configuration (main and worker).
+    """Reconcile Synapse configuration with charm state.
+
+    This is the main entry for changes that require a restart done via Pebble.
 
     Args:
         charm_state: Instance of CharmState
@@ -244,7 +275,11 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        synapse.execute_migrate_config(container=container, charm_state=charm_state)
+        if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
+            # Configurations set via environment variables:
+            # synapse_report_stats, database, and proxy
+            logging.info("Environment has changed, configuration will be recreated.")
+            synapse.execute_migrate_config(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
         synapse.enable_metrics(current_synapse_config)
@@ -317,99 +352,6 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
         else:
             logging.info("Configuration has not changed, no action.")
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_redis(
-    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
-) -> None:
-    """Enable Redis while receiving on_redis_relation_updated event.
-
-    Args:
-        container: Charm container.
-        charm_state: Instance of CharmState.
-        is_main: if unit is main.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_redis: Enabling Redis")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_redis(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_saml(
-    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
-) -> None:
-    """Enable SAML while receiving on_saml_data_available event.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-        is_main: if unit is main.
-
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_saml: Enabling SAML")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_saml(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_smtp(
-    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
-) -> None:
-    """Enable SMTP while receiving on_smtp_data_available event.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-        is_main: if unit is main.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_smtp: Enabling SMTP")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_smtp(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_media(
-    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
-) -> None:
-    """Enable S3 Media while receiving on_media_data_available event.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-        is_main: if unit is main.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_media: Enabling Media")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_media(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 

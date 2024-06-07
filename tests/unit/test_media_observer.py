@@ -12,8 +12,10 @@ import ops
 import pytest
 from ops.testing import Harness
 
-from charm_state import CharmState, SynapseConfig
+import synapse
 from charm_types import MediaConfiguration
+
+from .conftest import TEST_SERVER_NAME
 
 
 def _test_get_relation_data_to_media_conf_parameters():
@@ -116,62 +118,30 @@ def test_media_configurations(harness: Harness, relation_data, valid):
         assert media_conf is None
 
 
-@pytest.mark.parametrize(
-    "relation_data, expected_status, can_connect",
-    [
-        pytest.param(
-            {
-                "bucket": "bucket1",
-                "region": "region1",
-                "endpoint": "endpoint1",
-                "access-key": "access_key1",
-                "secret-key": token_hex(16),
-                "path": "media",
-            },
-            ops.ActiveStatus(),
-            True,
-            id="correct media configuration",
-        ),
-        pytest.param(
-            {
-                "bucket": "bucket1",
-                "access-key": "access_key1",
-                "secret-key": token_hex(16),
-            },
-            ops.BlockedStatus(
-                "Media integration failed: Media Configuration not found. "
-                "Please verify the integration between Media and Synapse."
-            ),
-            False,
-            id="incorrect media configuration",
-        ),
-    ],
-)
-def test_enable_media(harness: Harness, relation_data, expected_status, can_connect):
+def test_enable_media(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: Mock the container's can_connect method to return the can_connect parameter.
     act: Call the _enable_media method.
     assert: Check if the unit's status is set to the expected_status.
     """
+    relation_data = {
+        "bucket": "bucket1",
+        "region": "region1",
+        "endpoint": "endpoint1",
+        "access-key": "access_key1",
+        "secret-key": token_hex(16),
+        "path": "media",
+    }
     harness.add_relation("media", "s3-integrator", app_data=relation_data)
     harness.begin_with_initial_hooks()
-    container = Mock()
-    container.can_connect.return_value = can_connect
-    synapse_config_items = {
-        "server_name": "example.com",
-    }
-    synapse_config = SynapseConfig(**synapse_config_items)  # type: ignore[arg-type]
-    charm_state = CharmState(
-        synapse_config=synapse_config,
-        datasource=None,
-        irc_bridge_datasource=None,
-        saml_config=None,
-        smtp_config=None,
-        media_config=harness.charm._media.get_relation_as_media_conf(),
-        redis_config=None,
-        instance_map_config=None,
+    enable_media_mock = Mock()
+    monkeypatch.setattr(synapse, "enable_media", enable_media_mock)
+    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+    container.push(
+        synapse.SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True
     )
 
-    harness.charm._media._enable_media(charm_state)
+    relation = harness.charm.framework.model.get_relation("media", 0)
+    harness.charm._media._s3_client.on.credentials_changed.emit(relation)
 
-    assert harness.charm.unit.status == expected_status
+    enable_media_mock.assert_called_once()
