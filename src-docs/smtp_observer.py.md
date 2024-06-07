@@ -12,7 +12,7 @@ The SMTP integrator relation observer.
 ## <kbd>class</kbd> `SMTPObserver`
 The SMTP relation observer. 
 
-<a href="../src/smtp_observer.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/smtp_observer.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -39,7 +39,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/smtp_observer.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/smtp_observer.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -56,7 +56,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/smtp_observer.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/smtp_observer.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_smtp_conf`
 

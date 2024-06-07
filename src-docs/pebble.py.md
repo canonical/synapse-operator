@@ -135,13 +135,13 @@ Return the Synapse IRC bridge service check.
 
 <a href="../src/pebble.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `replan_nginx`
+## <kbd>function</kbd> `restart_nginx`
 
 ```python
-replan_nginx(container: Container, main_unit_address: str) → None
+restart_nginx(container: Container, main_unit_address: str) → None
 ```
 
-Replan Synapse NGINX service and regenerate configuration. 
+Restart Synapse NGINX service and regenerate configuration. 
 
 
 
@@ -235,12 +235,12 @@ Get worker configuration.
 
 ---
 
-<a href="../src/pebble.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `change_config`
+## <kbd>function</kbd> `reconcile`
 
 ```python
-change_config(
+reconcile(
     charm_state: CharmState,
     container: Container,
     is_main: bool = True,
@@ -248,7 +248,9 @@ change_config(
 ) → None
 ```
 
-Change the configuration (main and worker). 
+Reconcile Synapse configuration with charm state. 
+
+This is the main entry for changes that require a restart done via Pebble. 
 
 
 
@@ -268,133 +270,7 @@ Change the configuration (main and worker).
 
 ---
 
-<a href="../src/pebble.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `enable_redis`
-
-```python
-enable_redis(
-    charm_state: CharmState,
-    container: Container,
-    is_main: bool = True
-) → None
-```
-
-Enable Redis while receiving on_redis_relation_updated event. 
-
-
-
-**Args:**
- 
- - <b>`container`</b>:  Charm container. 
- - <b>`charm_state`</b>:  Instance of CharmState. 
- - <b>`is_main`</b>:  if unit is main. 
-
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
-
-
----
-
-<a href="../src/pebble.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `enable_saml`
-
-```python
-enable_saml(
-    charm_state: CharmState,
-    container: Container,
-    is_main: bool = True
-) → None
-```
-
-Enable SAML while receiving on_saml_data_available event. 
-
-
-
-**Args:**
- 
- - <b>`charm_state`</b>:  Instance of CharmState 
- - <b>`container`</b>:  Charm container. 
- - <b>`is_main`</b>:  if unit is main. 
-
-
-
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
-
-
----
-
-<a href="../src/pebble.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `enable_smtp`
-
-```python
-enable_smtp(
-    charm_state: CharmState,
-    container: Container,
-    is_main: bool = True
-) → None
-```
-
-Enable SMTP while receiving on_smtp_data_available event. 
-
-
-
-**Args:**
- 
- - <b>`charm_state`</b>:  Instance of CharmState 
- - <b>`container`</b>:  Charm container. 
- - <b>`is_main`</b>:  if unit is main. 
-
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
-
-
----
-
-<a href="../src/pebble.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `enable_media`
-
-```python
-enable_media(
-    charm_state: CharmState,
-    container: Container,
-    is_main: bool = True
-) → None
-```
-
-Enable S3 Media while receiving on_media_data_available event. 
-
-
-
-**Args:**
- 
- - <b>`charm_state`</b>:  Instance of CharmState 
- - <b>`container`</b>:  Charm container. 
- - <b>`is_main`</b>:  if unit is main. 
-
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
-
-
----
-
-<a href="../src/pebble.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L391"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

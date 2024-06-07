@@ -3,12 +3,6 @@
 
 """The media integrator relation observer."""
 
-# Ignoring for the is_main call
-# mypy: disable-error-code="attr-defined"
-
-# ignoring duplicate-code with container connect check in the saml observer.
-# pylint: disable=R0801
-
 import logging
 from typing import Optional
 
@@ -16,10 +10,8 @@ import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
 from ops.framework import Object
 
-import pebble
-import synapse
 from backup_observer import S3_INVALID_CONFIGURATION
-from charm_state import CharmBaseWithState, CharmState
+from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import MediaConfiguration
 from s3_parameters import S3Parameters
 
@@ -55,8 +47,15 @@ class MediaObserver(Object):
         """
         return self._charm
 
-    def _on_s3_credentials_changed(self, _: CredentialsChangedEvent) -> None:
-        """Handle the S3 credentials changed event."""
+    @inject_charm_state
+    def _on_s3_credentials_changed(
+        self, _: CredentialsChangedEvent, charm_state: CharmState
+    ) -> None:
+        """Handle the S3 credentials changed event.
+
+        Args:
+            charm_state: The charm state.
+        """
         try:
             _ = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
@@ -64,7 +63,8 @@ class MediaObserver(Object):
             return
 
         self.model.unit.status = ops.MaintenanceStatus("Preparing the Media integration")
-        self._enable_media(self._charm.build_charm_state())
+        logger.debug("_on_s3_credentials_changed emitting reconcile")
+        self.get_charm().reconcile(charm_state)
 
     def get_relation_as_media_conf(self) -> Optional[MediaConfiguration]:
         """Get Media data from relation.
@@ -92,20 +92,3 @@ class MediaObserver(Object):
             secret_access_key=relation_data.secret_key,
             prefix=relation_data.path,
         )
-
-    def _enable_media(self, charm_state: CharmState) -> None:
-        """Enable Media.
-
-        Args:
-            charm_state: The charm state
-        """
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        try:
-            pebble.enable_media(charm_state, container, is_main=self._charm.is_main())
-        except pebble.PebbleServiceError as exc:
-            self._charm.model.unit.status = ops.BlockedStatus(f"Media integration failed: {exc}")
-            return
-        self._charm.unit.status = ops.ActiveStatus()

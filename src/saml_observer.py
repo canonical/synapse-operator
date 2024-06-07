@@ -3,12 +3,6 @@
 
 """The SAML integrator relation observer."""
 
-# Ignoring for the is_main call
-# mypy: disable-error-code="attr-defined"
-
-# ignoring duplicate-code with container connect check in the database observer.
-# pylint: disable=R0801
-
 import logging
 import typing
 
@@ -16,8 +10,6 @@ import ops
 from charms.saml_integrator.v0.saml import SamlDataAvailableEvent, SamlRequires
 from ops.framework import Object
 
-import pebble
-import synapse
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import SAMLConfiguration
 
@@ -48,23 +40,6 @@ class SAMLObserver(Object):
         """
         return self._charm
 
-    def _enable_saml(self, charm_state: CharmState) -> None:
-        """Enable  SAML.
-
-        Args:
-            charm_state: Instance of CharmState
-        """
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        try:
-            pebble.enable_saml(charm_state, container, is_main=self._charm.is_main())
-        except pebble.PebbleServiceError as exc:
-            self._charm.model.unit.status = ops.BlockedStatus(f"SAML integration failed: {exc}")
-            return
-        self._charm.unit.status = ops.ActiveStatus()
-
     @inject_charm_state
     def _on_saml_data_available(self, _: SamlDataAvailableEvent, charm_state: CharmState) -> None:
         """Handle SAML data available.
@@ -73,9 +48,8 @@ class SAMLObserver(Object):
             charm_state: The charm state.
         """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SAML integration")
-        logger.debug("_on_saml_data_available: Enabling SAML")
-
-        self._enable_saml(charm_state)
+        logger.debug("_on_saml_data_available emitting reconcile")
+        self.get_charm().reconcile(charm_state)
 
     def get_relation_as_saml_conf(self) -> typing.Optional[SAMLConfiguration]:
         """Get SAML data from relation.

@@ -16,7 +16,6 @@ from charms.data_platform_libs.v0.data_interfaces import (
 )
 from ops.framework import Object
 
-import pebble
 import synapse
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import DatasourcePostgreSQL
@@ -55,44 +54,6 @@ class DatabaseObserver(Object):
         """
         return self._charm
 
-    def _change_config(self, charm_state: CharmState) -> None:
-        """Change the configuration.
-
-        Args:
-            charm_state: Instance of CharmState
-        """
-        if self._charm.get_main_unit() is None and self._charm.unit.is_leader():
-            logging.debug("Database Observer is setting main unit.")
-            self._charm.set_main_unit(self._charm.unit.name)
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        try:
-            signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
-            signing_key_from_secret = self._charm.get_signing_key()
-            if signing_key_from_secret:
-                logger.debug("Signing key secret was found, pushing it to the container")
-                container.push(
-                    signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
-                )
-            pebble.change_config(  # pylint: disable=duplicate-code
-                charm_state,
-                container,
-                is_main=self._charm.is_main(),
-                unit_number=self._charm.get_unit_number(),
-            )
-            if self._charm.is_main() and not signing_key_from_secret:
-                logger.debug("Signing key secret not found, creating secret")
-                with container.pull(signing_key_path) as f:
-                    signing_key = f.read()
-                    self._charm.set_signing_key(signing_key.rstrip())
-        # Avoiding duplication of code with _change_config in charm.py
-        except Exception as exc:  # pylint: disable=broad-exception-caught
-            self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
-            return
-        self._charm.unit.status = ops.ActiveStatus()
-
     @inject_charm_state
     def _on_database_created(self, _: DatabaseCreatedEvent, charm_state: CharmState) -> None:
         """Handle database created.
@@ -108,7 +69,8 @@ class DatabaseObserver(Object):
         db_client = DatabaseClient(datasource=datasource)
         if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
             db_client.prepare()
-        self._change_config(charm_state)
+        logger.debug("_on_database_created emitting reconcile")
+        self.get_charm().reconcile(charm_state)
 
     @inject_charm_state
     def _on_endpoints_changed(
@@ -119,7 +81,8 @@ class DatabaseObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        self._change_config(charm_state)
+        logger.debug("_on_endpoints_changed emitting reconcile")
+        self.get_charm().reconcile(charm_state)
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
         """Get database data from relation.

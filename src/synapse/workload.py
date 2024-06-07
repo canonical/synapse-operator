@@ -400,7 +400,10 @@ def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
     persisters = []
     if charm_state.instance_map_config is not None:
         persisters = [key for key in charm_state.instance_map_config.keys() if key != "main"]
-    current_yaml["stream_writers"] = {"events": persisters}
+    if persisters is not None:
+        current_yaml["stream_writers"] = {"events": persisters}
+    else:
+        logger.error("Enable stream writers called but no persisters found. Verify peer relation.")
 
 
 def enable_federation_domain_whitelist(current_yaml: dict, charm_state: CharmState) -> None:
