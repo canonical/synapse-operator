@@ -400,6 +400,7 @@ def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
     persisters = []
     if charm_state.instance_map_config is not None:
         persisters = [key for key in charm_state.instance_map_config.keys() if key != "main"]
+        persisters.sort()
     if persisters is not None:
         current_yaml["stream_writers"] = {"events": persisters}
     else:
