@@ -449,10 +449,10 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             charm_state: The charm state.
         """
-        # the main unit has changed so workers must be restarted
-        if self.get_main_unit() != self.unit.name:
-            logger.debug("_on_relation_changed emitting reconcile")
-            self.reconcile(charm_state)
+        # At this point, instance_map will configured as expected since relation.units
+        # is set after relation joined. The relation changed event is always emitted after.
+        logger.debug("_on_relation_changed emitting reconcile")
+        self.reconcile(charm_state)
         # Reload NGINX configuration with new main address
         nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
         if not nginx_container.can_connect():
