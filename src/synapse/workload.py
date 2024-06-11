@@ -35,7 +35,9 @@ IRC_BRIDGE_SERVICE_NAME = "irc"
 IRC_BRIDGE_BOT_NAME = "irc_bot"
 IRC_BRIDGE_RELATION_NAME = "irc-bridge-database"
 CHECK_IRC_BRIDGE_READY_NAME = "synapse-irc-ready"
-PROMETHEUS_TARGET_PORT = "9000"
+PROMETHEUS_MAIN_TARGET_PORT = "9000"
+PROMETHEUS_WORKER_TARGET_PORT = 9101
+STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
 SYNAPSE_CONTAINER_NAME = "synapse"
@@ -291,7 +293,7 @@ def enable_metrics(current_yaml: dict) -> None:
     """
     try:
         metric_listener = {
-            "port": int(PROMETHEUS_TARGET_PORT),
+            "port": int(PROMETHEUS_MAIN_TARGET_PORT),
             "type": "metrics",
             "bind_addresses": ["::"],
         }
@@ -932,3 +934,40 @@ def generate_nginx_config(container: ops.Container, main_unit_address: str) -> N
         template = env.get_template(template_name)
         output = template.render(main_unit_address=main_unit_address)
         container.push(f"/etc/nginx/{output_file}", output, make_dirs=True)
+
+
+def generate_worker_config(unit_number: str) -> dict:
+    """Generate worker configuration.
+
+    Args:
+        unit_number: Unit number to be used in the worker_name field.
+
+    Returns:
+        Worker configuration.
+    """
+    worker_config = {
+        "worker_app": "synapse.app.generic_worker",
+        "worker_name": f"worker{unit_number}",
+        "worker_listeners": [
+            {
+                "type": "http",
+                "bind_addresses": ["::"],
+                "port": 8008,
+                "x_forwarded": True,
+                "resources": [{"names": ["client", "federation"]}],
+            },
+            {
+                "type": "http",
+                "bind_addresses": ["::"],
+                "port": 8034,
+                "resources": [{"names": ["replication"]}],
+            },
+            {
+                "type": "metrics",
+                "bind_addresses": ["::"],
+                "port": PROMETHEUS_WORKER_TARGET_PORT,
+            },
+        ],
+        "worker_log_config": "/data/log.config",
+    }
+    return worker_config

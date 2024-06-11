@@ -233,6 +233,7 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
     assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
     """
     harness.begin_with_initial_hooks()
+    harness.set_leader(True)
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"

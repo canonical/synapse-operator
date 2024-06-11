@@ -225,38 +225,6 @@ def _push_synapse_config(
         raise PebbleServiceError(str(exc)) from exc
 
 
-def get_worker_config(unit_number: str) -> dict:
-    """Get worker configuration.
-
-    Args:
-        unit_number: Unit number to be used in the worker_name field.
-
-    Returns:
-        Worker configuration.
-    """
-    worker_config = {
-        "worker_app": "synapse.app.generic_worker",
-        "worker_name": f"worker{unit_number}",
-        "worker_listeners": [
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8008,
-                "x_forwarded": True,
-                "resources": [{"names": ["client", "federation"]}],
-            },
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8034,
-                "resources": [{"names": ["replication"]}],
-            },
-        ],
-        "worker_log_config": "/data/log.config",
-    }
-    return worker_config
-
-
 def _environment_has_changed(
     charm_state: CharmState, container: ops.model.Container, is_main: bool = True
 ) -> bool:
@@ -355,7 +323,7 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             synapse.enable_room_list_publication_rules(
                 current_synapse_config, charm_state=charm_state
             )
-        if charm_state.datasource:
+        if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
         if charm_state.synapse_config.enable_irc_bridge:
@@ -375,7 +343,7 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             # Push worker configuration
             _push_synapse_config(
                 container,
-                get_worker_config(unit_number),
+                synapse.generate_worker_config(unit_number),
                 config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
             )
             # Push main configuration
