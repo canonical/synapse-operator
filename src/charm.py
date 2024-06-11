@@ -443,18 +443,30 @@ class SynapseCharm(CharmBaseWithState):
 
     @inject_charm_state
     def _on_leader_elected(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle Synapse peer relation created event.
+        """Handle Synapse leader elected event.
+
+        This event handler will reconcile Synapse configuration after the following
+        scenarios:
+        - When the charm is deployed so the leader will be the main unit.
+        - When the leader, for any reason, has changed so the leader unit will be the main.
+        Once the peer data (main_unit_id) is changed, other units will emit reconcile and be
+        properly configured.
 
         Args:
             charm_state: The charm state.
         """
         # assuming that this event will be fired only at the setup phase
         # check if main is already set if not, this unit will be the main
-        if self.get_main_unit() is None and self.unit.is_leader():
-            logging.debug("On_leader_elected is setting main unit.")
-            self.set_main_unit(self.unit.name)
-            logger.debug("_on_leader_elected emitting reconcile")
-            self.reconcile(charm_state)
+        if not self.unit.is_leader():
+            return
+        logging.debug(
+            "_on_leader_elected received, main_unit is %s and will be set to %s",
+            self.get_main_unit(),
+            self.unit.name,
+        )
+        self.set_main_unit(self.unit.name)
+        logger.debug("_on_leader_elected emitting reconcile")
+        self.reconcile(charm_state)
 
     @inject_charm_state
     def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
