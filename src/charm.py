@@ -164,6 +164,10 @@ class SynapseCharm(CharmBaseWithState):
         peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
         if peer_relation:
             relation = peer_relation[0]
+            # relation.units will contain the units after the relation-joined event.
+            # since a relation-changed is emitted for every relation-joined event,
+            # the relation-changed handler will reconcile the configuration and
+            # instance_map will be properly set.
             for u in relation.units:
                 # <unit-name>.<app-name>-endpoints.<model-name>.svc.cluster.local
                 unit_name = u.name.replace("/", "-")
@@ -456,11 +460,17 @@ class SynapseCharm(CharmBaseWithState):
     def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
         """Handle Synapse peer relation changed event.
 
+        This event handler will reconcile Synapse configuration and NGINX after the following
+        scenarios:
+        - A new unit joined the peer relation. A relation-changed event is emitted after a
+        relation-joined event. The instance_map and stream_writers should be updated also workers
+        must be restarted by design.
+        - Main unit has changed. The instance_map, stream_writers and NGINX configuration should be
+        updated and all remaining units restarted.
+
         Args:
             charm_state: The charm state.
         """
-        # At this point, instance_map will configured as expected since relation.units
-        # is set after relation joined. The relation changed event is always emitted after.
         logger.debug("_on_relation_changed emitting reconcile")
         self.reconcile(charm_state)
         # Reload NGINX configuration with new main address
