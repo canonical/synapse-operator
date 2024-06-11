@@ -196,6 +196,16 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("Change_config is setting main unit.")
             self.set_main_unit(self.unit.name)
+        # Reconciling prometheus targets
+        targets = [
+            f"*:{synapse.PROMETHEUS_MAIN_TARGET_PORT}",
+            f"*:{synapse.STATS_EXPORTER_PORT}",
+        ]
+        if not self.is_main():
+            targets = [
+                f"*:{synapse.PROMETHEUS_WORKER_TARGET_PORT}",
+            ]
+        self._observability.update_targets(targets)
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")

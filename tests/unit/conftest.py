@@ -239,6 +239,16 @@ def redis_configured_fixture(harness: Harness) -> Harness:
     return harness
 
 
+@pytest.fixture(name="prometheus_configured")
+def prometheus_configured_fixture(harness: Harness) -> Harness:
+    """Harness fixture with prometheus relation configured"""
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    harness.add_relation("metrics-endpoint", "prometheus-k8s")
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    return harness
+
+
 @pytest.fixture(name="container_mocked")
 def container_mocked_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
     """Mock container base to others fixtures."""
