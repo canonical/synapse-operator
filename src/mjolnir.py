@@ -101,7 +101,16 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             return
         mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
         if mjolnir_service:
-            logger.debug("%s service already exists, skipping", MJOLNIR_SERVICE_NAME)
+            mjolnir_not_active = [
+                service for service in mjolnir_service.values() if not service.is_running()
+            ]
+            if mjolnir_not_active:
+                logger.debug(
+                    "%s service already exists but is not running, restarting",
+                    MJOLNIR_SERVICE_NAME,
+                )
+                container.restart(MJOLNIR_SERVICE_NAME)
+            logger.debug("%s service already exists and running, skipping", MJOLNIR_SERVICE_NAME)
             return
         synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
         synapse_not_active = [
