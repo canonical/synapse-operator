@@ -93,3 +93,9 @@ options:
     type: string
     description: Comma separated list of trusted servers to download signing
       keys from. Synapse configuration sets default to matrix.org.
+  workers_ignore_list:
+    type: string
+    description: Comma separated list of workers that should be ignored while
+      setting instance_map and stream writers. This configuration should be used
+      in case of unrecoverable broken units and takes the form of
+      worker0,worker1

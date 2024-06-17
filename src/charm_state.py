@@ -175,6 +175,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
+        workers_ignore_list: workers_ignore_list config.
     """
 
     allow_public_rooms_over_federation: bool = False
@@ -195,6 +196,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     trusted_key_servers: str | None = Field(
         None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"
     )
+    workers_ignore_list: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -345,6 +347,18 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             # ignoring because mypy fails with:
             # "has incompatible type "**dict[str, str]"; expected ...""
             valid_synapse_config = SynapseConfig(**dict(charm.config.items()))  # type: ignore
+            # remove workers from instance_map
+            if instance_map_config and valid_synapse_config.workers_ignore_list:
+                logger.debug(
+                    "Removing %s from instance_map", valid_synapse_config.workers_ignore_list
+                )
+                for worker in valid_synapse_config.workers_ignore_list.split(","):
+                    if worker in instance_map_config:
+                        del instance_map_config[worker]
+                    else:
+                        logger.warning(
+                            "Worker %s in workers_ignore_list not found in instance_map", worker
+                        )
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())
