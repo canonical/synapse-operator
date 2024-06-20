@@ -398,3 +398,161 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             )
         ]
     )
+
+
+@pytest.mark.parametrize(
+    "workers_ignore_list,instance_map_content",
+    [
+        (
+            "worker1, worker2",
+            {
+                "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker3": {
+                    "host": "synapse-3.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker4": {
+                    "host": "synapse-4.synapse-endpoints",
+                    "port": 8034,
+                },
+            },
+        ),
+        (
+            "worker1 ,worker2",
+            {
+                "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker3": {
+                    "host": "synapse-3.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker4": {
+                    "host": "synapse-4.synapse-endpoints",
+                    "port": 8034,
+                },
+            },
+        ),
+        (
+            " worker1,worker3 ",
+            {
+                "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker2": {
+                    "host": "synapse-2.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker4": {
+                    "host": "synapse-4.synapse-endpoints",
+                    "port": 8034,
+                },
+            },
+        ),
+        (
+            "worker4",
+            {
+                "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker1": {
+                    "host": "synapse-1.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker2": {
+                    "host": "synapse-2.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker3": {
+                    "host": "synapse-3.synapse-endpoints",
+                    "port": 8034,
+                },
+            },
+        ),
+        (
+            "workerfake",
+            {
+                "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker1": {
+                    "host": "synapse-1.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker2": {
+                    "host": "synapse-2.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker3": {
+                    "host": "synapse-3.synapse-endpoints",
+                    "port": 8034,
+                },
+                "worker4": {
+                    "host": "synapse-4.synapse-endpoints",
+                    "port": 8034,
+                },
+            },
+        ),
+    ],
+)
+def test_scaling_instance_map_configured_ignoring_workers(
+    harness: Harness, workers_ignore_list, instance_map_content
+) -> None:
+    """
+    arrange: charm deployed, integrated with Redis, one more unit in peer relation
+        and set as leader.
+    act: emit config-changed event.
+    assert: Synapse charm is configured with instance_map.
+    """
+    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.add_relation_unit(rel_id, "synapse/2")
+    harness.add_relation_unit(rel_id, "synapse/3")
+    harness.add_relation_unit(rel_id, "synapse/4")
+    harness.begin_with_initial_hooks()
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
+    harness.set_leader(True)
+    harness.charm.on.config_changed.emit()
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert "instance_map" in content
+        assert content["instance_map"] == {
+            "main": {
+                "host": "synapse-0.synapse-endpoints",
+                "port": 8034,
+            },
+            "worker1": {
+                "host": "synapse-1.synapse-endpoints",
+                "port": 8034,
+            },
+            "worker2": {
+                "host": "synapse-2.synapse-endpoints",
+                "port": 8034,
+            },
+            "worker3": {
+                "host": "synapse-3.synapse-endpoints",
+                "port": 8034,
+            },
+            "worker4": {
+                "host": "synapse-4.synapse-endpoints",
+                "port": 8034,
+            },
+        }
+
+    harness.update_config({"workers_ignore_list": workers_ignore_list})
+
+    root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
+    config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
+    with open(config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert "instance_map" in content
+        assert content["instance_map"] == instance_map_content
