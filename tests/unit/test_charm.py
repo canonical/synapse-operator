@@ -52,6 +52,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
         "startup": "enabled",
     }
 
+
 @pytest.mark.skip(reason="For some reason, checks are not replanned")
 def test_synapse_pebble_layer_change(harness: Harness) -> None:
     """
