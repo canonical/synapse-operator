@@ -3,6 +3,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the config change call
+# mypy: disable-error-code="attr-defined"
+
 """Class to interact with pebble."""
 
 import logging
@@ -38,8 +41,11 @@ class PebbleServiceError(Exception):
         self.msg = msg
 
 
-def check_synapse_ready() -> ops.pebble.CheckDict:
+def check_synapse_ready(charm_state: CharmState) -> ops.pebble.CheckDict:
     """Return the Synapse container ready check.
+
+    Args:
+        charm_state: Instance of CharmState.
 
     Returns:
         Dict: check object converted to its dict representation.
@@ -47,22 +53,13 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.timeout = "10s"
-    check.period = "1m"
     check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
-    return check.to_dict()
-
-
-def check_synapse_alive() -> ops.pebble.CheckDict:
-    """Return the Synapse container alive check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(synapse.CHECK_ALIVE_NAME)
-    check.override = "replace"
-    check.level = "alive"
-    check.tcp = {"port": synapse.SYNAPSE_PORT}
+    ready_check = charm_state.synapse_config.ready_check
+    if ready_check:
+        # This will tolerate failure for 8 minutes before restarting Synapse
+        check.period = ready_check.get("period", "2m")
+        check.threshold = ready_check.get("threshold", 5)
+        check.timeout = ready_check.get("timeout", "20s")
     return check.to_dict()
 
 
@@ -111,6 +108,9 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     check.override = "replace"
     check.level = "ready"
     check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
+    check.timeout = "10s"
+    check.threshold = 5
+    check.period = "1m"
     return check.to_dict()
 
 
@@ -417,8 +417,7 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
             }
         },
         "checks": {
-            synapse.CHECK_READY_NAME: check_synapse_ready(),
-            synapse.CHECK_ALIVE_NAME: check_synapse_alive(),
+            synapse.CHECK_READY_NAME: check_synapse_ready(charm_state),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
