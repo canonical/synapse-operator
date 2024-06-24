@@ -283,7 +283,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
             ValidationError: if ready_check is invalid.
         """
         # expected
-        # period;threshold;timeout
+        # period,threshold,timeout
         config_values = value.split(",")
         if len(config_values) != 3:
             raise ValidationError(f"Invalid ready_check, less or more than 3 values: {value}", cls)
