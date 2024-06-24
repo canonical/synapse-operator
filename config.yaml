@@ -75,7 +75,8 @@ options:
   ready_check:
     type: string
     description: Comma separated list of period,threshold and timeout for Synapse
-      pebble ready check.
+      pebble ready check. Refer to https://github.com/canonical/pebble/#layer-specification
+      to more details about allowed values.
     default: "2m,5,20s"
   report_stats:
     description: |

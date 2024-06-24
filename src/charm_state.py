@@ -288,9 +288,17 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         if len(config_values) != 3:
             raise ValidationError(f"Invalid ready_check, less or more than 3 values: {value}", cls)
         try:
-            period = config_values[0]
-            threshold = int(config_values[1])
-            timeout = config_values[2]
+            period = config_values[0].strip().lower()
+            if period[-1] not in ("s", "m", "h"):
+                raise ValidationError(
+                    f"Invalid ready_check, period should end in s/m/h: {value}", cls
+                )
+            threshold = int(config_values[1].strip())
+            timeout = config_values[2].strip().lower()
+            if timeout[-1] not in ("s", "m", "h"):
+                raise ValidationError(
+                    f"Invalid ready_check, timeout should end in s/m/h: {value}", cls
+                )
             return {"period": period, "threshold": threshold, "timeout": timeout}
         except ValueError as exc:
             raise ValidationError(

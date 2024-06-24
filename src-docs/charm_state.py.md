@@ -192,7 +192,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L347"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L355"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 

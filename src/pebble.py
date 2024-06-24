@@ -56,7 +56,7 @@ def check_synapse_ready(charm_state: CharmState) -> ops.pebble.CheckDict:
     check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
     ready_check = charm_state.synapse_config.ready_check
     if ready_check:
-        # This will tolerate failure for 8 minutes before restarting Synapse
+        # The default values will tolerate failure for ~10 minutes before restarting Synapse
         check.period = ready_check.get("period", "2m")
         check.threshold = ready_check.get("threshold", 5)
         check.timeout = ready_check.get("timeout", "20s")

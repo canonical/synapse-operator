@@ -53,7 +53,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     }
 
 
-@pytest.mark.skip(reason="For some reason, checks are not replanned")
+@pytest.mark.skip(reason="harness does not reproduce checks changes")
 def test_synapse_pebble_layer_change(harness: Harness) -> None:
     """
     arrange: charm deployed.
