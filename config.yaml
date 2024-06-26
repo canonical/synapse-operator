@@ -72,11 +72,12 @@ options:
       The public-facing base URL that clients use to access this Homeserver.
       Defaults to https://<server_name>/. Only used if there is integration with
       SAML integrator charm.
-  ready_check:
+  experimental_ready_check:
     type: string
     description: Comma separated list of period,threshold and timeout for Synapse
       pebble ready check. Refer to https://github.com/canonical/pebble/#layer-specification
       to more details about allowed values.
+      This is an experimental feature and may be removed in future releases.
     default: "2m,5,20s"
   report_stats:
     description: |
