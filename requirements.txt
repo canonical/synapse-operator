@@ -3,7 +3,7 @@ cosl ==0.0.12
 deepdiff ==7.0.1
 jinja2 ==3.1.4
 jsonschema ==4.22.0
-ops ==2.14.0
+ops ==2.14.1
 pydantic ==1.10.17
 psycopg2-binary ==2.9.9
 requests ==2.32.3
