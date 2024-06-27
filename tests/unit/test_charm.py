@@ -57,7 +57,7 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
 def test_synapse_pebble_layer_change(harness: Harness) -> None:
     """
     arrange: charm deployed.
-    act: change experimental_ready_check config.
+    act: change experimental_alive_check config.
     assert: Synapse charm should submit the correct Synapse pebble layer to pebble.
     """
     harness.set_leader(True)
@@ -68,7 +68,7 @@ def test_synapse_pebble_layer_change(harness: Harness) -> None:
     assert pebble_plan["checks"]["synapse-ready"]["threshold"] == 5
     assert pebble_plan["checks"]["synapse-ready"]["timeout"] == "20s"
 
-    harness.update_config({"experimental_ready_check": "1m,3,30s"})
+    harness.update_config({"experimental_alive_check": "1m,3,30s"})
 
     pebble_plan = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()
     assert pebble_plan["checks"]["synapse-ready"]["period"] == "1m"

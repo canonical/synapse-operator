@@ -293,7 +293,7 @@ Represent Synapse builtin configuration values.
  - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`publish_rooms_allowlist`</b>:  publish_rooms_allowlist config. 
- - <b>`experimental_ready_check`</b>:  experimental_ready_check config. 
+ - <b>`experimental_alive_check`</b>:  experimental_alive_check config. 
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`server_name`</b>:  server_name config. 
  - <b>`trusted_key_servers`</b>:  trusted_key_servers config. 
@@ -336,7 +336,7 @@ Set server_name as default value to notif_from.
 to_pebble_check(value: str) → Dict[str, Union[str, int]]
 ```
 
-Convert the experimental_ready_check field to pebble check. 
+Convert the experimental_alive_check field to pebble check. 
 
 
 
@@ -353,7 +353,7 @@ Convert the experimental_ready_check field to pebble check.
 
 **Raises:**
  
- - <b>`ValidationError`</b>:  if experimental_ready_check is invalid. 
+ - <b>`ValidationError`</b>:  if experimental_alive_check is invalid. 
 
 ---
 

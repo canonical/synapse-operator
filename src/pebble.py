@@ -41,8 +41,8 @@ class PebbleServiceError(Exception):
         self.msg = msg
 
 
-def check_synapse_ready(charm_state: CharmState) -> ops.pebble.CheckDict:
-    """Return the Synapse container ready check.
+def check_synapse_alive(charm_state: CharmState) -> ops.pebble.CheckDict:
+    """Return the Synapse container alive check.
 
     Args:
         charm_state: Instance of CharmState.
@@ -50,16 +50,32 @@ def check_synapse_ready(charm_state: CharmState) -> ops.pebble.CheckDict:
     Returns:
         Dict: check object converted to its dict representation.
     """
+    check = Check(synapse.CHECK_ALIVE_NAME)
+    check.override = "replace"
+    check.level = "alive"
+    check.tcp = {"port": synapse.SYNAPSE_PORT}
+    experimental_alive_check = charm_state.synapse_config.experimental_alive_check
+    if experimental_alive_check:
+        # The default values will tolerate failure for ~10 minutes before restarting Synapse
+        check.period = experimental_alive_check.get("period", "2m")
+        check.threshold = experimental_alive_check.get("threshold", 5)
+        check.timeout = experimental_alive_check.get("timeout", "20s")
+    return check.to_dict()
+
+
+def check_synapse_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse container ready check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
+    check.timeout = "20s"
+    check.period = "2m"
+    check.threshold = 5
     check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
-    experimental_ready_check = charm_state.synapse_config.experimental_ready_check
-    if experimental_ready_check:
-        # The default values will tolerate failure for ~10 minutes before restarting Synapse
-        check.period = experimental_ready_check.get("period", "2m")
-        check.threshold = experimental_ready_check.get("threshold", 5)
-        check.timeout = experimental_ready_check.get("timeout", "20s")
     return check.to_dict()
 
 
@@ -417,7 +433,8 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
             }
         },
         "checks": {
-            synapse.CHECK_READY_NAME: check_synapse_ready(charm_state),
+            synapse.CHECK_ALIVE_NAME: check_synapse_alive(charm_state),
+            synapse.CHECK_READY_NAME: check_synapse_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)

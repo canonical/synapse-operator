@@ -172,7 +172,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
         publish_rooms_allowlist: publish_rooms_allowlist config.
-        experimental_ready_check: experimental_ready_check config.
+        experimental_alive_check: experimental_alive_check config.
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
@@ -191,7 +191,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     public_baseurl: str | None = Field(None)
     publish_rooms_allowlist: str | None = Field(None)
-    experimental_ready_check: str | None = Field(None)
+    experimental_alive_check: str | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     notif_from: str | None = Field(None)
@@ -268,10 +268,10 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
                 raise ValidationError(f"Invalid user ID format: {user_id}", cls)
         return value_list
 
-    @validator("experimental_ready_check")
+    @validator("experimental_alive_check")
     @classmethod
     def to_pebble_check(cls, value: str) -> typing.Dict[str, typing.Union[str, int]]:
-        """Convert the experimental_ready_check field to pebble check.
+        """Convert the experimental_alive_check field to pebble check.
 
         Args:
             value: the input value.
@@ -280,31 +280,31 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
             The pebble check.
 
         Raises:
-            ValidationError: if experimental_ready_check is invalid.
+            ValidationError: if experimental_alive_check is invalid.
         """
         # expected
         # period,threshold,timeout
         config_values = value.split(",")
         if len(config_values) != 3:
             raise ValidationError(
-                f"Invalid experimental_ready_check, less or more than 3 values: {value}", cls
+                f"Invalid experimental_alive_check, less or more than 3 values: {value}", cls
             )
         try:
             period = config_values[0].strip().lower()
             if period[-1] not in ("s", "m", "h"):
                 raise ValidationError(
-                    f"Invalid experimental_ready_check, period should end in s/m/h: {value}", cls
+                    f"Invalid experimental_alive_check, period should end in s/m/h: {value}", cls
                 )
             threshold = int(config_values[1].strip())
             timeout = config_values[2].strip().lower()
             if timeout[-1] not in ("s", "m", "h"):
                 raise ValidationError(
-                    f"Invalid experimental_ready_check, timeout should end in s/m/h: {value}", cls
+                    f"Invalid experimental_alive_check, timeout should end in s/m/h: {value}", cls
                 )
             return {"period": period, "threshold": threshold, "timeout": timeout}
         except ValueError as exc:
             raise ValidationError(
-                f"Invalid experimental_ready_check, threshold should be a number: {value}", cls
+                f"Invalid experimental_alive_check, threshold should be a number: {value}", cls
             ) from exc
 
 
