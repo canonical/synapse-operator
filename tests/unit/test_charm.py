@@ -30,9 +30,11 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     harness.set_leader(True)
     harness.begin_with_initial_hooks()
 
-    synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
-        "services"
-    ][synapse.SYNAPSE_SERVICE_NAME]
+    pebble_plan = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()
+    synapse_layer = pebble_plan["services"][synapse.SYNAPSE_SERVICE_NAME]
+    assert pebble_plan["checks"]["synapse-ready"]["period"] == "2m"
+    assert pebble_plan["checks"]["synapse-ready"]["threshold"] == 5
+    assert pebble_plan["checks"]["synapse-ready"]["timeout"] == "20s"
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
     assert synapse_layer == {
         "override": "replace",
@@ -49,6 +51,29 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
         },
         "startup": "enabled",
     }
+
+
+@pytest.mark.skip(reason="harness does not reproduce checks changes")
+def test_synapse_pebble_layer_change(harness: Harness) -> None:
+    """
+    arrange: charm deployed.
+    act: change experimental_alive_check config.
+    assert: Synapse charm should submit the correct Synapse pebble layer to pebble.
+    """
+    harness.set_leader(True)
+    harness.container_pebble_ready("synapse")
+    harness.begin_with_initial_hooks()
+    pebble_plan = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()
+    assert pebble_plan["checks"]["synapse-ready"]["period"] == "2m"
+    assert pebble_plan["checks"]["synapse-ready"]["threshold"] == 5
+    assert pebble_plan["checks"]["synapse-ready"]["timeout"] == "20s"
+
+    harness.update_config({"experimental_alive_check": "1m,3,30s"})
+
+    pebble_plan = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()
+    assert pebble_plan["checks"]["synapse-ready"]["period"] == "1m"
+    assert pebble_plan["checks"]["synapse-ready"]["threshold"] == 3
+    assert pebble_plan["checks"]["synapse-ready"]["timeout"] == "30s"
 
 
 @pytest.mark.parametrize(

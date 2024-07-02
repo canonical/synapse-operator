@@ -3,6 +3,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the config change call
+# mypy: disable-error-code="attr-defined"
+
 """Class to interact with pebble."""
 
 import logging
@@ -38,6 +41,28 @@ class PebbleServiceError(Exception):
         self.msg = msg
 
 
+def check_synapse_alive(charm_state: CharmState) -> ops.pebble.CheckDict:
+    """Return the Synapse container alive check.
+
+    Args:
+        charm_state: Instance of CharmState.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(synapse.CHECK_ALIVE_NAME)
+    check.override = "replace"
+    check.level = "alive"
+    check.tcp = {"port": synapse.SYNAPSE_PORT}
+    experimental_alive_check = charm_state.synapse_config.experimental_alive_check
+    if experimental_alive_check:
+        # The default values will tolerate failure for ~10 minutes before restarting Synapse
+        check.period = experimental_alive_check.get("period", "2m")
+        check.threshold = experimental_alive_check.get("threshold", 5)
+        check.timeout = experimental_alive_check.get("timeout", "20s")
+    return check.to_dict()
+
+
 def check_synapse_ready() -> ops.pebble.CheckDict:
     """Return the Synapse container ready check.
 
@@ -47,22 +72,10 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.timeout = "10s"
-    check.period = "1m"
+    check.timeout = "20s"
+    check.period = "2m"
+    check.threshold = 5
     check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
-    return check.to_dict()
-
-
-def check_synapse_alive() -> ops.pebble.CheckDict:
-    """Return the Synapse container alive check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(synapse.CHECK_ALIVE_NAME)
-    check.override = "replace"
-    check.level = "alive"
-    check.tcp = {"port": synapse.SYNAPSE_PORT}
     return check.to_dict()
 
 
@@ -111,6 +124,9 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     check.override = "replace"
     check.level = "ready"
     check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
+    check.timeout = "10s"
+    check.threshold = 5
+    check.period = "1m"
     return check.to_dict()
 
 
@@ -417,8 +433,8 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
             }
         },
         "checks": {
+            synapse.CHECK_ALIVE_NAME: check_synapse_alive(charm_state),
             synapse.CHECK_READY_NAME: check_synapse_ready(),
-            synapse.CHECK_ALIVE_NAME: check_synapse_alive(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
