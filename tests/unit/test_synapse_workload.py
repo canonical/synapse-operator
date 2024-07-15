@@ -248,7 +248,6 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
         content,
         CharmState(  # pylint: disable=duplicate-code
             datasource=None,
-            irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
             media_config=None,
@@ -534,7 +533,6 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         media_config=None,
@@ -711,7 +709,6 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,

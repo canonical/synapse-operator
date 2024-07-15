@@ -28,13 +28,6 @@ COMMAND_MIGRATE_CONFIG = "migrate_config"
 MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
 MJOLNIR_HEALTH_PORT = 7777
 MJOLNIR_SERVICE_NAME = "mjolnir"
-IRC_BRIDGE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/irc_bridge.yaml"
-IRC_BRIDGE_REGISTRATION_PATH = f"{SYNAPSE_CONFIG_DIR}/config/appservice-registration-irc.yaml"
-IRC_BRIDGE_HEALTH_PORT = "5446"
-IRC_BRIDGE_SERVICE_NAME = "irc"
-IRC_BRIDGE_BOT_NAME = "irc_bot"
-IRC_BRIDGE_RELATION_NAME = "irc-bridge-database"
-CHECK_IRC_BRIDGE_READY_NAME = "synapse-irc-ready"
 PROMETHEUS_MAIN_TARGET_PORT = "9000"
 PROMETHEUS_WORKER_TARGET_PORT = 9101
 STATS_EXPORTER_PORT = "9877"
@@ -87,14 +80,6 @@ class EnableMetricsError(WorkloadError):
 
 class CreateMjolnirConfigError(WorkloadError):
     """Exception raised when something goes wrong while creating mjolnir config."""
-
-
-class CreateIRCBridgeConfigError(WorkloadError):
-    """Exception raised when something goes wrong while creating irc bridge config."""
-
-
-class CreateIRCBridgeRegistrationError(WorkloadError):
-    """Exception raised when something goes wrong while creating irc bridge registration."""
 
 
 class EnableSAMLError(WorkloadError):
@@ -526,107 +511,6 @@ def create_mjolnir_config(container: ops.Container, access_token: str, room_id: 
         container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
     except ops.pebble.PathError as exc:
         raise CreateMjolnirConfigError(str(exc)) from exc
-
-
-def _get_irc_bridge_config(charm_state: CharmState, db_connect_string: str) -> typing.Dict:
-    """Create config as expected by irc bridge.
-
-    Args:
-        charm_state: Instance of CharmState.
-        db_connect_string: database connection string.
-
-    Returns:
-        IRC Bridge configuration
-    """
-    irc_config_file = Path("templates/irc_bridge_production.yaml").read_text(encoding="utf-8")
-    config = yaml.safe_load(irc_config_file)
-    config["homeserver"]["url"] = f"https://{charm_state.synapse_config.server_name}"
-    config["homeserver"]["domain"] = charm_state.synapse_config.server_name
-    config["database"]["connectionString"] = db_connect_string
-    if charm_state.synapse_config.irc_bridge_admins:
-        config["ircService"]["permissions"] = {}
-        for admin in charm_state.synapse_config.irc_bridge_admins:
-            config["ircService"]["permissions"][admin] = "admin"
-    if charm_state.synapse_config.enable_irc_ident:
-        config["ircService"]["ident"]["enabled"] = charm_state.synapse_config.enable_irc_ident
-    return config
-
-
-def create_irc_bridge_config(
-    container: ops.Container, charm_state: CharmState, db_connect_string: str
-) -> None:
-    """Create irc bridge configuration.
-
-    Args:
-        container: Container of the charm.
-        charm_state: Instance of CharmState.
-        db_connect_string: database connection string.
-
-    Raises:
-        CreateIRCBridgeConfigError: something went wrong creating irc bridge config.
-    """
-    try:
-        config = _get_irc_bridge_config(
-            charm_state=charm_state, db_connect_string=db_connect_string
-        )
-        container.push(IRC_BRIDGE_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
-    except ops.pebble.PathError as exc:
-        raise CreateIRCBridgeConfigError(str(exc)) from exc
-
-
-def _get_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
-    # the functionality is tested already in unit tests creating files
-    """Create registration file as expected by irc bridge.
-
-    Args:
-        container: Container of the charm.
-
-    Raises:
-        WorkloadError: something went wrong creating irc bridge registration.
-    """
-    registration_result = _exec(
-        container,
-        [
-            "/bin/bash",
-            "-c",
-            f"[[ -f {IRC_BRIDGE_REGISTRATION_PATH} ]] || "
-            f"/bin/node /app/app.js -r -f {IRC_BRIDGE_REGISTRATION_PATH} "
-            f"-u http://localhost:{IRC_BRIDGE_HEALTH_PORT} "
-            f"-c {IRC_BRIDGE_CONFIG_PATH} -l {IRC_BRIDGE_BOT_NAME}",
-        ],
-    )
-    if registration_result.exit_code:
-        logger.error(
-            "creating irc app registration failed, stdout: %s, stderr: %s",
-            registration_result.stdout,
-            registration_result.stderr,
-        )
-        raise WorkloadError("Creating irc app registration failed, please check the logs")
-
-
-def create_irc_bridge_app_registration(container: ops.Container) -> None:  # pragma: no cover
-    # the functionality is tested already in unit tests creating files
-    """Create irc bridge app registration.
-
-    Args:
-        container: Container of the charm.
-
-    Raises:
-        CreateIRCBridgeRegistrationError: error creating irc bridge app registration.
-    """
-    try:
-        _get_irc_bridge_app_registration(container=container)
-    except ops.pebble.PathError as exc:
-        raise CreateIRCBridgeRegistrationError(str(exc)) from exc
-
-
-def add_app_service_config_field(current_yaml: dict) -> None:
-    """Add app_service_config_files to the Synapse configuration.
-
-    Args:
-        current_yaml: current configuration.
-    """
-    current_yaml["app_service_config_files"] = [IRC_BRIDGE_REGISTRATION_PATH]
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
