@@ -168,7 +168,6 @@ State of the Charm.
  
  - <b>`synapse_config`</b>:  synapse configuration. 
  - <b>`datasource`</b>:  datasource information. 
- - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information. 
  - <b>`saml_config`</b>:  saml configuration. 
  - <b>`smtp_config`</b>:  smtp configuration. 
  - <b>`media_config`</b>:  media configuration. 
@@ -192,7 +191,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -200,7 +199,6 @@ Get charm proxy information from juju charm environment.
 from_charm(
     charm: CharmBase,
     datasource: Optional[DatasourcePostgreSQL],
-    irc_bridge_datasource: Optional[DatasourcePostgreSQL],
     saml_config: Optional[SAMLConfiguration],
     smtp_config: Optional[SMTPConfiguration],
     media_config: Optional[MediaConfiguration],
@@ -217,7 +215,6 @@ Initialize a new instance of the CharmState class from the associated charm.
  
  - <b>`charm`</b>:  The charm instance associated with this state. 
  - <b>`datasource`</b>:  datasource information to be used by Synapse. 
- - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information to be used by Synapse. 
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
  - <b>`media_config`</b>:  Media configuration to be used by Synapse. 
@@ -282,9 +279,6 @@ Represent Synapse builtin configuration values.
  
  - <b>`allow_public_rooms_over_federation`</b>:  allow_public_rooms_over_federation config. 
  - <b>`enable_email_notifs`</b>:  enable_email_notifs config. 
- - <b>`enable_irc_bridge`</b>:  creates a registration file in Synapse and starts an irc bridge app. 
- - <b>`enable_irc_ident`</b>:  starts an ident server for the IRC bridge. 
- - <b>`irc_bridge_admins`</b>:  a comma separated list of user IDs who are admins of the IRC bridge. 
  - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
  - <b>`enable_password_config`</b>:  enable_password_config config. 
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
@@ -304,7 +298,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -328,7 +322,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_pebble_check`
 
@@ -357,7 +351,7 @@ Convert the experimental_alive_check field to pebble check.
 
 ---
 
-<a href="../src/charm_state.py#L231"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
@@ -380,7 +374,7 @@ Convert the report_stats field to yes or no.
 
 ---
 
-<a href="../src/charm_state.py#L246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `userids_to_list`
 

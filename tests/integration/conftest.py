@@ -260,35 +260,6 @@ async def postgresql_app_fixture(
     yield model.applications.get(postgresql_app_name)
 
 
-@pytest.fixture(scope="module", name="irc_postgresql_app_name")
-def irc_postgresql_app_name_app_name_fixture() -> str:
-    """Return the name of the postgresql application deployed for irc bridge tests."""
-    return "irc-postgresql-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="irc_postgresql_app")
-async def irc_postgresql_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    postgresql_app_name: str,
-    irc_postgresql_app_name: str,
-    pytestconfig: Config,
-):
-    """Deploy postgresql."""
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing:
-        return model.applications[irc_postgresql_app_name]
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            postgresql_app_name,
-            application_name=irc_postgresql_app_name,
-            channel="14/stable",
-            trust=True,
-        )
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    return app
-
-
 @pytest.fixture(scope="module", name="grafana_app_name")
 def grafana_app_name_fixture() -> str:
     """Return the name of the grafana application deployed for tests."""
