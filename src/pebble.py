@@ -15,7 +15,6 @@ from ops.pebble import Check
 
 import synapse
 from charm_state import CharmState
-from irc_bridge import enable_irc_bridge
 
 logger = logging.getLogger(__name__)
 
@@ -114,19 +113,6 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def check_irc_bridge_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse IRC bridge service check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(synapse.CHECK_IRC_BRIDGE_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{synapse.IRC_BRIDGE_HEALTH_PORT}/health"}
-    return check.to_dict()
-
-
 def restart_nginx(container: ops.model.Container, main_unit_address: str) -> None:
     """Restart Synapse NGINX service and regenerate configuration.
 
@@ -146,16 +132,6 @@ def replan_mjolnir(container: ops.model.Container) -> None:
         container: Charm container.
     """
     container.add_layer("synapse-mjolnir", _mjolnir_pebble_layer(), combine=True)
-    container.replan()
-
-
-def replan_irc_bridge(container: ops.model.Container) -> None:
-    """Replan Synapse IRC bridge service.
-
-    Args:
-        container: Charm container.
-    """
-    container.add_layer("synapse-irc", _irc_bridge_pebble_layer(), combine=True)
     container.replan()
 
 
@@ -328,11 +304,6 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
-        if charm_state.synapse_config.enable_irc_bridge:
-            logger.info("Synapse IRC bridge enabled.")
-            enable_irc_bridge(container=container, charm_state=charm_state)
-            synapse.add_app_service_config_field(current_synapse_config)
-            replan_irc_bridge(container=container)
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,
@@ -510,35 +481,6 @@ def _cron_pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
                 "environment": synapse.get_environment(charm_state),
                 "startup": "enabled",
             },
-        },
-    }
-    return typing.cast(ops.pebble.LayerDict, layer)
-
-
-def _irc_bridge_pebble_layer() -> ops.pebble.LayerDict:
-    """Generate pebble config for the irc bridge service.
-
-    Returns:
-        The pebble configuration for the irc bridge service.
-    """
-    command_params = (
-        f"-c {synapse.IRC_BRIDGE_CONFIG_PATH}"
-        f" -f {synapse.IRC_BRIDGE_REGISTRATION_PATH}"
-        f" -p {synapse.IRC_BRIDGE_HEALTH_PORT}"
-    )
-    layer = {
-        "summary": "Synapse irc layer",
-        "description": "Synapse irc layer",
-        "services": {
-            synapse.IRC_BRIDGE_SERVICE_NAME: {
-                "override": "replace",
-                "summary": "IRC service",
-                "command": f"/bin/node /app/app.js {command_params}",
-                "startup": "enabled",
-            },
-        },
-        "checks": {
-            synapse.CHECK_IRC_BRIDGE_READY_NAME: check_irc_bridge_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)

@@ -59,7 +59,6 @@ class SynapseCharm(CharmBaseWithState):
         self._backup = BackupObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
-        self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
@@ -113,7 +112,6 @@ class SynapseCharm(CharmBaseWithState):
         return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
-            irc_bridge_datasource=self._irc_bridge_database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),

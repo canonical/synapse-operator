@@ -11,7 +11,7 @@ Class to interact with pebble.
 
 ---
 
-<a href="../src/pebble.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_synapse_ready`
 
@@ -30,7 +30,7 @@ Return the Synapse container ready check.
 
 ---
 
-<a href="../src/pebble.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_synapse_alive`
 
@@ -49,7 +49,7 @@ Return the Synapse container alive check.
 
 ---
 
-<a href="../src/pebble.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_synapse`
 
@@ -76,7 +76,7 @@ This will force a restart even if its plan hasn't changed.
 
 ---
 
-<a href="../src/pebble.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_nginx_ready`
 
@@ -95,7 +95,7 @@ Return the Synapse NGINX container check.
 
 ---
 
-<a href="../src/pebble.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_mjolnir_ready`
 
@@ -114,26 +114,7 @@ Return the Synapse Mjolnir service check.
 
 ---
 
-<a href="../src/pebble.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `check_irc_bridge_ready`
-
-```python
-check_irc_bridge_ready() → CheckDict
-```
-
-Return the Synapse IRC bridge service check. 
-
-
-
-**Returns:**
- 
- - <b>`Dict`</b>:  check object converted to its dict representation. 
-
-
----
-
-<a href="../src/pebble.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_nginx`
 
@@ -153,7 +134,7 @@ Restart Synapse NGINX service and regenerate configuration.
 
 ---
 
-<a href="../src/pebble.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_mjolnir`
 
@@ -172,26 +153,7 @@ Replan Synapse Mjolnir service.
 
 ---
 
-<a href="../src/pebble.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `replan_irc_bridge`
-
-```python
-replan_irc_bridge(container: Container) → None
-```
-
-Replan Synapse IRC bridge service. 
-
-
-
-**Args:**
- 
- - <b>`container`</b>:  Charm container. 
-
-
----
-
-<a href="../src/pebble.py#L162"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_stats_exporter`
 
@@ -211,7 +173,7 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reconcile`
 
@@ -246,7 +208,7 @@ This is the main entry for changes that require a restart done via Pebble.
 
 ---
 
-<a href="../src/pebble.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L332"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 
@@ -277,7 +239,7 @@ Exception raised when something fails while interacting with Pebble.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/pebble.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

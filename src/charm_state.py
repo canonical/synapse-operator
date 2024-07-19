@@ -161,9 +161,6 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     Attributes:
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
         enable_email_notifs: enable_email_notifs config.
-        enable_irc_bridge: creates a registration file in Synapse and starts an irc bridge app.
-        enable_irc_ident: starts an ident server for the IRC bridge.
-        irc_bridge_admins: a comma separated list of user IDs who are admins of the IRC bridge.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
@@ -180,9 +177,6 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     allow_public_rooms_over_federation: bool = False
     enable_email_notifs: bool = False
-    enable_irc_bridge: bool = False
-    enable_irc_ident: bool = False
-    irc_bridge_admins: str | None = Field(None)
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
@@ -241,7 +235,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
             return "yes"
         return "no"
 
-    @validator("irc_bridge_admins", "publish_rooms_allowlist")
+    @validator("publish_rooms_allowlist")
     @classmethod
     def userids_to_list(cls, value: str) -> typing.List[str]:
         """Convert a comma separated list of users to list.
@@ -274,7 +268,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     Attributes:
         synapse_config: synapse configuration.
         datasource: datasource information.
-        irc_bridge_datasource: irc bridge datasource information.
         saml_config: saml configuration.
         smtp_config: smtp configuration.
         media_config: media configuration.
@@ -285,7 +278,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
     synapse_config: SynapseConfig
     datasource: typing.Optional[DatasourcePostgreSQL]
-    irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL]
     saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
     media_config: typing.Optional[MediaConfiguration]
@@ -308,17 +300,12 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             no_proxy=no_proxy,
         )
 
-    # pylint: disable=too-many-arguments
-    # this either needs to be refactored or it's fine as is for now
-    # the disable stems from the additional datasoure for irc bridge
-    # and that might end up in a separate charm
     # from_charm receives configuration from all integration so too many arguments.
     @classmethod
     def from_charm(  # pylint: disable=too-many-arguments
         cls,
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],
-        irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL],
         saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
         media_config: typing.Optional[MediaConfiguration],
@@ -330,7 +317,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         Args:
             charm: The charm instance associated with this state.
             datasource: datasource information to be used by Synapse.
-            irc_bridge_datasource: irc bridge datasource information to be used by Synapse.
             saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
             media_config: Media configuration to be used by Synapse.
@@ -371,7 +357,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return cls(
             synapse_config=valid_synapse_config,
             datasource=datasource,
-            irc_bridge_datasource=irc_bridge_datasource,
             saml_config=saml_config,
             smtp_config=smtp_config,
             media_config=media_config,

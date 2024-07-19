@@ -224,7 +224,6 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
     charm_state = CharmState(
         synapse_config=synapse_config,
         datasource=None,
-        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=None,
         media_config=None,
@@ -261,7 +260,6 @@ def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
     charm_state = CharmState(
         synapse_config=synapse_config,
         datasource=None,
-        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=None,
         media_config=None,
