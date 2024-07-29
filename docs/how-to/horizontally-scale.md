@@ -28,14 +28,19 @@ the next step.
 
 ### Deploy S3-integrator and integrate it with Synapse
 
-This will enable S3 storage provider so media will be stored on a S3 bucket. Replace the
-configuration options with your specific configuration.
+This will enable S3 storage provider so media will be stored on a S3 bucket.
+
+Replace the configuration options with your specific configuration. The ones used above should be
+modified to match your environment.
+
+Refer to [s3-integrator](https://charmhub.io/s3-integrator/) for specific configuration options.
 
 ```
 juju deploy s3-integrator s3-integrator-media --channel edge
 juju config s3-integrator-media endpoint=http://endpoint bucket=synapse-media-bucket path=/media region=us-east-1 s3-uri-style=path
 juju integrate synapse:media s3-integrator-media
 ```
+
 Once the output of the `juju status` command shows that the units are active and idle, proceed with
 the next step.
 
@@ -49,7 +54,7 @@ juju scale-application synapse 3
 
 ### Verify status
 
-The output of `juju status` should look like this now.
+The output of `juju status --relations` should look like this now.
 
 ```
 $ juju status --relations
@@ -60,12 +65,12 @@ SAAS             Status       Store         URL
 postgresql       active       cloud1  admin/prod-chat-synapse-db.postgresql
 
 App                       Version  Status   Scale  Charm                     Channel        Rev  Address        Exposed  Message
-media-s3-integrator                active      1  s3-integrator             latest/stable   13  10.10.10.1      no         
-redis                     7.0.4    active       1  redis-k8s                 latest/edge     27  10.10.10.2   no       
-synapse                            active       3  synapse                   latest/stable  303  10.10.10.3    no       
+media-s3-integrator                active      1  s3-integrator              latest/stable   13  10.10.10.1     no         
+redis                     7.0.4    active       1  redis-k8s                 latest/edge     27  10.10.10.2     no       
+synapse                            active       3  synapse                   latest/stable  303  10.10.10.3     no       
 
 Unit                         Workload     Agent  Address          Ports  Message      
-media-s3-integrator/0*       maintenance  idle   192.168.1.2         
+media-s3-integrator/0*       active       idle   192.168.1.2         
 redis/0*                     active       idle   192.168.1.7          
 synapse/0                    active       idle   192.168.1.4         
 synapse/1*                   active       idle   192.168.1.8         
