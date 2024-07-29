@@ -30,7 +30,7 @@ the next step.
 
 This will enable S3 storage provider so media will be stored on a S3 bucket.
 
-Replace the configuration options with your specific configuration. The ones used above should be
+Replace the configuration options with your specific configuration. The ones used below should be
 modified to match your environment.
 
 Refer to [s3-integrator](https://charmhub.io/s3-integrator/) for specific configuration options.
