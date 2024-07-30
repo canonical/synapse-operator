@@ -848,7 +848,7 @@ def generate_worker_config(unit_number: str) -> dict:
             {
                 "type": "metrics",
                 "bind_addresses": ["::"],
-                "port": SYNAPSE_EXPORTER_PORT,
+                "port": int(SYNAPSE_EXPORTER_PORT),
             },
         ],
         "worker_log_config": "/data/log.config",
