@@ -28,8 +28,7 @@ COMMAND_MIGRATE_CONFIG = "migrate_config"
 MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
 MJOLNIR_HEALTH_PORT = 7777
 MJOLNIR_SERVICE_NAME = "mjolnir"
-PROMETHEUS_MAIN_TARGET_PORT = "9000"
-PROMETHEUS_WORKER_TARGET_PORT = 9101
+SYNAPSE_EXPORTER_PORT = "9000"
 STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
@@ -278,7 +277,7 @@ def enable_metrics(current_yaml: dict) -> None:
     """
     try:
         metric_listener = {
-            "port": int(PROMETHEUS_MAIN_TARGET_PORT),
+            "port": int(SYNAPSE_EXPORTER_PORT),
             "type": "metrics",
             "bind_addresses": ["::"],
         }
@@ -849,7 +848,7 @@ def generate_worker_config(unit_number: str) -> dict:
             {
                 "type": "metrics",
                 "bind_addresses": ["::"],
-                "port": PROMETHEUS_WORKER_TARGET_PORT,
+                "port": int(SYNAPSE_EXPORTER_PORT),
             },
         ],
         "worker_log_config": "/data/log.config",
