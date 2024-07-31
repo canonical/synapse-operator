@@ -1,0 +1,71 @@
+name: Check for new releases
+
+on:
+  schedule:
+    - cron: '0 0 */14 * *'  # Runs every two weeks on Sunday at midnight
+  workflow_dispatch:
+
+jobs:
+  create_issue:
+    name: Create new release issue
+    runs-on: ubuntu-latest
+    env:
+      SYNAPSE_CURRENT_VERSION: v1.101.1
+    permissions:
+      issues: write
+    steps:
+      - id: synapse
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          owner: element-hq
+          repo: synapse
+          excludes: prerelease, draft
+
+      - uses: actions/checkout@v4.1.1
+
+      - name: Check if issue already exists
+        id: check_issue
+        run: |
+          ISSUE_TITLE="Synapse ${{ steps.synapse.outputs.release }} is available"
+          ISSUE_EXISTS=$(gh issue list --state open --search "\"$ISSUE_TITLE\" in:title" --json title --jq '.[] | select(.title == "'"$ISSUE_TITLE"'") | .title')
+          echo "issue_exists=$ISSUE_EXISTS" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Exit if issue exists
+        if: env.issue_exists
+        run: echo "Issue already exists. Exiting."
+
+      - name: Create new release issue
+        if: ${{ env.SYNAPSE_CURRENT_VERSION != steps.synapse.outputs.release && ! env.issue_exists}}
+        run: |
+
+          if [[ $CLOSE_PREVIOUS == true ]]; then
+            previous_issue_number=$(gh issue list \
+              --label "$LABELS" \
+              --json number \
+              --jq '.[0].number')
+            if [[ -n $previous_issue_number ]]; then
+              gh issue close "$previous_issue_number"
+              gh issue unpin "$previous_issue_number"
+            fi
+          fi
+          new_issue_url=$(gh issue create \
+            --title "$TITLE" \
+            --label "$LABELS" \
+            --body "$BODY")
+          if [[ $PINNED == true ]]; then
+            gh issue pin "$new_issue_url"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: Synapse ${{ steps.synapse.outputs.release }} is available
+          LABELS: new-release
+          BODY: |
+            ### Synapse ${{ steps.synapse.outputs.release }} is available.
+
+            - Current: ${{ env.SYNAPSE_CURRENT_VERSION }}
+            - Latest: ${{ steps.synapse.outputs.release }}
+          PINNED: true
+          CLOSE_PREVIOUS: true
