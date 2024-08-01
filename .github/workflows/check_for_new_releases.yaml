@@ -9,8 +9,6 @@ jobs:
   create_issue:
     name: Create new release issue
     runs-on: ubuntu-latest
-    env:
-      SYNAPSE_CURRENT_VERSION: v1.101.1
     permissions:
       issues: write
     steps:
@@ -35,6 +33,12 @@ jobs:
       - name: Exit if issue exists
         if: env.issue_exists
         run: echo "Issue already exists. Exiting."
+
+      - name: Get Synapse current version
+        id: get_synapse_current_version
+        run: |
+          SOURCE_TAG=$(yq eval '.parts.synapse.source-tag' synapse_rock/rockcraft.yaml)
+          echo "SYNAPSE_CURRENT_VERSION=$SOURCE_TAG" >> $GITHUB_ENV
 
       - name: Create new release issue
         if: ${{ env.SYNAPSE_CURRENT_VERSION != steps.synapse.outputs.release && ! env.issue_exists}}
