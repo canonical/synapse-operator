@@ -242,7 +242,7 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
     )
 
     do_request_mock.assert_called_once_with(
-        "DELETE", expected_url, admin_access_token=admin_access_token
+        "POST", expected_url, admin_access_token=admin_access_token
     )
 
 
