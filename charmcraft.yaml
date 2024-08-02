@@ -14,8 +14,10 @@ bases:
       channel: "22.04"
 parts:
   charm:
-    build-packages:
-    - cargo
-    - rustc
+    build-snaps:
+      - rustup
+    override-build: |
+      rustup default stable
+      craftctl default
     charm-binary-python-packages:
     - psycopg2-binary==2.9.9
