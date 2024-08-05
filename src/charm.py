@@ -59,7 +59,6 @@ class SynapseCharm(CharmBaseWithState):
         self._backup = BackupObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
-        self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
@@ -113,7 +112,6 @@ class SynapseCharm(CharmBaseWithState):
         return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
-            irc_bridge_datasource=self._irc_bridge_database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),
@@ -200,16 +198,6 @@ class SynapseCharm(CharmBaseWithState):
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("Change_config is setting main unit.")
             self.set_main_unit(self.unit.name)
-        # Reconciling prometheus targets
-        targets = [
-            f"*:{synapse.PROMETHEUS_MAIN_TARGET_PORT}",
-            f"*:{synapse.STATS_EXPORTER_PORT}",
-        ]
-        if not self.is_main():
-            targets = [
-                f"*:{synapse.PROMETHEUS_WORKER_TARGET_PORT}",
-            ]
-        self._observability.update_targets(targets)
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")

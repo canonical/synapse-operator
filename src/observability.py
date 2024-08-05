@@ -3,7 +3,6 @@
 
 """Provide the Observability class to represent the observability stack for Synapse."""
 
-import typing
 
 import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
@@ -29,7 +28,7 @@ class Observability:  # pylint: disable=too-few-public-methods
             charm, relation_name="grafana-dashboard"
         )
         self.targets = [
-            f"*:{synapse.PROMETHEUS_MAIN_TARGET_PORT}",
+            f"*:{synapse.SYNAPSE_EXPORTER_PORT}",
             f"*:{synapse.STATS_EXPORTER_PORT}",
         ]
         self._metrics_endpoint = MetricsEndpointProvider(
@@ -46,17 +45,3 @@ class Observability:  # pylint: disable=too-few-public-methods
                 },
             },
         )
-
-    def update_targets(self, targets: typing.List[str]) -> None:
-        """Update prometheus targets.
-
-        Args:
-            targets: new target list.
-        """
-        self.targets.sort()
-        targets.sort()
-        if targets != self.targets:
-            self._metrics_endpoint.update_scrape_job_spec(
-                jobs=[{"static_configs": [{"targets": targets}]}]
-            )
-            self.targets = targets
