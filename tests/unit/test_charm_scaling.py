@@ -154,6 +154,10 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
         assert content["instance_map"] == {
             "main": {
                 "host": "synapse-0.synapse-endpoints",
+                "port": 8035,
+            },
+            "federationsender1": {
+                "host": "synapse-0.synapse-endpoints",
                 "port": 8034,
             },
             "worker1": {
@@ -408,6 +412,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             {
                 "main": {
                     "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
+                    "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
                 "worker3": {
@@ -424,6 +432,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             "worker1 ,worker2",
             {
                 "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
                     "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
@@ -442,6 +454,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             {
                 "main": {
                     "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
+                    "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
                 "worker2": {
@@ -458,6 +474,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             "worker4",
             {
                 "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
                     "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
@@ -479,6 +499,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             "workerfake",
             {
                 "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
                     "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
@@ -527,6 +551,10 @@ def test_scaling_instance_map_configured_ignoring_workers(
         assert "instance_map" in content
         assert content["instance_map"] == {
             "main": {
+                "host": "synapse-0.synapse-endpoints",
+                "port": 8035,
+            },
+            "federationsender1": {
                 "host": "synapse-0.synapse-endpoints",
                 "port": 8034,
             },
