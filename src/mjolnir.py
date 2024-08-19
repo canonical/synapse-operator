@@ -212,7 +212,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             admin_access_token=admin_access_token,
             room_id=room_id,
         )
-        synapse.create_mjolnir_config(
+        synapse.generate_mjolnir_config(
             container=container, access_token=mjolnir_access_token, room_id=room_id
         )
         synapse.override_rate_limit(

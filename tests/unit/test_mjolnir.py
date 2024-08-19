@@ -226,8 +226,8 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(synapse, "get_room_id", get_room_id)
     make_room_admin = MagicMock()
     monkeypatch.setattr(synapse, "make_room_admin", make_room_admin)
-    create_mjolnir_config = MagicMock()
-    monkeypatch.setattr(synapse, "create_mjolnir_config", create_mjolnir_config)
+    generate_mjolnir_config = MagicMock()
+    monkeypatch.setattr(synapse, "generate_mjolnir_config", generate_mjolnir_config)
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
@@ -240,7 +240,7 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     make_room_admin.assert_called_once_with(
         user=ANY, server=ANY, admin_access_token=admin_access_token, room_id=room_id
     )
-    create_mjolnir_config.assert_called_once_with(
+    generate_mjolnir_config.assert_called_once_with(
         container=ANY, access_token=mjolnir_access_token, room_id=room_id
     )
     override_rate_limit.assert_called_once_with(
@@ -272,8 +272,8 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(synapse, "create_management_room", create_management_room)
     make_room_admin = MagicMock()
     monkeypatch.setattr(synapse, "make_room_admin", make_room_admin)
-    create_mjolnir_config = MagicMock()
-    monkeypatch.setattr(synapse, "create_mjolnir_config", create_mjolnir_config)
+    generate_mjolnir_config = MagicMock()
+    monkeypatch.setattr(synapse, "generate_mjolnir_config", generate_mjolnir_config)
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
@@ -288,7 +288,7 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     make_room_admin.assert_called_once_with(
         user=ANY, server=ANY, admin_access_token=admin_access_token, room_id=room_id
     )
-    create_mjolnir_config.assert_called_once_with(
+    generate_mjolnir_config.assert_called_once_with(
         container=ANY, access_token=mjolnir_access_token, room_id=room_id
     )
     override_rate_limit.assert_called_once_with(

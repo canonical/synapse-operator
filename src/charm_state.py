@@ -170,6 +170,8 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         public_baseurl: public_baseurl config.
         publish_rooms_allowlist: publish_rooms_allowlist config.
         experimental_alive_check: experimental_alive_check config.
+        rc_joins_remote_burst_count: rc_join burst_count config.
+        rc_joins_remote_per_second: rc_join per_second config.
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
@@ -186,6 +188,8 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     public_baseurl: str | None = Field(None)
     publish_rooms_allowlist: str | None = Field(None)
     experimental_alive_check: str | None = Field(None)
+    rc_joins_remote_burst_count: int | None = Field(None)
+    rc_joins_remote_per_second: float | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     notif_from: str | None = Field(None)
