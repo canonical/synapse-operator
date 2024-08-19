@@ -404,7 +404,6 @@ def enable_federation_sender(current_yaml: dict) -> None:
         current_yaml: current configuration.
     """
     current_yaml["send_federation"] = False
-    current_yaml["outbound_federation_restricted_to"] = ["federation_sender1"]
     current_yaml["federation_sender_instances"] = ["federation_sender1"]
 
 
