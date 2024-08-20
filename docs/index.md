@@ -31,6 +31,7 @@ If there’s a particular area of documentation that you’d like to see that’
   1. [Configure SMTP](how-to/configure-smtp.md)
   1. [Backup and Restore](how-to/backup-and-restore.md)
   1. [Contribute](how-to/contribute.md)
+  1. [How to horizontally scale](how-to/horizontally-scale.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
   1. [External access](reference/external-access.md)
