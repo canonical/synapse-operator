@@ -61,6 +61,16 @@ options:
       to more details about allowed values.
       This is an experimental feature and may be removed in future releases.
     default: "2m,5,20s"
+  rc_joins_remote_burst_count:
+    type: int
+    description: Allows for ratelimiting number of remote rooms a user can join
+      before being throttled.
+    default: 10
+  rc_joins_remote_per_second:
+    type: float
+    description: Allows for ratelimiting number of remote rooms a user can join
+      per second.
+    default: 0.01
   report_stats:
     description: |
       Configures whether to report statistics.

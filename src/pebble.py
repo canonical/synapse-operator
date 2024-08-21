@@ -295,6 +295,7 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         synapse.enable_forgotten_room_retention(current_synapse_config)
         synapse.enable_media_retention(current_synapse_config)
         synapse.enable_stale_devices_deletion(current_synapse_config)
+        synapse.enable_rc_joins_remote_rate(current_synapse_config, charm_state=charm_state)
         synapse.enable_serve_server_wellknown(current_synapse_config)
         synapse.enable_replication(current_synapse_config)
         if charm_state.instance_map_config is not None:
