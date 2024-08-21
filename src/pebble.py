@@ -352,7 +352,7 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             # Push worker configuration
             _push_synapse_config(
                 container,
-                synapse.generate_worker_config(unit_number),
+                synapse.generate_worker_config(unit_number, is_main),
                 config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
             )
             # Push main configuration

@@ -833,38 +833,45 @@ def generate_nginx_config(container: ops.Container, main_unit_address: str) -> N
         container.push(f"/etc/nginx/{output_file}", output, make_dirs=True)
 
 
-def generate_worker_config(unit_number: str) -> dict:
+def generate_worker_config(unit_number: str, is_main: bool) -> dict:
     """Generate worker configuration.
 
     Args:
         unit_number: Unit number to be used in the worker_name field.
+        is_main: if unit is main.
 
     Returns:
         Worker configuration.
     """
+    worker_listeners = [
+        {
+            "type": "http",
+            "bind_addresses": ["::"],
+            "port": 8034,
+            "resources": [{"names": ["replication"]}],
+        }
+    ]
+    if not is_main:
+        worker_listeners.extend(
+            [
+                {
+                    "type": "http",
+                    "bind_addresses": ["::"],
+                    "port": 8008,
+                    "x_forwarded": True,
+                    "resources": [{"names": ["client", "federation"]}],
+                },
+                {
+                    "type": "metrics",
+                    "bind_addresses": ["::"],
+                    "port": int(SYNAPSE_EXPORTER_PORT),
+                },
+            ]
+        )
     worker_config = {
         "worker_app": "synapse.app.generic_worker",
         "worker_name": f"worker{unit_number}",
-        "worker_listeners": [
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8008,
-                "x_forwarded": True,
-                "resources": [{"names": ["client", "federation"]}],
-            },
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8034,
-                "resources": [{"names": ["replication"]}],
-            },
-            {
-                "type": "metrics",
-                "bind_addresses": ["::"],
-                "port": int(SYNAPSE_EXPORTER_PORT),
-            },
-        ],
+        "worker_listeners": worker_listeners,
         "worker_log_config": "/data/log.config",
     }
     return worker_config
