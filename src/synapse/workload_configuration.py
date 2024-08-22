@@ -252,13 +252,13 @@ def enable_replication(current_yaml: dict) -> None:
     """
     try:
         resources = {"names": ["replication"]}
-        metric_listener = {
-            "port": 8034,
+        replication_listener = {
+            "port": 8035,
             "type": "http",
             "bind_addresses": ["::"],
             "resources": [resources],
         }
-        current_yaml["listeners"].extend([metric_listener])
+        current_yaml["listeners"].extend([replication_listener])
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
