@@ -172,7 +172,10 @@ class SynapseCharm(CharmBaseWithState):
                 address = f"{unit_name}.{app_name}-endpoints"
                 addresses.append(address)
         logger.debug("addresses values are: %s", str(addresses))
-        instance_map = {"main": {"host": self.get_main_unit_address(), "port": 8034}}
+        instance_map = {
+            "main": {"host": self.get_main_unit_address(), "port": 8035},
+            "federationsender1": {"host": self.get_main_unit_address(), "port": 8034},
+        }
         for address in addresses:
             match = re.search(r"-(\d+)", address)
             # A Juju unit name is s always named on the

@@ -74,6 +74,7 @@ from .workload_configuration import (  # noqa: F401
     disable_room_list_search,
     enable_allow_public_rooms_over_federation,
     enable_federation_domain_whitelist,
+    enable_federation_sender,
     enable_forgotten_room_retention,
     enable_instance_map,
     enable_ip_range_whitelist,
