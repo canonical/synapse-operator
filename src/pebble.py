@@ -178,6 +178,21 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
             logger.exception(str(e))
 
 
+def replan_synapse_federation_sender(
+    container: ops.model.Container, charm_state: CharmState
+) -> None:
+    """Replan Synapse Federation Sender service.
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+    """
+    container.add_layer(
+        "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
+    )
+    container.replan()
+
+
 def _get_synapse_config(container: ops.model.Container) -> dict:
     """Get the current Synapse configuration.
 
@@ -288,6 +303,11 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             synapse.enable_instance_map(current_synapse_config, charm_state=charm_state)
             logger.debug("pebble.change_config: Enabling stream_writers")
             synapse.enable_stream_writers(current_synapse_config, charm_state=charm_state)
+            # the main unit will have an additional layer for running federation sender worker
+            if is_main:
+                logging.info("pebble.change_config: Adding Federation Sender layer")
+                synapse.enable_federation_sender(current_synapse_config)
+                replan_synapse_federation_sender(container=container, charm_state=charm_state)
         if charm_state.saml_config is not None:
             logger.debug("pebble.change_config: Enabling SAML")
             synapse.enable_saml(current_synapse_config, charm_state=charm_state)
@@ -333,7 +353,7 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             # Push worker configuration
             _push_synapse_config(
                 container,
-                synapse.generate_worker_config(unit_number),
+                synapse.generate_worker_config(unit_number, is_main),
                 config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
             )
             # Push main configuration
@@ -519,6 +539,37 @@ def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
                 "command": "synapse-stats-exporter",
                 "startup": "disabled",
                 "on-failure": "ignore",
+            }
+        },
+    }
+    return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.LayerDict:
+    """Return a dictionary representing a Pebble layer.
+
+    Args:
+        charm_state: Instance of CharmState
+
+    Returns:
+        pebble layer for Synapse federation sender
+    """
+    command = (
+        f"{synapse.SYNAPSE_COMMAND_PATH} run -m synapse.app.generic_worker "
+        f"--config-path {synapse.SYNAPSE_CONFIG_PATH} "
+        f"--config-path {synapse.SYNAPSE_WORKER_CONFIG_PATH}"
+    )
+
+    layer = {
+        "summary": "Synapse Federation Sender layer",
+        "description": "pebble config layer for Synapse",
+        "services": {
+            "synapse-federation-sender": {
+                "override": "replace",
+                "summary": "Synapse Federation Sender application service",
+                "startup": "enabled",
+                "command": command,
+                "environment": synapse.get_environment(charm_state),
             }
         },
     }

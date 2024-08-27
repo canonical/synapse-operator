@@ -179,7 +179,30 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `replan_synapse_federation_sender`
+
+```python
+replan_synapse_federation_sender(
+    container: Container,
+    charm_state: CharmState
+) → None
+```
+
+Replan Synapse Federation Sender service. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+---
+
+<a href="../src/pebble.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reconcile`
 
@@ -214,7 +237,7 @@ This is the main entry for changes that require a restart done via Pebble.
 
 ---
 
-<a href="../src/pebble.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L369"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

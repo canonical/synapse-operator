@@ -80,6 +80,16 @@ def enable_federation_domain_whitelist(current_yaml: dict, charm_state: CharmSta
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_federation_sender(current_yaml: dict) -> None:
+    """Change the Synapse configuration to federation sender config.
+
+    Args:
+        current_yaml: current configuration.
+    """
+    current_yaml["send_federation"] = False
+    current_yaml["federation_sender_instances"] = ["federation_sender1"]
+
+
 def enable_forgotten_room_retention(current_yaml: dict) -> None:
     """Change the Synapse configuration to enable forgotten_room_retention_period.
 
@@ -242,13 +252,13 @@ def enable_replication(current_yaml: dict) -> None:
     """
     try:
         resources = {"names": ["replication"]}
-        metric_listener = {
-            "port": 8034,
+        replication_listener = {
+            "port": 8035,
             "type": "http",
             "bind_addresses": ["::"],
             "resources": [resources],
         }
-        current_yaml["listeners"].extend([metric_listener])
+        current_yaml["listeners"].extend([replication_listener])
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
@@ -437,7 +447,11 @@ def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
     """
     persisters = []
     if charm_state.instance_map_config is not None:
-        persisters = [key for key in charm_state.instance_map_config.keys() if key != "main"]
+        persisters = [
+            key
+            for key in charm_state.instance_map_config.keys()
+            if key not in ["main", "federationsender1"]
+        ]
         persisters.sort()
     if persisters is not None:
         current_yaml["stream_writers"] = {"events": persisters}
