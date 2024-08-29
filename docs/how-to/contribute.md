@@ -98,19 +98,19 @@ juju deploy ./synapse_ubuntu-22.04-amd64.charm \
   --resource synapse-nginx-image=localhost:32000/synapse-nginx:latest
 ```
 
-### Configure server_name
+### Configure `server_name`
 
-Synapse requires a server_name to be set before starting. Note that this cannot
+Synapse requires a `server_name` to be set before starting. Note that this cannot
 be changed later so if you want a different server name, will need to run the
 action `reset-instance` to re-create everything.
 
-The following command will configure the server_name mychat.test.com:
+The following command will configure the `server_name` mychat.test.com:
 
 ```bash
 juju configure synapse server_name=mychat.test.com
 ```
 
-Read more about server_name in [Configuring Synapse](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#server_name).
+Read more about `server_name` in [Configuring Synapse](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#server_name).
 
 ## Canonical Contributor Agreement
 
