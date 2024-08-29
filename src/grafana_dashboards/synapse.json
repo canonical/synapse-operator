@@ -439,7 +439,11 @@
         }
       },
       {
-        "datasource": "${prometheusds}",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${prometheusds}"
+        },
+        "description": "Average user and system CPU time spent in seconds/second.",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -448,7 +452,6 @@
             "custom": {
               "axisCenteredZero": false,
               "axisColorMode": "text",
-              "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
               "drawStyle": "line",
@@ -475,9 +478,9 @@
                 "mode": "line+area"
               }
             },
+            "displayName": "CPU Time",
             "links": [],
             "mappings": [],
-            "max": 1.5,
             "min": 0,
             "thresholds": {
               "mode": "absolute",
@@ -485,14 +488,10 @@
                 {
                   "color": "transparent",
                   "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 1
                 }
               ]
             },
-            "unit": "percentunit"
+            "unit": "s"
           },
           "overrides": []
         },
@@ -506,7 +505,12 @@
         "links": [],
         "options": {
           "legend": {
-            "calcs": [],
+            "calcs": [
+              "min",
+              "max",
+              "mean",
+              "lastNotNull"
+            ],
             "displayMode": "list",
             "placement": "bottom",
             "showLegend": true
@@ -521,8 +525,11 @@
           {
             "datasource": "${prometheusds}",
             "editorMode": "code",
-            "expr": "rate(process_cpu_user_seconds_total{juju_application=\"synapse\"}[$__rate_interval]) + rate(process_cpu_system_seconds_total{juju_application=\"synapse\"}[$__rate_interval])",
-            "legendFormat": "__auto",
+            "expr": "avg(rate(process_cpu_seconds_total{instance=\"$instance\",juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[$bucket_size]))",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{job}}-{{index}} ",
             "range": true,
             "refId": "A"
           }
