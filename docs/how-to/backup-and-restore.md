@@ -23,7 +23,7 @@ juju config s3-integrator endpoint=<s3 endpoint> bucket=<bucket name> path=<opti
 juju run s3-integrator/leader sync-s3-credentials access-key=<access-key> secret-key=<secret-key>
 ```
 
-Integrate with Synapse with:
+Integrate with Synapse using:
 
 `juju integrate synapse:backup s3-integrator`
 
@@ -37,7 +37,7 @@ juju config synapse backup_passphrase=<secret passphase>
 
 ### Create the backup
 
-Create the backup with the next command:
+Create the backup:
 ```
 juju run synapse/leader create-backup
 ```
@@ -61,25 +61,28 @@ to also back up the cluster passwords. See:
  - For [postgresql-k8s](https://charmhub.io/postgresql-k8s/docs/h-migrate-cluster).
  - For [postgresql](https://charmhub.io/postgresql/docs/h-migrate-cluster).
 
+
 ## Restore
 
-The recommendation is to first restore PostgreSQL if necessary. Then deploying,
-configuring and integrating Synapse with other charms as done in a normal deployment
-and finally restoring Synapse. 
+The recommendation is to first restore PostgreSQL if necessary. Then deploy,
+configure and integrate Synapse with other charms as done in a normal deployment.
+Finally, restore Synapse. 
 
 The PostgreSQL and Synapse charm revisions should be the same ones as the ones used
 for the backup. The configuration for Synapse before restoring the backup should also
 match the configuration in the original application. This is specially important for 
 the configuration option `server_name` and any other configuration related to the filesystem.
 
+
 ### Restore PostgreSQL
+
 
 If you use the PostgreSQL integration, follow the instructions given by PostgreSQL:
  - For postgresql-k8s: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster).
  - for postgresql: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster).
 
 If you used the foreign backup, once the backup for PostgreSQL is restored, you should remove the S3 integration,
-as it was created in a different cluster, by running:
+as it was created in a different cluster:
 
 ```
 juju remove-relation s3-integrator postgresql
@@ -88,7 +91,7 @@ juju remove-relation s3-integrator postgresql
 ### Deploy Synapse
 
 Synapse should be deployed, integrated with all necessary charms and configured. If necessary, Synapse should be integrated with the PostgreSQL charm that
-has already being restored.
+has already been restored.
 
 ### Restore Synapse
 
