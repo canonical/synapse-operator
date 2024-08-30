@@ -53,13 +53,13 @@ juju run synapse/leader list-backups
 ### Back up PostgreSQL
 
 Follow the instructions of the PostgreSQL charm:
- - For [postgresql-k8s](https://charmhub.io/postgresql-k8s/docs/h-create-and-list-backups).
- - For [postgresql](https://charmhub.io/postgresql/docs/h-create-and-list-backups).
+ - For [postgresql-k8s](https://charmhub.io/postgresql-k8s/docs/h-create-backup).
+ - For [postgresql](https://charmhub.io/postgresql/docs/h-create-backup).
 
 If you plan to restore PostgreSQL in a different model or cluster, you will need
 to also back up the cluster passwords. See:
- - For [postgresql-k8s](https://charmhub.io/postgresql-k8s/docs/h-migrate-cluster-via-restore).
- - For [postgresql](https://charmhub.io/postgresql/docs/h-migrate-cluster-via-restore).
+ - For [postgresql-k8s](https://charmhub.io/postgresql-k8s/docs/h-migrate-cluster).
+ - For [postgresql](https://charmhub.io/postgresql/docs/h-migrate-cluster).
 
 
 ## Restore
@@ -78,8 +78,8 @@ the configuration option `server_name` and any other configuration related to th
 
 
 If you use the PostgreSQL integration, follow the instructions given by PostgreSQL:
- - For postgresql-k8s: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster-via-restore).
- - for postgresql: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster-via-restore).
+ - For postgresql-k8s: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster).
+ - for postgresql: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster).
 
 If you used the foreign backup, once the backup for PostgreSQL is restored, you should remove the S3 integration,
 as it was created in a different cluster:
