@@ -191,7 +191,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L351"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -284,6 +284,7 @@ Represent Synapse builtin configuration values.
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
  - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
+ - <b>`limit_remote_rooms_complexity`</b>:  limit_remote_rooms_complexity config. 
  - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`publish_rooms_allowlist`</b>:  publish_rooms_allowlist config. 
@@ -300,7 +301,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -324,7 +325,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L269"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_pebble_check`
 
@@ -353,7 +354,7 @@ Convert the experimental_alive_check field to pebble check.
 
 ---
 
-<a href="../src/charm_state.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L231"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
@@ -376,7 +377,7 @@ Convert the report_stats field to yes or no.
 
 ---
 
-<a href="../src/charm_state.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `userids_to_list`
 

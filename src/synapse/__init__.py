@@ -78,6 +78,7 @@ from .workload_configuration import (  # noqa: F401
     enable_forgotten_room_retention,
     enable_instance_map,
     enable_ip_range_whitelist,
+    enable_limit_remote_rooms_complexity,
     enable_media,
     enable_media_retention,
     enable_metrics,
