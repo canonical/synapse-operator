@@ -47,7 +47,8 @@ options:
   limit_remote_rooms_complexity:
     type: float
     description: if set, the room "complexity" will be checked before a user
-      joins a new remote room.
+      joins a new remote room. If the complexity is higher, the user will not be
+      able to join the room.
   notif_from:
     type: string
     description: defines the "From" address to use when sending emails.

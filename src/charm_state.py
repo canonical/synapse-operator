@@ -188,13 +188,14 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     federation_domain_whitelist: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     limit_remote_rooms_complexity: float | None = Field(None)
-    notif_from: str | None = Field(None)
     public_baseurl: str | None = Field(None)
     publish_rooms_allowlist: str | None = Field(None)
     rc_joins_remote_burst_count: int | None = Field(None)
     rc_joins_remote_per_second: float | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
+    # notif_from should be after server_name because of how the validator is set.
+    notif_from: str | None = Field(None)
     trusted_key_servers: str | None = Field(
         None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"
     )
