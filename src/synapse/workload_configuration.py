@@ -129,6 +129,20 @@ def enable_ip_range_whitelist(current_yaml: dict, charm_state: CharmState) -> No
         raise WorkloadError(str(exc)) from exc
 
 
+def enable_limit_remote_rooms_complexity(current_yaml: dict, charm_state: CharmState) -> None:
+    """Enable limit_remote_rooms complexity.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    limit_remote_rooms = {
+        "enabled": True,
+        "complexity": charm_state.synapse_config.limit_remote_rooms_complexity,
+    }
+    current_yaml["limit_remote_rooms"] = limit_remote_rooms
+
+
 def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable S3.
 
