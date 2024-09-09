@@ -27,14 +27,25 @@ class Observability:  # pylint: disable=too-few-public-methods
         self._grafana_dashboards = GrafanaDashboardProvider(
             charm, relation_name="grafana-dashboard"
         )
-        self.targets = [
+        synapse_target = [
             f"*:{synapse.SYNAPSE_EXPORTER_PORT}",
+        ]
+        synapse_stats_target = [
             f"*:{synapse.STATS_EXPORTER_PORT}",
         ]
         self._metrics_endpoint = MetricsEndpointProvider(
             charm,
             relation_name="metrics-endpoint",
-            jobs=[{"static_configs": [{"targets": self.targets}]}],
+            jobs=[
+                {
+                    "job_name": "synapse_application",
+                    "static_configs": [{"targets": synapse_target}],
+                },
+                {
+                    "job_name": "synapse_stats_exporter",
+                    "static_configs": [{"targets": synapse_stats_target}],
+                },
+            ],
         )
         self._logging = LogProxyConsumer(
             charm,
