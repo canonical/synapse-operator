@@ -166,6 +166,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
         ip_range_whitelist: ip_range_whitelist config.
+        limit_remote_rooms_complexity: limit_remote_rooms_complexity config.
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
         publish_rooms_allowlist: publish_rooms_allowlist config.
@@ -183,15 +184,17 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
+    experimental_alive_check: str | None = Field(None)
     federation_domain_whitelist: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
+    limit_remote_rooms_complexity: float | None = Field(None)
     public_baseurl: str | None = Field(None)
     publish_rooms_allowlist: str | None = Field(None)
-    experimental_alive_check: str | None = Field(None)
     rc_joins_remote_burst_count: int | None = Field(None)
     rc_joins_remote_per_second: float | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
+    # notif_from should be after server_name because of how the validator is set.
     notif_from: str | None = Field(None)
     trusted_key_servers: str | None = Field(
         None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"

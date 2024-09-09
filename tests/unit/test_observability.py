@@ -22,14 +22,25 @@ def test_prometheus_target(prometheus_configured: Harness) -> None:
 
     assert harness.charm._observability._metrics_endpoint._scrape_jobs == [
         {
+            "job_name": "synapse_application",
             "metrics_path": "/metrics",
             "static_configs": [
                 {
                     "targets": [
                         f"*:{synapse.SYNAPSE_EXPORTER_PORT}",
+                    ]
+                }
+            ],
+        },
+        {
+            "job_name": "synapse_stats_exporter",
+            "metrics_path": "/metrics",
+            "static_configs": [
+                {
+                    "targets": [
                         f"*:{synapse.STATS_EXPORTER_PORT}",
                     ]
                 }
             ],
-        }
+        },
     ]

@@ -781,3 +781,27 @@ def test_enable_rc_joins_remote_rate(
         "rc_joins": {"remote": {"burst_count": 10, "per_second": 0.2}},
     }
     assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
+
+
+def test_enable_limit_remote_rooms_complexity(
+    harness: Harness,
+    config_content: dict[str, typing.Any],
+):
+    """
+    arrange: set mock container with file.
+    act: update limit_remote_rooms_complexity config and call limit_remote_rooms_complexity.
+    assert: new configuration file is pushed and limit_remote_rooms_complexity is enabled.
+    """
+    config = config_content
+
+    harness.update_config({"limit_remote_rooms_complexity": 0.2})
+    harness.begin()
+    synapse.enable_limit_remote_rooms_complexity(config, harness.charm.build_charm_state())
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "limit_remote_rooms": {"enabled": True, "complexity": 0.2},
+    }
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
