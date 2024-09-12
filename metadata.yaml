@@ -15,6 +15,7 @@ maintainers:
 source: https://github.com/canonical/synapse-operator
 assumes:
   - k8s-api
+  - juju >= 3.1
 
 containers:
   synapse:
