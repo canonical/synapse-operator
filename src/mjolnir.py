@@ -100,7 +100,6 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             if not self._charm.unit.name == main_unit_id:
                 if mjolnir_service:
                     logger.info("This is not the main unit, stopping Mjolnir")
-                    print(container.stop())
                     container.stop(MJOLNIR_SERVICE_NAME)
                 else:
                     logger.info("This is not the main unit, skipping Mjolnir configuration")
