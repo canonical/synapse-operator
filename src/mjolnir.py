@@ -80,6 +80,11 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         if not charm_state.synapse_config.enable_mjolnir:
             return
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            return
+        mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
         # This check is the same done in get_main_unit. It should be refactored
         # to a place where both Charm and Mjolnir can get it.
         peer_relation = self._charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
@@ -93,13 +98,13 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
                 peer_relation[0].data[self._charm.app].get("main_unit_id", self._charm.unit.name)
             )
             if not self._charm.unit.name == main_unit_id:
-                logger.info("This is not the main unit, skipping Mjolnir configuration")
+                if mjolnir_service:
+                    logger.info("This is not the main unit, stopping Mjolnir")
+                    print(container.stop())
+                    container.stop(MJOLNIR_SERVICE_NAME)
+                else:
+                    logger.info("This is not the main unit, skipping Mjolnir configuration")
                 return
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
         if mjolnir_service:
             mjolnir_not_active = [
                 service for service in mjolnir_service.values() if not service.is_running()
