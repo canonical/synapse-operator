@@ -114,6 +114,10 @@ parts:
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
             pip3 install --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
+            git clone https://git.buechner.me/nbuechner/synapse-invite-checker
+            cd synapse-invite-checker
+            pip3 install --prefix="/install" --no-warn-script-location -U .
+            cd ..
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/

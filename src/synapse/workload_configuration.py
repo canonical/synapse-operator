@@ -316,6 +316,33 @@ def enable_room_list_publication_rules(current_yaml: dict, charm_state: CharmSta
     current_yaml["room_list_publication_rules"] = room_list_publication_rules
 
 
+def enable_synapse_invite_checker(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable synapse_invite_checker.
+
+    Args:
+        current_yaml: Current Configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling synapse_invite_checker.
+    """
+    try:
+        if "modules" not in current_yaml:
+            current_yaml["modules"] = []
+        config = {}
+        if charm_state.synapse_config.invite_checker_blocklist_allowlist_url:
+            config["blocklist_allowlist_url"] = (
+                charm_state.synapse_config.invite_checker_blocklist_allowlist_url
+            )
+        if charm_state.synapse_config.invite_checker_policy_rooms:
+            config["policy_rooms"] = charm_state.synapse_config.invite_checker_policy_rooms
+        current_yaml["modules"].append(
+            {"module": "synapse_invite_checker.InviteChecker", "config": config},
+        )
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
     """Create config as expected by pysaml2.
 
