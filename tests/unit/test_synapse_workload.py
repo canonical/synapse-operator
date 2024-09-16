@@ -847,7 +847,7 @@ def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
     assert: new configuration file is pushed and invite_checker_policy_rooms is enabled.
     """
     invite_checker_policy_rooms = {
-        "invite_checker_policy_rooms": "foo:foo.com,foo1:foo1.com",
+        "invite_checker_policy_rooms": "foo:foo.com,foo1:foo1.com,foo2:foo2.foo1.com",
         "server_name": "example.com",
     }
     synapse_config = SynapseConfig(**invite_checker_policy_rooms)  # type: ignore[arg-type]
@@ -869,7 +869,9 @@ def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
         ],
         "modules": [
             {
-                "config": {"policy_rooms": ["!foo:foo.com", "!foo1:foo1.com"]},
+                "config": {
+                    "policy_rooms": ["!foo:foo.com", "!foo1:foo1.com", "!foo2:foo2.foo1.com"]
+                },
                 "module": "synapse_invite_checker.InviteChecker",
             }
         ],
