@@ -12,11 +12,11 @@ Synapse instance via Element Desktop application.
 
 ## Requirements
 - Juju 3 installed.
-- Juju controller and model created.
+- Juju controller created.
 
 For more information about how to install Juju, see [Get started with Juju](https://juju.is/docs/olm/get-started-with-juju).
 
-## Setting up a Tutorial Model
+## Set up a Tutorial Model
 
 To manage resources effectively and to separate this tutorial's workload from
 your usual work, we recommend creating a new model using the following command.
@@ -110,7 +110,7 @@ accordingly:
 10.152.183.225 tutorial-synapse.juju.local
 ```
 
-Optional: run `echo "10.152.183.225 tutorial-synapse.juju.local" >> /etc/hosts`
+> Optional: run `echo "10.152.183.225 tutorial-synapse.juju.local" >> /etc/hosts`
 to redirect the output of the command `echo` to the end of the file `/etc/hosts`.
 
 After that, visit http://tutorial-synapse.juju.local in a browser and you'll be
@@ -139,5 +139,5 @@ Well done! You've successfully completed the Synapse tutorial. To remove the
 model environment you created during this tutorial, use the following command.
 
 ```
-juju destroy model synapse-tutorial -y
+juju destroy-model synapse-tutorial
 ```
