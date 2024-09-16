@@ -165,8 +165,9 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
-        ip_range_whitelist: ip_range_whitelist config.
+        invite_checker_blocklist_allowlist_url: invite_checker_blocklist_allowlist_url config.
         invite_checker_policy_rooms: invite_checker_policy_rooms config.
+        ip_range_whitelist: ip_range_whitelist config.
         limit_remote_rooms_complexity: limit_remote_rooms_complexity config.
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
@@ -187,6 +188,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     enable_room_list_search: bool = True
     experimental_alive_check: str | None = Field(None)
     federation_domain_whitelist: str | None = Field(None)
+    invite_checker_blocklist_allowlist_url: str | None = Field(None)
     invite_checker_policy_rooms: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     limit_remote_rooms_complexity: float | None = Field(None)

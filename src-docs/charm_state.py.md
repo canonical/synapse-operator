@@ -191,7 +191,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -283,8 +283,9 @@ Represent Synapse builtin configuration values.
  - <b>`enable_password_config`</b>:  enable_password_config config. 
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
- - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
+ - <b>`invite_checker_blocklist_allowlist_url`</b>:  invite_checker_blocklist_allowlist_url config. 
  - <b>`invite_checker_policy_rooms`</b>:  invite_checker_policy_rooms config. 
+ - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
  - <b>`limit_remote_rooms_complexity`</b>:  limit_remote_rooms_complexity config. 
  - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
@@ -302,7 +303,7 @@ Represent Synapse builtin configuration values.
 
 ---
 
-<a href="../src/charm_state.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L217"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -326,7 +327,7 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L249"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `roomids_to_list`
 
@@ -355,7 +356,7 @@ Convert a comma separated list of rooms to list.
 
 ---
 
-<a href="../src/charm_state.py#L299"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_pebble_check`
 
@@ -384,7 +385,7 @@ Convert the experimental_alive_check field to pebble check.
 
 ---
 
-<a href="../src/charm_state.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
@@ -407,7 +408,7 @@ Convert the report_stats field to yes or no.
 
 ---
 
-<a href="../src/charm_state.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `userids_to_list`
 

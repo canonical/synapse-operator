@@ -323,6 +323,9 @@ def enable_synapse_invite_checker(current_yaml: dict, charm_state: CharmState) -
             {
                 "module": "synapse_invite_checker.InviteChecker",
                 "config": {
+                    # URL to fetch the JSON file containing the allowlist and blocklist
+                    # pylint: disable=line-too-long
+                    "blocklist_allowlist_url": charm_state.synapse_config.invite_checker_blocklist_allowlist_url,  # noqa: E501
                     # Optionally specify policy rooms for dynamic blocklist fetching via MSC2313
                     "policy_rooms": charm_state.synapse_config.invite_checker_policy_rooms,
                 },
