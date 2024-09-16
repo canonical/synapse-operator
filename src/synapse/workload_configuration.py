@@ -317,7 +317,7 @@ def enable_synapse_invite_checker(current_yaml: dict, charm_state: CharmState) -
         WorkloadError: something went wrong enabling synapse_invite_checker.
     """
     try:
-        if not "modules" in current_yaml:
+        if "modules" not in current_yaml:
             current_yaml["modules"] = []
         current_yaml["modules"].append(
             {
