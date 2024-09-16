@@ -291,6 +291,9 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             synapse.execute_migrate_config(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
+        if charm_state.synapse_config.block_non_admin_invites:
+            logger.debug("pebble.change_config: Enabling Block non admin invites")
+            synapse.block_non_admin_invites(current_synapse_config, charm_state=charm_state)
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
         synapse.enable_media_retention(current_synapse_config)
@@ -298,6 +301,12 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         synapse.enable_rc_joins_remote_rate(current_synapse_config, charm_state=charm_state)
         synapse.enable_serve_server_wellknown(current_synapse_config)
         synapse.enable_replication(current_synapse_config)
+        if (
+            charm_state.synapse_config.invite_checker_policy_rooms
+            or charm_state.synapse_config.invite_checker_blocklist_allowlist_url
+        ):
+            logger.debug("pebble.change_config: Enabling enable_synapse_invite_checker")
+            synapse.enable_synapse_invite_checker(current_synapse_config, charm_state=charm_state)
         if charm_state.synapse_config.limit_remote_rooms_complexity:
             logger.debug("pebble.change_config: Enabling limit_remote_rooms_complexity")
             synapse.enable_limit_remote_rooms_complexity(
