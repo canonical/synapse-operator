@@ -695,6 +695,39 @@ def test_http_proxy(
         assert env.get(env_name) == env.get(env_name.upper()) == env_value
 
 
+def test_block_non_admin_invites(config_content: dict[str, typing.Any]):
+    """
+    arrange: set mock container with file.
+    act: update block_non_admin_invites config to true.
+    assert: new configuration file is pushed and block_non_admin_invites is enabled.
+    """
+    block_non_admin_invites = {
+        "block_non_admin_invites": True,
+        "server_name": "example.com",
+    }
+    synapse_config = SynapseConfig(**block_non_admin_invites)  # type: ignore[arg-type]
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+    )
+
+    synapse.block_non_admin_invites(config_content, charm_state)
+
+    expected_config_content = {
+        "block_non_admin_invites": True,
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+    }
+
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
 def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     """
     arrange: mock Synapse current configuration with config_content and

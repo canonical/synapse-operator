@@ -51,6 +51,16 @@ def disable_room_list_search(current_yaml: dict) -> None:
     current_yaml["enable_room_list_search"] = False
 
 
+def block_non_admin_invites(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to block non admin room invitations.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    current_yaml["block_non_admin_invites"] = charm_state.synapse_config.block_non_admin_invites
+
+
 def enable_allow_public_rooms_over_federation(current_yaml: dict) -> None:
     """Change the Synapse configuration to allow public rooms in federation.
 

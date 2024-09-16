@@ -291,6 +291,9 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             synapse.execute_migrate_config(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
+        if charm_state.synapse_config.block_non_admin_invites:
+            logger.debug("pebble.change_config: Enabling Block non admin invites")
+            synapse.block_non_admin_invites(current_synapse_config, charm_state=charm_state)
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
         synapse.enable_media_retention(current_synapse_config)

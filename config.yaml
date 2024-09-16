@@ -11,6 +11,12 @@ options:
   backup_passphrase:
     type: string
     description: Passphrase used to encrypt a backup using gpg with symmetric key.
+  block_non_admin_invites:
+    type: boolean
+    default: false
+    description: |
+      When enabled, room invites to users on this server will be blocked
+      (except those sent by local server admins).
   enable_email_notifs:
     type: boolean
     default: false
