@@ -838,3 +838,80 @@ def test_enable_limit_remote_rooms_complexity(
         "limit_remote_rooms": {"enabled": True, "complexity": 0.2},
     }
     assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
+
+
+def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
+    """
+    arrange: set mock container with file.
+    act: update invite_checker_policy_rooms config.
+    assert: new configuration file is pushed and invite_checker_policy_rooms is enabled.
+    """
+    invite_checker_policy_rooms = {
+        "invite_checker_policy_rooms": "foo:foo.com,foo1:foo1.com",
+        "server_name": "example.com",
+    }
+    synapse_config = SynapseConfig(**invite_checker_policy_rooms)  # type: ignore[arg-type]
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+    )
+
+    synapse.enable_synapse_invite_checker(config_content, charm_state)
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "modules": [
+            {
+                "config": {"policy_rooms": ["!foo:foo.com", "!foo1:foo1.com"]},
+                "module": "synapse_invite_checker.InviteChecker",
+            }
+        ],
+    }
+
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
+def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing.Any]):
+    """
+    arrange: set mock container with file.
+    act: update invite_checker_blocklist_allowlist_url config.
+    assert: new configuration file is pushed and invite_checker_blocklist_allowlist_url is enabled.
+    """
+    invite_checker_blocklist_allowlist_url = {
+        "invite_checker_blocklist_allowlist_url": "https://example.com/file",
+        "server_name": "example.com",
+    }
+    # pylint: disable=line-too-long
+    synapse_config = SynapseConfig(**invite_checker_blocklist_allowlist_url)  # type: ignore[arg-type] # noqa: E501
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+    )
+
+    synapse.enable_synapse_invite_checker(config_content, charm_state)
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "modules": [
+            {
+                "config": {"blocklist_allowlist_url": "https://example.com/file"},
+                "module": "synapse_invite_checker.InviteChecker",
+            }
+        ],
+    }
+
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
