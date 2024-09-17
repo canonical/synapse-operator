@@ -67,6 +67,28 @@ async def test_synapse_validate_configuration(synapse_app: Application):
     )
 
 
+async def test_synapse_configure_roomids(synapse_app: Application):
+    """
+    arrange: build and deploy the Synapse charm.
+    act: configure  invite_checker_policy_rooms with valid room ids.
+    assert: the Synapse application should be active after setting and
+        reverting the config.
+    """
+    await synapse_app.set_config(
+        {"invite_checker_policy_rooms": "a1b2c3d4e5f6g7h8i9j:foo.bar,w1x2y3z4A5B6C7D8E9F:xyz.org"}
+    )
+
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+
+    await synapse_app.reset_config(["invite_checker_policy_rooms"])
+
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+
+
 async def test_enable_stats_exporter(
     synapse_app: Application,
     synapse_app_name: str,

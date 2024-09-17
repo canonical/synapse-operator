@@ -266,7 +266,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         """
         # Based on documentation
         # https://spec.matrix.org/v1.10/appendices/#user-identifiers
-        roomid_regex = r"![a-z0-9._=/+-]+:\w+(?:\.\w+)+"
+        roomid_regex = r"![a-zA-Z0-9._=/+-]+:[a-zA-Z0-9-.]+"
         if value is None:
             return []
         value_list = ["!" + room_id.strip() for room_id in value.split(",")]
