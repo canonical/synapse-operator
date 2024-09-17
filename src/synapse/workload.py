@@ -390,7 +390,7 @@ def generate_worker_config(unit_number: str, is_main: bool) -> dict:
         )
     worker_config = {
         "worker_app": "synapse.app.generic_worker",
-        "worker_name": "federation_sender1" if is_main else f"worker{unit_number}",
+        "worker_name": "federationsender1" if is_main else f"worker{unit_number}",
         "worker_listeners": worker_listeners,
         "worker_log_config": "/data/log.config",
     }
