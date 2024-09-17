@@ -169,6 +169,29 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
         assert content["worker_name"] == "federationsender1"
 
 
+def test_scaling_instance_restarts_federation_service(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: charm deployed, integrated with Redis, one more unit in peer relation
+        and set as leader.
+    act: emit config-changed event.
+    assert: Synapse charm is configured with instance_map and the federation service is restarted.
+    """
+    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.begin_with_initial_hooks()
+    federation_container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    harness.set_can_connect(federation_container, True)
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
+    harness.set_leader(True)
+
+    restart_federation_mock = MagicMock()
+    monkeypatch.setattr(pebble, "restart_federation_sender", restart_federation_mock)
+    harness.update_config({"workers_ignore_list": "worker1"})
+    assert restart_federation_mock.called
+
+
 def test_scaling_instance_map_not_configured(harness: Harness) -> None:
     """
     arrange: charm deployed, integrated with Redis and set as leader.
