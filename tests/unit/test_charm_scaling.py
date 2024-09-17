@@ -144,8 +144,6 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
     harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(True)
 
-    harness.charm.on.config_changed.emit()
-
     root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
     config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
     with open(config_path, encoding="utf-8") as config_file:
@@ -165,6 +163,10 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
                 "port": 8034,
             },
         }
+    worker_config_path = root / synapse.SYNAPSE_WORKER_CONFIG_PATH[1:]
+    with open(worker_config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert content["worker_name"] == "federationsender1"
 
 
 def test_scaling_instance_map_not_configured(harness: Harness) -> None:
