@@ -1,4 +1,4 @@
-# Getting Started
+# Deploy the Synapse charm for the first time
 
 ## What you’ll do
 - Deploy the Synapse charm.
