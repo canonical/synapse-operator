@@ -141,6 +141,19 @@ def restart_nginx(container: ops.model.Container, main_unit_address: str) -> Non
     container.restart(synapse.SYNAPSE_NGINX_SERVICE_NAME)
 
 
+def restart_federation_sender(container: ops.model.Container, charm_state: CharmState) -> None:
+    """Restart Synapse federation sender service and regenerate configuration.
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+    """
+    container.add_layer(
+        "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
+    )
+    container.restart(synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME)
+
+
 def replan_mjolnir(container: ops.model.Container) -> None:
     """Replan Synapse Mjolnir service.
 
@@ -374,6 +387,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             _push_synapse_config(container, current_synapse_config)
             synapse.validate_config(container=container)
             restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
+            if is_main and charm_state.instance_map_config is not None:
+                restart_federation_sender(container=container, charm_state=charm_state)
         else:
             logging.info("Configuration has not changed, no action.")
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
@@ -578,7 +593,7 @@ def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.Layer
         "summary": "Synapse Federation Sender layer",
         "description": "pebble config layer for Synapse",
         "services": {
-            "synapse-federation-sender": {
+            synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME: {
                 "override": "replace",
                 "summary": "Synapse Federation Sender application service",
                 "startup": "enabled",

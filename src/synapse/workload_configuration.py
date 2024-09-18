@@ -96,8 +96,8 @@ def enable_federation_sender(current_yaml: dict) -> None:
     Args:
         current_yaml: current configuration.
     """
-    current_yaml["send_federation"] = False
-    current_yaml["federation_sender_instances"] = ["federation_sender1"]
+    current_yaml["send_federation"] = True
+    current_yaml["federation_sender_instances"] = ["federationsender1"]
 
 
 def enable_forgotten_room_retention(current_yaml: dict) -> None:

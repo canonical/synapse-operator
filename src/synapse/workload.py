@@ -36,6 +36,7 @@ SYNAPSE_CONTAINER_NAME = "synapse"
 SYNAPSE_CRON_SERVICE_NAME = "synapse-cron"
 SYNAPSE_DATA_DIR = "/data"
 SYNAPSE_DEFAULT_MEDIA_STORE_PATH = "/media_store"
+SYNAPSE_FEDERATION_SENDER_SERVICE_NAME = "synapse-federation-sender"
 SYNAPSE_GROUP = "synapse"
 SYNAPSE_NGINX_CONTAINER_NAME = "synapse-nginx"
 SYNAPSE_NGINX_PORT = 8080
@@ -390,7 +391,7 @@ def generate_worker_config(unit_number: str, is_main: bool) -> dict:
         )
     worker_config = {
         "worker_app": "synapse.app.generic_worker",
-        "worker_name": f"worker{unit_number}",
+        "worker_name": "federationsender1" if is_main else f"worker{unit_number}",
         "worker_listeners": worker_listeners,
         "worker_log_config": "/data/log.config",
     }
