@@ -80,11 +80,10 @@ parts:
         stage-snaps:
             - aws-cli
             - mjolnir/latest/edge
-            - matrix-appservice-irc/latest/edge
         plugin: nil
         source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.112.0
+        source-tag: v1.115.0
         build-environment:
           - RUST_VERSION: "1.76.0"
           - POETRY_VERSION: "1.7.1"
@@ -125,6 +124,7 @@ parts:
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
             mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
+            rm -rf $CRAFT_PART_INSTALL/aws/dist/awscli/examples/
         overlay-packages:
             - ca-certificates
             - libjemalloc2
