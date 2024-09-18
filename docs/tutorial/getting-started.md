@@ -19,7 +19,7 @@ For more information about how to install Juju, see [Get started with Juju](http
 ## Set up a Tutorial Model
 
 To manage resources effectively and to separate this tutorial's workload from
-your usual work, we recommend creating a new model using the following command.
+your usual work, create a new model using the following command.
 
 ```
 juju add-model synapse-tutorial
@@ -28,7 +28,7 @@ juju add-model synapse-tutorial
 ## Deploy the Synapse charm
 Synapse requires connections to PostgreSQL. Deploy both charm applications.
 
-### Deploy the charms:
+### Deploy and integrate the charms
 ```
 juju deploy postgresql-k8s --trust
 juju deploy synapse
@@ -47,7 +47,7 @@ Run `juju status` again to see that the message has changed:
 synapse/0*                 waiting   idle   10.1.74.70             Waiting for database availability
 ```
 
-Provide integration between Synapse and PostgreSQL:
+Provide the integration between Synapse and PostgreSQL:
 ```
 juju integrate synapse postgresql-k8s
 ```
@@ -70,7 +70,7 @@ ingress resource of Kubernetes.
 If you want to make Synapse charm available to external clients, you need to
 deploy the Traefik charm and integrate Synapse with it.
 
-### Deploy the charm Traefik:
+### Deploy the Traefik charm
 ```
 juju deploy traefik-k8s --trust
 ```
@@ -88,7 +88,7 @@ juju integrate synapse traefik-k8s
 
 Now, you will need to go into your DNS settings and set the IP address of the
 Traefik charm to the DNS entry you’re setting up. Getting the IP address can be
-done using juju status.
+done using `juju status`.
 ```
 App                       Version                       Status  Scale  Charm                     Channel  Rev  Address         Exposed  Message
 traefik-k8s      2.9.6                 active       1  traefik-k8s      stable     110  10.152.183.225  no
@@ -104,7 +104,7 @@ to take effect.
 
 In case you don’t have access to a DNS: The browser uses entries in the
 `/etc/hosts` file to override what is returned by a DNS server. So, to resolve
-it to your Traefik IP, edit /etc/hosts file and add the following line
+it to your Traefik IP, open the `/etc/hosts` file and add the following line
 accordingly:
 ```
 10.152.183.225 tutorial-synapse.juju.local
@@ -124,8 +124,8 @@ juju run-action synapse/0 register-user username=alice password=<secure-password
 
 ## Access via Element Desktop
 
-Follow the [instructions](https://element.io/download) in Element Desktop to
-install it.
+Follow the [instructions](https://element.io/download) to
+install Element Desktop.
 
 Open it and click on “Sign in”. Then click on “Edit” to provide which server you
  want to use (tutorial-synapse.juju.local).
@@ -133,7 +133,7 @@ Open it and click on “Sign in”. Then click on “Edit” to provide which se
 Now, you can fill in the username and password fields accordingly to the action
 output. Then you should see a welcome page and it's ready to chat.
 
-## Cleaning up the Environment
+## Clean up the Environment
 
 Well done! You've successfully completed the Synapse tutorial. To remove the
 model environment you created during this tutorial, use the following command.
