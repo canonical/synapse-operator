@@ -115,7 +115,7 @@ parts:
             pip3 install --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
             git clone https://git.buechner.me/nbuechner/synapse-invite-checker
             cd synapse-invite-checker
-            git checkout e81f3087924038ff23d7ee15e9b992631ea593d0
+            git checkout ab6c8b78d78c4cbf31e1a30981ae45c09285b34a
             pip3 install --prefix="/install" --no-warn-script-location -U .
             cd ..
             cp docker/start.py $CRAFT_PART_INSTALL/

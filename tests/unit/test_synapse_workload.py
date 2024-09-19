@@ -870,7 +870,7 @@ def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
         "modules": [
             {
                 "config": {
-                    "policy_rooms": ["!foo:foo.com", "!foo1:foo1.com", "!foo2:foo2.foo1.com"]
+                    "policy_room_ids": ["!foo:foo.com", "!foo1:foo1.com", "!foo2:foo2.foo1.com"]
                 },
                 "module": "synapse_invite_checker.InviteChecker",
             }
