@@ -335,7 +335,7 @@ def enable_synapse_invite_checker(current_yaml: dict, charm_state: CharmState) -
                 charm_state.synapse_config.invite_checker_blocklist_allowlist_url
             )
         if charm_state.synapse_config.invite_checker_policy_rooms:
-            config["policy_rooms"] = charm_state.synapse_config.invite_checker_policy_rooms
+            config["policy_room_ids"] = charm_state.synapse_config.invite_checker_policy_rooms
         current_yaml["modules"].append(
             {"module": "synapse_invite_checker.InviteChecker", "config": config},
         )
