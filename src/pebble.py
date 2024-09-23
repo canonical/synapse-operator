@@ -395,34 +395,6 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         raise PebbleServiceError(str(exc)) from exc
 
 
-def reset_instance(charm_state: CharmState, container: ops.model.Container) -> None:
-    """Reset instance.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    # This is needed in the case of relation with Postgresql.
-    # If there is open connections it won't be possible to drop the database.
-    try:
-        logger.info("Replan service to not restart")
-        container.add_layer(
-            synapse.SYNAPSE_CONTAINER_NAME,
-            _pebble_layer_without_restart(charm_state),
-            combine=True,
-        )
-        container.replan()
-        logger.info("Stop Synapse instance")
-        container.stop(synapse.SYNAPSE_SERVICE_NAME)
-        logger.info("Erase Synapse data")
-        synapse.reset_instance(container)
-    except ops.pebble.PathError as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
 def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.LayerDict:
     """Return a dictionary representing a Pebble layer.
 

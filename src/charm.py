@@ -92,7 +92,6 @@ class SynapseCharm(CharmBaseWithState):
         self.framework.observe(
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
         )
-        self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
         self.framework.observe(
             self.on.synapse_nginx_pebble_ready, self._on_synapse_nginx_pebble_ready
@@ -497,50 +496,11 @@ class SynapseCharm(CharmBaseWithState):
         pebble.restart_nginx(container, self.get_main_unit_address())
         self._set_unit_status()
 
-    @inject_charm_state
-    def _on_reset_instance_action(self, event: ActionEvent, charm_state: CharmState) -> None:
-        """Reset instance and report action result.
-
-        Args:
-            event: Event triggering the reset instance action.
-            charm_state: The charm state.
-        """
-        results = {
-            "reset-instance": False,
-        }
-        if not self.model.unit.is_leader():
-            event.fail("Only the juju leader unit can run reset instance action")
-            return
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-        try:
-            self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
-            try:
-                container.stop(pebble.STATS_EXPORTER_SERVICE_NAME)
-            except (ops.pebble.Error, RuntimeError) as e:
-                event.fail(f"Failed to stop Synapse Stats Exporter: {str(e)}")
-            pebble.reset_instance(charm_state, container)
-            datasource = self._database.get_relation_as_datasource()
-            actions.reset_instance(
-                container=container, charm_state=charm_state, datasource=datasource
-            )
-            logger.info("Start Synapse")
-            pebble.restart_synapse(charm_state, container, self.is_main())
-            results["reset-instance"] = True
-        except (pebble.PebbleServiceError, actions.ResetInstanceError) as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            event.fail(str(exc))
-            return
-        event.set_results(results)
-        self.model.unit.status = ops.ActiveStatus()
-
     def _on_register_user_action(self, event: ActionEvent) -> None:
-        """Reset instance and report action result.
+        """Register user and report action result.
 
         Args:
-            event: Event triggering the reset instance action.
+            event: Event triggering the register user instance action.
         """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
