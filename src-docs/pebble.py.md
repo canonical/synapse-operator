@@ -142,6 +142,26 @@ Restart Synapse NGINX service and regenerate configuration.
 
 <a href="../src/pebble.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+## <kbd>function</kbd> `restart_federation_sender`
+
+```python
+restart_federation_sender(container: Container, charm_state: CharmState) → None
+```
+
+Restart Synapse federation sender service and regenerate configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+---
+
+<a href="../src/pebble.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ## <kbd>function</kbd> `replan_mjolnir`
 
 ```python
@@ -159,7 +179,7 @@ Replan Synapse Mjolnir service.
 
 ---
 
-<a href="../src/pebble.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_stats_exporter`
 
@@ -179,7 +199,7 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_synapse_federation_sender`
 
@@ -202,7 +222,7 @@ Replan Synapse Federation Sender service.
 
 ---
 
-<a href="../src/pebble.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reconcile`
 
@@ -237,7 +257,7 @@ This is the main entry for changes that require a restart done via Pebble.
 
 ---
 
-<a href="../src/pebble.py#L374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L398"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_instance`
 

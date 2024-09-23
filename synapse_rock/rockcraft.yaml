@@ -6,9 +6,9 @@ summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
 version: "1.0"
 base: ubuntu@22.04
-# renovate: base: ubuntu:22.04@sha256:adbb90115a21969d2fe6fa7f9af4253e16d45f8d4c1e930182610c4731962658
+# renovate: base: ubuntu:22.04@sha256:58b87898e82351c6cf9cf5b9f3c20257bb9e2dcf33af051e12ce532d7f94e3fe
 build-base: ubuntu@22.04
-# renovate: build-base: ubuntu:22.04@sha256:adbb90115a21969d2fe6fa7f9af4253e16d45f8d4c1e930182610c4731962658
+# renovate: build-base: ubuntu:22.04@sha256:58b87898e82351c6cf9cf5b9f3c20257bb9e2dcf33af051e12ce532d7f94e3fe
 license: Apache-2.0
 platforms:
   amd64:
@@ -80,11 +80,10 @@ parts:
         stage-snaps:
             - aws-cli
             - mjolnir/latest/edge
-            - matrix-appservice-irc/latest/edge
         plugin: nil
         source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.112.0
+        source-tag: v1.115.0
         build-environment:
           - RUST_VERSION: "1.76.0"
           - POETRY_VERSION: "1.7.1"
@@ -114,6 +113,11 @@ parts:
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
             pip3 install --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
+            git clone https://git.buechner.me/nbuechner/synapse-invite-checker
+            cd synapse-invite-checker
+            git checkout ab6c8b78d78c4cbf31e1a30981ae45c09285b34a
+            pip3 install --prefix="/install" --no-warn-script-location -U .
+            cd ..
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
@@ -121,6 +125,7 @@ parts:
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
             mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
+            rm -rf $CRAFT_PART_INSTALL/aws/dist/awscli/examples/
         overlay-packages:
             - ca-certificates
             - libjemalloc2

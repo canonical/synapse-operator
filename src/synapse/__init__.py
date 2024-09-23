@@ -49,6 +49,7 @@ from .workload import (  # noqa: F401
     SYNAPSE_DATA_DIR,
     SYNAPSE_DB_RELATION_NAME,
     SYNAPSE_EXPORTER_PORT,
+    SYNAPSE_FEDERATION_SENDER_SERVICE_NAME,
     SYNAPSE_GROUP,
     SYNAPSE_NGINX_CONTAINER_NAME,
     SYNAPSE_NGINX_PORT,
@@ -70,6 +71,7 @@ from .workload import (  # noqa: F401
     validate_config,
 )
 from .workload_configuration import (  # noqa: F401
+    block_non_admin_invites,
     disable_password_config,
     disable_room_list_search,
     enable_allow_public_rooms_over_federation,
@@ -91,5 +93,6 @@ from .workload_configuration import (  # noqa: F401
     enable_smtp,
     enable_stale_devices_deletion,
     enable_stream_writers,
+    enable_synapse_invite_checker,
     enable_trusted_key_servers,
 )

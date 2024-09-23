@@ -160,11 +160,14 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     Attributes:
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
+        block_non_admin_invites: block_non_admin_invites config.
         enable_email_notifs: enable_email_notifs config.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
+        invite_checker_blocklist_allowlist_url: invite_checker_blocklist_allowlist_url config.
+        invite_checker_policy_rooms: invite_checker_policy_rooms config.
         ip_range_whitelist: ip_range_whitelist config.
         limit_remote_rooms_complexity: limit_remote_rooms_complexity config.
         notif_from: defines the "From" address to use when sending emails.
@@ -180,12 +183,15 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """
 
     allow_public_rooms_over_federation: bool = False
+    block_non_admin_invites: bool = False
     enable_email_notifs: bool = False
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
     experimental_alive_check: str | None = Field(None)
     federation_domain_whitelist: str | None = Field(None)
+    invite_checker_blocklist_allowlist_url: str | None = Field(None)
+    invite_checker_policy_rooms: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     limit_remote_rooms_complexity: float | None = Field(None)
     public_baseurl: str | None = Field(None)
@@ -243,6 +249,31 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         if value == str(True):
             return "yes"
         return "no"
+
+    @validator("invite_checker_policy_rooms")
+    @classmethod
+    def roomids_to_list(cls, value: str) -> typing.List[str]:
+        """Convert a comma separated list of rooms to list.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The string converted to list.
+
+        Raises:
+            ValidationError: if rooms is not as expected.
+        """
+        # Based on documentation
+        # https://spec.matrix.org/v1.10/appendices/#user-identifiers
+        roomid_regex = r"![a-zA-Z0-9._=/+-]+:[a-zA-Z0-9-.]+"
+        if value is None:
+            return []
+        value_list = ["!" + room_id.strip() for room_id in value.split(",")]
+        for room_id in value_list:
+            if not re.fullmatch(roomid_regex, room_id):
+                raise ValidationError(f"Invalid room ID format: {room_id}", cls)
+        return value_list
 
     @validator("publish_rooms_allowlist")
     @classmethod

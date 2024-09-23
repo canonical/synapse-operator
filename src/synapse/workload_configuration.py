@@ -51,6 +51,16 @@ def disable_room_list_search(current_yaml: dict) -> None:
     current_yaml["enable_room_list_search"] = False
 
 
+def block_non_admin_invites(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to block non admin room invitations.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    current_yaml["block_non_admin_invites"] = charm_state.synapse_config.block_non_admin_invites
+
+
 def enable_allow_public_rooms_over_federation(current_yaml: dict) -> None:
     """Change the Synapse configuration to allow public rooms in federation.
 
@@ -86,8 +96,8 @@ def enable_federation_sender(current_yaml: dict) -> None:
     Args:
         current_yaml: current configuration.
     """
-    current_yaml["send_federation"] = False
-    current_yaml["federation_sender_instances"] = ["federation_sender1"]
+    current_yaml["send_federation"] = True
+    current_yaml["federation_sender_instances"] = ["federationsender1"]
 
 
 def enable_forgotten_room_retention(current_yaml: dict) -> None:
@@ -304,6 +314,33 @@ def enable_room_list_publication_rules(current_yaml: dict, charm_state: CharmSta
     last_rule = {"user_id": "*", "alias": "*", "room_id": "*", "action": "deny"}
     room_list_publication_rules.append(last_rule)
     current_yaml["room_list_publication_rules"] = room_list_publication_rules
+
+
+def enable_synapse_invite_checker(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable synapse_invite_checker.
+
+    Args:
+        current_yaml: Current Configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling synapse_invite_checker.
+    """
+    try:
+        if "modules" not in current_yaml:
+            current_yaml["modules"] = []
+        config = {}
+        if charm_state.synapse_config.invite_checker_blocklist_allowlist_url:
+            config["blocklist_allowlist_url"] = (
+                charm_state.synapse_config.invite_checker_blocklist_allowlist_url
+            )
+        if charm_state.synapse_config.invite_checker_policy_rooms:
+            config["policy_room_ids"] = charm_state.synapse_config.invite_checker_policy_rooms
+        current_yaml["modules"].append(
+            {"module": "synapse_invite_checker.InviteChecker", "config": config},
+        )
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
 
 
 def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:

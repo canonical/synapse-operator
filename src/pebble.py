@@ -141,6 +141,19 @@ def restart_nginx(container: ops.model.Container, main_unit_address: str) -> Non
     container.restart(synapse.SYNAPSE_NGINX_SERVICE_NAME)
 
 
+def restart_federation_sender(container: ops.model.Container, charm_state: CharmState) -> None:
+    """Restart Synapse federation sender service and regenerate configuration.
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+    """
+    container.add_layer(
+        "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
+    )
+    container.restart(synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME)
+
+
 def replan_mjolnir(container: ops.model.Container) -> None:
     """Replan Synapse Mjolnir service.
 
@@ -291,6 +304,9 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             synapse.execute_migrate_config(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
+        if charm_state.synapse_config.block_non_admin_invites:
+            logger.debug("pebble.change_config: Enabling Block non admin invites")
+            synapse.block_non_admin_invites(current_synapse_config, charm_state=charm_state)
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
         synapse.enable_media_retention(current_synapse_config)
@@ -298,6 +314,12 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         synapse.enable_rc_joins_remote_rate(current_synapse_config, charm_state=charm_state)
         synapse.enable_serve_server_wellknown(current_synapse_config)
         synapse.enable_replication(current_synapse_config)
+        if (
+            charm_state.synapse_config.invite_checker_policy_rooms
+            or charm_state.synapse_config.invite_checker_blocklist_allowlist_url
+        ):
+            logger.debug("pebble.change_config: Enabling enable_synapse_invite_checker")
+            synapse.enable_synapse_invite_checker(current_synapse_config, charm_state=charm_state)
         if charm_state.synapse_config.limit_remote_rooms_complexity:
             logger.debug("pebble.change_config: Enabling limit_remote_rooms_complexity")
             synapse.enable_limit_remote_rooms_complexity(
@@ -365,6 +387,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             _push_synapse_config(container, current_synapse_config)
             synapse.validate_config(container=container)
             restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
+            if is_main and charm_state.instance_map_config is not None:
+                restart_federation_sender(container=container, charm_state=charm_state)
         else:
             logging.info("Configuration has not changed, no action.")
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
@@ -569,7 +593,7 @@ def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.Layer
         "summary": "Synapse Federation Sender layer",
         "description": "pebble config layer for Synapse",
         "services": {
-            "synapse-federation-sender": {
+            synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME: {
                 "override": "replace",
                 "summary": "Synapse Federation Sender application service",
                 "startup": "enabled",
