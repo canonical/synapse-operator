@@ -101,8 +101,7 @@ juju deploy ./synapse_ubuntu-22.04-amd64.charm \
 ### Configure `server_name`
 
 Synapse requires a `server_name` to be set before starting. Note that this cannot
-be changed later so if you want a different server name, will need to run the
-action `reset-instance` to re-create everything.
+be changed later.
 
 The following command will configure the `server_name` mychat.test.com:
 
