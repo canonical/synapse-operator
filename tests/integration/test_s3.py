@@ -247,7 +247,7 @@ async def test_synapse_backup_delete(
 
 @pytest.mark.s3
 @pytest.mark.usefixtures("s3_media_bucket")
-async def test_synapse_enable_media(
+async def test_synapse_enable_media(  # pylint: disable=too-many-positional-arguments
     model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
