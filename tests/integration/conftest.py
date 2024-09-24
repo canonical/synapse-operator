@@ -97,6 +97,7 @@ def synapse_app_charmhub_name_fixture() -> str:
     return "synapse-charmhub"
 
 
+# pylint: disable=too-many-positional-arguments
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
     ops_test: OpsTest,

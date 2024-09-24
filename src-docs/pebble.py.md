@@ -257,32 +257,6 @@ This is the main entry for changes that require a restart done via Pebble.
 
 ---
 
-<a href="../src/pebble.py#L398"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `reset_instance`
-
-```python
-reset_instance(charm_state: CharmState, container: Container) → None
-```
-
-Reset instance. 
-
-
-
-**Args:**
- 
- - <b>`charm_state`</b>:  Instance of CharmState 
- - <b>`container`</b>:  Charm container. 
-
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
-
-
----
-
 ## <kbd>class</kbd> `PebbleServiceError`
 Exception raised when something fails while interacting with Pebble. 
 
