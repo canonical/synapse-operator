@@ -381,7 +381,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
     # from_charm receives configuration from all integration so too many arguments.
     @classmethod
-    def from_charm(  # pylint: disable=too-many-arguments
+    def from_charm(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         cls,
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],

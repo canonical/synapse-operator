@@ -234,7 +234,7 @@ def register_user(
         raise RegisterUserError(str(exc)) from exc
 
 
-def _generate_mac(
+def _generate_mac(  # pylint: disable=too-many-positional-arguments
     shared_secret: str,
     nonce: str,
     user: str,

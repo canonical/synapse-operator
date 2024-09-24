@@ -182,9 +182,7 @@ def _check_server_name(container: ops.Container, charm_state: CharmState) -> Non
     ):
         msg = (
             f"server_name {charm_state.synapse_config.server_name} is different from the existing "
-            f"one {configured_server_name}. Please revert the config or run the action "
-            "reset-instance if you want to erase the existing instance and start a new "
-            "one."
+            f"one {configured_server_name}. Please revert the config."
         )
         logger.error(msg)
         raise ServerNameModifiedError(
@@ -300,32 +298,6 @@ def validate_config(container: ops.Container) -> None:
             validate_config_result.stderr,
         )
         raise WorkloadError("Validate config failed, please check the logs")
-
-
-def reset_instance(container: ops.Container) -> None:
-    """Erase data and config server_name.
-
-    Args:
-        container: Container of the charm.
-
-    Raises:
-        PathError: if somethings goes wrong while erasing the Synapse directory.
-    """
-    logging.debug("Erasing directory %s", SYNAPSE_CONFIG_DIR)
-    try:
-        container.remove_path(SYNAPSE_CONFIG_DIR, recursive=True)
-    except PathError as path_error:
-        # The error "unlinkat //data: device or resource busy" is expected
-        # when removing the entire directory because it's a volume mount.
-        # The files will be removed but SYNAPSE_CONFIG_DIR directory will
-        # remain.
-        if "device or resource busy" in str(path_error):
-            pass
-        else:
-            logger.exception(
-                "exception while erasing directory %s: %r", SYNAPSE_CONFIG_DIR, path_error
-            )
-            raise
 
 
 def generate_nginx_config(container: ops.Container, main_unit_address: str) -> None:
