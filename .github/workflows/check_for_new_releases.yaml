@@ -19,7 +19,7 @@ jobs:
           repo: synapse
           excludes: prerelease, draft
 
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4.2.0
 
       - name: Check if issue already exists
         id: check_issue
