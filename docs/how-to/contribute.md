@@ -41,12 +41,11 @@ source .tox/unit/bin/activate
 
 ### Testing
 
-Note that the [Synapse](synapse_rock/rockcraft.yaml) and [Synapse NGINX](synapse_nginx_rock/rockcraft.yaml)
-images need to be built and pushed to microk8s for the tests to run. They should
-be tagged as `localhost:32000/synapse:latest` and
-`localhost:32000/synapse-nginx:latest` so that Kubernetes knows how to pull them
+Note that the [Synapse](synapse_rock/rockcraft.yaml) image need to be built and
+pushed to microk8s for the tests to run. It should be tagged as
+`localhost:32000/synapse:latest`so that Kubernetes knows how to pull them
 from the MicroK8s repository. Note that the MicroK8s registry needs to be
-enabled using `microk8s enable registry`. More details regarding the OCI images
+enabled using `microk8s enable registry`. More details regarding the OCI image
 below. The following commands can then be used to run the tests:
 
 * `tox`: Runs all of the basic checks (`lint`, `unit`, `static`, and `coverage-report`).
@@ -73,7 +72,7 @@ Build the charm in this git repository using:
 charmcraft pack
 ```
 For the integration tests (and also to deploy the charm locally), the synapse
-and synapse-nginx images are required in the microk8s registry. To enable it:
+image is required in the microk8s registry. To enable it:
 
     microk8s enable registry
 
@@ -82,8 +81,6 @@ the registry:
 
     cd [project_dir]/synapse_rock && rockcraft pack
     skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:synapse_1.0_amd64.rock docker://localhost:32000/synapse:latest
-    cd [project_dir]/nginx_rock && rockcraft pack
-    skopeo --insecure-policy copy --dest-tls-verify=false oci-archive:synapse-nginx_1.0_amd64.rock docker://localhost:32000/synapse-nginx:latest
 
 ### Deploy
 
@@ -94,8 +91,7 @@ juju add-model synapse-dev
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
 # Deploy the charm (assuming you're on amd64)
 juju deploy ./synapse_ubuntu-22.04-amd64.charm \
-  --resource synapse-image=localhost:32000/synapse:latest \
-  --resource synapse-nginx-image=localhost:32000/synapse-nginx:latest
+  --resource synapse-image=localhost:32000/synapse:latest
 ```
 
 ### Configure `server_name`

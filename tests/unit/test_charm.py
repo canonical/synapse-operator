@@ -123,9 +123,7 @@ def test_restart_nginx_container_down(harness: Harness) -> None:
     assert: Synapse charm should submit the correct status.
     """
     harness.begin()
-    harness.set_can_connect(
-        harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME], False
-    )
+    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
     harness.update_config({"report_stats": True})
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
@@ -345,7 +343,6 @@ def test_nginx_replan(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
 
     harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
-    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
 
     restart_nginx_mock.assert_called_once()
 
@@ -360,10 +357,10 @@ def test_nginx_replan_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     restart_nginx_mock = MagicMock()
     monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
 
-    container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
     harness.set_can_connect(container, False)
     # harness.container_pebble_ready cannot be used as it sets the set_can_connect to True
-    harness.charm.on[synapse.SYNAPSE_NGINX_CONTAINER_NAME].pebble_ready.emit(container)
+    harness.charm.on[synapse.SYNAPSE_CONTAINER_NAME].pebble_ready.emit(container)
 
     restart_nginx_mock.assert_not_called()
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
@@ -378,50 +375,7 @@ def test_nginx_replan_sets_status_to_active(harness: Harness) -> None:
     harness.begin()
     harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
 
-    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-
     assert harness.model.unit.status == ops.ActiveStatus()
-
-
-def test_nginx_replan_with_synapse_container_down(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start Synapse charm with Synapse container as down, and mock restart_nginx.
-    act: Fire that NGINX container is ready.
-    assert: Pebble Service replan NGINX is called but unit is in maintenance
-        waiting for Synapse pebble.
-    """
-    harness.begin()
-    restart_nginx_mock = MagicMock()
-    monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
-
-    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
-    harness.set_can_connect(container, False)
-
-    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-
-    restart_nginx_mock.assert_called_once()
-    assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse pebble")
-
-
-def test_nginx_replan_with_synapse_service_not_existing(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start Synapse charm with Synapse container but without synapse service,
-        and mock restart_nginx.
-    act: Fire that NGINX container is ready.
-    assert: Pebble Service replan NGINX is called but unit is in maintenance waiting for Synapse.
-    """
-    harness.begin()
-    restart_nginx_mock = MagicMock()
-    monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
-
-    harness.container_pebble_ready(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-
-    restart_nginx_mock.assert_called_once()
-    assert harness.model.unit.status == ops.MaintenanceStatus("Waiting for Synapse")
 
 
 def test_redis_relation_success(redis_configured: Harness, monkeypatch: pytest.MonkeyPatch):
