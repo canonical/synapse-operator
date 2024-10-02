@@ -67,7 +67,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 2
 
 # pylint: disable=wrong-import-position
 import json
@@ -75,15 +75,16 @@ import logging
 from typing import Dict, List, Optional, Tuple, cast
 
 import ops
-from pydantic import (
-    BaseModel,
-    Field,
-    SecretStr,
-)
+from pydantic import BaseModel, Field, SecretStr
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_RELATION_NAME = "matrix-plugin-auth"
+#### Constants ####
+APP_REGISTRATION_LABEL = "app-registration"
+APP_REGISTRATION_CONTENT_LABEL = "app-registration-content"
+DEFAULT_RELATION_NAME = "matrix-auth"
+SHARED_SECRET_LABEL = "shared-secret"
+SHARED_SECRET_CONTENT_LABEL = "shared-secret-content"
 
 
 #### Data models for Provider and Requirer ####
@@ -96,7 +97,7 @@ class MatrixAuthProviderData(BaseModel):
         shared_secret_id: the shared secret Juju secret ID.
     """
 
-    homeserver: Optional[str] = None
+    homeserver: str
     shared_secret: Optional[SecretStr] = Field(default=None, exclude=True)
     shared_secret_id: Optional[SecretStr] = Field(default=None)
 
@@ -112,13 +113,13 @@ class MatrixAuthProviderData(BaseModel):
         # pylint doesn't like get_secret_value
         secret_value = password.get_secret_value()  # pylint: disable=no-member
         try:
-            secret = model.get_secret(label="shared-secret")
-            secret.set_content({"shared-secret-content": secret_value})
+            secret = model.get_secret(label=SHARED_SECRET_LABEL)
+            secret.set_content({SHARED_SECRET_CONTENT_LABEL: secret_value})
             # secret.id is not None at this point
             self.shared_secret_id = cast(str, secret.id)
         except ops.SecretNotFoundError:
             secret = relation.app.add_secret(
-                {"shared-secret-content": secret_value}, label="shared-secret"
+                {SHARED_SECRET_CONTENT_LABEL: secret_value}, label=SHARED_SECRET_LABEL
             )
             secret.grant(relation)
             self.shared_secret_id = cast(str, secret.id)
@@ -140,7 +141,7 @@ class MatrixAuthProviderData(BaseModel):
             return None
         try:
             secret = model.get_secret(id=shared_secret_id)
-            password = secret.get_content().get("shared-secret-content")
+            password = secret.get_content().get(SHARED_SECRET_CONTENT_LABEL)
             if not password:
                 return None
             return SecretStr(password)
@@ -158,12 +159,7 @@ class MatrixAuthProviderData(BaseModel):
             Dict containing the representation.
         """
         self.set_shared_secret_id(model, relation)
-        dumped_model = self.model_dump(exclude_unset=True)
-        dumped_data = {
-            "shared_secret_id": dumped_model["shared_secret_id"],
-            "homeserver": dumped_model["homeserver"],
-        }
-        return dumped_data
+        return self.model_dump(exclude_unset=True)
 
     @classmethod
     def from_relation(cls, model: ops.Model, relation: ops.Relation) -> "MatrixAuthProviderData":
@@ -178,24 +174,21 @@ class MatrixAuthProviderData(BaseModel):
         Raises:
             ValueError: if the value is not parseable.
         """
-        try:
-            app = cast(ops.Application, relation.app)
-            relation_data = relation.data[app]
-            shared_secret_id = (
-                (relation_data["shared_secret_id"])
-                if "shared_secret_id" in relation_data
-                else None
-            )
-            shared_secret = MatrixAuthProviderData.get_shared_secret(model, shared_secret_id)
-            homeserver = relation_data.get("homeserver")
-            return MatrixAuthProviderData(
-                homeserver=homeserver,
-                shared_secret=shared_secret,
-            )
-
-        except json.JSONDecodeError as ex:
-            logger.warning("Invalid relation data %s", ex)
-            raise ValueError from ex
+        app = cast(ops.Application, relation.app)
+        relation_data = relation.data[app]
+        shared_secret_id = (
+            (relation_data["shared_secret_id"])
+            if "shared_secret_id" in relation_data
+            else None
+        )
+        shared_secret = MatrixAuthProviderData.get_shared_secret(model, shared_secret_id)
+        homeserver = relation_data.get("homeserver")
+        if shared_secret is None or homeserver is None:
+            raise ValueError("Invalid relation data")
+        return MatrixAuthProviderData(
+            homeserver=homeserver,
+            shared_secret=shared_secret,
+        )
 
 
 class MatrixAuthRequirerData(BaseModel):
@@ -221,13 +214,13 @@ class MatrixAuthRequirerData(BaseModel):
         # pylint doesn't like get_secret_value
         secret_value = password.get_secret_value()  # pylint: disable=no-member
         try:
-            secret = model.get_secret(label="app-registration")
-            secret.set_content({"app-registration-content": secret_value})
+            secret = model.get_secret(label=APP_REGISTRATION_LABEL)
+            secret.set_content({APP_REGISTRATION_CONTENT_LABEL: secret_value})
             # secret.id is not None at this point
             self.registration_secret_id = cast(str, secret.id)
         except ops.SecretNotFoundError:
             secret = relation.app.add_secret(
-                {"app-registration-content": secret_value}, label="app-registration"
+                {APP_REGISTRATION_CONTENT_LABEL: secret_value}, label=APP_REGISTRATION_LABEL
             )
             secret.grant(relation)
             self.registration_secret_id = cast(str, secret.id)
@@ -249,7 +242,7 @@ class MatrixAuthRequirerData(BaseModel):
             return None
         try:
             secret = model.get_secret(id=registration_secret_id)
-            password = secret.get_content().get("app-registration-content")
+            password = secret.get_content().get(APP_REGISTRATION_CONTENT_LABEL)
             if not password:
                 return None
             return SecretStr(password)
@@ -287,22 +280,13 @@ class MatrixAuthRequirerData(BaseModel):
         Raises:
             ValueError: if the value is not parseable.
         """
-        try:
-            app = cast(ops.Application, relation.app)
-            relation_data = relation.data[app]
-            registration_secret_id = (
-                (relation_data["registration_secret_id"])
-                if "registration_secret_id" in relation_data
-                else None
-            )
-            registration = MatrixAuthRequirerData.get_registration(model, registration_secret_id)
-            return MatrixAuthRequirerData(
-                registration=registration,
-            )
-
-        except json.JSONDecodeError as ex:
-            logger.warning("Invalid relation data %s", ex)
-            raise ValueError from ex
+        app = cast(ops.Application, relation.app)
+        relation_data = relation.data[app]
+        registration_secret_id = relation_data.get("registration_secret_id")
+        registration = MatrixAuthRequirerData.get_registration(model, registration_secret_id)
+        return MatrixAuthRequirerData(
+            registration=registration,
+        )
 
 
 #### Events ####
@@ -346,92 +330,7 @@ class MatrixAuthProvidesEvents(ops.CharmEvents):
     matrix_auth_request_received = ops.EventSource(MatrixAuthRequestReceived)
 
 
-#### Requires and Provides ####
-class MatrixAuthRequires(ops.Object):
-    """Requirer side of the MatrixAuth requires relation.
-
-    Attributes:
-        on: events the provider can emit.
-    """
-
-    on = MatrixAuthRequiresEvents()
-
-    def __init__(self, charm: ops.CharmBase, relation_name: str = DEFAULT_RELATION_NAME) -> None:
-        """Construct.
-
-        Args:
-            charm: the provider charm.
-            relation_name: the relation name.
-        """
-        super().__init__(charm, relation_name)
-        self.charm = charm
-        self.relation_name = relation_name
-        self.framework.observe(charm.on[relation_name].relation_changed, self._on_relation_changed)
-
-    def get_remote_relation_data(self) -> Optional[MatrixAuthProviderData]:
-        """Retrieve the remote relation data.
-
-        Returns:
-            MatrixAuthProviderData: the relation data.
-        """
-        relation = self.model.get_relation(self.relation_name)
-        return self._get_remote_relation_data(relation) if relation else None
-
-    def _get_remote_relation_data(self, relation: ops.Relation) -> MatrixAuthProviderData:
-        """Retrieve the remote relation data.
-
-        Args:
-            relation: the relation to retrieve the data from.
-
-        Returns:
-            MatrixAuthProviderData: the remote relation data.
-        """
-        return MatrixAuthProviderData.from_relation(model=self.model, relation=relation)
-
-    def _is_remote_relation_data_valid(self, relation: ops.Relation) -> bool:
-        """Validate the relation data.
-
-        Args:
-            relation: the relation to validate.
-
-        Returns:
-            true: if the relation data is valid.
-        """
-        try:
-            _ = self._get_remote_relation_data(relation)
-            return True
-        except ValueError as ex:
-            logger.warning("Error validation the relation data %s", ex)
-            return False
-
-    def _on_relation_changed(self, event: ops.RelationChangedEvent) -> None:
-        """Event emitted when the relation has changed.
-
-        Args:
-            event: event triggering this handler.
-        """
-        assert event.relation.app
-        relation_data = event.relation.data[event.relation.app]
-        if relation_data and self._is_remote_relation_data_valid(event.relation):
-            self.on.matrix_auth_request_processed.emit(
-                event.relation, app=event.app, unit=event.unit
-            )
-
-    def update_relation_data(
-        self,
-        relation: ops.Relation,
-        matrix_auth_requirer_data: MatrixAuthRequirerData,
-    ) -> None:
-        """Update the relation data.
-
-        Args:
-            relation: the relation for which to update the data.
-            matrix_auth_requirer_data: MatrixAuthRequirerData wrapping the data to be updated.
-        """
-        relation_data = matrix_auth_requirer_data.to_relation_data(self.model, relation)
-        relation.data[self.charm.model.app].update(relation_data)
-
-
+#### Provides and Requires ####
 class MatrixAuthProvides(ops.Object):
     """Provider side of the MatrixAuth relation.
 
@@ -449,7 +348,6 @@ class MatrixAuthProvides(ops.Object):
             relation_name: the relation name.
         """
         super().__init__(charm, relation_name)
-        self.charm = charm
         self.relation_name = relation_name
         self.framework.observe(charm.on[relation_name].relation_changed, self._on_relation_changed)
 
@@ -460,18 +358,7 @@ class MatrixAuthProvides(ops.Object):
             MatrixAuthRequirerData: the relation data.
         """
         relation = self.model.get_relation(self.relation_name)
-        return self._get_remote_relation_data(relation) if relation else None
-
-    def _get_remote_relation_data(self, relation: ops.Relation) -> MatrixAuthRequirerData:
-        """Retrieve the remote relation data.
-
-        Args:
-            relation: the relation to retrieve the data from.
-
-        Returns:
-            MatrixAuthRequirerData: the remote relation data.
-        """
-        return MatrixAuthRequirerData.from_relation(self.model, relation=relation)
+        return MatrixAuthRequirerData.from_relation(self.model, relation=relation) if relation else None
 
     def _is_remote_relation_data_valid(self, relation: ops.Relation) -> bool:
         """Validate the relation data.
@@ -483,7 +370,7 @@ class MatrixAuthProvides(ops.Object):
             true: if the relation data is valid.
         """
         try:
-            _ = self._get_remote_relation_data(relation)
+            _ = self.MatrixAuthRequirerData.from_relation(self.model, relation=relation)
             return True
         except ValueError as ex:
             logger.warning("Error validating the relation data %s", ex)
@@ -513,4 +400,77 @@ class MatrixAuthProvides(ops.Object):
                 updated.
         """
         relation_data = matrix_auth_provider_data.to_relation_data(self.model, relation)
-        relation.data[self.charm.model.app].update(relation_data)
+        relation.data[self.model.app].update(relation_data)
+
+
+class MatrixAuthRequires(ops.Object):
+    """Requirer side of the MatrixAuth requires relation.
+
+    Attributes:
+        on: events the provider can emit.
+    """
+
+    on = MatrixAuthRequiresEvents()
+
+    def __init__(self, charm: ops.CharmBase, relation_name: str = DEFAULT_RELATION_NAME) -> None:
+        """Construct.
+
+        Args:
+            charm: the provider charm.
+            relation_name: the relation name.
+        """
+        super().__init__(charm, relation_name)
+        self.relation_name = relation_name
+        self.framework.observe(charm.on[relation_name].relation_changed, self._on_relation_changed)
+
+    def get_remote_relation_data(self) -> Optional[MatrixAuthProviderData]:
+        """Retrieve the remote relation data.
+
+        Returns:
+            MatrixAuthProviderData: the relation data.
+        """
+        relation = self.model.get_relation(self.relation_name)
+        return MatrixAuthProviderData.from_relation(self.model, relation=relation) if relation else None
+
+    def _is_remote_relation_data_valid(self, relation: ops.Relation) -> bool:
+        """Validate the relation data.
+
+        Args:
+            relation: the relation to validate.
+
+        Returns:
+            true: if the relation data is valid.
+        """
+        try:
+            _ = self.MatrixAuthProviderData.from_relation(self.model, relation=relation)
+            return True
+        except ValueError as ex:
+            logger.warning("Error validating the relation data %s", ex)
+            return False
+
+    def _on_relation_changed(self, event: ops.RelationChangedEvent) -> None:
+        """Event emitted when the relation has changed.
+
+        Args:
+            event: event triggering this handler.
+        """
+        assert event.relation.app
+        relation_data = event.relation.data[event.relation.app]
+        if relation_data and self._is_remote_relation_data_valid(event.relation):
+            self.on.matrix_auth_request_processed.emit(
+                event.relation, app=event.app, unit=event.unit
+            )
+
+    def update_relation_data(
+        self,
+        relation: ops.Relation,
+        matrix_auth_requirer_data: MatrixAuthRequirerData,
+    ) -> None:
+        """Update the relation data.
+
+        Args:
+            relation: the relation for which to update the data.
+            matrix_auth_requirer_data: MatrixAuthRequirerData wrapping the data to be updated.
+        """
+        relation_data = matrix_auth_requirer_data.to_relation_data(self.model, relation)
+        relation.data[self.model.app].update(relation_data)
