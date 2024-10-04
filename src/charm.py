@@ -14,8 +14,8 @@ import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
-from ops.main import main
 
 import actions
 import pebble
