@@ -12,7 +12,17 @@
       "# renovate: base:\\s+(?<depName>[^:]*):(?<currentValue>[^\\s@]*)(@(?<currentDigest>sha256:[0-9a-f]*))?"],
       "datasourceTemplate": "docker",
       "versioningTemplate": "ubuntu"
+    },
+    {
+      "fileMatch": ["(^|/)rockcraft.yaml$"],
+      "description": "Update Synapse workload",
+      "matchStringsStrategy": "any",
+      "matchStrings": ["source-tag: v(?<currentValue>.+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "element-hq/synapse",
+      "versioningTemplate": "semver-coerced"
     }
+
   ],
   "packageRules": [
     {
