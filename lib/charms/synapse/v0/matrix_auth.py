@@ -442,7 +442,7 @@ class MatrixAuthRequires(ops.Object):
             true: if the relation data is valid.
         """
         try:
-            _ = self.MatrixAuthProviderData.from_relation(self.model, relation=relation)
+            _ = MatrixAuthProviderData.from_relation(self.model, relation=relation)
             return True
         except ValueError as ex:
             logger.warning("Error validating the relation data %s", ex)
