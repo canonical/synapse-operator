@@ -396,7 +396,6 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     synapse_charm: str,
     synapse_image: str,
-    synapse_nginx_image: str,
 ):
     """
     arrange: build and deploy the Synapse charm from charmhub and enable Mjolnir.
@@ -417,7 +416,6 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
 
     resources = {
         "synapse-image": synapse_image,
-        "synapse-nginx-image": synapse_nginx_image,
     }
     await synapse_charmhub_app.refresh(path=f"./{synapse_charm}", resources=resources)
     async with ops_test.fast_forward():
