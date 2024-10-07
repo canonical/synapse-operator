@@ -299,7 +299,7 @@ class MatrixAuthRequestProcessed(ops.RelationEvent):
         Returns:
             the MatrixAuthProviderData for the relation data.
         """
-        return MatrixAuthProviderData.from_relation(self.model, self.relation)
+        return MatrixAuthProviderData.from_relation(self.framework.model, self.relation)
 
 
 class MatrixAuthRequestReceived(ops.RelationEvent):
@@ -370,7 +370,7 @@ class MatrixAuthProvides(ops.Object):
             true: if the relation data is valid.
         """
         try:
-            _ = self.MatrixAuthRequirerData.from_relation(self.model, relation=relation)
+            _ = MatrixAuthRequirerData.from_relation(self.model, relation=relation)
             return True
         except ValueError as ex:
             logger.warning("Error validating the relation data %s", ex)
