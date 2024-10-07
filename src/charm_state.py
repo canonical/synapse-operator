@@ -418,7 +418,10 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                     "Removing %s from instance_map", valid_synapse_config.workers_ignore_list
                 )
                 workers_to_ignore = [
-                    w.strip() for w in valid_synapse_config.workers_ignore_list.split(",")
+                    # due to pydantic bump, need to refactor
+                    # pylint: disable=no-member
+                    w.strip()
+                    for w in valid_synapse_config.workers_ignore_list.split(",")
                 ]
                 for worker in workers_to_ignore:
                     if worker in instance_map_config:
