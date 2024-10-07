@@ -127,9 +127,6 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         synapse.SYNAPSE_CONTAINER_NAME
     )
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.set_can_connect(
-        harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME], True
-    )
     synapse_container.make_dir("/data", make_parents=True)
     synapse_container.push(f"/data/{TEST_SERVER_NAME}.signing.key", "123")
     # unused-variable disabled to pass constants values to inner function
@@ -178,16 +175,13 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         executable="/usr/bin/python3",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
-    synapse_nginx_container: ops.Container = harness.model.unit.get_container(
-        synapse.SYNAPSE_NGINX_CONTAINER_NAME
-    )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=synapse_nginx_container,
+        container=synapse_container,
         executable="cp",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=synapse_nginx_container,
+        container=synapse_container,
         executable="sed",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )

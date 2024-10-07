@@ -19,7 +19,7 @@ from ops.model import ActiveStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
-from tests.conftest import SYNAPSE_IMAGE_PARAM, SYNAPSE_NGINX_IMAGE_PARAM
+from tests.conftest import SYNAPSE_IMAGE_PARAM
 from tests.integration.helpers import get_access_token, register_user
 
 # caused by pytest fixtures, mark does not work in fixtures
@@ -75,16 +75,6 @@ def synapse_image_fixture(pytestconfig: Config):
     return synapse_image
 
 
-@pytest_asyncio.fixture(scope="module", name="synapse_nginx_image")
-def synapse_nginx_image_fixture(pytestconfig: Config):
-    """Get value from parameter synapse-nginx-image."""
-    synapse_nginx_image = pytestconfig.getoption(SYNAPSE_NGINX_IMAGE_PARAM)
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if not use_existing:
-        assert synapse_nginx_image, f"{SYNAPSE_NGINX_IMAGE_PARAM} must be set"
-    return synapse_nginx_image
-
-
 @pytest_asyncio.fixture(scope="module", name="synapse_app_name")
 def synapse_app_name_fixture() -> str:
     """Get Synapse application name."""
@@ -104,7 +94,6 @@ async def synapse_app_fixture(
     synapse_app_name: str,
     synapse_app_charmhub_name: str,
     synapse_image: str,
-    synapse_nginx_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
@@ -118,7 +107,6 @@ async def synapse_app_fixture(
         return model.applications[synapse_app_name]
     resources = {
         "synapse-image": synapse_image,
-        "synapse-nginx-image": synapse_nginx_image,
     }
     app = await model.deploy(
         f"./{synapse_charm}",
