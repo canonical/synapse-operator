@@ -250,16 +250,13 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
         "synapse",
         app_data={"main_unit_id": "synapse/0"},
     )
-    harness.begin_with_initial_hooks()
-    nginx_container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
-    harness.set_can_connect(nginx_container, True)
-    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
-    harness.set_leader(False)
-    # emit nginx ready
-    # assert was called with synapse/0
     restart_nginx_mock = MagicMock()
     monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
-    harness.charm.on.synapse_nginx_pebble_ready.emit(MagicMock())
+    nginx_container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    harness.set_can_connect(nginx_container, True)
+    harness.begin_with_initial_hooks()
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
+    harness.set_leader(False)
     restart_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
 
     harness.update_relation_data(
