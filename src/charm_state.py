@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 import ops
 
 # pydantic is causing this no-name-in-module problem
-from pydantic import (  # pylint: disable=no-name-in-module,import-error
+from pydantic.v1 import (  # pylint: disable=no-name-in-module,import-error
     AnyHttpUrl,
     BaseModel,
     Extra,
