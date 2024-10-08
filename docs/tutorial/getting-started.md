@@ -11,10 +11,14 @@ Through the process, you'll verify the workload state, and log in to your
 Synapse instance via Element Desktop application.
 
 ## Requirements
-- Juju 3 installed.
-- Juju controller created.
 
-For more information about how to install Juju, see [Get started with Juju](https://juju.is/docs/olm/get-started-with-juju).
+* A working station, e.g., a laptop, with amd64 architecture.
+* Juju 3 installed and bootstrapped to a MicroK8s controller. You can accomplish
+this process by using a [Multipass](https://multipass.run/) VM as outlined in this guide: [Set up / Tear down your test environment](https://juju.is/docs/juju/set-up--tear-down-your-test-environment)
+
+:warning: When using a Multipass VM, make sure to replace IP addresses with the
+VM IP in steps that assume you're running locally. To get the IP address of the
+Multipass instance run ```multipass info my-juju-vm```.
 
 ## Set up a Tutorial Model
 
