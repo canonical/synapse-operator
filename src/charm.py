@@ -30,6 +30,7 @@ from observability import Observability
 from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
+from plugins import MatrixAuthProvider
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ class SynapseCharm(CharmBaseWithState):
         self._backup = BackupObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
+        self._irc_bridge = MatrixAuthProvider(self, relation_name="irc-bridge-auth")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
