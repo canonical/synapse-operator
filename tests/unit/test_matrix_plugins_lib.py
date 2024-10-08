@@ -3,6 +3,8 @@
 
 """MatrixAuth library unit tests"""
 
+from secrets import token_hex
+
 import ops
 import pytest
 from charms.synapse.v0.matrix_auth import (
@@ -287,10 +289,11 @@ def test_matrix_auth_provider_update_relation_data():
     harness.set_leader(True)
     rel_id = harness.add_relation("matrix-auth", "matrix-auth-consumer")
     relation = harness.model.get_relation("matrix-auth", rel_id)
+    secret = token_hex(16)
 
     provider_data = MatrixAuthProviderData(
         homeserver="https://example.com",
-        shared_secret="test-secret",
+        shared_secret=secret,
     )
 
     harness.charm.matrix_auth.update_relation_data(relation, provider_data)
