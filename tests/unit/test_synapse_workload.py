@@ -15,7 +15,7 @@ import ops
 import pytest
 import yaml
 from ops.testing import Harness
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 import synapse
 from charm import SynapseCharm
