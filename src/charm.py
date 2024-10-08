@@ -14,8 +14,8 @@ import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
-from ops.main import main
 
 import actions
 import pebble
@@ -93,9 +93,6 @@ class SynapseCharm(CharmBaseWithState):
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
-        self.framework.observe(
-            self.on.synapse_nginx_pebble_ready, self._on_synapse_nginx_pebble_ready
-        )
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
@@ -224,6 +221,7 @@ class SynapseCharm(CharmBaseWithState):
         except (pebble.PebbleServiceError, FileNotFoundError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
+        pebble.restart_nginx(container, self.get_main_unit_address())
         self._set_unit_status()
 
     def _set_unit_status(self) -> None:
@@ -250,10 +248,6 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
         # NGINX checks
-        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
-            return
         nginx_service = container.get_services(synapse.SYNAPSE_NGINX_SERVICE_NAME)
         nginx_not_active = [
             service for service in nginx_service.values() if not service.is_running()
@@ -475,26 +469,6 @@ class SynapseCharm(CharmBaseWithState):
         """
         logger.debug("_on_relation_changed emitting reconcile")
         self.reconcile(charm_state)
-        # Reload NGINX configuration with new main address
-        nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not nginx_container.can_connect():
-            logger.warning(
-                "Relation changed received but NGINX container is not available for reloading."
-            )
-            return
-        pebble.restart_nginx(nginx_container, self.get_main_unit_address())
-
-    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle synapse nginx pebble ready event."""
-        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not container.can_connect():
-            logger.debug("synapse_nginx_pebble_ready failed to connect")
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
-            return
-        logger.debug("synapse_nginx_pebble_ready replanning nginx")
-        # Replan pebble layer
-        pebble.restart_nginx(container, self.get_main_unit_address())
-        self._set_unit_status()
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
         """Register user and report action result.
