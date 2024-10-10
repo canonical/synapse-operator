@@ -38,6 +38,8 @@ provides:
     interface: grafana_dashboard
   metrics-endpoint:
     interface: prometheus_scrape
+  matrix-auth:
+    interface: irc_bridge
 
 requires:
     backup:
