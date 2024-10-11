@@ -7,7 +7,7 @@
 
 import io
 import json
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import ops
 import pytest
@@ -475,3 +475,23 @@ def test_redis_enabled_reconcile_pebble_error(
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert error_message in str(harness.model.unit.status)
+
+
+def test_matrix_auth_relation_joined(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start Synapse charm and mock get_registration_shared_secret.
+    act: emit relation joined event by adding unit to the relation.
+    assert: relation data contains homeserver and a shared_secret_id.
+    """
+    get_registration_mock = MagicMock(return_value="shared_secret")
+    monkeypatch.setattr("synapse.get_registration_shared_secret", get_registration_mock)
+    harness.set_leader(True)  # no leader gets SecretNotFoundError
+    harness.begin_with_initial_hooks()
+
+    rel_id = harness.add_relation("matrix-auth", "maubot")
+    harness.add_relation_unit(rel_id, "maubot/0")  # triggers relation joined
+
+    assert harness.get_relation_data(rel_id, harness.charm.app.name) == {
+        "homeserver": "http://synapse-0.synapse-endpoints.testmodel.svc.cluster.local:8080",
+        "shared_secret_id": ANY,
+    }

@@ -13,6 +13,7 @@ import typing
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
+from charms.synapse.v0.matrix_auth import MatrixAuthProviderData, MatrixAuthProvides
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
@@ -59,6 +60,7 @@ class SynapseCharm(CharmBaseWithState):
         self._backup = BackupObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
+        self.matrix_auth = MatrixAuthProvides(self)
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
@@ -98,6 +100,35 @@ class SynapseCharm(CharmBaseWithState):
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
+        self.framework.observe(
+            self.on["matrix-auth"].relation_joined, self._on_matrix_auth_relation_joined
+        )
+
+    def _on_matrix_auth_relation_joined(self, event: ops.RelationJoinedEvent) -> None:
+        """Handle matrix-auth relation joined.
+
+        Update relation data with leader unit fqdn and registration_shared_secret.
+        This is compatible only with Maubot (same model as Synapse), not bridges.
+
+        Args:
+            event: relation joined event.
+        """
+        if not self.unit.is_leader():
+            logger.debug("not leader, skipping matrix_auth_relation_joined")
+            return
+        unit_name = self.unit.name.replace("/", "-")
+        app_name = self.app.name
+        homeserver = (
+            f"http://{unit_name}.{app_name}-endpoints.{self.model.name}.svc.cluster.local:8080"
+        )
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            logger.debug("matrix-auth relation joined but container is not ready, defer")
+            event.defer()
+        # assuming that shared secret is always found
+        shared_secret = synapse.get_registration_shared_secret(container=container)
+        provider_data = MatrixAuthProviderData(homeserver=homeserver, shared_secret=shared_secret)
+        self.matrix_auth.update_relation_data(event.relation, provider_data)
 
     def build_charm_state(self) -> CharmState:
         """Build charm state.
