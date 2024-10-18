@@ -335,6 +335,10 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
                 logging.info("pebble.change_config: Adding Federation Sender layer")
                 synapse.enable_federation_sender(current_synapse_config)
                 replan_synapse_federation_sender(container=container, charm_state=charm_state)
+        if charm_state.registration_secrets:
+            logger.debug("pebble.change_config: Enabling registration_secrets")
+            synapse.create_registration_secrets_files(container=container, charm_state=charm_state)
+            synapse.enable_registration_secrets(current_synapse_config, charm_state=charm_state)
         if charm_state.saml_config is not None:
             logger.debug("pebble.change_config: Enabling SAML")
             synapse.enable_saml(current_synapse_config, charm_state=charm_state)

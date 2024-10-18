@@ -246,7 +246,7 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
         charm_state: Instance of CharmState.
 
     Raises:
-        WorkloadError: something went wrong enabling SMTP.
+        WorkloadError: something went wrong enabling Redis.
     """
     try:
         current_yaml["redis"] = {}
@@ -261,6 +261,27 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
         current_yaml["redis"]["enabled"] = True
         current_yaml["redis"]["host"] = redis_config["host"]
         current_yaml["redis"]["port"] = redis_config["port"]
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
+def enable_registration_secrets(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to enable registration secrets.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong enabling registration secrets.
+    """
+    try:
+        if charm_state.registration_secrets is None:
+            return
+        current_yaml["app_service_config_files"] = [
+            str(registration_secret.file_path)
+            for registration_secret in charm_state.registration_secrets
+        ]
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
