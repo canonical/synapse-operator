@@ -212,24 +212,6 @@ async def nginx_integrator_app_fixture(
     return app
 
 
-@pytest_asyncio.fixture(scope="function", name="another_synapse_app")
-async def another_synapse_app_fixture(
-    model: Model, synapse_app: Application, server_name: str, another_server_name: str
-):
-    """Change server_name."""
-    # First we guarantee that the first server_name is set
-    # Then change it.
-    await synapse_app.set_config({"server_name": server_name})
-
-    await model.wait_for_idle()
-
-    await synapse_app.set_config({"server_name": another_server_name})
-
-    await model.wait_for_idle()
-
-    yield synapse_app
-
-
 @pytest.fixture(scope="module", name="postgresql_app_name")
 def postgresql_app_name_app_name_fixture() -> str:
     """Return the name of the postgresql application deployed for tests."""
@@ -247,59 +229,6 @@ async def postgresql_app_fixture(
             await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
             await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     yield model.applications.get(postgresql_app_name)
-
-
-@pytest.fixture(scope="module", name="grafana_app_name")
-def grafana_app_name_fixture() -> str:
-    """Return the name of the grafana application deployed for tests."""
-    return "grafana-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="grafana_app")
-async def grafana_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    grafana_app_name: str,
-):
-    """Deploy grafana."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            grafana_app_name,
-            application_name=grafana_app_name,
-            channel="latest/edge",
-            trust=True,
-        )
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-
-    return app
-
-
-@pytest.fixture(scope="module", name="prometheus_app_name")
-def prometheus_app_name_fixture() -> str:
-    """Return the name of the prometheus application deployed for tests."""
-    return "prometheus-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="prometheus_app")
-async def deploy_prometheus_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    prometheus_app_name: str,
-):
-    """Deploy prometheus."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            prometheus_app_name,
-            application_name=prometheus_app_name,
-            channel="latest/edge",
-            trust=True,
-        )
-        # Sometimes it comes back after an error.
-        await model.wait_for_idle(
-            raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
-        )
-
-    return app
 
 
 @pytest.fixture(scope="module", name="user_username")
