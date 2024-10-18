@@ -35,6 +35,7 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
+
 MAIN_UNIT_ID = "main_unit_id"
 
 
@@ -114,6 +115,7 @@ class SynapseCharm(CharmBaseWithState):
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
+            registration_secrets=self._matrix_auth.get_requirer_registration_secrets(),
             instance_map_config=self.instance_map(),
         )
 
@@ -213,6 +215,15 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
+
+            # create registration secrets files if needed
+            if charm_state.registration_secrets is not None:
+                logging.debug("registration secrets found, deleting and creating files")
+                container.exec(
+                    ["rm", "-f", f"{synapse.SYNAPSE_CONFIG_DIR}/appservice-registration-*.yaml"]
+                )
+                for registration_secret in charm_state.registration_secrets:
+                    registration_secret.file_path.write_text(registration_secret.value)
 
             # reconcile configuration
             pebble.reconcile(

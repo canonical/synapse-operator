@@ -12,7 +12,7 @@ The Matrix Auth relation observer.
 ## <kbd>class</kbd> `MatrixAuthObserver`
 The Matrix Auth relation observer. 
 
-<a href="../src/matrix_auth_observer.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/matrix_auth_observer.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -39,7 +39,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/matrix_auth_observer.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/matrix_auth_observer.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -56,7 +56,24 @@ Return the current charm.
 
 ---
 
-<a href="../src/matrix_auth_observer.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/matrix_auth_observer.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_requirer_registration_secrets`
+
+```python
+get_requirer_registration_secrets() → Optional[List]
+```
+
+Get requirers registration secrets (application services). 
+
+
+
+**Returns:**
+  dict with filepath and content for creating the secret files. 
+
+---
+
+<a href="../src/matrix_auth_observer.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_matrix_auth_integration`
 

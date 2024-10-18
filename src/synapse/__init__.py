@@ -84,6 +84,7 @@ from .workload_configuration import (  # noqa: F401
     enable_metrics,
     enable_rc_joins_remote_rate,
     enable_redis,
+    enable_registration_secrets,
     enable_replication,
     enable_room_list_publication_rules,
     enable_saml,

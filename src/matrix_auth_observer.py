@@ -4,10 +4,16 @@
 """The Matrix Auth relation observer."""
 
 import logging
-from typing import Optional
+from collections import namedtuple
+from pathlib import Path
+from typing import List, Optional
 
 import ops
-from charms.synapse.v0.matrix_auth import MatrixAuthProviderData, MatrixAuthProvides
+from charms.synapse.v0.matrix_auth import (
+    MatrixAuthProviderData,
+    MatrixAuthProvides,
+    MatrixAuthRequirerData,
+)
 from ops.framework import Object
 
 import synapse
@@ -28,6 +34,7 @@ class MatrixAuthObserver(Object):
         super().__init__(charm, "matrix-auth-observer")
         self._charm = charm
         self.matrix_auth = MatrixAuthProvides(self._charm)
+        # matrix_auth_request_received conflicts with on defined by Redis...
         self.framework.observe(
             self._charm.on["matrix-auth"].relation_changed, self._on_matrix_auth_relation_changed
         )
@@ -56,6 +63,29 @@ class MatrixAuthObserver(Object):
             if self._matrix_auth_relation_updated(relation, provider_data):
                 return
             self.matrix_auth.update_relation_data(relation, provider_data)
+
+    def get_requirer_registration_secrets(self) -> Optional[List]:
+        """Get requirers registration secrets (application services).
+
+        Returns:
+            dict with filepath and content for creating the secret files.
+        """
+        registration_secrets = []
+        RegistrationSecret = namedtuple("RegistrationSecret", ["file_path", "registration_secret"])
+        for relation in list(self._charm.model.relations["matrix-auth"]):
+            requirer_data = MatrixAuthRequirerData.from_relation(self._charm.model, relation)
+            if requirer_data and requirer_data.registration_secret_id:
+                registration_juju_secret = requirer_data.get_registration(
+                    self._charm.model, requirer_data.registration_secret_id
+                )
+                filename = f"{relation.name}-{relation.id}"
+                file_path = (
+                    Path(synapse.SYNAPSE_CONFIG_DIR) / f"appservice-registration-{filename}.yaml"
+                )
+                registration_secrets.append(
+                    RegistrationSecret(file_path, registration_juju_secret.get_secret_value())
+                )
+        return registration_secrets
 
     def _get_matrix_auth_provider_data(
         self, charm_state: CharmState
@@ -107,13 +137,12 @@ class MatrixAuthObserver(Object):
 
     @inject_charm_state
     def _on_matrix_auth_relation_changed(self, _: ops.EventBase, charm_state: CharmState) -> None:
-        """Handle matrix-auth relation changed event.
+        """Handle matrix-auth request received event.
 
         Args:
             charm_state: The charm state.
         """
         logger.debug("_on_matrix_auth_relation_changed emitting reconcile")
-        # if there is no data coming, we should prevent reconcile from restarting matrix
         self._charm.reconcile(charm_state)
 
     @inject_charm_state
