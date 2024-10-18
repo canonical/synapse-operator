@@ -35,7 +35,6 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
-
 MAIN_UNIT_ID = "main_unit_id"
 
 
@@ -216,15 +215,6 @@ class SynapseCharm(CharmBaseWithState):
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
 
-            # create registration secrets files if needed
-            if charm_state.registration_secrets is not None:
-                logging.debug("registration secrets found, deleting and creating files")
-                container.exec(
-                    ["rm", "-f", f"{synapse.SYNAPSE_CONFIG_DIR}/appservice-registration-*.yaml"]
-                )
-                for registration_secret in charm_state.registration_secrets:
-                    registration_secret.file_path.write_text(registration_secret.value)
-
             # reconcile configuration
             pebble.reconcile(
                 charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
@@ -238,7 +228,8 @@ class SynapseCharm(CharmBaseWithState):
                     self.set_signing_key(signing_key.rstrip())
 
             # update matrix-auth integration with configuration data
-            self._matrix_auth.update_matrix_auth_integration(charm_state)
+            if self.unit.is_leader():
+                self._matrix_auth.update_matrix_auth_integration(charm_state)
         except (pebble.PebbleServiceError, FileNotFoundError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return

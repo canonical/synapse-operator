@@ -71,19 +71,20 @@ class MatrixAuthObserver(Object):
             dict with filepath and content for creating the secret files.
         """
         registration_secrets = []
-        RegistrationSecret = namedtuple("RegistrationSecret", ["file_path", "registration_secret"])
+        RegistrationSecret = namedtuple("RegistrationSecret", ["file_path", "value"])
         for relation in list(self._charm.model.relations["matrix-auth"]):
-            requirer_data = MatrixAuthRequirerData.from_relation(self._charm.model, relation)
-            if requirer_data and requirer_data.registration_secret_id:
-                registration_juju_secret = requirer_data.get_registration(
-                    self._charm.model, requirer_data.registration_secret_id
-                )
+            requirer_data = MatrixAuthRequirerData.from_relation(self.model, relation=relation)
+            if requirer_data and requirer_data.registration:
+                registration = requirer_data.registration
                 filename = f"{relation.name}-{relation.id}"
                 file_path = (
                     Path(synapse.SYNAPSE_CONFIG_DIR) / f"appservice-registration-{filename}.yaml"
                 )
+                # get_secret_value is dynamically created
                 registration_secrets.append(
-                    RegistrationSecret(file_path, registration_juju_secret.get_secret_value())
+                    RegistrationSecret(
+                        file_path, registration.get_secret_value()  # pylint: disable=no-member
+                    )
                 )
         return registration_secrets
 

@@ -59,6 +59,7 @@ from .workload import (  # noqa: F401
     SYNAPSE_WORKER_CONFIG_PATH,
     ExecResult,
     WorkloadError,
+    create_registration_secrets_files,
     execute_migrate_config,
     generate_mjolnir_config,
     generate_nginx_config,

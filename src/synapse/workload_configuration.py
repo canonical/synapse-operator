@@ -279,7 +279,7 @@ def enable_registration_secrets(current_yaml: dict, charm_state: CharmState) -> 
         if charm_state.registration_secrets is None:
             return
         current_yaml["app_service_config_files"] = [
-            registration_secret.file_path
+            str(registration_secret.file_path)
             for registration_secret in charm_state.registration_secrets
         ]
     except KeyError as exc:
