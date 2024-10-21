@@ -21,7 +21,7 @@ Synapse user.
  - <b>`password`</b>:  users password. 
  - <b>`access_token`</b>:  obtained when the user is registered. 
 
-<a href="../src/user.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/user.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -43,7 +43,7 @@ Initialize the User.
 
 ---
 
-<a href="../src/user.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/user.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `username_must_not_be_empty`
 

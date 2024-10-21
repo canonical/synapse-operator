@@ -353,6 +353,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         redis_config: redis configuration.
         proxy: proxy information.
         instance_map_config: Instance map configuration with main and worker addresses.
+        registration_secrets: Registration secrets received via matrix-auth integration.
     """
 
     synapse_config: SynapseConfig
@@ -362,6 +363,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     media_config: typing.Optional[MediaConfiguration]
     redis_config: typing.Optional[RedisConfiguration]
     instance_map_config: typing.Optional[typing.Dict]
+    registration_secrets: typing.Optional[typing.List]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -390,6 +392,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         media_config: typing.Optional[MediaConfiguration],
         redis_config: typing.Optional[RedisConfiguration],
         instance_map_config: typing.Optional[typing.Dict],
+        registration_secrets: typing.Optional[typing.List],
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
@@ -401,6 +404,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             media_config: Media configuration to be used by Synapse.
             redis_config: Redis configuration to be used by Synapse.
             instance_map_config: Instance map configuration with main and worker addresses.
+            registration_secrets: Registration secrets received via matrix-auth integration.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -444,4 +448,5 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             media_config=media_config,
             redis_config=redis_config,
             instance_map_config=instance_map_config,
+            registration_secrets=registration_secrets,
         )
