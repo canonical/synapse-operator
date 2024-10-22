@@ -21,3 +21,13 @@ parts:
     override-build: |
       rustup default stable
       craftctl default
+  libpq:
+    build-packages:
+      - libpq-dev
+    plugin: dump
+    source: /usr/lib/
+    source-type: local
+    prime:
+      - lib/
+    organize:
+      "*-linux-gnu/libpq.so*": lib/
