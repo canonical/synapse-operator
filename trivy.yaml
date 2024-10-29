@@ -1,3 +1,4 @@
 timeout: 20m
+debug: true
 scan:
   offline-scan: true
