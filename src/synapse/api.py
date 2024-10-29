@@ -234,7 +234,7 @@ def register_user(
         raise RegisterUserError(str(exc)) from exc
 
 
-def _generate_mac(
+def _generate_mac(  # pylint: disable=too-many-positional-arguments
     shared_secret: str,
     nonce: str,
     user: str,
@@ -373,7 +373,7 @@ def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmS
         f"{SYNAPSE_URL}/_synapse/admin/v1/users/"
         f"@{user.username}:{server_name}/override_ratelimit"
     )
-    _do_request("DELETE", rate_limit_url, admin_access_token=admin_access_token)
+    _do_request("POST", rate_limit_url, admin_access_token=admin_access_token)
 
 
 def get_room_id(

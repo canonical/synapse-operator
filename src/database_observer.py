@@ -1,6 +1,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the config change call
+# mypy: disable-error-code="attr-defined"
+
 """The Database agent relation observer."""
 import logging
 import typing
@@ -13,7 +16,6 @@ from charms.data_platform_libs.v0.data_interfaces import (
 )
 from ops.framework import Object
 
-import pebble
 import synapse
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import DatasourcePostgreSQL
@@ -52,27 +54,6 @@ class DatabaseObserver(Object):
         """
         return self._charm
 
-    def _change_config(self, charm_state: CharmState) -> None:
-        """Change the configuration.
-
-        Args:
-            charm_state: Instance of CharmState
-        """
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        try:
-            # getting information from charm if is main unit or not.
-            pebble.change_config(
-                charm_state, container, is_main=self._charm.is_main()  # type: ignore[attr-defined]
-            )
-        # Avoiding duplication of code with _change_config in charm.py
-        except Exception as exc:  # pylint: disable=broad-exception-caught
-            self._charm.model.unit.status = ops.BlockedStatus(f"Database failed: {exc}")
-            return
-        self._charm.unit.status = ops.ActiveStatus()
-
     @inject_charm_state
     def _on_database_created(self, _: DatabaseCreatedEvent, charm_state: CharmState) -> None:
         """Handle database created.
@@ -88,7 +69,8 @@ class DatabaseObserver(Object):
         db_client = DatabaseClient(datasource=datasource)
         if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
             db_client.prepare()
-        self._change_config(charm_state)
+        logger.debug("_on_database_created emitting reconcile")
+        self.get_charm().reconcile(charm_state)
 
     @inject_charm_state
     def _on_endpoints_changed(
@@ -99,7 +81,8 @@ class DatabaseObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        self._change_config(charm_state)
+        logger.debug("_on_endpoints_changed emitting reconcile")
+        self.get_charm().reconcile(charm_state)
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
         """Get database data from relation.

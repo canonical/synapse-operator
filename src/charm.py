@@ -14,8 +14,8 @@ import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
-from ops.main import main
 
 import actions
 import pebble
@@ -59,7 +59,6 @@ class SynapseCharm(CharmBaseWithState):
         self._backup = BackupObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
-        self._irc_bridge_database = DatabaseObserver(self, relation_name="irc-bridge-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
@@ -93,11 +92,7 @@ class SynapseCharm(CharmBaseWithState):
         self.framework.observe(
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
         )
-        self.framework.observe(self.on.reset_instance_action, self._on_reset_instance_action)
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
-        self.framework.observe(
-            self.on.synapse_nginx_pebble_ready, self._on_synapse_nginx_pebble_ready
-        )
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
@@ -113,7 +108,6 @@ class SynapseCharm(CharmBaseWithState):
         return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
-            irc_bridge_datasource=self._irc_bridge_database.get_relation_as_datasource(),
             saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),
@@ -164,29 +158,38 @@ class SynapseCharm(CharmBaseWithState):
         peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
         if peer_relation:
             relation = peer_relation[0]
+            # relation.units will contain the units after the relation-joined event.
+            # since a relation-changed is emitted for every relation-joined event,
+            # the relation-changed handler will reconcile the configuration and
+            # instance_map will be properly set.
             for u in relation.units:
                 # <unit-name>.<app-name>-endpoints.<model-name>.svc.cluster.local
                 unit_name = u.name.replace("/", "-")
                 address = f"{unit_name}.{app_name}-endpoints"
                 addresses.append(address)
         logger.debug("addresses values are: %s", str(addresses))
-        instance_map = {}
+        instance_map = {
+            "main": {"host": self.get_main_unit_address(), "port": 8035},
+            "federationsender1": {"host": self.get_main_unit_address(), "port": 8034},
+        }
         for address in addresses:
             match = re.search(r"-(\d+)", address)
             # A Juju unit name is s always named on the
             # pattern <application>/<unit ID>, where <application> is the name
             # of the application and the <unit ID> is its ID number.
             # https://juju.is/docs/juju/unit
+            if address == self.get_main_unit_address():
+                continue
             unit_number = match.group(1)  # type: ignore[union-attr]
-            instance_name = (
-                "main" if address == self.get_main_unit_address() else f"worker{unit_number}"
-            )
+            instance_name = f"worker{unit_number}"
             instance_map[instance_name] = {"host": address, "port": 8034}
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
 
-    def change_config(self, charm_state: CharmState) -> None:
-        """Change configuration.
+    def reconcile(self, charm_state: CharmState) -> None:
+        """Reconcile Synapse configuration with charm state.
+
+        This is the main entry for changes that require a restart.
 
         Args:
             charm_state: Instance of CharmState
@@ -200,12 +203,25 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
-            pebble.change_config(
+            signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
+            signing_key_from_secret = self.get_signing_key()
+            if signing_key_from_secret:
+                logger.debug("Signing key secret was found, pushing it to the container")
+                container.push(
+                    signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
+                )
+            pebble.reconcile(
                 charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
             )
-        except pebble.PebbleServiceError as exc:
+            if self.is_main() and not signing_key_from_secret:
+                logger.debug("Signing key secret not found, creating secret")
+                with container.pull(signing_key_path) as f:
+                    signing_key = f.read()
+                    self.set_signing_key(signing_key.rstrip())
+        except (pebble.PebbleServiceError, FileNotFoundError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
+        pebble.restart_nginx(container, self.get_main_unit_address())
         self._set_unit_status()
 
     def _set_unit_status(self) -> None:
@@ -232,10 +248,6 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
         # NGINX checks
-        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
-            return
         nginx_service = container.get_services(synapse.SYNAPSE_NGINX_SERVICE_NAME)
         nginx_not_active = [
             service for service in nginx_service.values() if not service.is_running()
@@ -270,7 +282,8 @@ class SynapseCharm(CharmBaseWithState):
             logger.debug("More than 1 peer unit found. Redis is required.")
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
-        self.change_config(charm_state)
+        logger.debug("_on_config_changed emitting reconcile")
+        self.reconcile(charm_state)
         self._set_workload_version()
 
     @inject_charm_state
@@ -293,7 +306,8 @@ class SynapseCharm(CharmBaseWithState):
             self.set_main_unit(self.unit.name)
         # Call change_config to restart unit. By design,every change in the
         # number of workers requires restart.
-        self.change_config(charm_state)
+        logger.debug("_on_relation_departed emitting reconcile")
+        self.reconcile(charm_state)
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -316,7 +330,8 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
         self.unit.status = ops.ActiveStatus()
-        self.change_config(charm_state)
+        logger.debug("_on_synapse_pebble_ready emitting reconcile")
+        self.reconcile(charm_state)
 
     def get_main_unit(self) -> typing.Optional[str]:
         """Get main unit.
@@ -361,95 +376,105 @@ class SynapseCharm(CharmBaseWithState):
             logging.info("Setting main unit to be %s", unit)
             peer_relation[0].data[self.app].update({MAIN_UNIT_ID: unit})
 
+    def set_signing_key(self, signing_key: str) -> None:
+        """Create secret with signing key content.
+
+        Args:
+            signing_key: signing key as string.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to set signing key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return
+
+        if signing_key == self.get_signing_key():
+            logger.info("Received signing key but there is no change, skipping")
+            return
+        if self.unit.is_leader():
+            logger.debug("Adding signing key to secret: %s", signing_key)
+            secret = self.app.add_secret({"secret-signing-key": signing_key})
+            peer_relation[0].data[self.app].update(
+                {"secret-signing-id": typing.cast(str, secret.id)}
+            )
+
+    def get_signing_key(self) -> typing.Optional[str]:
+        """Get signing key from secret.
+
+        Returns:
+            Signing key as string or None if not found.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to get signing key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return None
+
+        secret_id = peer_relation[0].data[self.app].get("secret-signing-id")
+        if secret_id:
+            try:
+                secret = self.model.get_secret(id=secret_id)
+                logging.debug(secret.get_content().get("secret-signing-key"))
+                return secret.get_content().get("secret-signing-key")
+            except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
+                logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
+                del peer_relation[0].data[self.app]["secret-signing-id"]
+        return None
+
     @inject_charm_state
     def _on_leader_elected(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle Synapse peer relation created event.
+        """Handle Synapse leader elected event.
+
+        This event handler will reconcile Synapse configuration after the following
+        scenarios:
+        - When the charm is deployed so the leader will be the main unit.
+        - When the leader, for any reason, has changed so the leader unit will be the main.
+        Once the peer data (main_unit_id) is changed, other units will emit reconcile and be
+        properly configured.
 
         Args:
             charm_state: The charm state.
         """
         # assuming that this event will be fired only at the setup phase
         # check if main is already set if not, this unit will be the main
-        if self.get_main_unit() is None and self.unit.is_leader():
-            logging.debug("On_leader_elected is setting main unit.")
-            self.set_main_unit(self.unit.name)
-            self.change_config(charm_state)
+        if not self.unit.is_leader():
+            return
+        logging.debug(
+            "_on_leader_elected received, main_unit is %s and will be set to %s",
+            self.get_main_unit(),
+            self.unit.name,
+        )
+        self.set_main_unit(self.unit.name)
+        logger.debug("_on_leader_elected emitting reconcile")
+        self.reconcile(charm_state)
 
     @inject_charm_state
     def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
         """Handle Synapse peer relation changed event.
 
+        This event handler will reconcile Synapse configuration and NGINX after the following
+        scenarios:
+        - A new unit joined the peer relation. A relation-changed event is emitted after a
+        relation-joined event. The instance_map and stream_writers should be updated also workers
+        must be restarted by design.
+        - Main unit has changed. The instance_map, stream_writers and NGINX configuration should be
+        updated and all remaining units restarted.
+
         Args:
             charm_state: The charm state.
         """
-        # the main unit has changed so workers must be restarted
-        if self.get_main_unit() != self.unit.name:
-            self.change_config(charm_state)
-        # Reload NGINX configuration with new main address
-        nginx_container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not nginx_container.can_connect():
-            logger.warning(
-                "Relation changed received but NGINX container is not available for reloading."
-            )
-            return
-        pebble.replan_nginx(nginx_container, self.get_main_unit_address())
-
-    def _on_synapse_nginx_pebble_ready(self, _: ops.HookEvent) -> None:
-        """Handle synapse nginx pebble ready event."""
-        container = self.unit.get_container(synapse.SYNAPSE_NGINX_CONTAINER_NAME)
-        if not container.can_connect():
-            logger.debug("synapse_nginx_pebble_ready failed to connect")
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse NGINX pebble")
-            return
-        logger.debug("synapse_nginx_pebble_ready replanning nginx")
-        # Replan pebble layer
-        pebble.replan_nginx(container, self.get_main_unit_address())
-        self._set_unit_status()
-
-    @inject_charm_state
-    def _on_reset_instance_action(self, event: ActionEvent, charm_state: CharmState) -> None:
-        """Reset instance and report action result.
-
-        Args:
-            event: Event triggering the reset instance action.
-            charm_state: The charm state.
-        """
-        results = {
-            "reset-instance": False,
-        }
-        if not self.model.unit.is_leader():
-            event.fail("Only the juju leader unit can run reset instance action")
-            return
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-        try:
-            self.model.unit.status = ops.MaintenanceStatus("Resetting Synapse instance")
-            try:
-                container.stop(pebble.STATS_EXPORTER_SERVICE_NAME)
-            except (ops.pebble.Error, RuntimeError) as e:
-                event.fail(f"Failed to stop Synapse Stats Exporter: {str(e)}")
-            pebble.reset_instance(charm_state, container)
-            datasource = self._database.get_relation_as_datasource()
-            actions.reset_instance(
-                container=container, charm_state=charm_state, datasource=datasource
-            )
-            logger.info("Start Synapse")
-            pebble.restart_synapse(charm_state, container, self.is_main())
-            results["reset-instance"] = True
-        except (pebble.PebbleServiceError, actions.ResetInstanceError) as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            event.fail(str(exc))
-            return
-        event.set_results(results)
-        self.model.unit.status = ops.ActiveStatus()
+        logger.debug("_on_relation_changed emitting reconcile")
+        self.reconcile(charm_state)
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
-        """Reset instance and report action result.
+        """Register user and report action result.
 
         Args:
-            event: Event triggering the reset instance action.
+            event: Event triggering the register user instance action.
         """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():

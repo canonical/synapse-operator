@@ -127,10 +127,8 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         synapse.SYNAPSE_CONTAINER_NAME
     )
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.set_can_connect(
-        harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME], True
-    )
     synapse_container.make_dir("/data", make_parents=True)
+    synapse_container.push(f"/data/{TEST_SERVER_NAME}.signing.key", "123")
     # unused-variable disabled to pass constants values to inner function
     command_path = synapse.SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
     command_migrate_config = synapse.COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
@@ -177,16 +175,13 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         executable="/usr/bin/python3",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
-    synapse_nginx_container: ops.Container = harness.model.unit.get_container(
-        synapse.SYNAPSE_NGINX_CONTAINER_NAME
-    )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=synapse_nginx_container,
+        container=synapse_container,
         executable="cp",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=synapse_nginx_container,
+        container=synapse_container,
         executable="sed",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
@@ -232,10 +227,17 @@ def smtp_configured_fixture(harness: Harness) -> Harness:
 def redis_configured_fixture(harness: Harness) -> Harness:
     """Harness fixture with redis relation configured"""
     harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    redis_relation_id = harness.add_relation(
-        "redis", "redis", app_data={"hostname": "redis-host", "port": "1010"}
-    )
-    harness.add_relation_unit(redis_relation_id, "redis/0")
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    return harness
+
+
+@pytest.fixture(name="prometheus_configured")
+def prometheus_configured_fixture(harness: Harness) -> Harness:
+    """Harness fixture with prometheus relation configured"""
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
+    harness.add_relation("metrics-endpoint", "prometheus-k8s")
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     harness.set_leader(True)
     return harness

@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 import ops
 
 # pydantic is causing this no-name-in-module problem
-from pydantic import (  # pylint: disable=no-name-in-module,import-error
+from pydantic.v1 import (  # pylint: disable=no-name-in-module,import-error
     AnyHttpUrl,
     BaseModel,
     Extra,
@@ -48,6 +48,14 @@ class CharmBaseWithState(ops.CharmBase, ABC):
            The current charm
         """
         return self
+
+    @abstractmethod
+    def reconcile(self, charm_state: "CharmState") -> None:
+        """Reconcile Synapse configuration.
+
+        Args:
+            charm_state: The charm state.
+        """
 
 
 class HasCharmWithState(typing.Protocol):  # pylint: disable=too-few-public-methods
@@ -152,39 +160,52 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
     Attributes:
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
+        block_non_admin_invites: block_non_admin_invites config.
         enable_email_notifs: enable_email_notifs config.
-        enable_irc_bridge: creates a registration file in Synapse and starts an irc bridge app.
-        irc_bridge_admins: a comma separated list of user IDs who are admins of the IRC bridge.
         enable_mjolnir: enable_mjolnir config.
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
+        invite_checker_blocklist_allowlist_url: invite_checker_blocklist_allowlist_url config.
+        invite_checker_policy_rooms: invite_checker_policy_rooms config.
         ip_range_whitelist: ip_range_whitelist config.
+        limit_remote_rooms_complexity: limit_remote_rooms_complexity config.
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
         publish_rooms_allowlist: publish_rooms_allowlist config.
+        experimental_alive_check: experimental_alive_check config.
+        rc_joins_remote_burst_count: rc_join burst_count config.
+        rc_joins_remote_per_second: rc_join per_second config.
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
+        workers_ignore_list: workers_ignore_list config.
     """
 
     allow_public_rooms_over_federation: bool = False
+    block_non_admin_invites: bool = False
     enable_email_notifs: bool = False
-    enable_irc_bridge: bool = False
-    irc_bridge_admins: str | None = Field(None)
     enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
+    experimental_alive_check: str | None = Field(None)
     federation_domain_whitelist: str | None = Field(None)
+    invite_checker_blocklist_allowlist_url: str | None = Field(None)
+    invite_checker_policy_rooms: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
+    limit_remote_rooms_complexity: float | None = Field(None)
     public_baseurl: str | None = Field(None)
     publish_rooms_allowlist: str | None = Field(None)
+    rc_joins_remote_burst_count: int | None = Field(None)
+    rc_joins_remote_per_second: float | None = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
+    # notif_from should be after server_name because of how the validator is set.
     notif_from: str | None = Field(None)
     trusted_key_servers: str | None = Field(
         None, regex=r"^[A-Za-z0-9][A-Za-z0-9-.]*(?:,[A-Za-z0-9][A-Za-z0-9-.]*)*\.\D{2,4}$"
     )
+    workers_ignore_list: str | None = Field(None)
 
     class Config:  # pylint: disable=too-few-public-methods
         """Config class.
@@ -229,7 +250,32 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
             return "yes"
         return "no"
 
-    @validator("irc_bridge_admins", "publish_rooms_allowlist")
+    @validator("invite_checker_policy_rooms")
+    @classmethod
+    def roomids_to_list(cls, value: str) -> typing.List[str]:
+        """Convert a comma separated list of rooms to list.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The string converted to list.
+
+        Raises:
+            ValidationError: if rooms is not as expected.
+        """
+        # Based on documentation
+        # https://spec.matrix.org/v1.10/appendices/#user-identifiers
+        roomid_regex = r"![a-zA-Z0-9._=/+-]+:[a-zA-Z0-9-.]+"
+        if value is None:
+            return []
+        value_list = ["!" + room_id.strip() for room_id in value.split(",")]
+        for room_id in value_list:
+            if not re.fullmatch(roomid_regex, room_id):
+                raise ValidationError(f"Invalid room ID format: {room_id}", cls)
+        return value_list
+
+    @validator("publish_rooms_allowlist")
     @classmethod
     def userids_to_list(cls, value: str) -> typing.List[str]:
         """Convert a comma separated list of users to list.
@@ -254,6 +300,45 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
                 raise ValidationError(f"Invalid user ID format: {user_id}", cls)
         return value_list
 
+    @validator("experimental_alive_check")
+    @classmethod
+    def to_pebble_check(cls, value: str) -> typing.Dict[str, typing.Union[str, int]]:
+        """Convert the experimental_alive_check field to pebble check.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The pebble check.
+
+        Raises:
+            ValidationError: if experimental_alive_check is invalid.
+        """
+        # expected
+        # period,threshold,timeout
+        config_values = value.split(",")
+        if len(config_values) != 3:
+            raise ValidationError(
+                f"Invalid experimental_alive_check, less or more than 3 values: {value}", cls
+            )
+        try:
+            period = config_values[0].strip().lower()
+            if period[-1] not in ("s", "m", "h"):
+                raise ValidationError(
+                    f"Invalid experimental_alive_check, period should end in s/m/h: {value}", cls
+                )
+            threshold = int(config_values[1].strip())
+            timeout = config_values[2].strip().lower()
+            if timeout[-1] not in ("s", "m", "h"):
+                raise ValidationError(
+                    f"Invalid experimental_alive_check, timeout should end in s/m/h: {value}", cls
+                )
+            return {"period": period, "threshold": threshold, "timeout": timeout}
+        except ValueError as exc:
+            raise ValidationError(
+                f"Invalid experimental_alive_check, threshold should be a number: {value}", cls
+            ) from exc
+
 
 @dataclasses.dataclass(frozen=True)
 class CharmState:  # pylint: disable=too-many-instance-attributes
@@ -262,7 +347,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     Attributes:
         synapse_config: synapse configuration.
         datasource: datasource information.
-        irc_bridge_datasource: irc bridge datasource information.
         saml_config: saml configuration.
         smtp_config: smtp configuration.
         media_config: media configuration.
@@ -273,7 +357,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
     synapse_config: SynapseConfig
     datasource: typing.Optional[DatasourcePostgreSQL]
-    irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL]
     saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
     media_config: typing.Optional[MediaConfiguration]
@@ -296,17 +379,12 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             no_proxy=no_proxy,
         )
 
-    # pylint: disable=too-many-arguments
-    # this either needs to be refactored or it's fine as is for now
-    # the disable stems from the additional datasoure for irc bridge
-    # and that might end up in a separate charm
     # from_charm receives configuration from all integration so too many arguments.
     @classmethod
-    def from_charm(  # pylint: disable=too-many-arguments
+    def from_charm(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         cls,
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],
-        irc_bridge_datasource: typing.Optional[DatasourcePostgreSQL],
         saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
         media_config: typing.Optional[MediaConfiguration],
@@ -318,7 +396,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         Args:
             charm: The charm instance associated with this state.
             datasource: datasource information to be used by Synapse.
-            irc_bridge_datasource: irc bridge datasource information to be used by Synapse.
             saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
             media_config: Media configuration to be used by Synapse.
@@ -335,6 +412,24 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             # ignoring because mypy fails with:
             # "has incompatible type "**dict[str, str]"; expected ...""
             valid_synapse_config = SynapseConfig(**dict(charm.config.items()))  # type: ignore
+            # remove workers from instance_map
+            if instance_map_config and valid_synapse_config.workers_ignore_list:
+                logger.debug(
+                    "Removing %s from instance_map", valid_synapse_config.workers_ignore_list
+                )
+                workers_to_ignore = [
+                    # due to pydantic bump, need to refactor
+                    # pylint: disable=no-member
+                    w.strip()
+                    for w in valid_synapse_config.workers_ignore_list.split(",")
+                ]
+                for worker in workers_to_ignore:
+                    if worker in instance_map_config:
+                        del instance_map_config[worker]
+                    else:
+                        logger.warning(
+                            "Worker %s in workers_ignore_list not found in instance_map", worker
+                        )
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())
@@ -344,7 +439,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return cls(
             synapse_config=valid_synapse_config,
             datasource=datasource,
-            irc_bridge_datasource=irc_bridge_datasource,
             saml_config=saml_config,
             smtp_config=smtp_config,
             media_config=media_config,

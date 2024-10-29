@@ -8,7 +8,7 @@ State of the Charm.
 
 ---
 
-<a href="../src/charm_state.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `inject_charm_state`
 
@@ -111,6 +111,24 @@ Return the current charm.
 **Returns:**
   The current charm 
 
+---
+
+<a href="../src/charm_state.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `reconcile`
+
+```python
+reconcile(charm_state: 'CharmState') → None
+```
+
+Reconcile Synapse configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  The charm state. 
+
 
 ---
 
@@ -119,7 +137,7 @@ Exception raised when a charm configuration is found to be invalid.
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/charm_state.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -150,7 +168,6 @@ State of the Charm.
  
  - <b>`synapse_config`</b>:  synapse configuration. 
  - <b>`datasource`</b>:  datasource information. 
- - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information. 
  - <b>`saml_config`</b>:  saml configuration. 
  - <b>`smtp_config`</b>:  smtp configuration. 
  - <b>`media_config`</b>:  media configuration. 
@@ -174,7 +191,7 @@ Get charm proxy information from juju charm environment.
 
 ---
 
-<a href="../src/charm_state.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
@@ -182,7 +199,6 @@ Get charm proxy information from juju charm environment.
 from_charm(
     charm: CharmBase,
     datasource: Optional[DatasourcePostgreSQL],
-    irc_bridge_datasource: Optional[DatasourcePostgreSQL],
     saml_config: Optional[SAMLConfiguration],
     smtp_config: Optional[SMTPConfiguration],
     media_config: Optional[MediaConfiguration],
@@ -199,7 +215,6 @@ Initialize a new instance of the CharmState class from the associated charm.
  
  - <b>`charm`</b>:  The charm instance associated with this state. 
  - <b>`datasource`</b>:  datasource information to be used by Synapse. 
- - <b>`irc_bridge_datasource`</b>:  irc bridge datasource information to be used by Synapse. 
  - <b>`saml_config`</b>:  saml configuration to be used by Synapse. 
  - <b>`smtp_config`</b>:  SMTP configuration to be used by Synapse. 
  - <b>`media_config`</b>:  Media configuration to be used by Synapse. 
@@ -225,7 +240,7 @@ Protocol that defines a class that returns a CharmBaseWithState.
 
 ---
 
-<a href="../src/charm_state.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -263,27 +278,33 @@ Represent Synapse builtin configuration values.
 **Attributes:**
  
  - <b>`allow_public_rooms_over_federation`</b>:  allow_public_rooms_over_federation config. 
+ - <b>`block_non_admin_invites`</b>:  block_non_admin_invites config. 
  - <b>`enable_email_notifs`</b>:  enable_email_notifs config. 
- - <b>`enable_irc_bridge`</b>:  creates a registration file in Synapse and starts an irc bridge app. 
- - <b>`irc_bridge_admins`</b>:  a comma separated list of user IDs who are admins of the IRC bridge. 
  - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
  - <b>`enable_password_config`</b>:  enable_password_config config. 
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 
+ - <b>`invite_checker_blocklist_allowlist_url`</b>:  invite_checker_blocklist_allowlist_url config. 
+ - <b>`invite_checker_policy_rooms`</b>:  invite_checker_policy_rooms config. 
  - <b>`ip_range_whitelist`</b>:  ip_range_whitelist config. 
+ - <b>`limit_remote_rooms_complexity`</b>:  limit_remote_rooms_complexity config. 
  - <b>`notif_from`</b>:  defines the "From" address to use when sending emails. 
  - <b>`public_baseurl`</b>:  public_baseurl config. 
  - <b>`publish_rooms_allowlist`</b>:  publish_rooms_allowlist config. 
+ - <b>`experimental_alive_check`</b>:  experimental_alive_check config. 
+ - <b>`rc_joins_remote_burst_count`</b>:  rc_join burst_count config. 
+ - <b>`rc_joins_remote_per_second`</b>:  rc_join per_second config. 
  - <b>`report_stats`</b>:  report_stats config. 
  - <b>`server_name`</b>:  server_name config. 
  - <b>`trusted_key_servers`</b>:  trusted_key_servers config. 
+ - <b>`workers_ignore_list`</b>:  workers_ignore_list config. 
 
 
 
 
 ---
 
-<a href="../src/charm_state.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `get_default_notif_from`
 
@@ -307,7 +328,65 @@ Set server_name as default value to notif_from.
 
 ---
 
-<a href="../src/charm_state.py#L217"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `roomids_to_list`
+
+```python
+roomids_to_list(value: str) → List[str]
+```
+
+Convert a comma separated list of rooms to list. 
+
+
+
+**Args:**
+ 
+ - <b>`value`</b>:  the input value. 
+
+
+
+**Returns:**
+ The string converted to list. 
+
+
+
+**Raises:**
+ 
+ - <b>`ValidationError`</b>:  if rooms is not as expected. 
+
+---
+
+<a href="../src/charm_state.py#L303"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `to_pebble_check`
+
+```python
+to_pebble_check(value: str) → Dict[str, Union[str, int]]
+```
+
+Convert the experimental_alive_check field to pebble check. 
+
+
+
+**Args:**
+ 
+ - <b>`value`</b>:  the input value. 
+
+
+
+**Returns:**
+ The pebble check. 
+
+
+
+**Raises:**
+ 
+ - <b>`ValidationError`</b>:  if experimental_alive_check is invalid. 
+
+---
+
+<a href="../src/charm_state.py#L238"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `to_yes_or_no`
 
@@ -330,7 +409,7 @@ Convert the report_stats field to yes or no.
 
 ---
 
-<a href="../src/charm_state.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm_state.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `userids_to_list`
 

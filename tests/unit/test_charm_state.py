@@ -32,13 +32,19 @@ class SimpleCharm(CharmBaseWithState):
         return CharmState(
             synapse_config=synapse_config,
             datasource=None,
-            irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
             media_config=None,
             redis_config=None,
             instance_map_config=None,
         )
+
+    def reconcile(self, charm_state) -> None:
+        """Reconcile configuration.
+
+        Args:
+            charm_state: The charm state.
+        """
 
 
 def test_inject_charm_state_correct() -> None:

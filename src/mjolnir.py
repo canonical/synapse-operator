@@ -80,6 +80,11 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         """
         if not charm_state.synapse_config.enable_mjolnir:
             return
+        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            return
+        mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
         # This check is the same done in get_main_unit. It should be refactored
         # to a place where both Charm and Mjolnir can get it.
         peer_relation = self._charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
@@ -87,16 +92,29 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             logger.debug(
                 "Peer relation found, checking if is main unit before configuring Mjolnir"
             )
-            main_unit_id = peer_relation[0].data[self._charm.app].get("main_unit_id")
+            # The default is self._charm.unit.name to make tests that use Harness.begin() work.
+            # When not using begin_with_initial_hooks, the peer relation data is not created.
+            main_unit_id = (
+                peer_relation[0].data[self._charm.app].get("main_unit_id", self._charm.unit.name)
+            )
             if not self._charm.unit.name == main_unit_id:
-                logger.info("This is not the main unit, skipping Mjolnir configuration")
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
+                if mjolnir_service:
+                    logger.info("This is not the main unit, stopping Mjolnir")
+                    container.stop(MJOLNIR_SERVICE_NAME)
+                else:
+                    logger.info("This is not the main unit, skipping Mjolnir configuration")
+                return
         if mjolnir_service:
-            logger.debug("%s service already exists, skipping", MJOLNIR_SERVICE_NAME)
+            mjolnir_not_active = [
+                service for service in mjolnir_service.values() if not service.is_running()
+            ]
+            if mjolnir_not_active:
+                logger.debug(
+                    "%s service already exists but is not running, restarting",
+                    MJOLNIR_SERVICE_NAME,
+                )
+                container.restart(MJOLNIR_SERVICE_NAME)
+            logger.debug("%s service already exists and running, skipping", MJOLNIR_SERVICE_NAME)
             return
         synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
         synapse_not_active = [
@@ -198,7 +216,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             admin_access_token=admin_access_token,
             room_id=room_id,
         )
-        synapse.create_mjolnir_config(
+        synapse.generate_mjolnir_config(
             container=container, access_token=mjolnir_access_token, room_id=room_id
         )
         synapse.override_rate_limit(

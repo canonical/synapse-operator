@@ -11,6 +11,12 @@ options:
   backup_passphrase:
     type: string
     description: Passphrase used to encrypt a backup using gpg with symmetric key.
+  block_non_admin_invites:
+    type: boolean
+    default: false
+    description: |
+      When enabled, room invites to users on this server will be blocked
+      (except those sent by local server admins).
   enable_email_notifs:
     type: boolean
     default: false
@@ -22,12 +28,6 @@ options:
     description: |
       Configures whether to enable Mjolnir - moderation tool for Matrix.
       Reference: https://github.com/matrix-org/mjolnir
-  enable_irc_bridge:
-    type: boolean
-    default: false
-    description: |
-      Configures whether to enable IRC bridging for Matrix.
-      Reference: https://github.com/matrix-org/matrix-appservice-irc 
   enable_password_config:
     type: boolean
     default: true
@@ -50,11 +50,19 @@ options:
       Comma separated list of IP address CIDR ranges that should be allowed for
       federation, identity servers, push servers, and for checking key validity
       for third-party invite events.
-  irc_bridge_admins:
+  invite_checker_blocklist_allowlist_url:
+    type: string
+    description: URL to fetch the JSON file containing the allowlist and
+      blocklist.
+  invite_checker_policy_rooms:
     type: string
     description: |
-      Comma separated list of admins to be allowed to manage the bridge.
-      This takes the form of user1:domainX.com,user2:domainY.com...
+      Comma separated list of rooms to be used by the invite checker module.
+  limit_remote_rooms_complexity:
+    type: float
+    description: if set, the room "complexity" will be checked before a user
+      joins a new remote room. If the complexity is higher, the user will not be
+      able to join the room.
   notif_from:
     type: string
     description: defines the "From" address to use when sending emails.
@@ -65,6 +73,23 @@ options:
       The public-facing base URL that clients use to access this Homeserver.
       Defaults to https://<server_name>/. Only used if there is integration with
       SAML integrator charm.
+  experimental_alive_check:
+    type: string
+    description: Comma separated list of period,threshold and timeout for Synapse
+      pebble alive check. Refer to https://github.com/canonical/pebble/#layer-specification
+      to more details about allowed values.
+      This is an experimental feature and may be removed in future releases.
+    default: "2m,5,20s"
+  rc_joins_remote_burst_count:
+    type: int
+    description: Allows for ratelimiting number of remote rooms a user can join
+      before being throttled.
+    default: 10
+  rc_joins_remote_per_second:
+    type: float
+    description: Allows for ratelimiting number of remote rooms a user can join
+      per second.
+    default: 0.01
   report_stats:
     description: |
       Configures whether to report statistics.
@@ -86,3 +111,9 @@ options:
     type: string
     description: Comma separated list of trusted servers to download signing
       keys from. Synapse configuration sets default to matrix.org.
+  workers_ignore_list:
+    type: string
+    description: Comma separated list of workers that should be ignored while
+      setting instance_map and stream writers. This configuration should be used
+      in case of unrecoverable broken units and takes the form of
+      worker0,worker1

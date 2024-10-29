@@ -3,6 +3,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Ignoring for the config change call
+# mypy: disable-error-code="attr-defined"
+
 """Class to interact with pebble."""
 
 import logging
@@ -15,7 +18,6 @@ from ops.pebble import Check
 
 import synapse
 from charm_state import CharmState
-from irc_bridge import enable_irc_bridge
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,28 @@ class PebbleServiceError(Exception):
         self.msg = msg
 
 
+def check_synapse_alive(charm_state: CharmState) -> ops.pebble.CheckDict:
+    """Return the Synapse container alive check.
+
+    Args:
+        charm_state: Instance of CharmState.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check(synapse.CHECK_ALIVE_NAME)
+    check.override = "replace"
+    check.level = "alive"
+    check.tcp = {"port": synapse.SYNAPSE_PORT}
+    experimental_alive_check = charm_state.synapse_config.experimental_alive_check
+    if experimental_alive_check:
+        # The default values will tolerate failure for ~10 minutes before restarting Synapse
+        check.period = experimental_alive_check.get("period", "2m")
+        check.threshold = experimental_alive_check.get("threshold", 5)
+        check.timeout = experimental_alive_check.get("timeout", "20s")
+    return check.to_dict()
+
+
 def check_synapse_ready() -> ops.pebble.CheckDict:
     """Return the Synapse container ready check.
 
@@ -47,20 +71,10 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
     check.level = "ready"
+    check.timeout = "20s"
+    check.period = "2m"
+    check.threshold = 5
     check.http = {"url": f"{synapse.SYNAPSE_URL}/health"}
-    return check.to_dict()
-
-
-def check_synapse_alive() -> ops.pebble.CheckDict:
-    """Return the Synapse container alive check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(synapse.CHECK_ALIVE_NAME)
-    check.override = "replace"
-    check.level = "alive"
-    check.tcp = {"port": synapse.SYNAPSE_PORT}
     return check.to_dict()
 
 
@@ -109,24 +123,14 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     check.override = "replace"
     check.level = "ready"
     check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
+    check.timeout = "10s"
+    check.threshold = 5
+    check.period = "1m"
     return check.to_dict()
 
 
-def check_irc_bridge_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse IRC bridge service check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(synapse.CHECK_IRC_BRIDGE_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{synapse.IRC_BRIDGE_HEALTH_PORT}/health"}
-    return check.to_dict()
-
-
-def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None:
-    """Replan Synapse NGINX service and regenerate configuration.
+def restart_nginx(container: ops.model.Container, main_unit_address: str) -> None:
+    """Restart Synapse NGINX service and regenerate configuration.
 
     Args:
         container: Charm container.
@@ -134,7 +138,20 @@ def replan_nginx(container: ops.model.Container, main_unit_address: str) -> None
     """
     container.add_layer("synapse-nginx", _nginx_pebble_layer(), combine=True)
     synapse.generate_nginx_config(container=container, main_unit_address=main_unit_address)
-    container.replan()
+    container.restart(synapse.SYNAPSE_NGINX_SERVICE_NAME)
+
+
+def restart_federation_sender(container: ops.model.Container, charm_state: CharmState) -> None:
+    """Restart Synapse federation sender service and regenerate configuration.
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+    """
+    container.add_layer(
+        "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
+    )
+    container.restart(synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME)
 
 
 def replan_mjolnir(container: ops.model.Container) -> None:
@@ -144,16 +161,6 @@ def replan_mjolnir(container: ops.model.Container) -> None:
         container: Charm container.
     """
     container.add_layer("synapse-mjolnir", _mjolnir_pebble_layer(), combine=True)
-    container.replan()
-
-
-def replan_irc_bridge(container: ops.model.Container) -> None:
-    """Replan Synapse IRC bridge service.
-
-    Args:
-        container: Charm container.
-    """
-    container.add_layer("synapse-irc", _irc_bridge_pebble_layer(), combine=True)
     container.replan()
 
 
@@ -182,6 +189,21 @@ def replan_stats_exporter(container: ops.model.Container, charm_state: CharmStat
             # Synapse. This can be caught in logs or using Prometheus alert.
             logger.debug("Ignoring error while restarting Synapse Stats Exporter")
             logger.exception(str(e))
+
+
+def replan_synapse_federation_sender(
+    container: ops.model.Container, charm_state: CharmState
+) -> None:
+    """Replan Synapse Federation Sender service.
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+    """
+    container.add_layer(
+        "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
+    )
+    container.replan()
 
 
 def _get_synapse_config(container: ops.model.Container) -> dict:
@@ -225,46 +247,45 @@ def _push_synapse_config(
         raise PebbleServiceError(str(exc)) from exc
 
 
-def get_worker_config(unit_number: str) -> dict:
-    """Get worker configuration.
+def _environment_has_changed(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> bool:
+    """Check if environment has changed.
 
     Args:
-        unit_number: Unit number to be used in the worker_name field.
+        charm_state: Instance of CharmState
+        container: Charm container.
+        is_main: if unit is main.
 
     Returns:
-        Worker configuration.
+        True if environment has changed.
     """
-    worker_config = {
-        "worker_app": "synapse.app.generic_worker",
-        "worker_name": f"worker{unit_number}",
-        "worker_listeners": [
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8008,
-                "x_forwarded": True,
-                "resources": [{"names": ["client", "federation"]}],
-            },
-            {
-                "type": "http",
-                "bind_addresses": ["::"],
-                "port": 8034,
-                "resources": [{"names": ["replication"]}],
-            },
-        ],
-        "worker_log_config": "/data/log.config",
-    }
-    return worker_config
+    existing_services = container.get_plan().to_dict().get("services", {})
+    current_services = _pebble_layer(charm_state, is_main).get("services", {})
+
+    existing_env = existing_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
+    current_env = current_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
+
+    env_has_changed = DeepDiff(
+        existing_env,
+        current_env,
+        ignore_order=True,
+        ignore_string_case=True,
+    )
+    logging.debug("The environment change is: %s", env_has_changed)
+    return env_has_changed is not None
 
 
 # The complexity of this method will be reviewed.
-def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
+def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
     container: ops.model.Container,
     is_main: bool = True,
     unit_number: str = "",
 ) -> None:
-    """Change the configuration (main and worker).
+    """Reconcile Synapse configuration with charm state.
+
+    This is the main entry for changes that require a restart done via Pebble.
 
     Args:
         charm_state: Instance of CharmState
@@ -276,18 +297,44 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        synapse.execute_migrate_config(container=container, charm_state=charm_state)
+        if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
+            # Configurations set via environment variables:
+            # synapse_report_stats, database, and proxy
+            logging.info("Environment has changed, configuration will be recreated.")
+            synapse.execute_migrate_config(container=container, charm_state=charm_state)
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
+        if charm_state.synapse_config.block_non_admin_invites:
+            logger.debug("pebble.change_config: Enabling Block non admin invites")
+            synapse.block_non_admin_invites(current_synapse_config, charm_state=charm_state)
         synapse.enable_metrics(current_synapse_config)
         synapse.enable_forgotten_room_retention(current_synapse_config)
+        synapse.enable_media_retention(current_synapse_config)
+        synapse.enable_stale_devices_deletion(current_synapse_config)
+        synapse.enable_rc_joins_remote_rate(current_synapse_config, charm_state=charm_state)
         synapse.enable_serve_server_wellknown(current_synapse_config)
         synapse.enable_replication(current_synapse_config)
+        if (
+            charm_state.synapse_config.invite_checker_policy_rooms
+            or charm_state.synapse_config.invite_checker_blocklist_allowlist_url
+        ):
+            logger.debug("pebble.change_config: Enabling enable_synapse_invite_checker")
+            synapse.enable_synapse_invite_checker(current_synapse_config, charm_state=charm_state)
+        if charm_state.synapse_config.limit_remote_rooms_complexity:
+            logger.debug("pebble.change_config: Enabling limit_remote_rooms_complexity")
+            synapse.enable_limit_remote_rooms_complexity(
+                current_synapse_config, charm_state=charm_state
+            )
         if charm_state.instance_map_config is not None:
             logger.debug("pebble.change_config: Enabling instance_map")
             synapse.enable_instance_map(current_synapse_config, charm_state=charm_state)
             logger.debug("pebble.change_config: Enabling stream_writers")
             synapse.enable_stream_writers(current_synapse_config, charm_state=charm_state)
+            # the main unit will have an additional layer for running federation sender worker
+            if is_main:
+                logging.info("pebble.change_config: Adding Federation Sender layer")
+                synapse.enable_federation_sender(current_synapse_config)
+                replan_synapse_federation_sender(container=container, charm_state=charm_state)
         if charm_state.saml_config is not None:
             logger.debug("pebble.change_config: Enabling SAML")
             synapse.enable_saml(current_synapse_config, charm_state=charm_state)
@@ -318,14 +365,9 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             synapse.enable_room_list_publication_rules(
                 current_synapse_config, charm_state=charm_state
             )
-        if charm_state.datasource:
+        if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
-        if charm_state.synapse_config.enable_irc_bridge:
-            logger.info("Synapse IRC bridge enabled.")
-            enable_irc_bridge(container=container, charm_state=charm_state)
-            synapse.add_app_service_config_field(current_synapse_config)
-            replan_irc_bridge(container=container)
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,
@@ -338,124 +380,18 @@ def change_config(  # noqa: C901 pylint: disable=too-many-branches,too-many-stat
             # Push worker configuration
             _push_synapse_config(
                 container,
-                get_worker_config(unit_number),
+                synapse.generate_worker_config(unit_number, is_main),
                 config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
             )
             # Push main configuration
             _push_synapse_config(container, current_synapse_config)
             synapse.validate_config(container=container)
             restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
+            if is_main and charm_state.instance_map_config is not None:
+                restart_federation_sender(container=container, charm_state=charm_state)
         else:
             logging.info("Configuration has not changed, no action.")
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_redis(charm_state: CharmState, container: ops.model.Container) -> None:
-    """Enable Redis while receiving on_redis_relation_updated event.
-
-    Args:
-        container: Charm container.
-        charm_state: Instance of CharmState.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_redis: Enabling Redis")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_redis(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_saml(charm_state: CharmState, container: ops.model.Container) -> None:
-    """Enable SAML while receiving on_saml_data_available event.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_saml: Enabling SAML")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_saml(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_smtp(charm_state: CharmState, container: ops.model.Container) -> None:
-    """Enable SMTP while receiving on_smtp_data_available event.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_smtp: Enabling SMTP")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_smtp(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def enable_media(charm_state: CharmState, container: ops.model.Container) -> None:
-    """Enable S3 Media while receiving on_media_data_available event.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    try:
-        logger.debug("pebble.enable_media: Enabling Media")
-        current_yaml = _get_synapse_config(container)
-        synapse.enable_media(current_yaml, charm_state=charm_state)
-        _push_synapse_config(container, current_yaml)
-        restart_synapse(container=container, charm_state=charm_state)
-    except (synapse.WorkloadError, ops.pebble.PathError) as exc:
-        raise PebbleServiceError(str(exc)) from exc
-
-
-def reset_instance(charm_state: CharmState, container: ops.model.Container) -> None:
-    """Reset instance.
-
-    Args:
-        charm_state: Instance of CharmState
-        container: Charm container.
-
-    Raises:
-        PebbleServiceError: if something goes wrong while interacting with Pebble.
-    """
-    # This is needed in the case of relation with Postgresql.
-    # If there is open connections it won't be possible to drop the database.
-    try:
-        logger.info("Replan service to not restart")
-        container.add_layer(
-            synapse.SYNAPSE_CONTAINER_NAME,
-            _pebble_layer_without_restart(charm_state),
-            combine=True,
-        )
-        container.replan()
-        logger.info("Stop Synapse instance")
-        container.stop(synapse.SYNAPSE_SERVICE_NAME)
-        logger.info("Erase Synapse data")
-        synapse.reset_instance(container)
-    except ops.pebble.PathError as exc:
         raise PebbleServiceError(str(exc)) from exc
 
 
@@ -490,8 +426,8 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
             }
         },
         "checks": {
+            synapse.CHECK_ALIVE_NAME: check_synapse_alive(charm_state),
             synapse.CHECK_READY_NAME: check_synapse_ready(),
-            synapse.CHECK_ALIVE_NAME: check_synapse_alive(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
@@ -588,35 +524,6 @@ def _cron_pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
     return typing.cast(ops.pebble.LayerDict, layer)
 
 
-def _irc_bridge_pebble_layer() -> ops.pebble.LayerDict:
-    """Generate pebble config for the irc bridge service.
-
-    Returns:
-        The pebble configuration for the irc bridge service.
-    """
-    command_params = (
-        f"-c {synapse.IRC_BRIDGE_CONFIG_PATH}"
-        f" -f {synapse.IRC_BRIDGE_REGISTRATION_PATH}"
-        f" -p {synapse.IRC_BRIDGE_HEALTH_PORT}"
-    )
-    layer = {
-        "summary": "Synapse irc layer",
-        "description": "Synapse irc layer",
-        "services": {
-            synapse.IRC_BRIDGE_SERVICE_NAME: {
-                "override": "replace",
-                "summary": "IRC service",
-                "command": f"/bin/node /app/app.js {command_params}",
-                "startup": "enabled",
-            },
-        },
-        "checks": {
-            synapse.CHECK_IRC_BRIDGE_READY_NAME: check_irc_bridge_ready(),
-        },
-    }
-    return typing.cast(ops.pebble.LayerDict, layer)
-
-
 def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
     """Generate pebble config for the Synapse Stats Exporter service.
 
@@ -633,6 +540,37 @@ def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
                 "command": "synapse-stats-exporter",
                 "startup": "disabled",
                 "on-failure": "ignore",
+            }
+        },
+    }
+    return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.LayerDict:
+    """Return a dictionary representing a Pebble layer.
+
+    Args:
+        charm_state: Instance of CharmState
+
+    Returns:
+        pebble layer for Synapse federation sender
+    """
+    command = (
+        f"{synapse.SYNAPSE_COMMAND_PATH} run -m synapse.app.generic_worker "
+        f"--config-path {synapse.SYNAPSE_CONFIG_PATH} "
+        f"--config-path {synapse.SYNAPSE_WORKER_CONFIG_PATH}"
+    )
+
+    layer = {
+        "summary": "Synapse Federation Sender layer",
+        "description": "pebble config layer for Synapse",
+        "services": {
+            synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME: {
+                "override": "replace",
+                "summary": "Synapse Federation Sender application service",
+                "startup": "enabled",
+                "command": command,
+                "environment": synapse.get_environment(charm_state),
             }
         },
     }

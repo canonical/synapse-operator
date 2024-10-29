@@ -67,3 +67,17 @@ groups:
     annotations:
       summary: Synapse _process_new_pulled_events_with_failed_pull_attempts process CPU usage had an increase bigger than 1% \n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}
       description: Synapse _process_new_pulled_events_with_failed_pull_attempts process CPU usage had an increase bigger than 1%. Verify CPU usage and logs to find the room triggering this.
+  - alert: SynapseUnitsChanged
+    expr: changes(count_values("juju_unit", up{juju_charm="synapse"}) by (juju_model)[5m:1m]) > 0
+    labels:
+      severity: critical
+    annotations:
+      summary: Synapse number of units has changed. \n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}
+      description: Verify if Synapse was scaled (up or down) or if units are missing.
+  - alert: SynapseHighEventRate
+    expr: rate(synapse_storage_events_persisted_by_event_type[2m]) > 0.6
+    labels:
+      severity: warning
+    annotations:
+      summary: High rate per second of Synapse events (> 600). \n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}
+      description: This could indicate a possible hiccup (especially for events m.room.member or m.room.power_levels)

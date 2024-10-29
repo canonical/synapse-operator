@@ -439,6 +439,111 @@
         }
       },
       {
+        "aliasColors": {},
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "${prometheusds}",
+        "fieldConfig": {
+          "defaults": {
+            "displayName": "CPU usage",
+            "links": []
+          },
+          "overrides": []
+        },
+        "fill": 1,
+        "fillGradient": 0,
+        "gridPos": {
+          "h": 9,
+          "w": 12,
+          "x": 0,
+          "y": 10
+        },
+        "hiddenSeries": false,
+        "id": 75,
+        "legend": {
+          "avg": true,
+          "current": true,
+          "max": true,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": true
+        },
+        "lines": true,
+        "linewidth": 3,
+        "links": [],
+        "nullPointMode": "null",
+        "options": {
+          "alertThreshold": true
+        },
+        "paceLength": 10,
+        "percentage": false,
+        "pluginVersion": "9.5.3",
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "datasource": "${prometheusds}",
+            "expr": "rate(process_cpu_seconds_total{job=~\".*synapse_application.*\",juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[$bucket_size])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{job}}-{{index}} ",
+            "refId": "A"
+          }
+        ],
+        "thresholds": [
+          {
+            "$$hashKey": "object:566",
+            "colorMode": "critical",
+            "fill": true,
+            "line": true,
+            "op": "gt",
+            "value": 1,
+            "yaxis": "left"
+          }
+        ],
+        "timeRegions": [],
+        "title": "CPU usage",
+        "tooltip": {
+          "shared": false,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "mode": "time",
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "$$hashKey": "object:538",
+            "format": "percentunit",
+            "label": "",
+            "logBase": 1,
+            "min": "0",
+            "show": true
+          },
+          {
+            "$$hashKey": "object:539",
+            "format": "short",
+            "label": "",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false
+        }
+      },
+      {
         "datasource": "${prometheusds}",
         "fieldConfig": {
           "defaults": {
@@ -452,7 +557,7 @@
               "axisPlacement": "auto",
               "barAlignment": 0,
               "drawStyle": "line",
-              "fillOpacity": 0,
+              "fillOpacity": 10,
               "gradientMode": "none",
               "hideFrom": {
                 "legend": false,
@@ -460,23 +565,24 @@
                 "viz": false
               },
               "lineInterpolation": "linear",
-              "lineWidth": 1,
+              "lineWidth": 3,
               "pointSize": 5,
               "scaleDistribution": {
                 "type": "linear"
               },
-              "showPoints": "auto",
+              "showPoints": "never",
               "spanNulls": false,
               "stacking": {
                 "group": "A",
                 "mode": "none"
               },
               "thresholdsStyle": {
-                "mode": "line+area"
+                "mode": "off"
               }
             },
+            "links": [],
             "mappings": [],
-            "max": 100,
+            "min": 0,
             "thresholds": {
               "mode": "absolute",
               "steps": [
@@ -490,17 +596,18 @@
                 }
               ]
             },
-            "unit": "percent"
+            "unit": "bytes"
           },
           "overrides": []
         },
         "gridPos": {
-          "h": 8,
+          "h": 9,
           "w": 12,
-          "x": 0,
-          "y": 0
+          "x": 12,
+          "y": 10
         },
-        "id": 256,
+        "id": 198,
+        "links": [],
         "options": {
           "legend": {
             "calcs": [],
@@ -513,124 +620,25 @@
             "sort": "none"
           }
         },
+        "pluginVersion": "9.5.3",
         "targets": [
           {
             "datasource": "${prometheusds}",
             "editorMode": "code",
-            "expr": "rate(process_cpu_seconds_total{juju_charm=\"synapse\"}[$__rate_interval])",
-            "legendFormat": "__auto",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "CPU Usage",
-        "type": "timeseries"
-      },
-      {
-        "aliasColors": {},
-        "bars": false,
-        "dashLength": 10,
-        "dashes": false,
-        "datasource": "${prometheusds}",
-        "editable": true,
-        "error": false,
-        "fieldConfig": {
-          "defaults": {
-            "links": []
-          },
-          "overrides": []
-        },
-        "fill": 1,
-        "fillGradient": 0,
-        "grid": {},
-        "gridPos": {
-          "h": 9,
-          "w": 12,
-          "x": 12,
-          "y": 10
-        },
-        "hiddenSeries": false,
-        "id": 198,
-        "legend": {
-          "avg": false,
-          "current": false,
-          "max": false,
-          "min": false,
-          "show": true,
-          "total": false,
-          "values": false
-        },
-        "lines": true,
-        "linewidth": 3,
-        "links": [],
-        "nullPointMode": "null",
-        "options": {
-          "alertThreshold": true
-        },
-        "paceLength": 10,
-        "percentage": false,
-        "pluginVersion": "9.2.2",
-        "pointradius": 5,
-        "points": false,
-        "renderer": "flot",
-        "seriesOverrides": [],
-        "spaceLength": 10,
-        "stack": false,
-        "steppedLine": false,
-        "targets": [
-          {
-            "datasource": "${prometheusds}",
-            "expr": "process_resident_memory_bytes{instance=\"$instance\",job=~\"$job\",index=~\"$index\"}",
+            "expr": "jemalloc_stats_app_memory_bytes{juju_application=\"synapse\",type=\"mapped\"}",
             "format": "time_series",
             "interval": "",
             "intervalFactor": 2,
             "legendFormat": "{{job}} {{index}}",
+            "range": true,
             "refId": "A",
             "step": 20,
             "target": ""
-          },
-          {
-            "datasource": "${prometheusds}",
-            "expr": "sum(process_resident_memory_bytes{instance=\"$instance\",job=~\"$job\",index=~\"$index\"})",
-            "hide": true,
-            "interval": "",
-            "legendFormat": "total",
-            "refId": "B"
           }
         ],
-        "thresholds": [],
-        "timeRegions": [],
         "title": "Memory",
-        "tooltip": {
-          "shared": false,
-          "sort": 0,
-          "value_type": "cumulative"
-        },
         "transformations": [],
-        "type": "graph",
-        "xaxis": {
-          "mode": "time",
-          "show": true,
-          "values": []
-        },
-        "yaxes": [
-          {
-            "$$hashKey": "object:1560",
-            "format": "bytes",
-            "logBase": 1,
-            "min": "0",
-            "show": true
-          },
-          {
-            "$$hashKey": "object:1561",
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          }
-        ],
-        "yaxis": {
-          "align": false
-        }
+        "type": "timeseries"
       },
       {
         "datasource": "${prometheusds}",
@@ -830,6 +838,102 @@
         "yaxis": {
           "align": false
         }
+      },{
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${prometheusds}"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "stepBefore",
+              "lineStyle": {
+                "fill": "solid"
+              },
+              "lineWidth": 4,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "dark-red",
+                  "value": 0
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 26
+        },
+        "id": 246,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "9.5.3",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${prometheusds}"
+            },
+            "editorMode": "code",
+            "expr": "count_values(\"juju_unit\", up{juju_application=\"synapse\"}) by (juju_model)",
+            "legendFormat": "{{juju_model}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Synapse Units by Juju Model",
+        "type": "timeseries"
       },
       {
         "collapsed": true,

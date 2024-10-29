@@ -5,7 +5,7 @@
 
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic.v1 import BaseModel, Field, validator
 
 
 class S3Parameters(BaseModel):

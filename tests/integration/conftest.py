@@ -19,7 +19,7 @@ from ops.model import ActiveStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
-from tests.conftest import SYNAPSE_IMAGE_PARAM, SYNAPSE_NGINX_IMAGE_PARAM
+from tests.conftest import SYNAPSE_IMAGE_PARAM
 from tests.integration.helpers import get_access_token, register_user
 
 # caused by pytest fixtures, mark does not work in fixtures
@@ -75,16 +75,6 @@ def synapse_image_fixture(pytestconfig: Config):
     return synapse_image
 
 
-@pytest_asyncio.fixture(scope="module", name="synapse_nginx_image")
-def synapse_nginx_image_fixture(pytestconfig: Config):
-    """Get value from parameter synapse-nginx-image."""
-    synapse_nginx_image = pytestconfig.getoption(SYNAPSE_NGINX_IMAGE_PARAM)
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if not use_existing:
-        assert synapse_nginx_image, f"{SYNAPSE_NGINX_IMAGE_PARAM} must be set"
-    return synapse_nginx_image
-
-
 @pytest_asyncio.fixture(scope="module", name="synapse_app_name")
 def synapse_app_name_fixture() -> str:
     """Get Synapse application name."""
@@ -97,13 +87,13 @@ def synapse_app_charmhub_name_fixture() -> str:
     return "synapse-charmhub"
 
 
+# pylint: disable=too-many-positional-arguments
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
     ops_test: OpsTest,
     synapse_app_name: str,
     synapse_app_charmhub_name: str,
     synapse_image: str,
-    synapse_nginx_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
@@ -117,7 +107,6 @@ async def synapse_app_fixture(
         return model.applications[synapse_app_name]
     resources = {
         "synapse-image": synapse_image,
-        "synapse-nginx-image": synapse_nginx_image,
     }
     app = await model.deploy(
         f"./{synapse_charm}",
@@ -223,24 +212,6 @@ async def nginx_integrator_app_fixture(
     return app
 
 
-@pytest_asyncio.fixture(scope="function", name="another_synapse_app")
-async def another_synapse_app_fixture(
-    model: Model, synapse_app: Application, server_name: str, another_server_name: str
-):
-    """Change server_name."""
-    # First we guarantee that the first server_name is set
-    # Then change it.
-    await synapse_app.set_config({"server_name": server_name})
-
-    await model.wait_for_idle()
-
-    await synapse_app.set_config({"server_name": another_server_name})
-
-    await model.wait_for_idle()
-
-    yield synapse_app
-
-
 @pytest.fixture(scope="module", name="postgresql_app_name")
 def postgresql_app_name_app_name_fixture() -> str:
     """Return the name of the postgresql application deployed for tests."""
@@ -258,88 +229,6 @@ async def postgresql_app_fixture(
             await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
             await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     yield model.applications.get(postgresql_app_name)
-
-
-@pytest.fixture(scope="module", name="irc_postgresql_app_name")
-def irc_postgresql_app_name_app_name_fixture() -> str:
-    """Return the name of the postgresql application deployed for irc bridge tests."""
-    return "irc-postgresql-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="irc_postgresql_app")
-async def irc_postgresql_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    postgresql_app_name: str,
-    irc_postgresql_app_name: str,
-    pytestconfig: Config,
-):
-    """Deploy postgresql."""
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing:
-        return model.applications[irc_postgresql_app_name]
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            postgresql_app_name,
-            application_name=irc_postgresql_app_name,
-            channel="14/stable",
-            trust=True,
-        )
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    return app
-
-
-@pytest.fixture(scope="module", name="grafana_app_name")
-def grafana_app_name_fixture() -> str:
-    """Return the name of the grafana application deployed for tests."""
-    return "grafana-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="grafana_app")
-async def grafana_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    grafana_app_name: str,
-):
-    """Deploy grafana."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            grafana_app_name,
-            application_name=grafana_app_name,
-            channel="latest/edge",
-            trust=True,
-        )
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-
-    return app
-
-
-@pytest.fixture(scope="module", name="prometheus_app_name")
-def prometheus_app_name_fixture() -> str:
-    """Return the name of the prometheus application deployed for tests."""
-    return "prometheus-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="prometheus_app")
-async def deploy_prometheus_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    prometheus_app_name: str,
-):
-    """Deploy prometheus."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            prometheus_app_name,
-            application_name=prometheus_app_name,
-            channel="latest/edge",
-            trust=True,
-        )
-        # Sometimes it comes back after an error.
-        await model.wait_for_idle(
-            raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
-        )
-
-    return app
 
 
 @pytest.fixture(scope="module", name="user_username")
@@ -497,6 +386,7 @@ async def redis_fixture(
             raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
         )
         await model.add_relation(f"{app.name}:redis", synapse_app_name)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
 
     return app
 

@@ -15,7 +15,11 @@ bases:
 parts:
   charm:
     build-packages:
-    - cargo
-    - rustc
+      - libpq-dev
+    build-snaps:
+      - rustup
+    override-build: |
+      rustup default stable
+      craftctl default
     charm-binary-python-packages:
-    - psycopg2-binary==2.9.9
+    - psycopg2-binary

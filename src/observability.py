@@ -3,13 +3,16 @@
 
 """Provide the Observability class to represent the observability stack for Synapse."""
 
+
 import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.loki_k8s.v1.loki_push_api import LogProxyConsumer
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 
 import synapse
 
-STATS_EXPORTER_PORT = "9877"
+CONTAINER_NAME = "synapse"
+LOG_PATHS = ["/debug.log*", "/errors.log*"]
 
 
 class Observability:  # pylint: disable=too-few-public-methods
@@ -24,19 +27,32 @@ class Observability:  # pylint: disable=too-few-public-methods
         self._grafana_dashboards = GrafanaDashboardProvider(
             charm, relation_name="grafana-dashboard"
         )
+        synapse_target = [
+            f"*:{synapse.SYNAPSE_EXPORTER_PORT}",
+        ]
+        synapse_stats_target = [
+            f"*:{synapse.STATS_EXPORTER_PORT}",
+        ]
         self._metrics_endpoint = MetricsEndpointProvider(
             charm,
             relation_name="metrics-endpoint",
             jobs=[
                 {
-                    "static_configs": [
-                        {
-                            "targets": [
-                                f"*:{synapse.PROMETHEUS_TARGET_PORT}",
-                                f"*:{STATS_EXPORTER_PORT}",
-                            ]
-                        }
-                    ]
-                }
+                    "job_name": "synapse_application",
+                    "static_configs": [{"targets": synapse_target}],
+                },
+                {
+                    "job_name": "synapse_stats_exporter",
+                    "static_configs": [{"targets": synapse_stats_target}],
+                },
             ],
+        )
+        self._logging = LogProxyConsumer(
+            charm,
+            relation_name="logging",
+            logs_scheme={
+                f"{CONTAINER_NAME}": {
+                    "log-files": LOG_PATHS,
+                },
+            },
         )

@@ -10,7 +10,11 @@ import secrets
 import string
 
 # pydantic is causing this no-name-in-module problem
-from pydantic import BaseModel, Field, validator  # pylint: disable=no-name-in-module,import-error
+from pydantic.v1 import (  # pylint: disable=no-name-in-module,import-error
+    BaseModel,
+    Field,
+    validator,
+)
 
 logger = logging.getLogger(__name__)
 

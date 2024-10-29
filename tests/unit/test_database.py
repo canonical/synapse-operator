@@ -204,38 +204,6 @@ def test_relation_as_datasource(
     assert synapse_env["POSTGRES_PASSWORD"] == expected["password"]
 
 
-def test_change_config(harness: Harness):
-    """
-    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: add relation and trigger change config.
-    assert: charm status is active.
-    """
-    harness.set_leader(True)
-    harness.begin()
-
-    charm_state = harness.charm.build_charm_state()
-    harness.charm._database._change_config(charm_state)
-
-    assert isinstance(harness.model.unit.status, ops.ActiveStatus)
-
-
-def test_change_config_error(
-    harness: Harness,
-):
-    """
-    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: add relation and trigger change config.
-    assert: charm status is active.
-    """
-    harness.begin()
-    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
-
-    charm_state = harness.charm.build_charm_state()
-    harness.charm._database._change_config(charm_state)
-
-    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
-
-
 def test_on_database_created(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
@@ -265,6 +233,7 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
     assert: Synapse charm should submit the correct Synapse Stats Exporter pebble layer to pebble.
     """
     harness.begin_with_initial_hooks()
+    harness.set_leader(True)
 
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"

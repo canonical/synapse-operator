@@ -4,11 +4,9 @@
 name: synapse
 summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
-version: "1.0"
-base: ubuntu@22.04
-# renovate: base: ubuntu:24.04@sha256:562456a05a0dbd62a671c1854868862a4687bf979a96d48ae8e766642cd911e8
-build-base: ubuntu@22.04
-# renovate: build-base: ubuntu:24.04@sha256:562456a05a0dbd62a671c1854868862a4687bf979a96d48ae8e766642cd911e8
+version: "3.0"
+base: ubuntu@24.04
+build-base: ubuntu@24.04
 license: Apache-2.0
 platforms:
   amd64:
@@ -41,6 +39,31 @@ parts:
         overlay-script: |
           groupadd -R $CRAFT_OVERLAY --gid 991 synapse
           useradd -R $CRAFT_OVERLAY --system --gid 991 --uid 991 --home /srv/synapse -m synapse
+          chmod 755 $CRAFT_OVERLAY/etc
+          groupadd -R $CRAFT_OVERLAY --gid 2000 nginx
+          useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --no-create-home nginx
+    nginx-conf:
+      plugin: dump
+      source: etc
+      organize:
+        nginx.conf: etc/nginx/nginx.conf
+        worker_location.conf: etc/nginx/worker_location.conf
+        abuse_report_location.conf.template: etc/nginx/abuse_report_location.conf.template
+        abuse_report_location.conf: etc/nginx/abuse_report_location.conf
+        main_location.conf.template: etc/nginx/main_location.conf.template
+        main_location.conf: etc/nginx/main_location.conf
+    nginx:
+      stage-packages:
+        - logrotate
+        - nginx
+        - sed
+      plugin: nil
+      override-build: |
+        craftctl default
+        rm $CRAFT_PART_INSTALL/etc/nginx/nginx.conf
+      override-prime: |
+        craftctl default
+        mkdir run
     synapse:
         build-packages:
             - build-essential
@@ -80,11 +103,10 @@ parts:
         stage-snaps:
             - aws-cli
             - mjolnir/latest/edge
-            - matrix-appservice-irc/latest/edge
         plugin: nil
         source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.101.0
+        source-tag: v1.117.0
         build-environment:
           - RUST_VERSION: "1.76.0"
           - POETRY_VERSION: "1.7.1"
@@ -114,6 +136,11 @@ parts:
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
             pip3 install --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
+            git clone https://git.buechner.me/nbuechner/synapse-invite-checker
+            cd synapse-invite-checker
+            git checkout ab6c8b78d78c4cbf31e1a30981ae45c09285b34a
+            pip3 install --prefix="/install" --no-warn-script-location -U .
+            cd ..
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
@@ -121,6 +148,7 @@ parts:
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
             mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
+            rm -rf $CRAFT_PART_INSTALL/aws/dist/awscli/examples/
         overlay-packages:
             - ca-certificates
             - libjemalloc2

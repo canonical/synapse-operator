@@ -16,7 +16,7 @@ Pebble `services` are configured through [layers](https://github.com/canonical/p
 and the following containers represent each one a layer forming the effective
 Pebble configuration, or `plan`:
 
-1. An [NGINX](https://www.nginx.com/) container, which can be used to
+1. An [NGINX](https://www.nginx.com/) Pebble layer, which can be used to
 efficiently serve static resources, as well as be the incoming point for all web
 traffic to the pod.
 2. The [Synapse](https://github.com/matrix-org/synapse) container itself, which
@@ -40,30 +40,26 @@ processes startup as explained above.
 ## OCI images
 
 We use [Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/en/latest/)
-to build OCI Images for Synapse and NGINX.
-The images are defined in [NGINX ROCK](https://github.com/canonical/synapse-operator/tree/main/nginx_rock/)
-and [Synapse ROCK](https://github.com/canonical/synapse-operator/tree/main/synapse_rock).
-They are published to [Charmhub](https://charmhub.io/), the official repository
+to build OCI Image for Synapse.
+The image is defined in [Synapse rock](https://github.com/canonical/synapse-operator/tree/main/synapse_rock) and is published to [Charmhub](https://charmhub.io/), the official repository
 of charms.
 This is done by publishing a resource to Charmhub as described in the
 [Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
 
-## Containers
+## Container
 
-Configuration files for the containers can be found in the respective
-directories that define the ROCKs, see the section above.
+Configuration files for the container can be found in the respective
+directory that define the rock, see the section above.
 
 ### NGINX
 
-This container is the entry point for all web traffic to the pod (on port
-`8080`). Serves static files directly and forwards non-static requests to
-the Synapse container (on port `8008`).
+NGINX is configured as a Pebble Layer and is the entry point for all web traffic
+to the pod (on port `8080`). Serves static files directly and forwards
+non-static requests to the Synapse container (on port `8008`).
 
 NGINX provides static content cache, reverse proxy, and load balancer among 
 multiple application servers, as well as other features. It can be used in front of
 Synapse server to significantly reduce server and network load.
-
-The workload that this container is running is defined in the [NGINX ROCK](https://github.com/canonical/synapse-operator/tree/main/nginx_rock/).
 
 ### Synapse
 
@@ -72,7 +68,7 @@ Synapse is a Python application run by the `start.py` script.
 Synapse listens to non-TLS port `8008` serving by default. NGINX can then
 forward non-static traffic to it.
 
-The workload that this container is running is defined in the [Synapse ROCK](https://github.com/canonical/synapse-operator/tree/main/synapse_rock).
+The workload that this container is running is defined in the [Synapse rock](https://github.com/canonical/synapse-operator/tree/main/synapse_rock).
 
 If Synapse is integrated with PostgreSQL, [Synapse Stats Exporter](https://github.com/canonical/synapse_stats_exporter) will be enabled.
 Synapse Stats Exporter listens to non-TLS port `9877` and will be configured as a
