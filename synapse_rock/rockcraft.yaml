@@ -143,6 +143,9 @@ parts:
             git checkout ab6c8b78d78c4cbf31e1a30981ae45c09285b34a
             pip3 install --prefix="/install" --no-warn-script-location -U .
             cd ..
+            # fix issue while creating file
+            # https://github.com/element-hq/synapse/issues/17882
+            pip3 install --prefix="/install" --force-reinstall -v "Twisted==24.7.0"
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
