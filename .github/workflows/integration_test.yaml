@@ -14,4 +14,3 @@ jobs:
       juju-channel: 3.4/stable
       channel: 1.28-strict/stable
       modules: '["test_charm", "test_nginx", "test_s3", "test_scaling"]'
-      tmate-debug: true
