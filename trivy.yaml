@@ -1,3 +1,5 @@
 timeout: 20m
 scan:
   offline-scan: true
+db:
+  repository: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
