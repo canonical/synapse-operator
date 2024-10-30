@@ -126,6 +126,9 @@ parts:
             cp pyproject.toml poetry.lock /synapse/
             /usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
             pip3 install --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
+            # fix issue while creating file
+            # https://github.com/element-hq/synapse/issues/17882
+            pip3 install --prefix="/install" --force-reinstall -v "Twisted==24.7.0"
             git clone https://github.com/canonical/synapse_stats_exporter.git
             cd synapse_stats_exporter
             pip3 install --prefix="/install" --no-warn-script-location -U .
