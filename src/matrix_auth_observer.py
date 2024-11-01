@@ -71,7 +71,9 @@ class MatrixAuthObserver(Object):
             dict with filepath and content for creating the secret files.
         """
         registration_secrets = []
-        RegistrationSecret = namedtuple("RegistrationSecret", ["file_path", "value"])
+class RegistrationSecret(typing.NamedTuple):
+    file_path: pathlib.Path
+    value: str
         for relation in list(self._charm.model.relations["matrix-auth"]):
             requirer_data = MatrixAuthRequirerData.from_relation(self.model, relation=relation)
             if requirer_data and requirer_data.registration:
