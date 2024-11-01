@@ -4,9 +4,9 @@
 """The Matrix Auth relation observer."""
 
 import logging
-from collections import namedtuple
+import pathlib
 from pathlib import Path
-from typing import List, Optional
+from typing import List, NamedTuple, Optional
 
 import ops
 from charms.synapse.v0.matrix_auth import (
@@ -71,9 +71,18 @@ class MatrixAuthObserver(Object):
             dict with filepath and content for creating the secret files.
         """
         registration_secrets = []
-class RegistrationSecret(typing.NamedTuple):
-    file_path: pathlib.Path
-    value: str
+
+        class RegistrationSecret(NamedTuple):
+            """Define a registration secret.
+
+            Attributes:
+                file_path: secret path in filesystem.
+                value: secret content.
+            """
+
+            file_path: pathlib.Path
+            value: str
+
         for relation in list(self._charm.model.relations["matrix-auth"]):
             requirer_data = MatrixAuthRequirerData.from_relation(self.model, relation=relation)
             if requirer_data and requirer_data.registration:
