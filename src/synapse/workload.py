@@ -416,4 +416,4 @@ def create_registration_secrets_files(container: ops.Container, charm_state: Cha
     container.exec(["rm", "-f", f"{SYNAPSE_CONFIG_DIR}/appservice-registration-*.yaml"])
     if charm_state.registration_secrets:
         for registration_secret in charm_state.registration_secrets:
-            registration_secret.file_path.write_text(registration_secret.value)
+            registration_secret.file_path.write_text(registration_secret.value, encoding="utf-8")
