@@ -167,11 +167,9 @@ def test_traefik_integration(harness: Harness) -> None:
 
     app_data = harness.get_relation_data(relation_id, app_name)
     assert app_data == {
-        "host": f"{app_name}-endpoints.{model_name}.svc.cluster.local",
-        "model": model_name,
-        "name": app_name,
+        "model": f'"{model_name}"',
+        "name": f'"{app_name}"',
         "port": str(synapse.SYNAPSE_NGINX_PORT),
-        "strip-prefix": "true",
     }
 
 
