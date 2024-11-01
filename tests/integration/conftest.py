@@ -207,6 +207,7 @@ async def nginx_integrator_app_fixture(
             application_name=nginx_integrator_app_name,
             trust=True,
             channel="latest/edge",
+            revision="123",
         )
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
     return app
