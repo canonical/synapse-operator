@@ -404,3 +404,16 @@ def generate_mjolnir_config(container: ops.Container, access_token: str, room_id
         container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
     except ops.pebble.PathError as exc:
         raise CreateMjolnirConfigError(str(exc)) from exc
+
+
+def create_registration_secrets_files(container: ops.Container, charm_state: CharmState) -> None:
+    """Create registration secrets files.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+    """
+    container.exec(["rm", "-f", f"{SYNAPSE_CONFIG_DIR}/appservice-registration-*.yaml"])
+    if charm_state.registration_secrets:
+        for registration_secret in charm_state.registration_secrets:
+            registration_secret.file_path.write_text(registration_secret.value, encoding="utf-8")
