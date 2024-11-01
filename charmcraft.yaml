@@ -12,6 +12,9 @@ bases:
     run-on:
     - name: ubuntu
       channel: "22.04"
+charm-libs:
+  - lib: traefik_k8s.ingress
+    version: "2"
 parts:
   charm:
     build-packages:

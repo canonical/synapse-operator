@@ -13,7 +13,7 @@ import typing
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
-from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
 
@@ -35,6 +35,7 @@ from user import User
 logger = logging.getLogger(__name__)
 
 MAIN_UNIT_ID = "main_unit_id"
+INGRESS_INTEGRATION_NAME = "ingress"
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -73,13 +74,9 @@ class SynapseCharm(CharmBaseWithState):
             service_port=synapse.SYNAPSE_NGINX_PORT,
         )
         self._ingress = IngressPerAppRequirer(
-            self,
+            charm=self,
+            relation_name=INGRESS_INTEGRATION_NAME,
             port=synapse.SYNAPSE_NGINX_PORT,
-            # We're forced to use the app's service endpoint
-            # as the ingress per app interface currently always routes to the leader.
-            # https://github.com/canonical/traefik-k8s-operator/issues/159
-            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
-            strip_prefix=True,
         )
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
