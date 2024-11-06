@@ -27,7 +27,7 @@ from tests.integration.helpers import get_access_token, register_user
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
-
+WAITING_STATUS_NAME = "waiting"
 
 @pytest_asyncio.fixture(scope="module", name="server_name")
 async def server_name_fixture() -> str:
@@ -209,7 +209,8 @@ async def nginx_integrator_app_fixture(
             channel="latest/stable",
             revision=121,
         )
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+        # The nginx-ingress-integrator charm goes into "waiting" when waiting for relation 
+        await model.wait_for_idle(raise_on_blocked=True, status=WAITING_STATUS_NAME)
     return app
 
 
