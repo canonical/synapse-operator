@@ -346,7 +346,7 @@ async def test_nginx_route_integration(
     act: relate the nginx-integrator charm with the Synapse charm.
     assert: requesting the charm through nginx-integrator should return a correct response.
     """
-    await model.add_relation(f"{synapse_app_name}", f"{nginx_integrator_app_name}")
+    await model.add_relation(f"{synapse_app_name}:nginx-route", f"{nginx_integrator_app_name}:nginx-route")
     await nginx_integrator_app.set_config({"service-hostname": synapse_app_name})
     await model.wait_for_idle(idle_period=30, status=ACTIVE_STATUS_NAME)
 
