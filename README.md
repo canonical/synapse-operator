@@ -23,16 +23,16 @@ For DevOps or SRE teams this charm will make operating Synapse simple and
 straightforward through Juju's clean interface. It will allow easy deployment
 into multiple environments for testing of changes.
 
+## Get started
+
+To begin, refer to the [Getting Started](https://charmhub.io/synapse/docs/tutorial-getting-started)
+tutorial for step-by-step instructions.
+
+## Learn more
+* [Read more](https://charmhub.io/synapse) <!--Link to the charm's official documentation-->
+
 ## Project and community
+* [Issues](https://github.com/canonical/synapse-operator/issues) <!--Link to GitHub issues (if applicable)-->
+* [Contributing](https://charmhub.io/synapse/docs/contributing) <!--Link to any contribution guides--> 
+* [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com) <!--Link to contact info (if applicable), e.g. Matrix channel-->
 
-The Synapse Operator is a member of the Ubuntu family. It's an open source
-project that warmly welcomes community projects, contributions, suggestions,
-fixes and constructive feedback.
-* [Code of conduct](https://ubuntu.com/community/code-of-conduct)
-* [Get support](https://discourse.charmhub.io/)
-* [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-* [Contribute](https://charmhub.io/synapse/docs/contributing)
-* [Getting Started](https://charmhub.io/synapse/docs/getting-started)
-Thinking about using the Synapse Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
-
----
