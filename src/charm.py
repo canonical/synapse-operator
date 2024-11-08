@@ -13,7 +13,7 @@ import typing
 import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
-from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
 
@@ -24,6 +24,7 @@ from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
+from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
 from mjolnir import Mjolnir
 from observability import Observability
@@ -35,6 +36,7 @@ from user import User
 logger = logging.getLogger(__name__)
 
 MAIN_UNIT_ID = "main_unit_id"
+INGRESS_INTEGRATION_NAME = "ingress"
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -57,6 +59,7 @@ class SynapseCharm(CharmBaseWithState):
         """
         super().__init__(*args)
         self._backup = BackupObserver(self)
+        self._matrix_auth = MatrixAuthObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
         self._saml = SAMLObserver(self)
@@ -73,13 +76,9 @@ class SynapseCharm(CharmBaseWithState):
             service_port=synapse.SYNAPSE_NGINX_PORT,
         )
         self._ingress = IngressPerAppRequirer(
-            self,
+            charm=self,
+            relation_name=INGRESS_INTEGRATION_NAME,
             port=synapse.SYNAPSE_NGINX_PORT,
-            # We're forced to use the app's service endpoint
-            # as the ingress per app interface currently always routes to the leader.
-            # https://github.com/canonical/traefik-k8s-operator/issues/159
-            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
-            strip_prefix=True,
         )
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
@@ -112,6 +111,7 @@ class SynapseCharm(CharmBaseWithState):
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
+            registration_secrets=self._matrix_auth.get_requirer_registration_secrets(),
             instance_map_config=self.instance_map(),
         )
 
@@ -203,6 +203,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
+            # check signing key
             signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
             signing_key_from_secret = self.get_signing_key()
             if signing_key_from_secret:
@@ -210,14 +211,22 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
+
+            # reconcile configuration
             pebble.reconcile(
                 charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
             )
+
+            # create new signing key if needed
             if self.is_main() and not signing_key_from_secret:
                 logger.debug("Signing key secret not found, creating secret")
                 with container.pull(signing_key_path) as f:
                     signing_key = f.read()
                     self.set_signing_key(signing_key.rstrip())
+
+            # update matrix-auth integration with configuration data
+            if self.unit.is_leader():
+                self._matrix_auth.update_matrix_auth_integration(charm_state)
         except (pebble.PebbleServiceError, FileNotFoundError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
