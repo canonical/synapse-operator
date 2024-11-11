@@ -29,10 +29,10 @@ To begin, refer to the [Getting Started](https://charmhub.io/synapse/docs/tutori
 tutorial for step-by-step instructions.
 
 ## Learn more
-* [Read more](https://charmhub.io/synapse) <!--Link to the charm's official documentation-->
+* [Read more](https://charmhub.io/synapse)
 
 ## Project and community
-* [Issues](https://github.com/canonical/synapse-operator/issues) <!--Link to GitHub issues (if applicable)-->
-* [Contributing](https://charmhub.io/synapse/docs/contributing) <!--Link to any contribution guides--> 
-* [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com) <!--Link to contact info (if applicable), e.g. Matrix channel-->
+* [Issues](https://github.com/canonical/synapse-operator/issues)
+* [Contributing](https://charmhub.io/synapse/docs/contributing)
+* [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
