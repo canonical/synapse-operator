@@ -28,11 +28,44 @@ into multiple environments for testing of changes.
 To begin, refer to the [Getting Started](https://charmhub.io/synapse/docs/tutorial-getting-started)
 tutorial for step-by-step instructions.
 
+### Basic operations
+
+#### Configure a server name
+
+The configuration `server_name` sets the public-facing domain of the server and
+refers to [`server_name`](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#server_name) Synapse configuration.
+
+To change it to `tutorial-synapse.juju.local`, for example, run the following
+command:
+
+```
+juju config synapse server_name=tutorial-synapse.juju.local
+```
+
+#### Create a user
+
+The following command creates a local user named `alice`.
+
+```
+juju run-action synapse/0 register-user username=alice password=<secure-password> admin=no
+```
+
+#### Promote user to admin
+
+The following command can be used to promote an existing user to admin.
+
+```
+juju run-action synapse/0 promote-user-admin username=alice
+```
+
 ## Learn more
 * [Read more](https://charmhub.io/synapse)
+* [Developer documentation](https://element-hq.github.io/synapse/latest/development/contributing_guide.html)
+* [Official webpage](https://github.com/element-hq/synapse)
+* [Troubleshooting](https://element-hq.github.io/synapse/latest/usage/administration/admin_faq.html)
+
 
 ## Project and community
 * [Issues](https://github.com/canonical/synapse-operator/issues)
 * [Contributing](https://charmhub.io/synapse/docs/contributing)
 * [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-
