@@ -47,7 +47,7 @@ juju config synapse server_name=tutorial-synapse.juju.local
 The following command creates a local user named `alice`.
 
 ```
-juju run-action synapse/0 register-user username=alice password=<secure-password> admin=no
+juju run synapse/0 register-user username=alice password=<secure-password> admin=no
 ```
 
 #### Promote user to admin
@@ -55,7 +55,7 @@ juju run-action synapse/0 register-user username=alice password=<secure-password
 The following command can be used to promote an existing user to admin.
 
 ```
-juju run-action synapse/0 promote-user-admin username=alice
+juju run synapse/0 promote-user-admin username=alice
 ```
 
 ## Learn more
