@@ -926,7 +926,7 @@
               "uid": "${prometheusds}"
             },
             "editorMode": "code",
-            "expr": "count_values(\"juju_unit\", up{juju_application=\"synapse\"}) by (juju_model)",
+            "expr": "count(up{juju_application=\"synapse\", job=~\".*prometheus_scrape_synapse_application.*\", juju_model=~\"$juju_model\"}) by (juju_model)",
             "legendFormat": "{{juju_model}}",
             "range": true,
             "refId": "A"
