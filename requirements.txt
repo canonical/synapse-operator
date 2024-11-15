@@ -1,4 +1,4 @@
-boto3 ==1.35.61
+boto3 ==1.35.62
 cosl ==0.0.43
 deepdiff ==8.0.1
 jinja2 ==3.1.4
