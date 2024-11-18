@@ -8,6 +8,7 @@ import typing
 
 import ops
 from charms.saml_integrator.v0.saml import SamlDataAvailableEvent, SamlRequires
+from ops.charm import RelationBrokenEvent
 from ops.framework import Object
 
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
@@ -31,6 +32,9 @@ class SAMLObserver(Object):
         self._charm = charm
         self.saml = SamlRequires(self._charm)
         self.framework.observe(self.saml.on.saml_data_available, self._on_saml_data_available)
+        self.framework.observe(
+            charm.on[self.saml.relation_name].relation_broken, self._on_relation_broken
+        )
 
     def get_charm(self) -> CharmBaseWithState:
         """Return the current charm.
@@ -49,6 +53,17 @@ class SAMLObserver(Object):
         """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SAML integration")
         logger.debug("_on_saml_data_available emitting reconcile")
+        self.get_charm().reconcile(charm_state)
+
+    @inject_charm_state
+    def _on_relation_broken(self, _: RelationBrokenEvent, charm_state: CharmState) -> None:
+        """Handle SAML data available.
+
+        Args:
+            charm_state: The charm state.
+        """
+        self.model.unit.status = ops.MaintenanceStatus("Reloading homeserver configuration")
+        logger.debug("_on_relation_broken emitting reconcile")
         self.get_charm().reconcile(charm_state)
 
     def get_relation_as_saml_conf(self) -> typing.Optional[SAMLConfiguration]:
