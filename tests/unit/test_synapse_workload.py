@@ -241,7 +241,10 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
     """
     content = config_content
 
-    config = {"server_name": "foo"}
+    config = {
+        "server_name": "foo",
+        "public_baseurl": "https://foo",
+    }
     synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
 
     synapse.enable_trusted_key_servers(
@@ -381,7 +384,6 @@ listeners:
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
         ],
-        "public_baseurl": TEST_SERVER_NAME,
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
@@ -446,7 +448,6 @@ listeners:
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
         ],
-        "public_baseurl": TEST_SERVER_NAME,
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
@@ -530,6 +531,7 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     synapse_with_notif_config = {
         "notif_from": "noreply@example.com",
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
@@ -706,6 +708,7 @@ def test_block_non_admin_invites(config_content: dict[str, typing.Any]):
     block_non_admin_invites = {
         "block_non_admin_invites": True,
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     synapse_config = SynapseConfig(**block_non_admin_invites)  # type: ignore[arg-type]
     charm_state = CharmState(
@@ -741,6 +744,7 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     synapse_with_notif_config = {
         "publish_rooms_allowlist": "user1:domainX.com,user2:domainY.com",
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
@@ -789,6 +793,7 @@ def test_publish_rooms_allowlist_error(invalid_config):
     synapse_with_notif_config = {
         "publish_rooms_allowlist": invalid_config,
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     with pytest.raises(ValidationError):
         # Prevent mypy error:
@@ -853,6 +858,7 @@ def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
     invite_checker_policy_rooms = {
         "invite_checker_policy_rooms": "foo:foo.com,foo1:foo1.com,foo2:foo2.foo1.com",
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     synapse_config = SynapseConfig(**invite_checker_policy_rooms)  # type: ignore[arg-type]
     charm_state = CharmState(
@@ -894,6 +900,7 @@ def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing
     invite_checker_blocklist_allowlist_url = {
         "invite_checker_blocklist_allowlist_url": "https://example.com/file",
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     # pylint: disable=line-too-long
     synapse_config = SynapseConfig(**invite_checker_blocklist_allowlist_url)  # type: ignore[arg-type] # noqa: E501
