@@ -85,7 +85,6 @@ parts:
             - python3-venv
             - zlib1g-dev
         stage-packages:
-            - bash
             - coreutils
             - curl
             - gosu
