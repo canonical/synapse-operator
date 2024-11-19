@@ -130,7 +130,7 @@ parts:
             # install synapse stats exporter
             git clone https://github.com/canonical/synapse_stats_exporter.git
             cd synapse_stats_exporter
-            pip3 install --break-system-packages --prefix="/install" --no-warn-script-location -U .
+            pip3 --python=/usr/bin/python3 install --break-system-packages --prefix="/install" --no-warn-script-location -U .
             cd ..
             #
             # install s3 storage provider
@@ -157,7 +157,7 @@ parts:
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
-            cp -r /usr/local $CRAFT_PART_INSTALL/usr/
+            # cp -r /usr/local $CRAFT_PART_INSTALL/usr/
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
             mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
