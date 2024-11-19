@@ -7,6 +7,7 @@
 
 import io
 import json
+import typing
 from unittest.mock import MagicMock
 
 import ops
@@ -473,3 +474,22 @@ def test_redis_enabled_reconcile_pebble_error(
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert error_message in str(harness.model.unit.status)
+
+
+def test_saml_on_relation_broken(
+    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm with saml integration, set server_name, mock pebble.
+    act: remove the saml integration.
+    assert: Synapse charm should correctly reconcile.
+    """
+    harness = saml_configured
+    harness.begin()
+    reconcile_mock = MagicMock()
+    monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
+
+    relation = typing.cast(ops.model.Relation, harness.model.get_relation("saml"))
+    harness.remove_relation(relation.id)
+
+    reconcile_mock.assert_called_once()
