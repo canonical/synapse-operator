@@ -708,7 +708,7 @@ def test_build_backup_command_correct(s3_parameters_backup):
     assert list(command) == [
         backup.BASH_COMMAND,
         "-c",
-        f"set -euxo pipefail; tar -c '/data/homeserver.db' '/data/example.com.signing.key' | gpg --batch --no-symkey-cache --passphrase-file '/root/.gpg_passphrase' --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=1000 - 's3://synapse-backup-bucket/synapse-backups/20230101231200'",  # noqa: E501
+        f"set -euxo pipefail; tar -c '/data/homeserver.db' '/data/example.com.signing.key' | gpg --batch --no-symkey-cache --passphrase-file '/root/.gpg_passphrase' --symmetric --cipher-algo AES256 --openpgp | {backup.AWS_COMMAND} s3 cp --expected-size=1000 - 's3://synapse-backup-bucket/synapse-backups/20230101231200'",  # noqa: E501
     ]
 
 
