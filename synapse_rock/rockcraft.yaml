@@ -157,7 +157,6 @@ parts:
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
-            # cp -r /usr/local $CRAFT_PART_INSTALL/usr/
             cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
             mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
