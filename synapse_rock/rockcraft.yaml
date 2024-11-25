@@ -193,10 +193,11 @@ parts:
       npm --prefix=$CRAFT_PART_BUILD/frontend run build
       # Manually copy the built assets to install area
       # because we've already run craftctl default
-      mkdir -p $CRAFT_PART_INSTALL/mas/assets
-      cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/assets/
+      mkdir -p $CRAFT_PART_INSTALL/mas/share/assets
+      cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets/
+      cp frontend/dist/manifest.json $CRAFT_PART_INSTALL/mas/manifest.json
     stage:
-      - mas/assets/*
+      - mas/*
   mas-cli:
     plugin: rust
     rust-channel: stable
@@ -206,13 +207,28 @@ parts:
     override-build: |
       curl -L -o opa https://openpolicyagent.org/downloads/v0.70.0/opa_linux_amd64_static
       chmod 755 ./opa; mv opa /usr/local/bin
-      mkdir -p $CRAFT_PART_INSTALL/mas/assets
       (cd policies; make)
-      cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/assets/policy.wasm
+      cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/policy.wasm
 
       craftctl default
     organize:
       "mas-cli": usr/bin/mas-cli
     stage:
       - usr/bin/mas-cli
-      - mas/assets/policy.wasm
+      - mas/policy.wasm
+  mas-templates:
+    plugin: dump
+    source: https://github.com/element-hq/matrix-authentication-service
+    source-type: git
+    source-tag: v0.12.0
+    source-subdir: templates
+    organize:
+      "*": mas/share/templates/
+  mas-translations:
+    plugin: dump
+    source: https://github.com/element-hq/matrix-authentication-service
+    source-type: git
+    source-tag: v0.12.0
+    source-subdir: translations
+    organize:
+      "*": mas/share/translations/
