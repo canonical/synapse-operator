@@ -50,16 +50,13 @@ async def test_synapse_is_up(
     pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
     mas_cli_check_cmd = f"{pebble_exec_cmd} -- which mas-cli"
     unit: Unit = synapse_app.units[0]
-    action = unit.run(mas_cli_check_cmd)
+    action = await unit.run(mas_cli_check_cmd)
     await action.wait()
     assert action.results["return-code"] == 0, "mas-cli binary not found."
     assert action.results["stdout"] == "/usr/bin/mas-cli"
 
-    assets_check_cmd = (
-        "/bin/bash -c "
-        f"'{pebble_exec_cmd} -- [ -d /mas/assets ] && echo ok!'"
-    )
-    action = unit.run(assets_check_cmd)
+    assets_check_cmd = "/bin/bash -c " f"'{pebble_exec_cmd} -- [ -d /mas/assets ] && echo ok!'"
+    action = await unit.run(assets_check_cmd)
     await action.wait()
     assert action.results["return-code"] == 0, "mas assets folder not found."
     assert action.results["stdout"] == "ok!"
