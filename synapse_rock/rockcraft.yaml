@@ -208,6 +208,7 @@ parts:
       curl -L -o opa https://openpolicyagent.org/downloads/v0.70.0/opa_linux_amd64_static
       chmod 755 ./opa; mv opa /usr/local/bin
       (cd policies; make)
+      mkdir -p $CRAFT_PART_INSTALL/mas
       cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/policy.wasm
 
       craftctl default
