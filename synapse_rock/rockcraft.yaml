@@ -191,10 +191,12 @@ parts:
       # The plugin runs also npm install but doesn't install the devDependencies
       npm --prefix=$CRAFT_PART_BUILD/frontend ci
       npm --prefix=$CRAFT_PART_BUILD/frontend run build
-    organize:
-      "frontend/dist/*": mas/assets/
+      # Manually copy the built assets to install area
+      # because we've already run craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/mas/assets
+      cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/assets/
     stage:
-      - frontend/dist/*
+      - mas/assets/*
   mas-cli:
     plugin: rust
     rust-channel: stable
@@ -204,9 +206,13 @@ parts:
     override-build: |
       curl -L -o opa https://openpolicyagent.org/downloads/v0.70.0/opa_linux_amd64_static
       chmod 755 ./opa; mv opa /usr/local/bin
+      mkdir -p $CRAFT_PART_INSTALL/mas/assets
       (cd policies; make)
+      cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/assets/policy.wasm
+
       craftctl default
     organize:
       "mas-cli": usr/bin/mas-cli
     stage:
       - usr/bin/mas-cli
+      - mas/assets/policy.wasm
