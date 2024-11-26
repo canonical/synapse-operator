@@ -195,12 +195,15 @@ parts:
       # because we've already run craftctl default
       mkdir -p $CRAFT_PART_INSTALL/mas/share/assets
       cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets/
-      cp frontend/dist/manifest.json $CRAFT_PART_INSTALL/mas/manifest.json
+      cp frontend/dist/manifest.json $CRAFT_PART_INSTALL/mas/share/manifest.json
     stage:
       - mas/*
   mas-cli:
     plugin: rust
     rust-channel: stable
+    rust-cargo-parameters:
+      - "--features dist"
+      - "--no-default-features"
     source: https://github.com/element-hq/matrix-authentication-service
     source-type: git
     source-tag: v0.12.0
@@ -208,15 +211,15 @@ parts:
       curl -L -o opa https://openpolicyagent.org/downloads/v0.70.0/opa_linux_amd64_static
       chmod 755 ./opa; mv opa /usr/local/bin
       (cd policies; make)
-      mkdir -p $CRAFT_PART_INSTALL/mas
-      cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/policy.wasm
+      mkdir -p $CRAFT_PART_INSTALL/mas/share
+      cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/share/policy.wasm
 
       craftctl default
     organize:
       "mas-cli": usr/bin/mas-cli
     stage:
       - usr/bin/mas-cli
-      - mas/policy.wasm
+      - mas/share/policy.wasm
   mas-templates:
     plugin: dump
     source: https://github.com/element-hq/matrix-authentication-service
