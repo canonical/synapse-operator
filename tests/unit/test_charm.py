@@ -52,6 +52,10 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
         },
         "startup": "enabled",
     }
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    root = harness.get_filesystem_root(container)
+    synapse_configuration = (root / "data" / "homeserver.yaml").read_text()
+    assert f"public_baseurl: https://{TEST_SERVER_NAME}" in synapse_configuration
 
 
 @pytest.mark.skip(reason="harness does not reproduce checks changes")
@@ -275,6 +279,7 @@ def test_enable_federation_domain_whitelist_is_called(
     config = io.StringIO(config_content)
     harness.update_config({"federation_domain_whitelist": "foo"})
     harness.begin()
+    monkeypatch.setattr(synapse, "set_public_baseurl", MagicMock())
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_rc_joins_remote_rate", MagicMock())
@@ -309,6 +314,7 @@ def test_disable_password_config_is_called(
     """
     harness.update_config({"enable_password_config": False})
     harness.begin()
+    monkeypatch.setattr(synapse, "set_public_baseurl", MagicMock())
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_rc_joins_remote_rate", MagicMock())

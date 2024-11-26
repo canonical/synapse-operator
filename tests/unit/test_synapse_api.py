@@ -220,7 +220,9 @@ def test_override_rate_limit_success(monkeypatch: pytest.MonkeyPatch):
     admin_access_token = token_hex(16)
     server = token_hex(16)
     # while using Pydantic, mypy ignores default values
-    synapse_config = SynapseConfig(server_name=server)  # type: ignore[call-arg]
+    synapse_config = SynapseConfig(
+        server_name=server, public_baseurl="https://example.com"
+    )  # type: ignore[call-arg]
     charm_state = CharmState(
         synapse_config=synapse_config,
         datasource=None,
@@ -257,7 +259,9 @@ def test_override_rate_limit_error(monkeypatch: pytest.MonkeyPatch):
     admin_access_token = token_hex(16)
     server = token_hex(16)
     # while using Pydantic, mypy ignores default values
-    synapse_config = SynapseConfig(server_name=server)  # type: ignore[call-arg]
+    synapse_config = SynapseConfig(
+        server_name=server, public_baseurl="https://example.com"
+    )  # type: ignore[call-arg]
     charm_state = CharmState(
         synapse_config=synapse_config,
         datasource=None,
