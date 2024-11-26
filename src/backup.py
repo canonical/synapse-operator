@@ -454,10 +454,7 @@ def _build_backup_command(
     paths = _paths_to_args(backup_paths)
     tar_command = f"tar -c {paths}"
     gpg_command = (
-        f"gpg --batch --no-symkey-cache "
-        f"--passphrase-file '{passphrase_file}' "
-        f"--symmetric --cipher-algo AES256 "
-        f"--openpgp"
+        f"gpg --batch --no-symkey-cache " f"--passphrase-file '{passphrase_file}' " f"--symmetric"
     )
 
     s3_url = _s3_path(
