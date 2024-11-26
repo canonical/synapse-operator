@@ -112,7 +112,6 @@ class MatrixAuthObserver(Object):
         Returns:
             MatrixAuthConfiguration instance.
         """
-        # future refactor victim: this is repeated with saml
         homeserver = (
             charm_state.synapse_config.public_baseurl
             if charm_state.synapse_config.public_baseurl is not None
