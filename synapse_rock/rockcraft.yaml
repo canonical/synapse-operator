@@ -12,6 +12,10 @@ build-base: ubuntu@22.04
 license: Apache-2.0
 platforms:
   amd64:
+environment: &mas-source
+  source: https://github.com/element-hq/matrix-authentication-service
+  source-type: git
+  source-tag: v0.12.0
 parts:
   scripts:
     plugin: dump
@@ -176,23 +180,29 @@ parts:
     source: attributemaps
     organize:
       login_ubuntu.py: /usr/local/attributemaps/login_ubuntu.py
+  mas-templates:
+    plugin: dump
+    <<: *mas-source
+    source-subdir: templates
+    organize:
+      "*": mas/share/templates/
+  mas-translations:
+    plugin: dump
+    <<: *mas-source
+    source-subdir: translations
+    organize:
+      "*": mas/share/translations/
   mas-assets:
-    plugin: npm
-    npm-include-node: True
-    npm-node-version: "22.11.0"
-    source: https://github.com/element-hq/matrix-authentication-service
-    source-type: git
-    source-tag: v0.12.0
+    plugin: nil
+    <<: *mas-source
     source-subdir: frontend
     build-environment:
+      - NODE_URI: "https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.gz"
       - NODE_ENV: dev
     override-build: |
-      craftctl default
-      # The plugin runs also npm install but doesn't install the devDependencies
+      curl -Ls $NODE_URI | tar xzf - -C /usr/ --skip-old-files --no-same-owner --strip-components=1
       npm --prefix=$CRAFT_PART_BUILD/frontend ci
       npm --prefix=$CRAFT_PART_BUILD/frontend run build
-      # Manually copy the built assets to install area
-      # because we've already run craftctl default
       mkdir -p $CRAFT_PART_INSTALL/mas/share/assets
       cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets/
       cp frontend/dist/manifest.json $CRAFT_PART_INSTALL/mas/share/manifest.json
@@ -204,9 +214,7 @@ parts:
     rust-cargo-parameters:
       - "--features dist"
       - "--no-default-features"
-    source: https://github.com/element-hq/matrix-authentication-service
-    source-type: git
-    source-tag: v0.12.0
+    <<: *mas-source
     override-build: |
       curl -L -o opa https://openpolicyagent.org/downloads/v0.70.0/opa_linux_amd64_static
       chmod 755 ./opa; mv opa /usr/local/bin
@@ -220,19 +228,3 @@ parts:
     stage:
       - usr/bin/mas-cli
       - mas/share/policy.wasm
-  mas-templates:
-    plugin: dump
-    source: https://github.com/element-hq/matrix-authentication-service
-    source-type: git
-    source-tag: v0.12.0
-    source-subdir: templates
-    organize:
-      "*": mas/share/templates/
-  mas-translations:
-    plugin: dump
-    source: https://github.com/element-hq/matrix-authentication-service
-    source-type: git
-    source-tag: v0.12.0
-    source-subdir: translations
-    organize:
-      "*": mas/share/translations/
