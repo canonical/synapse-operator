@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 MAIN_UNIT_ID = "main_unit_id"
 INGRESS_INTEGRATION_NAME = "ingress"
+MAS_DATABASE_INTEGRATION_NAME = "mas-database"
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -61,6 +62,7 @@ class SynapseCharm(CharmBaseWithState):
         self._matrix_auth = MatrixAuthObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
+        self._mas_database = DatabaseObserver(self, relation_name=MAS_DATABASE_INTEGRATION_NAME)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)

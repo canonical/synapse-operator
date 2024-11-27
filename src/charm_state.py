@@ -30,7 +30,18 @@ from charm_types import (
     SMTPConfiguration,
 )
 
+from state.mas import MASConfiguration
+
 logger = logging.getLogger(__name__)
+
+class StateComponentBase(ABC):
+
+    @classmethod
+    @abstractmethod
+    def from_charm(cls, charm: ops.CharmBase, *args: typing.Any) -> "StateComponent":
+        """Initializes the charm state component."""
+
+StateComponent = typing.TypeVar('StateComponent', bound=StateComponentBase)
 
 
 class CharmBaseWithState(ops.CharmBase, ABC):
