@@ -17,7 +17,7 @@
       "fileMatch": ["(^|/)rockcraft.yaml$"],
       "description": "Update Synapse workload",
       "matchStringsStrategy": "any",
-      "matchStrings": ["source-tag: v(?<currentValue>.+)"],
+      "matchStrings": ["source-tag: (?<currentValue>.+)"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "element-hq/synapse",
       "versioningTemplate": "semver-coerced"

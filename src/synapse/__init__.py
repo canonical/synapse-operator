@@ -95,4 +95,5 @@ from .workload_configuration import (  # noqa: F401
     enable_stream_writers,
     enable_synapse_invite_checker,
     enable_trusted_key_servers,
+    set_public_baseurl,
 )
