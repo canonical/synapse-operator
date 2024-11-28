@@ -4,11 +4,9 @@
 name: synapse
 summary: Synapse rock
 description: Synapse OCI image for the Synapse charm
-version: "2.0"
-base: ubuntu@22.04
-# renovate: base: ubuntu:22.04@sha256:0e5e4a57c2499249aafc3b40fcd541e9a456aab7296681a3994d631587203f97
-build-base: ubuntu@22.04
-# renovate: build-base: ubuntu:22.04@sha256:0e5e4a57c2499249aafc3b40fcd541e9a456aab7296681a3994d631587203f97
+version: "3.0"
+base: ubuntu@24.04
+build-base: ubuntu@24.04
 license: Apache-2.0
 platforms:
   amd64:

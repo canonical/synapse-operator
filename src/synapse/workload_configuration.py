@@ -33,6 +33,16 @@ def _create_tuple_from_string_list(string_list: str) -> tuple[str, ...]:
     return tuple(item.strip() for item in string_list.split(","))
 
 
+def set_public_baseurl(current_yaml: dict, charm_state: CharmState) -> None:
+    """Set the homeserver's public address.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    current_yaml["public_baseurl"] = charm_state.synapse_config.public_baseurl
+
+
 def disable_password_config(current_yaml: dict) -> None:
     """Change the Synapse configuration to disable password config.
 
@@ -383,11 +393,7 @@ def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
         )
 
     saml_config = charm_state.saml_config
-    entity_id = (
-        charm_state.synapse_config.public_baseurl
-        if charm_state.synapse_config.public_baseurl is not None
-        else f"https://{charm_state.synapse_config.server_name}"
-    )
+    entity_id = charm_state.synapse_config.public_baseurl
     sp_config = {
         "metadata": {
             "remote": [
@@ -424,8 +430,6 @@ def enable_saml(current_yaml: dict, charm_state: CharmState) -> None:
         EnableSAMLError: something went wrong enabling SAML.
     """
     try:
-        if charm_state.synapse_config.public_baseurl is not None:
-            current_yaml["public_baseurl"] = charm_state.synapse_config.public_baseurl
         # enable x_forwarded to pass expected headers
         current_listeners = current_yaml["listeners"]
         updated_listeners = [
