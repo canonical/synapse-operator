@@ -54,13 +54,14 @@ async def test_synapse_is_up(
     await action.wait()
     assert action.results["return-code"] == 0, "Error running mas-cli."
 
-    check_assets_cmd = """
-        [ -d /mas/share/assets ] && \\
-        [ -f /mas/share/policy.wasm ] && \\
-        [ -d /mas/share/templates ] && \\
-        [ -d /mas/share/translations ] && echo "ok!"
-    """
+    check_assets_cmd = (
+        "[ -d /mas/share/assets ] &&"
+        "[ -f /mas/share/policy.wasm ] &&"
+        "[ -d /mas/share/templates ] &&"
+        "[ -d /mas/share/translations ] && echo 'ok!'"
+    )
     action = await unit.run("/bin/bash -c " f"'{pebble_exec_cmd} {check_assets_cmd}'")
+    logger.info("Action output: %s", action.results)
     await action.wait()
     assert action.results["return-code"] == 0, "mas assets folder not found."
     assert "ok!" in action.results["stdout"]

@@ -112,7 +112,7 @@ parts:
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git
-    source-tag: v1.118.0
+    source-tag: v1.120.0
     build-environment:
       - RUST_VERSION: "1.76.0"
       - POETRY_VERSION: "1.7.1"
