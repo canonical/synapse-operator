@@ -18,7 +18,7 @@ from ops.testing import Harness
 from pydantic.v1 import ValidationError
 
 import synapse
-from charm_state import CharmState, SynapseConfig
+from state.charm_state import CharmState, SynapseConfig
 from charm_types import SMTPConfiguration
 
 

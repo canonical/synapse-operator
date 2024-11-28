@@ -11,7 +11,7 @@ import pytest
 from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.testing import Harness
 
-from charm_state import CharmConfigInvalidError
+from state.charm_state import CharmConfigInvalidError
 from charm_types import SMTPConfiguration
 
 

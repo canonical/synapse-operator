@@ -10,10 +10,10 @@ State of the Charm.
 
 <a href="../src/charm_state.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `inject_charm_state`
+## <kbd>function</kbd> `validate_charm_state`
 
 ```python
-inject_charm_state(
+validate_charm_state(
     method: Callable[[~C, ~E, ForwardRef('CharmState')], NoneType]
 ) → Callable[[~C, ~E], NoneType]
 ```

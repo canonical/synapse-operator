@@ -17,9 +17,10 @@ from charms.data_platform_libs.v0.data_interfaces import (
 from ops.framework import Object
 
 import synapse
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
+from state.mas import MASConfiguration
+from state.validate import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +55,13 @@ class DatabaseObserver(Object):
         """
         return self._charm
 
-    @inject_charm_state
-    def _on_database_created(self, _: DatabaseCreatedEvent, charm_state: CharmState) -> None:
-        """Handle database created.
+    @validate_charm_state
+    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
+        """Handle database created."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
 
-        Args:
-            charm_state: The charm state.
-        """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         # In case of psycopg2.Error, Juju will set ErrorStatus
         # See discussion here:
@@ -70,19 +71,16 @@ class DatabaseObserver(Object):
         if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
             db_client.prepare()
         logger.debug("_on_database_created emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        charm.reconcile(charm_state)
 
-    @inject_charm_state
-    def _on_endpoints_changed(
-        self, _: DatabaseEndpointsChangedEvent, charm_state: CharmState
-    ) -> None:
-        """Handle endpoints change.
-
-        Args:
-            charm_state: The charm state.
-        """
+    @validate_charm_state
+    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
+        """Handle endpoints change."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
         logger.debug("_on_endpoints_changed emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        charm.reconcile(charm_state)
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
         """Get database data from relation.

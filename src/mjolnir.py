@@ -14,7 +14,9 @@ import ops
 import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
+from state.charm_state import CharmState
+from state.mas import MASConfiguration
+from state.validate import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -68,16 +70,17 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         return access_token
 
     # Ignoring complexity warning for now
-    @inject_charm_state
-    def _on_collect_status(  # noqa: C901
-        self, event: ops.CollectStatusEvent, charm_state: CharmState
-    ) -> None:
+    @validate_charm_state
+    def _on_collect_status(self, event: ops.CollectStatusEvent) -> None:  # noqa: C901
         """Collect status event handler.
 
         Args:
             event: Collect status event.
-            charm_state: The charm state.
         """
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
+
         if not charm_state.synapse_config.enable_mjolnir:
             return
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)

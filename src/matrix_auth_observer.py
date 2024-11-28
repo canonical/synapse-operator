@@ -17,7 +17,9 @@ from charms.synapse.v0.matrix_auth import (
 from ops.framework import Object
 
 import synapse
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
+from state.charm_state import CharmState
+from state.mas import MASConfiguration
+from state.validate import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -146,22 +148,20 @@ class MatrixAuthObserver(Object):
             return False
         return True
 
-    @inject_charm_state
+    @validate_charm_state
     def _on_matrix_auth_relation_changed(self, _: ops.EventBase, charm_state: CharmState) -> None:
-        """Handle matrix-auth request received event.
-
-        Args:
-            charm_state: The charm state.
-        """
+        """Handle matrix-auth request received event."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
         logger.debug("_on_matrix_auth_relation_changed emitting reconcile")
         self._charm.reconcile(charm_state)
 
-    @inject_charm_state
-    def _on_matrix_auth_relation_departed(self, _: ops.EventBase, charm_state: CharmState) -> None:
-        """Handle matrix-auth relation departed event.
-
-        Args:
-            charm_state: The charm state.
-        """
+    @validate_charm_state
+    def _on_matrix_auth_relation_departed(self, _: ops.EventBase) -> None:
+        """Handle matrix-auth relation departed event."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
         logger.debug("_on_matrix_auth_relation_departed emitting reconcile")
         self._charm.reconcile(charm_state)

@@ -11,9 +11,10 @@ from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
 from ops.framework import Object
 
 from backup_observer import S3_INVALID_CONFIGURATION
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import MediaConfiguration
 from s3_parameters import S3Parameters
+from state.mas import MASConfiguration
+from state.validate import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +48,13 @@ class MediaObserver(Object):
         """
         return self._charm
 
-    @inject_charm_state
-    def _on_s3_credentials_changed(
-        self, _: CredentialsChangedEvent, charm_state: CharmState
-    ) -> None:
-        """Handle the S3 credentials changed event.
+    @validate_charm_state
+    def _on_s3_credentials_changed(self, _: CredentialsChangedEvent) -> None:
+        """Handle the S3 credentials changed event."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
 
-        Args:
-            charm_state: The charm state.
-        """
         try:
             _ = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:

@@ -13,8 +13,9 @@ import ops
 from charms.redis_k8s.v0.redis import RedisRequires
 from ops.framework import Object
 
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from charm_types import RedisConfiguration
+from state.mas import MASConfiguration
+from state.validate import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +69,13 @@ class RedisObserver(Object):
             logger.info("Redis databag is empty.")
         return redis_config
 
-    @inject_charm_state
-    def _on_redis_relation_updated(self, _: ops.EventBase, charm_state: CharmState) -> None:
-        """Handle redis relation updated event.
+    @validate_charm_state
+    def _on_redis_relation_updated(self, _: ops.EventBase) -> None:
+        """Handle redis relation updated event."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
 
-        Args:
-            charm_state: The charm state.
-        """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the Redis integration")
         logger.debug("_on_redis_relation_updated emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        charm.reconcile(charm_state)
