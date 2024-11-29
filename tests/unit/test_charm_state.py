@@ -10,13 +10,8 @@ import ops
 import pytest
 from ops.testing import ActionFailed, Harness
 
-from state.charm_state import (
-    CharmBaseWithState,
-    CharmConfigInvalidError,
-    CharmState,
-    SynapseConfig,
-    validate_charm_state,
-)
+from state.charm_state import CharmConfigInvalidError, CharmState, SynapseConfig
+from state.validate import CharmBaseWithState, validate_charm_state
 
 
 class SimpleCharm(CharmBaseWithState):

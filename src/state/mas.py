@@ -4,12 +4,11 @@
 """State of the Charm."""
 
 import dataclasses
-import typing
 
 import ops
 
 from charm_types import DatasourcePostgreSQL
-from database_observer import DatabaseObserver
+
 MAS_DATABASE_INTEGRATION_NAME = "mas-database"
 
 
@@ -40,8 +39,7 @@ class MASConfiguration:
         """
         cls.validate(charm)
         # pylint: disable=protected-access
-        database_observer = typing.cast(DatabaseObserver, charm._mas_database)  # type: ignore
-        datasource = database_observer.get_relation_as_datasource()
+        datasource = charm._mas_database.get_relation_as_datasource()  # type: ignore
         return cls(datasource=datasource)
 
     @classmethod
