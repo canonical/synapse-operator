@@ -1,0 +1,52 @@
+http:
+  listeners:
+  - name: web
+    resources:
+    - name: discovery
+    - name: human
+    - name: oauth
+    - name: compat
+    - name: graphql
+    - name: assets
+    binds:
+    - address: '[::]:8081'
+    proxy_protocol: false
+  - name: internal
+    resources:
+    - name: health
+    binds:
+    - host: localhost
+      port: 8082
+    proxy_protocol: false
+  trusted_proxies:
+  - 192.168.0.0/16
+  - 172.16.0.0/12
+  - 10.0.0.0/10
+  - 127.0.0.1/8
+  - fd00::/8
+  - ::1/128
+  public_base: {{ public_baseurl_config }}
+database:
+  uri: {{ mas_database_uri }}
+secrets:
+  encryption: {{ encryption_secret }}
+  keys:
+{% for rsa_key in encryption_keys %}
+    - kid: {{ rsa_key.id }}
+      key: |
+        {{ rsa_key.key }}
+{% endfor %}
+passwords:
+    enabled: {{ enable_password_config }}
+matrix:
+  homeserver: {{  server_name_config }}
+  secret: {{ synapse_client_secret }}
+  endpoint: {{  synapse_main_location }}
+clients:
+  - client_id: {{ oidc_client_id }}
+    client_auth_method: client_secret_basic
+    client_secret: {{ oidc_client_secret }}
+templates:
+  path: /mas/share/templates
+  assets_manifest: /mas/share/manifest.json
+  translations_path: /mas/share/translations
