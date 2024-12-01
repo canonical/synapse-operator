@@ -190,13 +190,14 @@ class SynapseCharm(CharmBaseWithState):
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
 
-    def reconcile(self, charm_state: CharmState) -> None:
+    def reconcile(self, charm_state: CharmState, mas_configuration: MASConfiguration) -> None:
         """Reconcile Synapse configuration with charm state.
 
         This is the main entry for changes that require a restart.
 
         Args:
             charm_state: Instance of CharmState
+            mas_configuration: Charm state component to configure MAS
         """
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("Change_config is setting main unit.")
@@ -287,7 +288,7 @@ class SynapseCharm(CharmBaseWithState):
     def _on_config_changed(self, _: ops.HookEvent) -> None:
         """Handle changed configuration."""
         charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
+        mas_configuration = MASConfiguration.from_charm(self)
 
         logger.debug("Found %d peer unit(s).", self.peer_units_total())
         if charm_state.redis_config is None and self.peer_units_total() > 1:
@@ -295,7 +296,7 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
         logger.debug("_on_config_changed emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
         self._set_workload_version()
 
     @validate_charm_state
@@ -306,7 +307,7 @@ class SynapseCharm(CharmBaseWithState):
             event: relation departed event.
         """
         charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
+        mas_configuration = MASConfiguration.from_charm(self)
 
         if event.departing_unit == self.unit:
             # there is no action for the departing unit
@@ -321,7 +322,7 @@ class SynapseCharm(CharmBaseWithState):
         # Call change_config to restart unit. By design,every change in the
         # number of workers requires restart.
         logger.debug("_on_relation_departed emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -335,7 +336,7 @@ class SynapseCharm(CharmBaseWithState):
     def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
         """Handle synapse pebble ready event."""
         charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
+        mas_configuration = MASConfiguration.from_charm(self)
 
         logger.debug("Found %d peer unit(s).", self.peer_units_total())
         if charm_state.redis_config is None and self.peer_units_total() > 1:
@@ -344,7 +345,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.unit.status = ops.ActiveStatus()
         logger.debug("_on_synapse_pebble_ready emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
     def get_main_unit(self) -> typing.Optional[str]:
         """Get main unit.
@@ -450,7 +451,7 @@ class SynapseCharm(CharmBaseWithState):
         properly configured.
         """
         charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
+        mas_configuration = MASConfiguration.from_charm(self)
 
         # assuming that this event will be fired only at the setup phase
         # check if main is already set if not, this unit will be the main
@@ -463,7 +464,7 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.set_main_unit(self.unit.name)
         logger.debug("_on_leader_elected emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
     @validate_charm_state
     def _on_relation_changed(self, _: ops.HookEvent) -> None:
@@ -478,10 +479,10 @@ class SynapseCharm(CharmBaseWithState):
         updated and all remaining units restarted.
         """
         charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
+        mas_configuration = MASConfiguration.from_charm(self)
 
         logger.debug("_on_relation_changed emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
         """Register user and report action result.

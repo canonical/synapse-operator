@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 import ops
 
 from .charm_state import CharmConfigInvalidError, CharmState
-from .mas import MASDatasourceMissingError
+from .mas import MASDatasourceMissingError, MASConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +31,12 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         return self
 
     @abstractmethod
-    def reconcile(self, charm_state: "CharmState") -> None:
+    def reconcile(self, charm_state: "CharmState", mas_configuration: MASConfiguration) -> None:
         """Reconcile Synapse configuration.
 
         Args:
             charm_state: The charm state.
+            mas_configuration: Charm state component to configure MAS.
         """
 
 
