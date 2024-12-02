@@ -119,11 +119,10 @@ async def synapse_app_fixture(
         config={"server_name": server_name},
     )
     async with ops_test.fast_forward():
+        await model.relate(f"{synapse_app_name}:mas-database", f"{mas_postgresql_app_name}")
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
         if postgresql_app is not None:
             await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
-        if mas_postgresql_app is not None:
-            await model.relate(f"{synapse_app_name}:mas-database", f"{mas_postgresql_app_name}")
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     return app
 
@@ -136,6 +135,8 @@ async def synapse_charmhub_app_fixture(
     synapse_app_charmhub_name: str,
     postgresql_app: Application,
     postgresql_app_name: str,
+    mas_postgresql_app: Application,
+    mas_postgresql_app_name: str,
     synapse_charm: str,
 ):
     """Deploy synapse from Charmhub."""
@@ -153,6 +154,7 @@ async def synapse_charmhub_app_fixture(
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
+        await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{mas_postgresql_app_name}")
         await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(idle_period=5)
     return app
