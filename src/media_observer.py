@@ -53,7 +53,7 @@ class MediaObserver(Object):
         """Handle the S3 credentials changed event."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
+        mas_configuration = MASConfiguration.from_charm(charm)
 
         try:
             _ = S3Parameters(**self._s3_client.get_s3_connection_info())
@@ -63,7 +63,7 @@ class MediaObserver(Object):
 
         self.model.unit.status = ops.MaintenanceStatus("Preparing the Media integration")
         logger.debug("_on_s3_credentials_changed emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        charm.reconcile(charm_state, mas_configuration)
 
     def get_relation_as_media_conf(self) -> Optional[MediaConfiguration]:
         """Get Media data from relation.
