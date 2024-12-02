@@ -154,7 +154,9 @@ async def synapse_charmhub_app_fixture(
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
-        await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{mas_postgresql_app_name}")
+        await model.relate(
+            f"{synapse_app_charmhub_name}:mas-database", f"{mas_postgresql_app_name}"
+        )
         await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(idle_period=5)
     return app
