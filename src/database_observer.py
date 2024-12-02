@@ -60,16 +60,17 @@ class DatabaseObserver(Object):
         """Handle database created."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
-        charm.reconcile(charm_state)
+        mas_configuration = MASConfiguration.from_charm(charm)
+        charm.reconcile(charm_state, mas_configuration)
 
     @validate_charm_state
     def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
         """Handle endpoints change."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
-        charm.reconcile(charm_state)
+        mas_configuration = MASConfiguration.from_charm(charm)
+        logger.debug("_on_endpoints_changed emitting reconcile")
+        charm.reconcile(charm_state, mas_configuration)
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
         """Get database data from relation.

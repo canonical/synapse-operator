@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 import ops
 
 from .charm_state import CharmConfigInvalidError, CharmState
-from .mas import MASDatasourceMissingError, MASConfiguration
+from .mas import MASConfiguration, MASDatasourceMissingError
 
 logger = logging.getLogger(__name__)
 
