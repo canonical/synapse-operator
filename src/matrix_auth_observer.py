@@ -149,7 +149,7 @@ class MatrixAuthObserver(Object):
         return True
 
     @validate_charm_state
-    def _on_matrix_auth_relation_changed(self, _: ops.EventBase, charm_state: CharmState) -> None:
+    def _on_matrix_auth_relation_changed(self, _: ops.EventBase) -> None:
         """Handle matrix-auth request received event."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()

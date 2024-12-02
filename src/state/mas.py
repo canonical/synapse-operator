@@ -43,7 +43,7 @@ class MASConfiguration:
         return cls(datasource=datasource)
 
     @classmethod
-    def validate(cls, charm: ops.CharmBase) -> "MASConfiguration":
+    def validate(cls, charm: ops.CharmBase) -> None:
         """State component containing MAS configuration information.
 
         Args:

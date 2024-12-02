@@ -33,19 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class CharmConfigInvalidError(Exception):
-    """Exception raised when a charm configuration is found to be invalid.
-
-    Attrs:
-        msg (str): Explanation of the error.
-    """
-
-    def __init__(self, msg: str):
-        """Initialize a new instance of the CharmConfigInvalidError exception.
-
-        Args:
-            msg (str): Explanation of the error.
-        """
-        self.msg = msg
+    """Exception raised when a charm configuration is found to be invalid."""
 
 
 class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
@@ -331,7 +319,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             # ignoring because mypy fails with:
             # "has incompatible type "**dict[str, str]"; expected ...""
             valid_synapse_config = SynapseConfig(**config)  # type: ignore
-            logger.info("parsed synapse config: %s", valid_synapse_config)
             # remove workers from instance_map
             if instance_map_config and valid_synapse_config.workers_ignore_list:
                 logger.debug(

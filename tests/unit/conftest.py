@@ -124,6 +124,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
     harness.add_network("10.0.0.10")
     harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.add_relation("mas-database", "postgresql-k8s")
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(
         synapse.SYNAPSE_CONTAINER_NAME

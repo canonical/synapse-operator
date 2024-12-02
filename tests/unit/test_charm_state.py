@@ -57,13 +57,9 @@ def test_validate_charm_state_correct() -> None:
         """Fake charm with on_start handler."""
 
         @validate_charm_state
-        def on_start(self, _: ops.HookEvent, charm_state: CharmState):
-            """Event handler for on_start.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        def on_start(self, _: ops.HookEvent):
+            """Event handler for on_start."""
+            self.charm_state = self.build_charm_state()
 
     harness = Harness(FakeCharm)
     harness.begin()
@@ -107,13 +103,9 @@ def test_validate_charm_state_in_observer_correct() -> None:
             return self._charm
 
         @validate_charm_state
-        def on_start(self, _: ops.HookEvent, charm_state: CharmState):
-            """Event handler for on_start.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        def on_start(self, _: ops.HookEvent):
+            """Event handler for on_start."""
+            self.charm_state = self.get_charm().build_charm_state()
 
     harness = Harness(SimpleCharm)
     harness.begin()
@@ -148,13 +140,9 @@ def test_validate_charm_state_hook_failed() -> None:
             raise CharmConfigInvalidError("Invalid configuration")
 
         @validate_charm_state
-        def on_start(self, _: ops.HookEvent, charm_state: CharmState):
-            """Event handler for on_start.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        def on_start(self, _: ops.HookEvent):
+            """Event handler for on_start."""
+            self.charm_state = self.build_charm_state()
 
     harness = Harness(FakeCharm)
     harness.begin()
@@ -187,13 +175,9 @@ def test_validate_charm_state_action_failed() -> None:
             raise CharmConfigInvalidError("Invalid configuration")
 
         @validate_charm_state
-        def on_create_backup_action(self, _: ops.ActionEvent, charm_state: CharmState):
-            """Action handler for create-backup action.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        def on_create_backup_action(self, _: ops.ActionEvent):
+            """Action handler for create-backup action."""
+            self.charm_state = self.build_charm_state()
 
     harness = Harness(FakeCharm)
     harness.begin()

@@ -1,8 +1,8 @@
-
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """State of the Charm."""
+import functools
 import logging
 import typing
 from abc import ABC, abstractmethod
@@ -73,6 +73,7 @@ def validate_charm_state(  # pylint: disable=protected-access
         the function wrapper
     """
 
+    @functools.wraps(method)
     def wrapper(instance: C, event: E) -> None:
         """Add the charm_state argument to the function.
 
@@ -95,8 +96,9 @@ def validate_charm_state(  # pylint: disable=protected-access
             # There are two main types of events, Hooks and Actions.
             # Each one of them should be treated differently.
             if isinstance(event, ops.charm.ActionEvent):
-                event.fail(exc.msg)
+                event.fail(str(exc))
             else:
-                charm.model.unit.status = ops.BlockedStatus(exc.msg)
+                charm.model.unit.status = ops.BlockedStatus(str(exc))
         return None
+
     return wrapper
