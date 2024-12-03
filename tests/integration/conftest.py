@@ -100,8 +100,6 @@ async def synapse_app_fixture(
     synapse_charm: str,
     postgresql_app: Application,
     postgresql_app_name: str,
-    mas_postgresql_app: Application,
-    mas_postgresql_app_name: str,
     pytestconfig: Config,
 ):
     """Build and deploy the Synapse charm."""
@@ -119,10 +117,9 @@ async def synapse_app_fixture(
         config={"server_name": server_name},
     )
     async with ops_test.fast_forward():
-        await model.relate(f"{synapse_app_name}:mas-database", f"{mas_postgresql_app_name}")
+        await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app_name}")
         await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-        if postgresql_app is not None:
-            await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
+        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     return app
 
@@ -135,8 +132,6 @@ async def synapse_charmhub_app_fixture(
     synapse_app_charmhub_name: str,
     postgresql_app: Application,
     postgresql_app_name: str,
-    mas_postgresql_app: Application,
-    mas_postgresql_app_name: str,
     synapse_charm: str,
 ):
     """Deploy synapse from Charmhub."""
@@ -155,7 +150,7 @@ async def synapse_charmhub_app_fixture(
             idle_period=5,
         )
         await model.relate(
-            f"{synapse_app_charmhub_name}:mas-database", f"{mas_postgresql_app_name}"
+            f"{synapse_app_charmhub_name}:mas-database", f"{postgresql_app_name}"
         )
         await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(idle_period=5)
@@ -241,26 +236,9 @@ async def postgresql_app_fixture(
         async with ops_test.fast_forward():
             await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
             await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    yield model.applications.get(postgresql_app_name)
-
-
-@pytest.fixture(scope="module", name="mas_postgresql_app_name")
-def mas_postgresql_app_name_fixture() -> str:
-    """Return the name of the postgresql application deployed for tests."""
-    return "postgresql-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="mas_postgresql_app")
-async def mas_postgresql_app_fixture(
-    ops_test: OpsTest, model: Model, mas_postgresql_app_name: str, pytestconfig: Config
-):
-    """Deploy postgresql."""
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if not use_existing and mas_postgresql_app_name not in model.applications:
-        async with ops_test.fast_forward():
-            await model.deploy(mas_postgresql_app_name, channel="14/stable", trust=True)
-            await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    yield model.applications.get(mas_postgresql_app_name)
+    postgresql_application = model.applications.get(postgresql_app_name)
+    assert postgresql_application, "Synapse requires postgresql to be deployed"
+    yield postgresql_application
 
 
 @pytest.fixture(scope="module", name="user_username")
