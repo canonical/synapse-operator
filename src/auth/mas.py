@@ -21,6 +21,7 @@ from state.mas import MASConfiguration
 MAS_TEMPLATE_FILE_NAME = "mas_config.yaml.j2"
 SYNAPSE_PEER_INTEGRATION_NAME = "synapse-peers"
 MAS_ENCRYPTION_AND_SIGNING_SECRET_LABEL = "mas.secrets"
+MAS_ENCRYPTION_KEY_LENGTH = 32  # This is a requirement per the MAS docs
 
 logger = logging.getLogger()
 
@@ -45,7 +46,7 @@ class MASContext(BaseModel):
         synapse_oidc_client_secret: OIDC client secret used by synapse
     """
 
-    encryption_key: str = Field(min_length=32, max_length=32)
+    encryption_key: str = Field(min_length=64, max_length=64)
     signing_key_id: str = Field(min_length=8, max_length=8)
     signing_key_rsa: str = Field()
     synapse_shared_secret: str = Field(min_length=32, max_length=32)
@@ -114,7 +115,7 @@ class MasService:
 
             signing_key = generate_rsa_signing_key()
             encryption_and_signing_keys = {
-                "encryption-key": secrets.token_hex(16),
+                "encryption-key": secrets.token_hex(MAS_ENCRYPTION_KEY_LENGTH),
                 "signing-key-id": signing_key.key_id,
                 "signing-key-rsa": signing_key.private_key,
                 "synapse-shared-secret": secrets.token_hex(16),
@@ -168,10 +169,11 @@ class MasService:
             "signing_key_rsa": mas_context.signing_key_rsa,
             "synapse_oidc_client_id": mas_context.synapse_oidc_client_id,
             "synapse_oidc_client_secret": mas_context.synapse_oidc_client_secret,
+            "synapse_shared_secret": mas_context.synapse_shared_secret,
             "synapse_public_baseurl": synapse_configuration.public_baseurl,
             "mas_database_uri": mas_configuration.database_uri,
             "enable_password_config": synapse_configuration.enable_password_config,
-            "server_name_config": synapse_configuration.server_name,
+            "synapse_server_name_config": synapse_configuration.server_name,
             "synapse_main_unit_address": main_unit_address,
         }
         env = Environment(

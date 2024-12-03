@@ -44,9 +44,9 @@ matrix:
   secret: {{ synapse_shared_secret }}
   endpoint: http://{{ synapse_main_unit_address }}:8008
 clients:
-  - client_id: {{ oidc_client_id }}
+  - client_id: {{ synapse_oidc_client_id }}
     client_auth_method: client_secret_basic
-    client_secret: {{ oidc_client_secret }}
+    client_secret: {{ synapse_oidc_client_secret }}
 templates:
   path: /mas/share/templates
   assets_manifest: /mas/share/manifest.json
