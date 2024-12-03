@@ -22,6 +22,7 @@ from state.charm_state import CharmState
 logger = logging.getLogger(__name__)
 
 STATS_EXPORTER_SERVICE_NAME = "stats-exporter"
+MAS_CONFIGURATION_PATH = "/mas/config.yaml"
 
 
 class PebbleServiceError(Exception):
@@ -247,6 +248,27 @@ def _push_synapse_config(
         raise PebbleServiceError(str(exc)) from exc
 
 
+def _push_mas_config(
+    container: ops.model.Container,
+    rendered_mas_config: str,
+    config_path: str = MAS_CONFIGURATION_PATH,
+) -> None:
+    """Push the Synapse configuration to the container.
+
+    Args:
+        container: Synapse container.
+        rendered_mas_config: Rendered MAS configuration.
+        config_path: Synapse configuration file path.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        container.push(config_path, rendered_mas_config.encode("utf-8"))
+    except ops.pebble.PathError as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
 def _environment_has_changed(
     charm_state: CharmState, container: ops.model.Container, is_main: bool = True
 ) -> bool:
@@ -279,6 +301,7 @@ def _environment_has_changed(
 # The complexity of this method will be reviewed.
 def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
     charm_state: CharmState,
+    rendered_mas_configuration: str,
     container: ops.model.Container,
     is_main: bool = True,
     unit_number: str = "",
@@ -289,6 +312,7 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
 
     Args:
         charm_state: Instance of CharmState
+        rendered_mas_configuration: Rendered MAS yaml configuration.
         container: Charm container.
         is_main: if unit is main.
         unit_number: unit number id to set the worker name.
@@ -394,6 +418,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
                 restart_federation_sender(container=container, charm_state=charm_state)
         else:
             logging.info("Configuration has not changed, no action.")
+
+        _push_mas_config(container, rendered_mas_configuration, MAS_CONFIGURATION_PATH)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
