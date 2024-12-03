@@ -12,11 +12,6 @@ from state.mas import MASConfiguration
 
 MAS_TEMPLATE_FILE_NAME = "mas_config.yaml.j2"
 
-logger = logging.getLogger()
-
-
-# pylint: disable=too-few-public-methods
-
 
 def generate_mas_config(
     mas_configuration: MASConfiguration,
