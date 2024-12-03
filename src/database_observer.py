@@ -33,7 +33,7 @@ class DatabaseObserver(Object):
         Args:
             charm: The parent charm to attach the observer to.
             relation_name: The name of the relation to observe.
-            database_name: The database name.
+            database_name: The name of the database.
         """
         super().__init__(charm, f"{relation_name}-observer")
         self._charm = charm

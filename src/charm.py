@@ -21,6 +21,7 @@ import actions
 import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
+from auth.mas import MasService
 from backup_observer import BackupObserver
 from database_observer import DatabaseObserver, SynapseDatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
@@ -68,6 +69,7 @@ class SynapseCharm(CharmBaseWithState):
         self._mas_database = DatabaseObserver(
             self, relation_name=MAS_DATABASE_INTEGRATION_NAME, database_name=MAS_DATABASE_NAME
         )
+        self._mas = MasService(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
@@ -216,10 +218,16 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
-
+            rendered_mas_configuration = self._mas.generate_mas_config(
+                mas_configuration, charm_state.synapse_config, self.get_main_unit_address()
+            )
             # reconcile configuration
             pebble.reconcile(
-                charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
+                charm_state,
+                rendered_mas_configuration,
+                container,
+                is_main=self.is_main(),
+                unit_number=self.get_unit_number(),
             )
 
             # create new signing key if needed

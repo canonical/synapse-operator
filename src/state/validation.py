@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 
 import ops
 
+from auth.mas import MASContextNotSetError
+
 from .charm_state import CharmConfigInvalidError, CharmState
 from .mas import MASConfiguration, MASDatasourceMissingError
 
@@ -100,6 +102,10 @@ def validate_charm_state(  # pylint: disable=protected-access
                 event.fail(str(exc))
             else:
                 charm.model.unit.status = ops.BlockedStatus(str(exc))
+        except MASContextNotSetError as exc:
+            logger.exception("MAS context not set by leader.")
+            charm.model.unit.status = ops.WaitingStatus(str(exc))
+
         return None
 
     return wrapper
