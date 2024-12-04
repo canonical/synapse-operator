@@ -70,10 +70,6 @@ requires:
         interface: redis
         limit: 1
         optional: true
-    saml:
-        interface: saml
-        limit: 1
-        optional: true
     smtp:
         interface: smtp
         limit: 1

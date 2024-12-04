@@ -71,8 +71,7 @@ options:
     type: string
     description: |
       The public-facing base URL that clients use to access this Homeserver.
-      Defaults to https://<server_name>/. Only used if there is integration with
-      SAML integrator charm.
+      Defaults to https://<server_name>/.
   experimental_alive_check:
     type: string
     description: Comma separated list of period,threshold and timeout for Synapse

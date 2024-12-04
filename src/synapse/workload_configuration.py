@@ -6,17 +6,10 @@
 """Helper module used to manage interactions with Synapse homeserver configuration."""
 
 import logging
-import typing
 
 from charm_state import CharmState
 
-from .workload import (
-    SYNAPSE_EXPORTER_PORT,
-    EnableMetricsError,
-    EnableSAMLError,
-    EnableSMTPError,
-    WorkloadError,
-)
+from .workload import SYNAPSE_EXPORTER_PORT, EnableMetricsError, EnableSMTPError, WorkloadError
 
 logger = logging.getLogger(__name__)
 
@@ -372,91 +365,6 @@ def enable_synapse_invite_checker(current_yaml: dict, charm_state: CharmState) -
         )
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
-
-
-def _create_pysaml2_config(charm_state: CharmState) -> typing.Dict:
-    """Create config as expected by pysaml2.
-
-    Args:
-        charm_state: Instance of CharmState.
-
-    Returns:
-        Pysaml2 configuration.
-
-    Raises:
-        EnableSAMLError: if SAML configuration is not found.
-    """
-    if charm_state.saml_config is None:
-        raise EnableSAMLError(
-            "SAML Configuration not found. "
-            "Please verify the integration between SAML Integrator and Synapse."
-        )
-
-    saml_config = charm_state.saml_config
-    entity_id = charm_state.synapse_config.public_baseurl
-    sp_config = {
-        "metadata": {
-            "remote": [
-                {
-                    "url": saml_config["metadata_url"],
-                },
-            ],
-        },
-        "allow_unknown_attributes": True,
-        "service": {
-            "sp": {
-                "entityId": entity_id,
-                "allow_unsolicited": True,
-            },
-        },
-    }
-    # login.staging.ubuntu.com and login.ubuntu.com
-    # dont send uid in SAMLResponse so this will map
-    # as expected
-    if "ubuntu.com" in saml_config["metadata_url"]:
-        sp_config["attribute_map_dir"] = "/usr/local/attributemaps"
-
-    return sp_config
-
-
-def enable_saml(current_yaml: dict, charm_state: CharmState) -> None:
-    """Change the Synapse configuration to enable SAML.
-
-    Args:
-        current_yaml: current configuration.
-        charm_state: Instance of CharmState.
-
-    Raises:
-        EnableSAMLError: something went wrong enabling SAML.
-    """
-    try:
-        # enable x_forwarded to pass expected headers
-        current_listeners = current_yaml["listeners"]
-        updated_listeners = [
-            {
-                **item,
-                "x_forwarded": (
-                    True
-                    if "x_forwarded" in item and not item["x_forwarded"]
-                    else item.get("x_forwarded", False)
-                ),
-            }
-            for item in current_listeners
-        ]
-        current_yaml["listeners"] = updated_listeners
-        current_yaml["saml2_enabled"] = True
-        current_yaml["saml2_config"] = {}
-        current_yaml["saml2_config"]["sp_config"] = _create_pysaml2_config(charm_state)
-        user_mapping_provider_config = {
-            "config": {
-                "mxid_source_attribute": "uid",
-                "grandfathered_mxid_source_attribute": "uid",
-                "mxid_mapping": "dotreplace",
-            },
-        }
-        current_yaml["saml2_config"]["user_mapping_provider"] = user_mapping_provider_config
-    except KeyError as exc:
-        raise EnableSAMLError(str(exc)) from exc
 
 
 def enable_serve_server_wellknown(current_yaml: dict) -> None:
