@@ -118,7 +118,7 @@ async def synapse_app_fixture(
     )
     async with ops_test.fast_forward():
         await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app_name}")
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
         await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     return app
