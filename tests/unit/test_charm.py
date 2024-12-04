@@ -7,7 +7,6 @@
 
 import io
 import json
-import typing
 from unittest.mock import MagicMock
 
 import ops
@@ -176,24 +175,6 @@ def test_traefik_integration(harness: Harness) -> None:
         "name": f'"{app_name}"',
         "port": str(synapse.SYNAPSE_NGINX_PORT),
     }
-
-
-def test_saml_integration_container_down(saml_configured: Harness) -> None:
-    """
-    arrange: start the Synapse charm, set server_name, set Synapse container to be down.
-    act: emit saml_data_available.
-    assert: Synapse charm should submit the correct status.
-    """
-    harness = saml_configured
-    harness.begin()
-    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
-    relation = harness.charm.framework.model.get_relation("saml", 0)
-
-    harness.charm._saml.saml.on.saml_data_available.emit(relation)
-
-    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
-    assert "Waiting for" in str(harness.model.unit.status)
-    harness.cleanup()
 
 
 def test_smtp_integration_container_down(smtp_configured: Harness) -> None:
@@ -420,27 +401,6 @@ def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pyt
     assert "1010" == str(redis_config["port"])
 
 
-def test_saml_enabled_reconcile_pebble_error(
-    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
-    act: emit saml_data_available.
-    assert: Synapse charm should submit the correct status.
-    """
-    harness = saml_configured
-    harness.begin()
-    error_message = "Fail"
-    reconcile_mock = MagicMock(side_effect=PebbleServiceError(error_message))
-    monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
-
-    relation = harness.charm.framework.model.get_relation("saml", 0)
-    harness.charm._saml.saml.on.saml_data_available.emit(relation)
-
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert error_message in str(harness.model.unit.status)
-
-
 def test_smtp_enabled_reconcile_pebble_error(
     smtp_configured: Harness, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -480,22 +440,3 @@ def test_redis_enabled_reconcile_pebble_error(
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert error_message in str(harness.model.unit.status)
-
-
-def test_saml_on_relation_broken(
-    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start the Synapse charm with saml integration, set server_name, mock pebble.
-    act: remove the saml integration.
-    assert: Synapse charm should correctly reconcile.
-    """
-    harness = saml_configured
-    harness.begin()
-    reconcile_mock = MagicMock()
-    monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
-
-    relation = typing.cast(ops.model.Relation, harness.model.get_relation("saml"))
-    harness.remove_relation(relation.id)
-
-    reconcile_mock.assert_called_once()

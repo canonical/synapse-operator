@@ -162,8 +162,6 @@ parts:
       chmod 755 $CRAFT_PART_INSTALL/start.py
       cp -r docker/conf $CRAFT_PART_INSTALL/
       cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/attributemaps
-      chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
       rm -rf $CRAFT_PART_INSTALL/aws/dist/awscli/examples/
     overlay-packages:
       - ca-certificates
@@ -182,11 +180,6 @@ parts:
       - git
     override-stage: |
       patch -f -u ./start.py -i srv/patches/start.patch
-  synapse-conf:
-    plugin: dump
-    source: attributemaps
-    organize:
-      login_ubuntu.py: /usr/local/attributemaps/login_ubuntu.py
   mas-templates:
     plugin: dump
     <<: *mas-source

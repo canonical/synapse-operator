@@ -196,20 +196,6 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.cleanup()
 
 
-@pytest.fixture(name="saml_configured")
-def saml_configured_fixture(harness: Harness) -> Harness:
-    """Harness fixture with saml relation configured"""
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    saml_relation_data = {
-        "entity_id": "https://login.staging.ubuntu.com",
-        "metadata_url": "https://login.staging.ubuntu.com/saml/metadata",
-    }
-    harness.add_relation("saml", "saml-integrator", app_data=saml_relation_data)
-    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.set_leader(True)
-    return harness
-
-
 @pytest.fixture(name="smtp_configured")
 def smtp_configured_fixture(harness: Harness) -> Harness:
     """Harness fixture with smtp relation configured"""
