@@ -14,7 +14,7 @@ from backup_observer import S3_INVALID_CONFIGURATION
 from charm_types import MediaConfiguration
 from s3_parameters import S3Parameters
 from state.mas import MASConfiguration
-from state.validate import CharmBaseWithState, validate_charm_state
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 

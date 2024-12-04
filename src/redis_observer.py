@@ -15,7 +15,7 @@ from ops.framework import Object
 
 from charm_types import RedisConfiguration
 from state.mas import MASConfiguration
-from state.validate import CharmBaseWithState, validate_charm_state
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 

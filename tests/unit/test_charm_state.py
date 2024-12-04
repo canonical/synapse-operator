@@ -11,7 +11,7 @@ import pytest
 from ops.testing import ActionFailed, Harness
 
 from state.charm_state import CharmConfigInvalidError, CharmState, SynapseConfig
-from state.validate import CharmBaseWithState, validate_charm_state
+from state.validation import CharmBaseWithState, validate_charm_state
 
 
 class SimpleCharm(CharmBaseWithState):

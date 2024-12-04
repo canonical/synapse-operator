@@ -20,7 +20,7 @@ from pydantic.v1 import ValidationError
 from charm_types import SMTPConfiguration
 from state.charm_state import CharmConfigInvalidError
 from state.mas import MASConfiguration
-from state.validate import CharmBaseWithState, validate_charm_state
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 

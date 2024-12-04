@@ -20,7 +20,7 @@ import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
 from state.mas import MASConfiguration
-from state.validate import CharmBaseWithState, validate_charm_state
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
