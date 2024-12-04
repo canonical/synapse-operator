@@ -105,27 +105,6 @@ Example redis integrate command:
 juju integrate synapse redis-k8s
 ```
 
-### saml
-
-_Interface_: saml
-
-_Supported charms_: [saml-integrator](https://charmhub.io/saml-integrator/)
-
-Integrating Synapse with SAML Integrator provides SAML configuration details so
-users can be authenticated in via a SAML server.
-
-Example saml integrate command: 
-```
-juju integrate synapse saml-integrator:saml
-```
-
-Note that `public_baseurl` configuration set the public-facing base URL that
-clients use to access this Homeserver. It's used as `entity_id` if set instead of
-https://server_name.
-
-See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
-
-
 ### smtp
 
 _Interface_: smtp

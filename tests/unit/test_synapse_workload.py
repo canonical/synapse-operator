@@ -18,11 +18,8 @@ from ops.testing import Harness
 from pydantic.v1 import ValidationError
 
 import synapse
-from charm import SynapseCharm
 from charm_state import CharmState, SynapseConfig
 from charm_types import SMTPConfiguration
-
-from .conftest import TEST_SERVER_NAME
 
 
 def test_allow_public_rooms_over_federation_sucess(config_content: dict[str, typing.Any]):
@@ -251,7 +248,6 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
         content,
         CharmState(  # pylint: disable=duplicate-code
             datasource=None,
-            saml_config=None,
             smtp_config=None,
             media_config=None,
             redis_config=None,
@@ -342,136 +338,6 @@ def test_enable_forgotten_room_success(config_content: dict[str, typing.Any]):
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_enable_saml_success():
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: new configuration file is pushed and SAML is enabled.
-    """
-    # This test was given as an example in this comment by Ben Hoyt.
-    # https://github.com/canonical/synapse-operator/pull/19#discussion_r1302486670
-    # Arrange: set up harness and container filesystem
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("saml", "saml-integrator")
-    harness.add_relation_unit(relation_id, "saml-integrator/0")
-    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    harness.update_relation_data(
-        relation_id,
-        "saml-integrator",
-        {
-            "entity_id": "https://login.staging.ubuntu.com",
-            "metadata_url": metadata_url,
-        },
-    )
-    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.begin()
-    current_config = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-      x_forwarded: false
-"""
-
-    config = yaml.safe_load(current_config)
-
-    synapse.enable_saml(config, harness.charm.build_charm_state())
-
-    # Assert: ensure config file was written correctly
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
-        ],
-        "saml2_enabled": True,
-        "saml2_config": {
-            "sp_config": {
-                "metadata": {"remote": [{"url": metadata_url}]},
-                "service": {
-                    "sp": {
-                        "entityId": TEST_SERVER_NAME,
-                        "allow_unsolicited": True,
-                    }
-                },
-                "allow_unknown_attributes": True,
-                "attribute_map_dir": "/usr/local/attributemaps",
-            },
-            "user_mapping_provider": {
-                "config": {
-                    "grandfathered_mxid_source_attribute": "uid",
-                    "mxid_source_attribute": "uid",
-                    "mxid_mapping": "dotreplace",
-                }
-            },
-        },
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_saml_success_no_ubuntu_url():
-    """
-    arrange: set configuration and saml-integrator relation without ubuntu.com
-        in metadata_url.
-    act: enable saml.
-    assert: SAML configuration is created as expected.
-    """
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("saml", "saml-integrator")
-    harness.add_relation_unit(relation_id, "saml-integrator/0")
-    metadata_url = "https://login.staging.com/saml/metadata"
-    harness.update_relation_data(
-        relation_id,
-        "saml-integrator",
-        {
-            "entity_id": "https://login.staging.com",
-            "metadata_url": metadata_url,
-        },
-    )
-    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.begin()
-    current_config = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-      x_forwarded: false
-"""
-
-    config = yaml.safe_load(current_config)
-
-    synapse.enable_saml(config, harness.charm.build_charm_state())
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
-        ],
-        "saml2_enabled": True,
-        "saml2_config": {
-            "sp_config": {
-                "metadata": {"remote": [{"url": metadata_url}]},
-                "service": {
-                    "sp": {
-                        "entityId": TEST_SERVER_NAME,
-                        "allow_unsolicited": True,
-                    }
-                },
-                "allow_unknown_attributes": True,
-            },
-            "user_mapping_provider": {
-                "config": {
-                    "grandfathered_mxid_source_attribute": "uid",
-                    "mxid_source_attribute": "uid",
-                    "mxid_mapping": "dotreplace",
-                }
-            },
-        },
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
-
-
 def test_get_mjolnir_config_success():
     """
     arrange: set access token and room id parameters.
@@ -536,7 +402,6 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         media_config=None,
         redis_config=None,
@@ -713,7 +578,6 @@ def test_block_non_admin_invites(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**block_non_admin_invites)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
@@ -749,7 +613,6 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
@@ -863,7 +726,6 @@ def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**invite_checker_policy_rooms)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
@@ -906,7 +768,6 @@ def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing
     synapse_config = SynapseConfig(**invite_checker_blocklist_allowlist_url)  # type: ignore[arg-type] # noqa: E501
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,

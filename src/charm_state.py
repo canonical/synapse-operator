@@ -27,7 +27,6 @@ from charm_types import (
     DatasourcePostgreSQL,
     MediaConfiguration,
     RedisConfiguration,
-    SAMLConfiguration,
     SMTPConfiguration,
 )
 
@@ -347,7 +346,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     Attributes:
         synapse_config: synapse configuration.
         datasource: datasource information.
-        saml_config: saml configuration.
         smtp_config: smtp configuration.
         media_config: media configuration.
         redis_config: redis configuration.
@@ -358,7 +356,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
     synapse_config: SynapseConfig
     datasource: typing.Optional[DatasourcePostgreSQL]
-    saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
     media_config: typing.Optional[MediaConfiguration]
     redis_config: typing.Optional[RedisConfiguration]
@@ -388,7 +385,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         cls,
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],
-        saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
         media_config: typing.Optional[MediaConfiguration],
         redis_config: typing.Optional[RedisConfiguration],
@@ -400,7 +396,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         Args:
             charm: The charm instance associated with this state.
             datasource: datasource information to be used by Synapse.
-            saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
             media_config: Media configuration to be used by Synapse.
             redis_config: Redis configuration to be used by Synapse.
@@ -456,7 +451,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return cls(
             synapse_config=valid_synapse_config,
             datasource=datasource,
-            saml_config=saml_config,
             smtp_config=smtp_config,
             media_config=media_config,
             redis_config=redis_config,
