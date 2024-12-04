@@ -341,9 +341,6 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             logger.debug("pebble.change_config: Enabling registration_secrets")
             synapse.create_registration_secrets_files(container=container, charm_state=charm_state)
             synapse.enable_registration_secrets(current_synapse_config, charm_state=charm_state)
-        if charm_state.saml_config is not None:
-            logger.debug("pebble.change_config: Enabling SAML")
-            synapse.enable_saml(current_synapse_config, charm_state=charm_state)
         if charm_state.smtp_config is not None:
             logger.debug("pebble.change_config: Enabling SMTP")
             synapse.enable_smtp(current_synapse_config, charm_state=charm_state)

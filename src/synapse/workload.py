@@ -81,10 +81,6 @@ class CreateMjolnirConfigError(WorkloadError):
     """Exception raised when something goes wrong while creating mjolnir config."""
 
 
-class EnableSAMLError(WorkloadError):
-    """Exception raised when something goes wrong while enabling SAML."""
-
-
 class EnableSMTPError(WorkloadError):
     """Exception raised when something goes wrong while enabling SMTP."""
 
