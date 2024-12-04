@@ -50,3 +50,6 @@ CVE-2024-24788
 # This should be removed once the following PR is merged.
 # https://github.com/element-hq/synapse/pull/17955
 CVE-2024-52804
+# Fix ongoing:
+# https://github.com/element-hq/synapse/pull/17985
+CVE-2024-53981

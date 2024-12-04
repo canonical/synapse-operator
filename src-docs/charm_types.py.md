@@ -64,22 +64,6 @@ A named tuple representing Redis configuration.
 
 ---
 
-## <kbd>class</kbd> `SAMLConfiguration`
-A named tuple representing a SAML configuration. 
-
-
-
-**Attributes:**
- 
- - <b>`entity_id`</b>:  SAML entity ID. 
- - <b>`metadata_url`</b>:  URL to the metadata. 
-
-
-
-
-
----
-
 ## <kbd>class</kbd> `SMTPConfiguration`
 A named tuple representing SMTP configuration. 
 
