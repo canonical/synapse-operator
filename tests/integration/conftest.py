@@ -140,7 +140,7 @@ async def synapse_charmhub_app_fixture(
             "synapse",
             application_name=synapse_app_charmhub_name,
             trust=True,
-            channel="latest/edge",
+            channel="2/edge",
             series="jammy",
             config={"server_name": server_name},
         )
@@ -149,7 +149,8 @@ async def synapse_charmhub_app_fixture(
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
-        await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{postgresql_app_name}")
+        # This line will be uncommented once PR#612 is merged
+        # await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{postgresql_app_name}")
         await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(idle_period=5)
     return app
