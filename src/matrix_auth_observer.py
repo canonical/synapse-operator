@@ -114,11 +114,7 @@ class MatrixAuthObserver(Object):
         Returns:
             MatrixAuthConfiguration instance.
         """
-        homeserver = (
-            charm_state.synapse_config.public_baseurl
-            if charm_state.synapse_config.public_baseurl is not None
-            else f"https://{charm_state.synapse_config.server_name}"
-        )
+        homeserver = charm_state.synapse_config.public_baseurl
         # assuming that shared secret is always found
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         shared_secret = synapse.get_registration_shared_secret(container=container)
