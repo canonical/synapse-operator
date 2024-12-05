@@ -22,8 +22,9 @@ class MASConfiguration:
     """Information needed to configure MAS.
 
     Attributes:
-        datasource: datasource information.
-        database_uri: The database URI used in MAS config.
+        datasource: datasource information
+        database_uri: The database URI used in MAS config
+        mas_prefix: The MAS listening prefix
     """
 
     datasource: DatasourcePostgreSQL
@@ -40,6 +41,15 @@ class MASConfiguration:
         host = self.datasource["host"]
         port = self.datasource["port"]
         return f"postgresql://{user}:{password}@{host}:{port}/{MAS_DATABASE_NAME}"
+
+    @property
+    def mas_prefix(self) -> str:
+        """Return the mas prefix.
+
+        Returns:
+            str: The MAS listening prefix
+        """
+        return "/auth"
 
     # from_charm receives configuration from all integration so too many arguments.
     @classmethod

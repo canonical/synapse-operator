@@ -10,7 +10,7 @@ http:
     - name: assets
     binds:
     - address: '[::]:8081'
-    prefix: /auth/
+    prefix: {{ mas_prefix }}
     proxy_protocol: false
   - name: internal
     resources:
