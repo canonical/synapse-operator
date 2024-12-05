@@ -536,7 +536,7 @@ class SynapseCharm(CharmBaseWithState):
             event.fail("Failed to connect to the container")
             return
         try:
-            password = verify_user_email(
+            verify_user_email(
                 container=container,
                 username=event.params["username"],
                 email=event.params["email"],
