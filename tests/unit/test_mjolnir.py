@@ -14,7 +14,6 @@ import ops
 import pytest
 from ops.testing import Harness
 
-import actions
 import synapse
 from mjolnir import Mjolnir
 
@@ -308,7 +307,7 @@ def test_enable_mjolnir_container_off(harness: Harness, monkeypatch: pytest.Monk
     container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     monkeypatch.setattr(container, "can_connect", MagicMock(return_value=False))
     register_user_mock = MagicMock()
-    monkeypatch.setattr(actions, "register_user", register_user_mock)
+    monkeypatch.setattr("auth.mas.register_user", register_user_mock)
 
     charm_state = harness.charm.build_charm_state()
     harness.charm._mjolnir.enable_mjolnir(charm_state, token_hex(16))

@@ -17,11 +17,17 @@ from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
 
-import actions
 import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
-from auth.mas import generate_mas_config
+from auth.mas import (
+    generate_mas_config,
+    generate_synapse_msc3861_config,
+    MASRegisterUserFailedError,
+    MASVerifyUserEmailFailedError,
+    register_user,
+    verify_user_email,
+)
 from backup_observer import BackupObserver
 from database_observer import DatabaseObserver, SynapseDatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
@@ -99,6 +105,8 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+        self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
+
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
@@ -220,10 +228,14 @@ class SynapseCharm(CharmBaseWithState):
             rendered_mas_configuration = generate_mas_config(
                 mas_configuration, charm_state.synapse_config, self.get_main_unit_address()
             )
+            synapse_msc3861_configuration = generate_synapse_msc3861_config(
+                mas_configuration, charm_state.synapse_config
+            )
             # reconcile configuration
             pebble.reconcile(
                 charm_state,
                 rendered_mas_configuration,
+                synapse_msc3861_configuration,
                 container,
                 is_main=self.is_main(),
                 unit_number=self.get_unit_number(),
@@ -502,13 +514,37 @@ class SynapseCharm(CharmBaseWithState):
             event.fail("Failed to connect to the container")
             return
         try:
-            user = actions.register_user(
-                container=container, username=event.params["username"], admin=event.params["admin"]
+            password = register_user(
+                container=container,
+                username=event.params["username"],
+                is_admin=event.params["admin"],
             )
-        except actions.RegisterUserError as exc:
+        except MASRegisterUserFailedError as exc:
             event.fail(str(exc))
             return
-        results = {"register-user": True, "user-password": user.password}
+        results = {"register-user": True, "user-password": password}
+        event.set_results(results)
+
+    def _on_verify_user_email_action(self, event: ActionEvent) -> None:
+        """Register user and report action result.
+
+        Args:
+            event: Event triggering the register user instance action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            event.fail("Failed to connect to the container")
+            return
+        try:
+            verify_user_email(
+                container=container,
+                username=event.params["username"],
+                email=event.params["email"],
+            )
+        except MASVerifyUserEmailFailedError as exc:
+            event.fail(str(exc))
+            return
+        results = {"verify-user-email": True}
         event.set_results(results)
 
     @validate_charm_state
