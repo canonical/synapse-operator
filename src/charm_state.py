@@ -27,7 +27,6 @@ from charm_types import (
     DatasourcePostgreSQL,
     MediaConfiguration,
     RedisConfiguration,
-    SAMLConfiguration,
     SMTPConfiguration,
 )
 
@@ -194,7 +193,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     invite_checker_policy_rooms: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     limit_remote_rooms_complexity: float | None = Field(None)
-    public_baseurl: str | None = Field(None)
+    public_baseurl: str = Field(..., min_length=2)
     publish_rooms_allowlist: str | None = Field(None)
     rc_joins_remote_burst_count: int | None = Field(None)
     rc_joins_remote_per_second: float | None = Field(None)
@@ -347,7 +346,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     Attributes:
         synapse_config: synapse configuration.
         datasource: datasource information.
-        saml_config: saml configuration.
         smtp_config: smtp configuration.
         media_config: media configuration.
         redis_config: redis configuration.
@@ -358,7 +356,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
     synapse_config: SynapseConfig
     datasource: typing.Optional[DatasourcePostgreSQL]
-    saml_config: typing.Optional[SAMLConfiguration]
     smtp_config: typing.Optional[SMTPConfiguration]
     media_config: typing.Optional[MediaConfiguration]
     redis_config: typing.Optional[RedisConfiguration]
@@ -383,11 +380,11 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
     # from_charm receives configuration from all integration so too many arguments.
     @classmethod
-    def from_charm(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    def from_charm(
         cls,
         charm: ops.CharmBase,
         datasource: typing.Optional[DatasourcePostgreSQL],
-        saml_config: typing.Optional[SAMLConfiguration],
         smtp_config: typing.Optional[SMTPConfiguration],
         media_config: typing.Optional[MediaConfiguration],
         redis_config: typing.Optional[RedisConfiguration],
@@ -399,7 +396,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         Args:
             charm: The charm instance associated with this state.
             datasource: datasource information to be used by Synapse.
-            saml_config: saml configuration to be used by Synapse.
             smtp_config: SMTP configuration to be used by Synapse.
             media_config: Media configuration to be used by Synapse.
             redis_config: Redis configuration to be used by Synapse.
@@ -413,9 +409,21 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             CharmConfigInvalidError: if the charm configuration is invalid.
         """
         try:
+            # Compute public_baseurl if not configured
+            config = dict(charm.config.items())
+            if not config.get("public_baseurl"):
+                # We use HTTPS here as it's the standard used by matrix-auth
+                public_baseurl = f"https://{config.get('server_name')}"
+                # We ignore protected-access here because we want to get the ingress url
+                # pylint: disable=protected-access
+                if ingress_url := charm._ingress.url:  # type: ignore
+                    public_baseurl = ingress_url
+                config["public_baseurl"] = public_baseurl
+
             # ignoring because mypy fails with:
             # "has incompatible type "**dict[str, str]"; expected ...""
-            valid_synapse_config = SynapseConfig(**dict(charm.config.items()))  # type: ignore
+            valid_synapse_config = SynapseConfig(**config)  # type: ignore
+            logger.info("parsed synapse config: %s", valid_synapse_config)
             # remove workers from instance_map
             if instance_map_config and valid_synapse_config.workers_ignore_list:
                 logger.debug(
@@ -443,7 +451,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return cls(
             synapse_config=valid_synapse_config,
             datasource=datasource,
-            saml_config=saml_config,
             smtp_config=smtp_config,
             media_config=media_config,
             redis_config=redis_config,

@@ -51,6 +51,10 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
         },
         "startup": "enabled",
     }
+    container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    root = harness.get_filesystem_root(container)
+    synapse_configuration = (root / "data" / "homeserver.yaml").read_text()
+    assert f"public_baseurl: https://{TEST_SERVER_NAME}" in synapse_configuration
 
 
 @pytest.mark.skip(reason="harness does not reproduce checks changes")
@@ -174,24 +178,6 @@ def test_traefik_integration(harness: Harness) -> None:
     }
 
 
-def test_saml_integration_container_down(saml_configured: Harness) -> None:
-    """
-    arrange: start the Synapse charm, set server_name, set Synapse container to be down.
-    act: emit saml_data_available.
-    assert: Synapse charm should submit the correct status.
-    """
-    harness = saml_configured
-    harness.begin()
-    harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
-    relation = harness.charm.framework.model.get_relation("saml", 0)
-
-    harness.charm._saml.saml.on.saml_data_available.emit(relation)
-
-    assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
-    assert "Waiting for" in str(harness.model.unit.status)
-    harness.cleanup()
-
-
 def test_smtp_integration_container_down(smtp_configured: Harness) -> None:
     """
     arrange: start the Synapse charm, set server_name, set Synapse container to be down.
@@ -275,6 +261,7 @@ def test_enable_federation_domain_whitelist_is_called(
     config = io.StringIO(config_content)
     harness.update_config({"federation_domain_whitelist": "foo"})
     harness.begin()
+    monkeypatch.setattr(synapse, "set_public_baseurl", MagicMock())
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_rc_joins_remote_rate", MagicMock())
@@ -309,6 +296,7 @@ def test_disable_password_config_is_called(
     """
     harness.update_config({"enable_password_config": False})
     harness.begin()
+    monkeypatch.setattr(synapse, "set_public_baseurl", MagicMock())
     monkeypatch.setattr(synapse, "execute_migrate_config", MagicMock())
     monkeypatch.setattr(synapse, "enable_metrics", MagicMock())
     monkeypatch.setattr(synapse, "enable_rc_joins_remote_rate", MagicMock())
@@ -412,27 +400,6 @@ def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pyt
     redis_config = harness.charm._redis.get_relation_as_redis_conf()
     assert "redis-host" == redis_config["host"]
     assert "1010" == str(redis_config["port"])
-
-
-def test_saml_enabled_reconcile_pebble_error(
-    saml_configured: Harness, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    arrange: start the Synapse charm, set server_name, mock pebble to give an error.
-    act: emit saml_data_available.
-    assert: Synapse charm should submit the correct status.
-    """
-    harness = saml_configured
-    harness.begin()
-    error_message = "Fail"
-    reconcile_mock = MagicMock(side_effect=PebbleServiceError(error_message))
-    monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
-
-    relation = harness.charm.framework.model.get_relation("saml", 0)
-    harness.charm._saml.saml.on.saml_data_available.emit(relation)
-
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert error_message in str(harness.model.unit.status)
 
 
 def test_smtp_enabled_reconcile_pebble_error(

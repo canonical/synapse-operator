@@ -28,11 +28,12 @@ class SimpleCharm(CharmBaseWithState):
         Returns:
             A valid charm state
         """
-        synapse_config = SynapseConfig(server_name="example.com")  # type: ignore[call-arg]
+        synapse_config = SynapseConfig(
+            server_name="example.com", public_baseurl="https://example.com"
+        )  # type: ignore[call-arg]
         return CharmState(
             synapse_config=synapse_config,
             datasource=None,
-            saml_config=None,
             smtp_config=None,
             media_config=None,
             redis_config=None,

@@ -29,19 +29,6 @@ class DatasourcePostgreSQL(typing.TypedDict):
 
 
 @dataclass(frozen=True)
-class SAMLConfiguration(typing.TypedDict):
-    """A named tuple representing a SAML configuration.
-
-    Attributes:
-        entity_id: SAML entity ID.
-        metadata_url: URL to the metadata.
-    """
-
-    entity_id: str
-    metadata_url: str
-
-
-@dataclass(frozen=True)
 class SMTPConfiguration(typing.TypedDict):
     """A named tuple representing SMTP configuration.
 

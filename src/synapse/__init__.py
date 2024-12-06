@@ -88,11 +88,11 @@ from .workload_configuration import (  # noqa: F401
     enable_registration_secrets,
     enable_replication,
     enable_room_list_publication_rules,
-    enable_saml,
     enable_serve_server_wellknown,
     enable_smtp,
     enable_stale_devices_deletion,
     enable_stream_writers,
     enable_synapse_invite_checker,
     enable_trusted_key_servers,
+    set_public_baseurl,
 )

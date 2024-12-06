@@ -29,7 +29,6 @@ from media_observer import MediaObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
-from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
 from user import User
 
@@ -62,7 +61,6 @@ class SynapseCharm(CharmBaseWithState):
         self._matrix_auth = MatrixAuthObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
-        self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
@@ -108,7 +106,6 @@ class SynapseCharm(CharmBaseWithState):
         return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
-            saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
