@@ -120,10 +120,28 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
+    # Assume that MAS is working properly
+    monkeypatch.setattr(
+        "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
+    )
+    monkeypatch.setattr(
+        "auth.mas.validate_mas_config", MagicMock()
+    )
+    monkeypatch.setattr("auth.mas.MasService.generate_mas_config", MagicMock(return_value=""))
+    monkeypatch.setattr(
+        "auth.mas.MasService.generate_oauth_client_config", MagicMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        "auth.mas.MasService.generate_synapse_msc3861_config", MagicMock(return_value={})
+    )
+
+    monkeypatch.setattr("pebble._push_mas_config", MagicMock())
+
     harness = Harness(SynapseCharm)
     # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
     harness.add_network("10.0.0.10")
     harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.add_relation("mas-database", "postgresql-k8s")
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(
         synapse.SYNAPSE_CONTAINER_NAME
@@ -190,6 +208,11 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
         executable="rm",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_container,
+        executable="/usr/bin/mas-cli",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness

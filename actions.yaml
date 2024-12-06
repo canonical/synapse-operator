@@ -27,6 +27,20 @@ register-user:
       default: false
   required:
     - username
+verify-user-email:
+  description: |
+    Verify an user's email.
+    You need to supply an username and the email to verify.
+  properties:
+    username:
+      description: The username.
+      type: string
+    email:
+      description: The email to verify.
+      type: string
+  required:
+    - username
+    - email
 promote-user-admin:
   description: |
     Promote a user as a server administrator.
