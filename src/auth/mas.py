@@ -4,8 +4,10 @@
 """Helper module used to manage MAS-related workloads."""
 import logging
 import secrets
+import typing
 
 import ops
+from charms.hydra.v0.oauth import ClientConfig, OauthProviderConfig
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from state.charm_state import SynapseConfig
@@ -35,6 +37,10 @@ MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
         },
     }
 )
+
+MAS_AUTHORIZATION_GRANT = ["authorization_code"]
+MAS_TOKEN_ENDPOINT_AUTH_METHOD = "client_secret_basic"
+MAS_OIDC_SCOPE = "openid profile email"
 
 
 class MASConfigInvalidError(Exception):
@@ -210,7 +216,6 @@ def generate_synapse_msc3861_config(
         str: The rendered msc3861 configuration.
     """
     mas_context = mas_configuration.mas_context
-
     mas_prefix = mas_configuration.mas_prefix
     # We explicitly set the oauth2 endpoints using MAS local address
     # This is to avoid problems with TLS self-signed certificates

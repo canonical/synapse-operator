@@ -124,6 +124,9 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     monkeypatch.setattr(
         "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
     )
+    monkeypatch.setattr(
+        "charm.generate_oauth_client_config", MagicMock(return_value=None)
+    )
     monkeypatch.setattr("pebble._push_mas_config", MagicMock())
     monkeypatch.setattr("charm.generate_mas_config", MagicMock(return_value=""))
     monkeypatch.setattr("charm.generate_synapse_msc3861_config", MagicMock(return_value={}))
