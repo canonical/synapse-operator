@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm needing the s3_backup_bucket fixture."""
-import io
 import logging
 import typing
 from secrets import token_hex
@@ -275,15 +274,19 @@ async def test_synapse_enable_media(  # pylint: disable=too-many-positional-argu
     )
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    headers = {"Authorization": f"Bearer {access_token}"}
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/octet-stream",
+    }
     media_file = "test_media_file.txt"
 
     # boto_s3_media_client.create_bucket(Bucket=s3_media_configuration["bucket"])
     # Upload media file
     response = requests.post(
-        f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
+        f"http://{synapse_ip}:8080/_matrix/media/v3/upload",
         headers=headers,
-        files={"file": (media_file, io.BytesIO(b""))},
+        params={"filename": media_file},
+        data=b"",
         timeout=5,
     )
     assert response.status_code == 200
