@@ -14,6 +14,7 @@ import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
+from charms.hydra.v0.oauth import OAuthRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
 
@@ -92,6 +93,7 @@ class SynapseCharm(CharmBaseWithState):
             relation_name=INGRESS_INTEGRATION_NAME,
             port=synapse.SYNAPSE_NGINX_PORT,
         )
+        self._oauth = OAuthRequirer(self)
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
