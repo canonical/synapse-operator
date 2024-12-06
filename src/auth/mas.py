@@ -5,8 +5,10 @@
 
 import logging
 import secrets
+import typing
 
 import ops
+from charms.hydra.v0.oauth import ClientConfig, OauthProviderConfig
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from state.charm_state import SynapseConfig
@@ -35,6 +37,10 @@ MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
         },
     }
 )
+
+MAS_AUTHORIZATION_GRANT = ["authorization_code"]
+MAS_TOKEN_ENDPOINT_AUTH_METHOD = "client_secret_basic"
+MAS_OIDC_SCOPE = "openid profile email"
 
 
 def validate_mas_config(container: ops.model.Container) -> None:
@@ -170,6 +176,7 @@ class MasService:
         self,
         mas_configuration: MASConfiguration,
         synapse_configuration: SynapseConfig,
+        oauth_provider_info: typing.Optional[OauthProviderConfig],
         main_unit_address: str,
     ) -> str:
         """Render the MAS configuration file.
@@ -178,6 +185,7 @@ class MasService:
             mas_configuration: Path of the template to load.
             synapse_configuration: Context needed to render the template.
             main_unit_address: Address of synapse main unit.
+            oauth_provider_info: upstream provider configuration.
 
         Returns:
             str: The rendered MAS configuration.
@@ -197,6 +205,8 @@ class MasService:
             "enable_password_config": synapse_configuration.enable_password_config,
             "synapse_server_name_config": synapse_configuration.server_name,
             "synapse_main_unit_address": main_unit_address,
+            "upstream_oidc_provider_id": mas_context.upstream_oidc_provider_id,
+            "oauth_provider_info": oauth_provider_info,
         }
         env = Environment(
             loader=FileSystemLoader("./templates"),
@@ -247,3 +257,26 @@ class MasService:
                 "introspection_endpoint": f"{mas_local_address}/oauth2/introspect",
             },
         }
+
+    def generate_oauth_client_config(
+        self, mas_configuration: MASConfiguration, synapse_configuration: SynapseConfig
+    ) -> ClientConfig:
+        """Generate the oauth client config.
+
+        Args:
+            mas_configuration: Path of the template to load.
+            synapse_configuration: Context needed to render the template.
+
+        Returns:
+            ClientConfig: Oauth client config.
+        """
+        redirect_uri = (
+            f"{synapse_configuration.public_baseurl}"
+            f"/auth/upstream/callback/{mas_configuration.mas_context.upstream_oidc_provider_id}"
+        )
+        return ClientConfig(
+            redirect_uri=redirect_uri,
+            scope=MAS_OIDC_SCOPE,
+            grant_types=MAS_AUTHORIZATION_GRANT,
+            token_endpoint_auth_method=MAS_TOKEN_ENDPOINT_AUTH_METHOD,
+        )

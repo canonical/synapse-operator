@@ -42,7 +42,7 @@ def test_mas_generate_config(monkeypatch: pytest.MonkeyPatch) -> None:
     }
     synapse_configuration = SynapseConfig(**config)  # type: ignore[arg-type]
     rendered_mas_config = harness.charm._mas.generate_mas_config(
-        mas_configuration, synapse_configuration, "10.1.1.0"
+        mas_configuration, synapse_configuration, None, "10.1.1.0"
     )
     parsed_mas_config = yaml.safe_load(rendered_mas_config)
     assert parsed_mas_config["http"]["public_base"] == f"{config['public_baseurl']}/auth/"

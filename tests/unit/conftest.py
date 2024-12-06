@@ -121,7 +121,20 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     # Assume that MAS is working properly
+    monkeypatch.setattr(
+        "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
+    )
+    monkeypatch.setattr(
+        "auth.mas.validate_mas_config", MagicMock()
+    )
     monkeypatch.setattr("auth.mas.MasService.generate_mas_config", MagicMock(return_value=""))
+    monkeypatch.setattr(
+        "auth.mas.MasService.generate_oauth_client_config", MagicMock(return_value=None)
+    )
+    monkeypatch.setattr(
+        "auth.mas.MasService.generate_synapse_msc3861_config", MagicMock(return_value={})
+    )
+
     monkeypatch.setattr("pebble._push_mas_config", MagicMock())
 
     harness = Harness(SynapseCharm)
@@ -195,6 +208,11 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
         executable="rm",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_container,
+        executable="/usr/bin/mas-cli",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness

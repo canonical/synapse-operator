@@ -51,6 +51,7 @@ class MASContext(BaseModel):
         synapse_shared_secret: Used to authenticate MAS to the homeserver
         synapse_oidc_client_id: OIDC client ID used by synapse
         synapse_oidc_client_secret: OIDC client secret used by synapse
+        upstream_oidc_provider_id: ULID to identify the upstream oidc provider
     """
 
     encryption_key: str = Field(min_length=64, max_length=64)
@@ -59,6 +60,7 @@ class MASContext(BaseModel):
     synapse_shared_secret: str = Field(min_length=32, max_length=32)
     synapse_oidc_client_id: str = Field()
     synapse_oidc_client_secret: str = Field(min_length=32, max_length=32)
+    upstream_oidc_provider_id: str = Field()
 
 
 class SigningKey(typing.NamedTuple):
@@ -163,6 +165,7 @@ class MASConfiguration:
                 "synapse-shared-secret": secrets.token_hex(16),
                 "synapse-oidc-client-id": str(ULID()),
                 "synapse-oidc-client-secret": secrets.token_hex(16),
+                "upstream-oidc-provider-id": str(ULID()),
             }
             secret = charm.app.add_secret(
                 content=encryption_and_signing_keys, label=MAS_ENCRYPTION_AND_SIGNING_SECRET_LABEL
@@ -178,6 +181,7 @@ class MASConfiguration:
                 synapse_oidc_client_secret=encryption_and_signing_keys[
                     "synapse-oidc-client-secret"
                 ],
+                upstream_oidc_provider_id=encryption_and_signing_keys["upstream-oidc-provider-id"],
             )
         except ValidationError as exc:
             logger.exception("Error validating MAS context.")
