@@ -99,7 +99,6 @@ class DatabaseObserver(Object):
 class SynapseDatabaseObserver(DatabaseObserver):
     """The database relation observer."""
 
-    @typing.override
     @validate_charm_state
     def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
         """Handle database created events."""
