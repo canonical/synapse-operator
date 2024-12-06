@@ -443,11 +443,12 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     async with ops_test.fast_forward():
         # Relate the refreshed charm to postgresql-k8s as required by MAS.
         # This will be removed once PR#612 is merged
-        await model.relate(f"{synapse_charmhub_app}:mas-database", f"{postgresql_app.name}")
+        await model.integrate(
+            f"{synapse_charmhub_app.name}:mas-database", f"{postgresql_app.name}:database"
+        )
         await synapse_charmhub_app.model.wait_for_idle(
             idle_period=30, apps=[synapse_charmhub_app.name], status="active"
         )
-
     # Unit ip could change because it is a different pod.
     synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
     response = requests.get(
