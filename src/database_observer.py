@@ -16,7 +16,6 @@ from charms.data_platform_libs.v0.data_interfaces import (
 )
 from ops.framework import Object
 
-import synapse
 from charm_types import DatasourcePostgreSQL
 from database_client import DatabaseClient
 from state.mas import MASConfiguration
@@ -28,12 +27,13 @@ logger = logging.getLogger(__name__)
 class DatabaseObserver(Object):
     """The Database relation observer."""
 
-    def __init__(self, charm: CharmBaseWithState, relation_name: str) -> None:
+    def __init__(self, charm: CharmBaseWithState, relation_name: str, database_name: str) -> None:
         """Initialize the observer and register event handlers.
 
         Args:
             charm: The parent charm to attach the observer to.
             relation_name: The name of the relation to observe.
+            database_name: The database name.
         """
         super().__init__(charm, f"{relation_name}-observer")
         self._charm = charm
@@ -41,7 +41,7 @@ class DatabaseObserver(Object):
         self.database = DatabaseRequires(
             self._charm,
             relation_name=relation_name,
-            database_name=self._charm.app.name,
+            database_name=database_name,
             extra_user_roles="SUPERUSER",
         )
         self.framework.observe(self.database.on.database_created, self._on_database_created)
@@ -61,16 +61,6 @@ class DatabaseObserver(Object):
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
         MASConfiguration.validate(charm)
-
-        self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
-        # In case of psycopg2.Error, Juju will set ErrorStatus
-        # See discussion here:
-        # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
-        datasource = self.get_relation_as_datasource()
-        db_client = DatabaseClient(datasource=datasource)
-        if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
-            db_client.prepare()
-        logger.debug("_on_database_created emitting reconcile")
         charm.reconcile(charm_state)
 
     @validate_charm_state
@@ -79,7 +69,6 @@ class DatabaseObserver(Object):
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
         MASConfiguration.validate(charm)
-        logger.debug("_on_endpoints_changed emitting reconcile")
         charm.reconcile(charm_state)
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
@@ -105,3 +94,19 @@ class DatabaseObserver(Object):
             port=endpoint.split(":")[1],
             db=self._charm.app.name,
         )
+
+
+class SynapseDatabaseObserver(DatabaseObserver):
+    """The database relation observer."""
+
+    @typing.override
+    @validate_charm_state
+    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
+        """Handle database created events."""
+        self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
+        # In case of psycopg2.Error, Juju will set ErrorStatus
+        # See discussion here:
+        # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
+        datasource = self.get_relation_as_datasource()
+        db_client = DatabaseClient(datasource=datasource)
+        db_client.prepare()

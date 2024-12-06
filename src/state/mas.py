@@ -10,6 +10,7 @@ import ops
 from charm_types import DatasourcePostgreSQL
 
 MAS_DATABASE_INTEGRATION_NAME = "mas-database"
+MAS_DATABASE_NAME = "mas"
 
 
 class MASDatasourceMissingError(Exception):
