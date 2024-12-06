@@ -109,6 +109,7 @@ def test_container_down() -> None:
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.add_relation("mas-database", "postgresql-k8s")
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
 
@@ -278,7 +279,7 @@ def test_enable_federation_domain_whitelist_is_called(
     container = MagicMock()
     monkeypatch.setattr(container, "push", MagicMock())
     monkeypatch.setattr(container, "pull", MagicMock(return_value=config))
-    pebble.reconcile(charm_state, container=container)
+    pebble.reconcile(charm_state, "", {}, container=container)
 
     enable_federation_mock.assert_called_once()
 
@@ -313,7 +314,7 @@ def test_disable_password_config_is_called(
     container = MagicMock()
     monkeypatch.setattr(container, "push", MagicMock())
     monkeypatch.setattr(container, "pull", MagicMock(return_value=io.StringIO("{}")))
-    pebble.reconcile(charm_state, container=container)
+    pebble.reconcile(charm_state, "", {}, container=container)
 
     disable_password_config_mock.assert_called_once()
 

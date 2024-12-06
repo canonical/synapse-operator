@@ -50,6 +50,10 @@ requires:
         interface: postgresql_client
         limit: 1
         optional: true
+    mas-database:
+        interface: postgresql_client
+        limit: 1
+        optional: false
     ingress:
         interface: ingress
         limit: 2

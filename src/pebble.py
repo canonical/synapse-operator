@@ -17,7 +17,14 @@ from deepdiff import DeepDiff
 from ops.pebble import Check
 
 import synapse
-from charm_state import CharmState
+from auth.mas import (
+    MAS_CONFIGURATION_PATH,
+    MAS_PEBBLE_LAYER,
+    MAS_SERVICE_NAME,
+    sync_mas_config,
+    validate_mas_config,
+)
+from state.charm_state import CharmState
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +213,16 @@ def replan_synapse_federation_sender(
     container.replan()
 
 
+def replan_mas(container: ops.model.Container) -> None:
+    """Replan Matrix Authentication Service.
+
+    Args:
+        container: Charm container.
+    """
+    container.add_layer(MAS_SERVICE_NAME, MAS_PEBBLE_LAYER, combine=True)
+    container.replan()
+
+
 def _get_synapse_config(container: ops.model.Container) -> dict:
     """Get the current Synapse configuration.
 
@@ -247,6 +264,27 @@ def _push_synapse_config(
         raise PebbleServiceError(str(exc)) from exc
 
 
+def _push_mas_config(
+    container: ops.model.Container,
+    rendered_mas_config: str,
+    config_path: str = MAS_CONFIGURATION_PATH,
+) -> None:
+    """Push the Synapse configuration to the container.
+
+    Args:
+        container: Synapse container.
+        rendered_mas_config: Rendered MAS configuration.
+        config_path: Synapse configuration file path.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        container.push(config_path, rendered_mas_config.encode("utf-8"))
+    except ops.pebble.PathError as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
 def _environment_has_changed(
     charm_state: CharmState, container: ops.model.Container, is_main: bool = True
 ) -> bool:
@@ -277,8 +315,12 @@ def _environment_has_changed(
 
 
 # The complexity of this method will be reviewed.
-def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def reconcile(  # noqa: C901
     charm_state: CharmState,
+    rendered_mas_configuration: str,
+    synapse_msc3861_configuration: dict,
     container: ops.model.Container,
     is_main: bool = True,
     unit_number: str = "",
@@ -289,6 +331,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
 
     Args:
         charm_state: Instance of CharmState
+        rendered_mas_configuration: Rendered MAS yaml configuration.
+        synapse_msc3861_configuration: Synapse's msc3861 configuration
         container: Charm container.
         is_main: if unit is main.
         unit_number: unit number id to set the worker name.
@@ -350,8 +394,6 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         if charm_state.redis_config is not None:
             logger.debug("pebble.change_config: Enabling Redis")
             synapse.enable_redis(current_synapse_config, charm_state=charm_state)
-        if not charm_state.synapse_config.enable_password_config:
-            synapse.disable_password_config(current_synapse_config)
         if charm_state.synapse_config.federation_domain_whitelist:
             synapse.enable_federation_domain_whitelist(
                 current_synapse_config, charm_state=charm_state
@@ -377,6 +419,10 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             ignore_order=True,
             ignore_string_case=True,
         )
+
+        # Activate MAS on synapse
+        synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
+
         if config_has_changed:
             logging.info("Configuration has changed, Synapse will be restarted.")
             logging.debug("The change is: %s", config_has_changed)
@@ -394,6 +440,12 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
                 restart_federation_sender(container=container, charm_state=charm_state)
         else:
             logging.info("Configuration has not changed, no action.")
+
+        # Push MAS configuration and restart MAS
+        _push_mas_config(container, rendered_mas_configuration, MAS_CONFIGURATION_PATH)
+        validate_mas_config(container)
+        sync_mas_config(container)
+        replan_mas(container)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
