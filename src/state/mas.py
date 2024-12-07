@@ -23,9 +23,23 @@ class MASConfiguration:
 
     Attributes:
         datasource: datasource information.
+        database_uri: The database URI used in MAS config.
     """
 
     datasource: DatasourcePostgreSQL
+
+    @property
+    def database_uri(self) -> str:
+        """Build the database uri from datasource.
+
+        Returns:
+            str: The database uri
+        """
+        user = self.datasource["user"]
+        password = self.datasource["password"]
+        host = self.datasource["host"]
+        port = self.datasource["port"]
+        return f"postgresql://{user}:{password}@{host}:{port}/{MAS_DATABASE_NAME}"
 
     # from_charm receives configuration from all integration so too many arguments.
     @classmethod
