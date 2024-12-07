@@ -14,7 +14,7 @@ import yaml
 from jinja2 import Environment, FileSystemLoader
 from ops.pebble import ExecError, PathError
 
-from charm_state import CharmState
+from state.charm_state import CharmState
 
 from .api import SYNAPSE_URL
 

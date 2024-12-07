@@ -13,7 +13,7 @@ import pytest
 import requests
 
 import synapse
-from charm_state import CharmState, SynapseConfig
+from state.charm_state import CharmState, SynapseConfig
 from synapse.api import WHOAMI_URL
 from user import User
 
