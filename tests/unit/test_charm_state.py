@@ -10,13 +10,8 @@ import ops
 import pytest
 from ops.testing import ActionFailed, Harness
 
-from charm_state import (
-    CharmBaseWithState,
-    CharmConfigInvalidError,
-    CharmState,
-    SynapseConfig,
-    inject_charm_state,
-)
+from state.charm_state import CharmConfigInvalidError, CharmState, SynapseConfig
+from state.validation import CharmBaseWithState, validate_charm_state
 
 
 class SimpleCharm(CharmBaseWithState):
@@ -49,7 +44,7 @@ class SimpleCharm(CharmBaseWithState):
         """
 
 
-def test_inject_charm_state_correct() -> None:
+def test_validate_charm_state_correct() -> None:
     """
     arrange: Create a charm that gets charm_state on start and stores it
         in an attribute of the class.
@@ -61,14 +56,10 @@ def test_inject_charm_state_correct() -> None:
     class FakeCharm(SimpleCharm):
         """Fake charm with on_start handler."""
 
-        @inject_charm_state
-        def on_start(self, _: ops.HookEvent, charm_state: CharmState):
-            """Event handler for on_start.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        @validate_charm_state
+        def on_start(self, _: ops.HookEvent):
+            """Event handler for on_start."""
+            self.charm_state = self.build_charm_state()
 
     harness = Harness(FakeCharm)
     harness.begin()
@@ -81,7 +72,7 @@ def test_inject_charm_state_correct() -> None:
     assert isinstance(charm.charm_state, CharmState)
 
 
-def test_inject_charm_state_in_observer_correct() -> None:
+def test_validate_charm_state_in_observer_correct() -> None:
     """
     arrange: Create a charm and an observer that gets charm_state on start and stores it
         in an attribute of the class. This observer follows the convention of having
@@ -111,14 +102,10 @@ def test_inject_charm_state_in_observer_correct() -> None:
             """
             return self._charm
 
-        @inject_charm_state
-        def on_start(self, _: ops.HookEvent, charm_state: CharmState):
-            """Event handler for on_start.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        @validate_charm_state
+        def on_start(self, _: ops.HookEvent):
+            """Event handler for on_start."""
+            self.charm_state = self.get_charm().build_charm_state()
 
     harness = Harness(SimpleCharm)
     harness.begin()
@@ -132,7 +119,7 @@ def test_inject_charm_state_in_observer_correct() -> None:
     assert isinstance(observer.charm_state, CharmState)
 
 
-def test_inject_charm_state_hook_failed() -> None:
+def test_validate_charm_state_hook_failed() -> None:
     """
     arrange: Create a charm and that gets charm_state injected on start and stores
        it in an attribute. Raise when trying to get the state with CharmConfigInvalidError.
@@ -152,14 +139,10 @@ def test_inject_charm_state_hook_failed() -> None:
             """
             raise CharmConfigInvalidError("Invalid configuration")
 
-        @inject_charm_state
-        def on_start(self, _: ops.HookEvent, charm_state: CharmState):
-            """Event handler for on_start.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        @validate_charm_state
+        def on_start(self, _: ops.HookEvent):
+            """Event handler for on_start."""
+            self.charm_state = self.build_charm_state()
 
     harness = Harness(FakeCharm)
     harness.begin()
@@ -171,7 +154,7 @@ def test_inject_charm_state_hook_failed() -> None:
     assert not hasattr(charm, "charm_state")
 
 
-def test_inject_charm_state_action_failed() -> None:
+def test_validate_charm_state_action_failed() -> None:
     """
     arrange: Create a charm with an action "create-backup" that stores the charm_state
         in an attribute of the class, and that raises when trying to get the
@@ -191,14 +174,10 @@ def test_inject_charm_state_action_failed() -> None:
             """
             raise CharmConfigInvalidError("Invalid configuration")
 
-        @inject_charm_state
-        def on_create_backup_action(self, _: ops.ActionEvent, charm_state: CharmState):
-            """Action handler for create-backup action.
-
-            Args:
-                charm_state: Injected CharmState
-            """
-            self.charm_state = charm_state
+        @validate_charm_state
+        def on_create_backup_action(self, _: ops.ActionEvent):
+            """Action handler for create-backup action."""
+            self.charm_state = self.build_charm_state()
 
     harness = Harness(FakeCharm)
     harness.begin()
