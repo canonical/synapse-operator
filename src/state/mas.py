@@ -21,7 +21,7 @@ logger = logging.getLogger()
 
 MAS_DATABASE_INTEGRATION_NAME = "mas-database"
 MAS_DATABASE_NAME = "mas"
-MAS_ENCRYPTION_AND_SIGNING_SECRET_LABEL = "mas.context"
+MAS_CONTEXT_LABEL = "mas.context"
 MAS_ENCRYPTION_KEY_LENGTH = 32  # This is a requirement per the MAS docs
 
 
@@ -141,8 +141,8 @@ class MASConfiguration:
         datasource = charm._mas_database.get_relation_as_datasource()  # type: ignore
 
         try:
-            secret = charm.model.get_secret(label=MAS_ENCRYPTION_AND_SIGNING_SECRET_LABEL)
-            encryption_and_signing_keys = secret.get_content()
+            secret = charm.model.get_secret(label=MAS_CONTEXT_LABEL)
+            mas_context_secret = secret.get_content()
         except SecretNotFoundError:
             # pylint: disable=raise-missing-from
             if not charm.unit.is_leader():
@@ -152,7 +152,7 @@ class MASConfiguration:
                 raise MASContextNotSetError("Waiting for leader to set MAS context.")
 
             signing_key = generate_rsa_signing_key()
-            encryption_and_signing_keys = {
+            mas_context_secret = {
                 "encryption-key": secrets.token_hex(MAS_ENCRYPTION_KEY_LENGTH),
                 "signing-key-id": signing_key.key_id,
                 "signing-key-rsa": signing_key.private_key,
@@ -161,17 +161,17 @@ class MASConfiguration:
                 "synapse-oidc-client-secret": secrets.token_hex(16),
             }
             secret = charm.app.add_secret(
-                content=encryption_and_signing_keys, label=MAS_ENCRYPTION_AND_SIGNING_SECRET_LABEL
+                content=mas_context_secret, label=MAS_CONTEXT_LABEL
             )
 
         try:
             mas_context = MASContext(
-                encryption_key=encryption_and_signing_keys["encryption-key"],
-                signing_key_id=encryption_and_signing_keys["signing-key-id"],
-                signing_key_rsa=encryption_and_signing_keys["signing-key-rsa"],
-                synapse_shared_secret=encryption_and_signing_keys["synapse-shared-secret"],
-                synapse_oidc_client_id=encryption_and_signing_keys["synapse-oidc-client-id"],
-                synapse_oidc_client_secret=encryption_and_signing_keys[
+                encryption_key=mas_context_secret["encryption-key"],
+                signing_key_id=mas_context_secret["signing-key-id"],
+                signing_key_rsa=mas_context_secret["signing-key-rsa"],
+                synapse_shared_secret=mas_context_secret["synapse-shared-secret"],
+                synapse_oidc_client_id=mas_context_secret["synapse-oidc-client-id"],
+                synapse_oidc_client_secret=mas_context_secret[
                     "synapse-oidc-client-secret"
                 ],
             )
