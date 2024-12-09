@@ -121,5 +121,5 @@ def test_matrix_auth_registration_secret_success(
         content = yaml.safe_load(config_file)
         assert "app_service_config_files" in content
         assert content["app_service_config_files"] == [
-            "/data/appservice-registration-matrix-auth-1.yaml"
+            f"/data/appservice-registration-matrix-auth-{rel_id}.yaml"
         ]

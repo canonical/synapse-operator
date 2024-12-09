@@ -117,9 +117,9 @@ async def synapse_app_fixture(
         config={"server_name": server_name},
     )
     async with ops_test.fast_forward():
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-        if postgresql_app is not None:
-            await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
+        await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app_name}")
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     return app
 
@@ -140,7 +140,7 @@ async def synapse_charmhub_app_fixture(
             "synapse",
             application_name=synapse_app_charmhub_name,
             trust=True,
-            channel="latest/edge",
+            channel="2/edge",
             series="jammy",
             config={"server_name": server_name},
         )
@@ -149,6 +149,8 @@ async def synapse_charmhub_app_fixture(
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
+        # This line will be uncommented once PR#612 is merged
+        # await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{postgresql_app_name}")
         await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app_name}")
         await model.wait_for_idle(idle_period=5)
     return app
@@ -233,7 +235,9 @@ async def postgresql_app_fixture(
         async with ops_test.fast_forward():
             await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
             await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    yield model.applications.get(postgresql_app_name)
+    postgresql_application = model.applications.get(postgresql_app_name)
+    assert postgresql_application, "Synapse requires postgresql to be deployed"
+    yield postgresql_application
 
 
 @pytest.fixture(scope="module", name="user_username")

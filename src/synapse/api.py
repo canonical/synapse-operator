@@ -17,7 +17,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
-from charm_state import CharmState
+from state.charm_state import CharmState
 from user import User
 
 logger = logging.getLogger(__name__)

@@ -17,8 +17,10 @@ from charms.smtp_integrator.v0.smtp import (
 from ops.framework import Object
 from pydantic.v1 import ValidationError
 
-from charm_state import CharmBaseWithState, CharmConfigInvalidError, CharmState, inject_charm_state
 from charm_types import SMTPConfiguration
+from state.charm_state import CharmConfigInvalidError
+from state.mas import MASConfiguration
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +55,13 @@ class SMTPObserver(Object):
         """
         return self._charm
 
-    @inject_charm_state
-    def _on_smtp_relation_data_available(
-        self, _: SmtpDataAvailableEvent, charm_state: CharmState
-    ) -> None:
-        """Handle SMTP data available.
+    @validate_charm_state
+    def _on_smtp_relation_data_available(self, _: SmtpDataAvailableEvent) -> None:
+        """Handle SMTP data available."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        MASConfiguration.validate(charm)
 
-        Args:
-            charm_state: The charm state.
-        """
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SMTP integration")
         logger.debug("_on_smtp_relation_data_available emitting reconcile")
         self.get_charm().reconcile(charm_state)
