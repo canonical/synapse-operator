@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 import ops
 
-from auth.mas import MASContextNotSetError
+from state.mas import MASContextNotSetError
 
 from .charm_state import CharmConfigInvalidError, CharmState
 from .mas import MASConfiguration, MASDatasourceMissingError

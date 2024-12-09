@@ -100,13 +100,16 @@ def test_synapse_migrate_config_error(harness: Harness) -> None:
     assert "Migrate config failed" in str(harness.model.unit.status)
 
 
-def test_container_down() -> None:
+def test_container_down(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: charm deployed.
     act: start the Synapse charm, set server_name, set Synapse container to be down
         and then try to change report_stats.
     assert: Synapse charm should submit the correct status.
     """
+    monkeypatch.setattr(
+        "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
+    )
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.add_relation("mas-database", "postgresql-k8s")

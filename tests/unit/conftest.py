@@ -121,7 +121,13 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     # Assume that MAS is working properly
-    monkeypatch.setattr("auth.mas.MasService.generate_mas_config", MagicMock(return_value=""))
+    monkeypatch.setattr(
+        "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
+    )
+    # monkeypatch.setattr("ops.model.Model.get_secret", MagicMock(
+    #     side_effect=ops.model.SecretNotFoundError
+    # ))
+    # monkeypatch.setattr("ops.model.Application.add_secret", MagicMock())
     monkeypatch.setattr("pebble._push_mas_config", MagicMock())
 
     harness = Harness(SynapseCharm)
