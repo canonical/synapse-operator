@@ -22,14 +22,16 @@ import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
-from database_observer import DatabaseObserver
+from database_observer import DatabaseObserver, SynapseDatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
 from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
 from smtp_observer import SMTPObserver
+from state.charm_state import CharmState
+from state.mas import MAS_DATABASE_INTEGRATION_NAME, MAS_DATABASE_NAME, MASConfiguration
+from state.validation import CharmBaseWithState, validate_charm_state
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -60,7 +62,12 @@ class SynapseCharm(CharmBaseWithState):
         self._backup = BackupObserver(self)
         self._matrix_auth = MatrixAuthObserver(self)
         self._media = MediaObserver(self)
-        self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
+        self._database = SynapseDatabaseObserver(
+            self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME, database_name=self.app.name
+        )
+        self._mas_database = DatabaseObserver(
+            self, relation_name=MAS_DATABASE_INTEGRATION_NAME, database_name=MAS_DATABASE_NAME
+        )
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
@@ -276,13 +283,12 @@ class SynapseCharm(CharmBaseWithState):
         except synapse.APIError as exc:
             logger.debug("Cannot set workload version at this time: %s", exc)
 
-    @inject_charm_state
-    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle changed configuration.
+    @validate_charm_state
+    def _on_config_changed(self, _: ops.HookEvent) -> None:
+        """Handle changed configuration."""
+        charm_state = self.build_charm_state()
+        MASConfiguration.validate(self)
 
-        Args:
-            charm_state: The charm state.
-        """
         logger.debug("Found %d peer unit(s).", self.peer_units_total())
         if charm_state.redis_config is None and self.peer_units_total() > 1:
             logger.debug("More than 1 peer unit found. Redis is required.")
@@ -292,14 +298,16 @@ class SynapseCharm(CharmBaseWithState):
         self.reconcile(charm_state)
         self._set_workload_version()
 
-    @inject_charm_state
-    def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_relation_departed(self, event: RelationDepartedEvent) -> None:
         """Handle Synapse peer relation departed event.
 
         Args:
             event: relation departed event.
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        MASConfiguration.validate(self)
+
         if event.departing_unit == self.unit:
             # there is no action for the departing unit
             return
@@ -323,13 +331,12 @@ class SynapseCharm(CharmBaseWithState):
         """
         return self.app.planned_units()
 
-    @inject_charm_state
-    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle synapse pebble ready event.
+    @validate_charm_state
+    def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse pebble ready event."""
+        charm_state = self.build_charm_state()
+        MASConfiguration.validate(self)
 
-        Args:
-            charm_state: The charm state.
-        """
         logger.debug("Found %d peer unit(s).", self.peer_units_total())
         if charm_state.redis_config is None and self.peer_units_total() > 1:
             logger.debug("More than 1 peer unit found. Redis is required.")
@@ -431,8 +438,8 @@ class SynapseCharm(CharmBaseWithState):
                 del peer_relation[0].data[self.app]["secret-signing-id"]
         return None
 
-    @inject_charm_state
-    def _on_leader_elected(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_leader_elected(self, _: ops.HookEvent) -> None:
         """Handle Synapse leader elected event.
 
         This event handler will reconcile Synapse configuration after the following
@@ -441,10 +448,10 @@ class SynapseCharm(CharmBaseWithState):
         - When the leader, for any reason, has changed so the leader unit will be the main.
         Once the peer data (main_unit_id) is changed, other units will emit reconcile and be
         properly configured.
-
-        Args:
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        MASConfiguration.validate(self)
+
         # assuming that this event will be fired only at the setup phase
         # check if main is already set if not, this unit will be the main
         if not self.unit.is_leader():
@@ -458,8 +465,8 @@ class SynapseCharm(CharmBaseWithState):
         logger.debug("_on_leader_elected emitting reconcile")
         self.reconcile(charm_state)
 
-    @inject_charm_state
-    def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_relation_changed(self, _: ops.HookEvent) -> None:
         """Handle Synapse peer relation changed event.
 
         This event handler will reconcile Synapse configuration and NGINX after the following
@@ -469,10 +476,10 @@ class SynapseCharm(CharmBaseWithState):
         must be restarted by design.
         - Main unit has changed. The instance_map, stream_writers and NGINX configuration should be
         updated and all remaining units restarted.
-
-        Args:
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        MASConfiguration.validate(self)
+
         logger.debug("_on_relation_changed emitting reconcile")
         self.reconcile(charm_state)
 
@@ -496,14 +503,16 @@ class SynapseCharm(CharmBaseWithState):
         results = {"register-user": True, "user-password": user.password}
         event.set_results(results)
 
-    @inject_charm_state
-    def _on_promote_user_admin_action(self, event: ActionEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_promote_user_admin_action(self, event: ActionEvent) -> None:
         """Promote user admin and report action result.
 
         Args:
             event: Event triggering the promote user admin action.
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        MASConfiguration.validate(self)
+
         results = {
             "promote-user-admin": False,
         }
@@ -528,14 +537,16 @@ class SynapseCharm(CharmBaseWithState):
             return
         event.set_results(results)
 
-    @inject_charm_state
-    def _on_anonymize_user_action(self, event: ActionEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_anonymize_user_action(self, event: ActionEvent) -> None:
         """Anonymize user and report action result.
 
         Args:
             event: Event triggering the anonymize user action.
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        MASConfiguration.validate(self)
+
         results = {
             "anonymize-user": False,
         }
