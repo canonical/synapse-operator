@@ -240,6 +240,8 @@ class MatrixAuthRequirerData(BaseModel):
         Returns:
             encrypted text.
         """
+        if not plaintext:
+            return ""
         # Initialize the cipher with AES-256 and ECB mode
         cipher = Cipher(algorithms.AES(key), modes.ECB())
         encryptor = cipher.encryptor()
@@ -265,6 +267,8 @@ class MatrixAuthRequirerData(BaseModel):
         Returns:
             decrypted text.
         """
+        if not ciphertext:
+            return ""
         # Initialize the cipher with AES-256 and ECB mode
         cipher = Cipher(algorithms.AES(key), modes.ECB())
         decryptor = cipher.decryptor()
@@ -324,7 +328,7 @@ class MatrixAuthRequirerData(BaseModel):
         aes_key_secret_id = relation_data.get("aes_key_secret_id")
         aes_key = MatrixAuthRequirerData.get_aes_key_secret(model, aes_key_secret_id)
         if not aes_key:
-            raise ValueError("Invalid relation data")
+            raise ValueError("Invalid relation data: aes_key_secret_id not found")
         # encrypt content
         content = MatrixAuthRequirerData.encrypt_string(key=aes_key, plaintext=self.registration)
         dumped_data = {
@@ -352,7 +356,8 @@ class MatrixAuthRequirerData(BaseModel):
         aes_key_secret_id = relation_data.get("aes_key_secret_id")
         aes_key = MatrixAuthRequirerData.get_aes_key_secret(model, aes_key_secret_id)
         if not aes_key:
-            raise ValueError("Invalid relation data")
+            logger.warning("Invalid relation data: aes_key_secret_id not found")
+            return None
         # decrypt content
         registration_secret = relation_data.get("registration_secret")
         return MatrixAuthRequirerData(
