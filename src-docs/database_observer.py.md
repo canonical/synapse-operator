@@ -17,7 +17,11 @@ The Database relation observer.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(charm: CharmBaseWithState, relation_name: str) → None
+__init__(
+    charm: CharmBaseWithState,
+    relation_name: str,
+    database_name: str
+) → None
 ```
 
 Initialize the observer and register event handlers. 
@@ -28,6 +32,7 @@ Initialize the observer and register event handlers.
  
  - <b>`charm`</b>:  The parent charm to attach the observer to. 
  - <b>`relation_name`</b>:  The name of the relation to observe. 
+ - <b>`database_name`</b>:  The database name. 
 
 
 ---
@@ -40,7 +45,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/database_observer.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -57,7 +62,79 @@ Return the current charm.
 
 ---
 
-<a href="../src/database_observer.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/database_observer.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_relation_as_datasource`
+
+```python
+get_relation_as_datasource() → Optional[DatasourcePostgreSQL]
+```
+
+Get database data from relation. 
+
+
+
+**Returns:**
+ 
+ - <b>`Dict`</b>:  Information needed for setting environment variables. 
+
+
+---
+
+## <kbd>class</kbd> `SynapseDatabaseObserver`
+The database relation observer. 
+
+<a href="../src/database_observer.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(
+    charm: CharmBaseWithState,
+    relation_name: str,
+    database_name: str
+) → None
+```
+
+Initialize the observer and register event handlers. 
+
+
+
+**Args:**
+ 
+ - <b>`charm`</b>:  The parent charm to attach the observer to. 
+ - <b>`relation_name`</b>:  The name of the relation to observe. 
+ - <b>`database_name`</b>:  The database name. 
+
+
+---
+
+#### <kbd>property</kbd> model
+
+Shortcut for more simple access the model. 
+
+
+
+---
+
+<a href="../src/database_observer.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `get_charm`
+
+```python
+get_charm() → CharmBaseWithState
+```
+
+Return the current charm. 
+
+
+
+**Returns:**
+  The current charm 
+
+---
+
+<a href="../src/database_observer.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_datasource`
 
