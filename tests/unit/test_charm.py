@@ -109,6 +109,7 @@ def test_container_down() -> None:
     """
     harness = Harness(SynapseCharm)
     harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.add_relation("mas-database", "postgresql-k8s")
     harness.begin()
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
 

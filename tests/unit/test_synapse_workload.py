@@ -18,8 +18,8 @@ from ops.testing import Harness
 from pydantic.v1 import ValidationError
 
 import synapse
-from charm_state import CharmState, SynapseConfig
 from charm_types import SMTPConfiguration
+from state.charm_state import CharmState, SynapseConfig
 
 
 def test_allow_public_rooms_over_federation_sucess(config_content: dict[str, typing.Any]):

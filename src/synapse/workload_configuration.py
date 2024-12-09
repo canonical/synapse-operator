@@ -7,7 +7,7 @@
 
 import logging
 
-from charm_state import CharmState
+from state.charm_state import CharmState
 
 from .workload import SYNAPSE_EXPORTER_PORT, EnableMetricsError, EnableSMTPError, WorkloadError
 

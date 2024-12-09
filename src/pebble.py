@@ -17,7 +17,7 @@ from deepdiff import DeepDiff
 from ops.pebble import Check
 
 import synapse
-from charm_state import CharmState
+from state.charm_state import CharmState
 
 logger = logging.getLogger(__name__)
 
