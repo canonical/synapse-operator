@@ -5,7 +5,6 @@
 
 # pylint: disable=protected-access
 
-import base64
 from unittest.mock import ANY, MagicMock
 
 import pytest
@@ -99,10 +98,9 @@ def test_matrix_auth_registration_secret_success(
     monkeypatch.setattr(
         harness.charm._matrix_auth.matrix_auth, "update_relation_data", update_relation_data
     )
-    aes_key = "IyM21eG7c6tVu_3sc1Z7GkbDbERnAbsrldDsjXQbt08="
-    aes_key_return_value = base64.urlsafe_b64decode(aes_key.encode("utf-8"))
+    aes_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
     monkeypatch.setattr(
-        MatrixAuthRequirerData, "get_aes_key_secret", MagicMock(return_value=aes_key_return_value)
+        MatrixAuthRequirerData, "get_aes_key_secret", MagicMock(return_value=aes_key)
     )
     monkeypatch.setattr(
         synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
@@ -114,9 +112,7 @@ def test_matrix_auth_registration_secret_success(
 
     rel_id = harness.add_relation("matrix-auth", "maubot")
     harness.add_relation_unit(rel_id, "maubot/0")
-    encrypted_text = MatrixAuthRequirerData.encrypt_string(
-        key=aes_key_return_value, plaintext=SecretStr("foo")
-    )
+    encrypted_text = MatrixAuthRequirerData.encrypt_string(key=aes_key, plaintext=SecretStr("foo"))
     harness.update_relation_data(rel_id, "maubot", {"registration_secret": encrypted_text})
 
     relation = harness.charm.framework.model.get_relation("matrix-auth", rel_id)
@@ -151,10 +147,9 @@ def test_matrix_auth_registration_secret_empty(harness: Harness, monkeypatch: py
     monkeypatch.setattr(
         harness.charm._matrix_auth.matrix_auth, "update_relation_data", update_relation_data
     )
-    aes_key = "IyM21eG7c6tVu_3sc1Z7GkbDbERnAbsrldDsjXQbt08="
-    aes_key_return_value = base64.urlsafe_b64decode(aes_key.encode("utf-8"))
+    aes_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
     monkeypatch.setattr(
-        MatrixAuthRequirerData, "get_aes_key_secret", MagicMock(return_value=aes_key_return_value)
+        MatrixAuthRequirerData, "get_aes_key_secret", MagicMock(return_value=aes_key)
     )
     monkeypatch.setattr(
         synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")

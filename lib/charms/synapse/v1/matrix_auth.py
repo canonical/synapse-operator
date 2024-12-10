@@ -75,8 +75,7 @@ import logging
 from typing import Dict, List, Optional, Tuple, cast
 import secrets
 import base64
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.padding import PKCS7
+from cryptography.fernet import Fernet
 
 import ops
 from pydantic import BaseModel, Field, SecretStr
@@ -132,14 +131,14 @@ class MatrixAuthProviderData(BaseModel):
             self.shared_secret_id = cast(str, secret.id)
 
     def set_aes_key_secret_id(self, model: ops.Model, relation: ops.Relation) -> None:
-        """Store the AES key to encrypt/decryp appservice registrations.
+        """Store the AES key to encrypt/decrypt appservice registrations.
 
         Args:
             model: the Juju model
             relation: relation to grant access to the secrets to.
         """
-        key = secrets.token_bytes(32)
-        aes_key = base64.urlsafe_b64encode(key).decode('utf-8')
+        key = Fernet.generate_key()
+        aes_key = key.decode('utf-8')
         try:
             secret = model.get_secret(label=AES_KEY_SECRET_LABEL)
             secret.set_content({AES_KEY_SECRET_CONTENT_LABEL: aes_key})
@@ -231,7 +230,7 @@ class MatrixAuthRequirerData(BaseModel):
 
     @classmethod
     def encrypt_string(cls, key: bytes, plaintext: SecretStr) -> str:
-        """Encrypt a string using AES-256-ECB.
+        """Encrypt a string using Fernet.
 
         Args:
             key: aes key in bytes.
@@ -241,23 +240,13 @@ class MatrixAuthRequirerData(BaseModel):
             encrypted text.
         """
         plaintext = cast(SecretStr, plaintext)
-        # Initialize the cipher with AES-256 and ECB mode
-        cipher = Cipher(algorithms.AES(key), modes.ECB())
-        encryptor = cipher.encryptor()
-
-        # Pad the plaintext to match the block size (16 bytes)
-        padder = PKCS7(algorithms.AES.block_size).padder()
-        padded_data = padder.update(plaintext.get_secret_value().encode()) + padder.finalize()
-
-        # Encrypt the padded plaintext
-        ciphertext = encryptor.update(padded_data) + encryptor.finalize()
-
-        # Return ciphertext as Base64 for easy handling
-        return base64.b64encode(ciphertext).decode()
+        f = Fernet(key)
+        ciphertext = f.encrypt(plaintext.get_secret_value().encode('utf-8'))
+        return ciphertext.decode()
 
     @classmethod
     def decrypt_string(cls, key: bytes, ciphertext: str) -> str:
-        """Decrypt a string using AES-256-ECB.
+        """Decrypt a string using Fernet.
 
         Args:
             key: aes key in bytes.
@@ -266,18 +255,8 @@ class MatrixAuthRequirerData(BaseModel):
         Returns:
             decrypted text.
         """
-        # Initialize the cipher with AES-256 and ECB mode
-        cipher = Cipher(algorithms.AES(key), modes.ECB())
-        decryptor = cipher.decryptor()
-
-        # Decode the Base64 ciphertext and decrypt it
-        ciphertext_bytes = base64.b64decode(ciphertext)
-        padded_plaintext = decryptor.update(ciphertext_bytes) + decryptor.finalize()
-
-        # Remove padding from the decrypted plaintext
-        unpadder = PKCS7(algorithms.AES.block_size).unpadder()
-        plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
-
+        f = Fernet(key)
+        plaintext = f.decrypt(ciphertext.encode('utf-8'))
         return plaintext.decode()
 
     @classmethod
@@ -302,7 +281,7 @@ class MatrixAuthRequirerData(BaseModel):
             aes_key = secret.get_content().get(AES_KEY_SECRET_CONTENT_LABEL)
             if not aes_key:
                 return None
-            return base64.urlsafe_b64decode(aes_key.encode('utf-8'))
+            return aes_key.encode('utf-8')
         except ops.SecretNotFoundError:
             return None
 
