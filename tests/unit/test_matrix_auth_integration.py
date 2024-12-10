@@ -131,3 +131,46 @@ def test_matrix_auth_registration_secret_success(
         assert content["app_service_config_files"] == [
             f"/data/appservice-registration-matrix-auth-{rel_id}.yaml"
         ]
+
+
+def test_matrix_auth_registration_secret_empty(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm with public_base url set.
+    act: integrate via matrix-auth with maubot and add registration as relation
+        data.
+    assert: update_relation_data is called, homeserver has same value as
+        public_baseurl and since registration is empty there are no registration
+        files.
+    """
+    base_url_value = "https://new-server"
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": base_url_value})
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    harness.begin_with_initial_hooks()
+    update_relation_data = MagicMock()
+    monkeypatch.setattr(
+        harness.charm._matrix_auth.matrix_auth, "update_relation_data", update_relation_data
+    )
+    aes_key = "IyM21eG7c6tVu_3sc1Z7GkbDbERnAbsrldDsjXQbt08="
+    aes_key_return_value = base64.urlsafe_b64decode(aes_key.encode("utf-8"))
+    monkeypatch.setattr(
+        MatrixAuthRequirerData, "get_aes_key_secret", MagicMock(return_value=aes_key_return_value)
+    )
+    monkeypatch.setattr(
+        synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
+    )
+    create_registration_secrets_files_mock = MagicMock()
+    monkeypatch.setattr(
+        synapse, "create_registration_secrets_files", create_registration_secrets_files_mock
+    )
+
+    rel_id = harness.add_relation("matrix-auth", "maubot")
+    harness.add_relation_unit(rel_id, "maubot/0")
+    relation = harness.charm.framework.model.get_relation("matrix-auth", rel_id)
+    harness.charm.on["matrix-auth"].relation_changed.emit(
+        relation, harness.charm.app, harness.charm.unit
+    )
+
+    update_relation_data.assert_called_with(relation, ANY)
+    assert update_relation_data.call_args[0][1].homeserver == base_url_value
+    create_registration_secrets_files_mock.assert_not_called()

@@ -230,7 +230,7 @@ class MatrixAuthRequirerData(BaseModel):
     registration: Optional[SecretStr] = Field(default=None, exclude=True)
 
     @classmethod
-    def encrypt_string(cls, key: bytes, plaintext: str) -> str:
+    def encrypt_string(cls, key: bytes, plaintext: SecretStr) -> str:
         """Encrypt a string using AES-256-ECB.
 
         Args:
@@ -240,8 +240,7 @@ class MatrixAuthRequirerData(BaseModel):
         Returns:
             encrypted text.
         """
-        if not plaintext:
-            return ""
+        plaintext = cast(SecretStr, plaintext)
         # Initialize the cipher with AES-256 and ECB mode
         cipher = Cipher(algorithms.AES(key), modes.ECB())
         encryptor = cipher.encryptor()
@@ -267,8 +266,6 @@ class MatrixAuthRequirerData(BaseModel):
         Returns:
             decrypted text.
         """
-        if not ciphertext:
-            return ""
         # Initialize the cipher with AES-256 and ECB mode
         cipher = Cipher(algorithms.AES(key), modes.ECB())
         decryptor = cipher.decryptor()
@@ -360,6 +357,8 @@ class MatrixAuthRequirerData(BaseModel):
             return None
         # decrypt content
         registration_secret = relation_data.get("registration_secret")
+        if not registration_secret:
+            return MatrixAuthRequirerData()
         return MatrixAuthRequirerData(
             registration=MatrixAuthRequirerData.decrypt_string(key=aes_key, ciphertext=registration_secret),
         )
