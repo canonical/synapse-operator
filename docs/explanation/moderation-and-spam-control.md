@@ -75,7 +75,7 @@ aliases efficiently.
 - Account Deactivation: Disable abusive or compromised accounts.
 - Room Shutdown: Close problematic rooms completely.
 
-### More Information
+### More information
 
 For more details and implementation guidance, refer to the [Mjolnir GitHub repository](https://github.com/matrix-org/mjolnir).
 
