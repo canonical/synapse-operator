@@ -9,7 +9,7 @@ that can help set moderation and spam control in Synapse.
 
 ---
 
-## Charm Configurations
+## Charm configurations
 
 Synapse charm provide administrators with configuration options to fine-tune
 moderation and spam control. Below are some key settings:
