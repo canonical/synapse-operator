@@ -64,7 +64,7 @@ Synapse charm also has Mjolnir in place. Mjolnir is an all-in-one moderation
 tool designed to protect Synapse server from malicious invites, spam messages,
 and other unwanted activities.
 
-### Key Features
+### Key features
 
 - Bans and Redactions: Quickly remove malicious users and their messages from
 rooms.
