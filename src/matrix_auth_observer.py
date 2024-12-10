@@ -87,7 +87,6 @@ class MatrixAuthObserver(Object):
 
         for relation in list(self._charm.model.relations["matrix-auth"]):
             requirer_data = MatrixAuthRequirerData.from_relation(self.model, relation=relation)
-            print(requirer_data)
             if requirer_data and requirer_data.registration:
                 registration = requirer_data.registration
                 filename = f"{relation.name}-{relation.id}"
