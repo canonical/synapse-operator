@@ -9,8 +9,10 @@ from abc import ABC, abstractmethod
 
 import ops
 
+from state.mas import MASContextNotSetError
+
 from .charm_state import CharmConfigInvalidError, CharmState
-from .mas import MASDatasourceMissingError
+from .mas import MASConfiguration, MASDatasourceMissingError
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +33,12 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         return self
 
     @abstractmethod
-    def reconcile(self, charm_state: "CharmState") -> None:
+    def reconcile(self, charm_state: "CharmState", mas_configuration: MASConfiguration) -> None:
         """Reconcile Synapse configuration.
 
         Args:
             charm_state: The charm state.
+            mas_configuration: Charm state component to configure MAS.
         """
 
 
@@ -99,6 +102,10 @@ def validate_charm_state(  # pylint: disable=protected-access
                 event.fail(str(exc))
             else:
                 charm.model.unit.status = ops.BlockedStatus(str(exc))
+        except MASContextNotSetError as exc:
+            logger.exception("MAS context not set by leader.")
+            charm.model.unit.status = ops.WaitingStatus(str(exc))
+
         return None
 
     return wrapper

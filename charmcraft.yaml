@@ -26,3 +26,4 @@ parts:
       craftctl default
     charm-binary-python-packages:
     - psycopg2-binary
+    - cryptography
