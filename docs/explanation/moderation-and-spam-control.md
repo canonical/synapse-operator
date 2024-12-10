@@ -3,7 +3,7 @@
 Moderation and spam control are critical to maintaining the health and security
 of any communication platform, and Synapse is no exception. As a Matrix
 homeserver, Synapse enables decentralized communication, which brings challenges
-in combating abuse and ensuring user safety. This explanation
+in combating abuse and ensuring user safety. This document
 explores charm configurations and tools (Synapse Invite Checker Module and Mjolnir)
 that can help set moderation and spam control in Synapse.
 
