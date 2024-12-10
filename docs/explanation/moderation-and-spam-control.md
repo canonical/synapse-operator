@@ -37,7 +37,7 @@ Refer to [block_non_admin_invites](https://element-hq.github.io/synapse/latest/u
 
 ---
 
-## Synapse Invite Checker Module
+## Synapse Invite Checker module
 
 The **Synapse Invite Checker** module provides additional flexibility in
 controlling spam and abuse by monitoring and filtering room invites. This tool
