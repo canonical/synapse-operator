@@ -74,7 +74,7 @@ async def test_synapse_cmr_matrix_auth(
             },
         )
         await consumer_model.wait_for_idle(apps=[any_charm_app.name])
-        await consumer_model.consume(f"admin/{ops_test.model_name}.{synapse_app.name}", "synapse")
+        await consumer_model.consume(f"admin/{model.name}.{synapse_app.name}", "synapse")
 
         await consumer_model.relate(any_charm_app.name, "synapse")
         await consumer_model.wait_for_idle(idle_period=30, status=ACTIVE_STATUS_NAME)
