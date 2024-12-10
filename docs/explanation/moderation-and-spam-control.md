@@ -53,7 +53,7 @@ URL to fetch a JSON file containing the allowlist and blocklist.
 A comma-separated list of rooms used by the invite checker module to enforce
 policies.
 
-### More Information
+### More information
 For details and implementation, visit the module’s repository: [Synapse Invite Checker](https://git.buechner.me/nbuechner/synapse-invite-checker).
 
 ---
