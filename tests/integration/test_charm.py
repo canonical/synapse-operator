@@ -409,6 +409,7 @@ async def test_synapse_enable_mjolnir(
 
 
 # pylint: disable=too-many-positional-arguments
+@pytest.mark.usefixtures("postgresql_app")
 @pytest.mark.mjolnir
 async def test_synapse_with_mjolnir_from_refresh_is_up(
     ops_test: OpsTest,
@@ -417,7 +418,6 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     synapse_charm: str,
     synapse_image: str,
-    postgresql_app: Application,
 ):
     """
     arrange: build and deploy the Synapse charm from charmhub and enable Mjolnir.

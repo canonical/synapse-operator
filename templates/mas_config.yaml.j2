@@ -10,7 +10,7 @@ http:
     - name: assets
     binds:
     - address: '[::]:8081'
-    prefix: /auth/
+    prefix: {{ mas_prefix }}
     proxy_protocol: false
   - name: internal
     resources:
@@ -19,14 +19,7 @@ http:
     - host: localhost
       port: 8082
     proxy_protocol: false
-  trusted_proxies:
-  - 192.168.0.0/16
-  - 172.16.0.0/12
-  - 10.0.0.0/10
-  - 127.0.0.1/8
-  - fd00::/8
-  - ::1/128
-  public_base: {{ synapse_public_baseurl }}/auth/
+  public_base: {{ synapse_public_baseurl }}{{ mas_prefix }}
 database:
   uri: {{ mas_database_uri }}
 secrets:

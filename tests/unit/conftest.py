@@ -124,10 +124,6 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     monkeypatch.setattr(
         "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
     )
-    # monkeypatch.setattr("ops.model.Model.get_secret", MagicMock(
-    #     side_effect=ops.model.SecretNotFoundError
-    # ))
-    # monkeypatch.setattr("ops.model.Application.add_secret", MagicMock())
     monkeypatch.setattr("pebble._push_mas_config", MagicMock())
 
     harness = Harness(SynapseCharm)

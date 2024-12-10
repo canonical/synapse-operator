@@ -69,7 +69,6 @@ class DatabaseObserver(Object):
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
         mas_configuration = MASConfiguration.from_charm(charm)
-        logger.debug("_on_endpoints_changed emitting reconcile")
         charm.reconcile(charm_state, mas_configuration)
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:

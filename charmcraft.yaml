@@ -19,11 +19,6 @@ parts:
   charm:
     build-packages:
       - libpq-dev
-      - libffi-dev
-      - python3-dev
-      - build-essential
-      - libssl-dev
-      - pkg-config
     build-snaps:
       - rustup
     override-build: |
@@ -31,3 +26,4 @@ parts:
       craftctl default
     charm-binary-python-packages:
     - psycopg2-binary
+    - cryptography
