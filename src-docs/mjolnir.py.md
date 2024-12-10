@@ -18,7 +18,7 @@ A class representing the Mjolnir plugin for Synapse application.
 
 Mjolnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/matrix-org/mjolnir/ for more details about it. 
 
-<a href="../src/mjolnir.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -46,7 +46,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/mjolnir.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `enable_mjolnir`
 
@@ -77,7 +77,7 @@ The required steps to enable Mjolnir are:
 
 ---
 
-<a href="../src/mjolnir.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -94,7 +94,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/mjolnir.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/mjolnir.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_membership_room_id`
 
