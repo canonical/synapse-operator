@@ -19,6 +19,7 @@ parts:
   charm:
     build-packages:
       - libpq-dev
+      - libffi-dev
     build-snaps:
       - rustup
     override-build: |
