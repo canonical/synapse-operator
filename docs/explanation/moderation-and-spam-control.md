@@ -14,13 +14,13 @@ that can help set moderation and spam control in Synapse.
 Synapse charm provide administrators with configuration options to fine-tune
 moderation and spam control. Below are some key settings:
 
-#### [`rc_joins_remote_burst_count`](https://charmhub.io/synapse/configurations#rc_joins_remote_burst_count)
+### [`rc_joins_remote_burst_count`](https://charmhub.io/synapse/configurations#rc_joins_remote_burst_count)
 
 Limits the number of remote rooms a user can join before being throttled.
 
 - Default: `10`
 
-#### [`rc_joins_remote_per_second`](https://charmhub.io/synapse/configurations#rc_joins_remote_per_second)
+### [`rc_joins_remote_per_second`](https://charmhub.io/synapse/configurations#rc_joins_remote_per_second)
 
 Defines the rate limit for how many remote rooms a user can join per second.
 
@@ -28,7 +28,7 @@ Defines the rate limit for how many remote rooms a user can join per second.
 
 Refer to [Ratelimiting](https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html#ratelimiting) in Synapse configuration documentation for more details.
 
-#### [`block_non_admin_invites`](https://charmhub.io/synapse/configurations#block_non_admin_invites)
+### [`block_non_admin_invites`](https://charmhub.io/synapse/configurations#block_non_admin_invites)
 When enabled, this configuration blocks room invites to users on the server,
 except for those sent by local server admins.
 - Default: `false`
@@ -66,14 +66,14 @@ and other unwanted activities.
 
 ### Key features
 
-- Bans and Redactions: Quickly remove malicious users and their messages from
+- Bans and redactions: Quickly remove malicious users and their messages from
 rooms.
-- Anti-Spam: Automatically detect and mitigate spam activity.
+- Anti-spam: Automatically detect and mitigate spam activity.
 - Server ACLs: Manage and enforce access control lists at the server level.
-- Room Directory Changes and Alias Transfers: Adjust room visibility and manage
+- Room directory changes and alias transfers: Adjust room visibility and manage
 aliases efficiently.
-- Account Deactivation: Disable abusive or compromised accounts.
-- Room Shutdown: Close problematic rooms completely.
+- Account deactivation: Disable abusive or compromised accounts.
+- Room shutdown: Close problematic rooms completely.
 
 ### More information
 
