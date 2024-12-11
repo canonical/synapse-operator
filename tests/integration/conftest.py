@@ -145,7 +145,7 @@ async def synapse_charmhub_app_fixture(
             config={"server_name": server_name},
         )
         await model.wait_for_idle(
-            apps=[synapse_app_charmhub_name, postgresql_app_name],
+            apps=[postgresql_app_name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
