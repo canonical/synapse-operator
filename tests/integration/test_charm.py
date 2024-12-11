@@ -408,6 +408,7 @@ async def test_synapse_enable_mjolnir(
     assert res.status_code == 200
 
 
+# pylint: disable=too-many-positional-arguments
 @pytest.mark.usefixtures("postgresql_app")
 @pytest.mark.mjolnir
 async def test_synapse_with_mjolnir_from_refresh_is_up(
