@@ -13,7 +13,7 @@ platforms:
 environment: &mas-source
   source: https://github.com/element-hq/matrix-authentication-service
   source-type: git
-  source-tag: v0.12.0
+  source-tag: v1.121.0
 parts:
   scripts:
     plugin: dump
@@ -111,7 +111,7 @@ parts:
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git
-    source-tag: v1.120.2
+    source-tag: v1.121.0
     build-environment:
       - RUST_VERSION: "1.76.0"
       - POETRY_VERSION: "1.7.1"
