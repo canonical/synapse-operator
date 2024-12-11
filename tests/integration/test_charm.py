@@ -378,6 +378,7 @@ async def test_nginx_route_integration(
     assert "Welcome to the Matrix" in response.text
 
 
+@pytest.mark.usefixtures("postgresql_app")
 @pytest.mark.mjolnir
 async def test_synapse_enable_mjolnir(
     ops_test: OpsTest,
