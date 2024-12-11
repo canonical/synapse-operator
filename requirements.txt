@@ -1,10 +1,10 @@
-boto3 ==1.35.73
-cosl ==0.0.45
+boto3 ==1.35.78
+cosl ==0.0.47
 cryptography ==44.0.0
 deepdiff ==8.0.1
 jinja2 ==3.1.4
 jsonschema ==4.23.0
 ops ==2.17.1
-pydantic ==2.10.2
+pydantic ==2.10.3
 psycopg2-binary ==2.9.10
 requests ==2.32.3
