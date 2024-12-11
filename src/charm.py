@@ -21,10 +21,10 @@ import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
 from auth.mas import (
-    generate_mas_config,
-    generate_synapse_msc3861_config,
     MASRegisterUserFailedError,
     MASVerifyUserEmailFailedError,
+    generate_mas_config,
+    generate_synapse_msc3861_config,
     register_user,
     verify_user_email,
 )
