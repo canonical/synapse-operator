@@ -98,9 +98,9 @@ def test_matrix_auth_registration_secret_success(
     monkeypatch.setattr(
         harness.charm._matrix_auth.matrix_auth, "update_relation_data", update_relation_data
     )
-    aes_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
+    encryption_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
     monkeypatch.setattr(
-        MatrixAuthRequirerData, "get_aes_key_secret", MagicMock(return_value=aes_key)
+        MatrixAuthRequirerData, "get_encryption_key_secret", MagicMock(return_value=encryption_key)
     )
     monkeypatch.setattr(
         synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
@@ -112,7 +112,9 @@ def test_matrix_auth_registration_secret_success(
 
     rel_id = harness.add_relation("matrix-auth", "maubot")
     harness.add_relation_unit(rel_id, "maubot/0")
-    encrypted_text = MatrixAuthRequirerData.encrypt_string(key=aes_key, plaintext=SecretStr("foo"))
+    encrypted_text = MatrixAuthRequirerData.encrypt_string(
+        key=encryption_key, plaintext=SecretStr("foo")
+    )
     harness.update_relation_data(rel_id, "maubot", {"registration_secret": encrypted_text})
 
     relation = harness.charm.framework.model.get_relation("matrix-auth", rel_id)
@@ -147,9 +149,9 @@ def test_matrix_auth_registration_secret_empty(harness: Harness, monkeypatch: py
     monkeypatch.setattr(
         harness.charm._matrix_auth.matrix_auth, "update_relation_data", update_relation_data
     )
-    aes_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
+    encryption_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
     monkeypatch.setattr(
-        MatrixAuthRequirerData, "get_aes_key_secret", MagicMock(return_value=aes_key)
+        MatrixAuthRequirerData, "get_encryption_key_secret", MagicMock(return_value=encryption_key)
     )
     monkeypatch.setattr(
         synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")

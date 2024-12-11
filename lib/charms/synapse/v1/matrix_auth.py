@@ -88,8 +88,8 @@ APP_REGISTRATION_CONTENT_LABEL = "app-registration-content"
 DEFAULT_RELATION_NAME = "matrix-auth"
 SHARED_SECRET_LABEL = "shared-secret"
 SHARED_SECRET_CONTENT_LABEL = "shared-secret-content"
-AES_KEY_SECRET_LABEL = "aes-key-secret"
-AES_KEY_SECRET_CONTENT_LABEL = "aes-key-content"
+ENCRYPTION_KEY_SECRET_LABEL = "encryption-key-secret"
+ENCRYPTION_KEY_SECRET_CONTENT_LABEL = "encryption-key-content"
 
 
 #### Data models for Provider and Requirer ####
@@ -105,7 +105,7 @@ class MatrixAuthProviderData(BaseModel):
     homeserver: str
     shared_secret: Optional[SecretStr] = Field(default=None, exclude=True)
     shared_secret_id: Optional[SecretStr] = Field(default=None)
-    aes_key_secret_id: Optional[SecretStr] = Field(default=None)
+    encryption_key_secret_id: Optional[SecretStr] = Field(default=None)
 
     def set_shared_secret_id(self, model: ops.Model, relation: ops.Relation) -> None:
         """Store the Matrix shared secret as a Juju secret.
@@ -130,26 +130,26 @@ class MatrixAuthProviderData(BaseModel):
             secret.grant(relation)
             self.shared_secret_id = cast(str, secret.id)
 
-    def set_aes_key_secret_id(self, model: ops.Model, relation: ops.Relation) -> None:
-        """Store the AES key to encrypt/decrypt appservice registrations.
+    def set_encryption_key_secret_id(self, model: ops.Model, relation: ops.Relation) -> None:
+        """Store the encryption key to encrypt/decrypt appservice registrations.
 
         Args:
             model: the Juju model
             relation: relation to grant access to the secrets to.
         """
         key = Fernet.generate_key()
-        aes_key = key.decode('utf-8')
+        encryption_key = key.decode('utf-8')
         try:
-            secret = model.get_secret(label=AES_KEY_SECRET_LABEL)
-            secret.set_content({AES_KEY_SECRET_CONTENT_LABEL: aes_key})
+            secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
+            secret.set_content({ENCRYPTION_KEY_SECRET_CONTENT_LABEL: encryption_key})
             # secret.id is not None at this point
-            self.aes_key_secret_id = cast(str, secret.id)
+            self.encryption_key_secret_id = cast(str, secret.id)
         except ops.SecretNotFoundError:
             secret = relation.app.add_secret(
-                {AES_KEY_SECRET_CONTENT_LABEL: aes_key}, label=AES_KEY_SECRET_LABEL
+                {ENCRYPTION_KEY_SECRET_CONTENT_LABEL: encryption_key}, label=ENCRYPTION_KEY_SECRET_LABEL
             )
             secret.grant(relation)
-            self.aes_key_secret_id = cast(str, secret.id)
+            self.encryption_key_secret_id = cast(str, secret.id)
 
     @classmethod
     def get_shared_secret(
@@ -186,7 +186,7 @@ class MatrixAuthProviderData(BaseModel):
             Dict containing the representation.
         """
         self.set_shared_secret_id(model, relation)
-        self.set_aes_key_secret_id(model, relation)
+        self.set_encryption_key_secret_id(model, relation)
         return self.model_dump(exclude_unset=True)
 
     @classmethod
@@ -233,7 +233,7 @@ class MatrixAuthRequirerData(BaseModel):
         """Encrypt a string using Fernet.
 
         Args:
-            key: aes key in bytes.
+            key: encryption key in bytes.
             plaintext: text to encrypt.
 
         Returns:
@@ -249,7 +249,7 @@ class MatrixAuthRequirerData(BaseModel):
         """Decrypt a string using Fernet.
 
         Args:
-            key: aes key in bytes.
+            key: encryption key in bytes.
             ciphertext: encrypted text.
 
         Returns:
@@ -260,28 +260,28 @@ class MatrixAuthRequirerData(BaseModel):
         return plaintext.decode()
 
     @classmethod
-    def get_aes_key_secret(
-        cls, model: ops.Model, aes_key_secret_id: Optional[str]
+    def get_encryption_key_secret(
+        cls, model: ops.Model, encryption_key_secret_id: Optional[str]
     ) -> Optional[bytes]:
-        """Retrieve the aes key secret corresponding to the aes_key_secret_id.
+        """Retrieve the encryption key secret corresponding to the encryption_key_secret_id.
 
         Args:
             model: the Juju model.
-            aes_key_secret_id: the secret ID for the aes key secret.
+            encryption_key_secret_id: the secret ID for the encryption key secret.
 
         Returns:
-            the aes key secret  as bytes or None if not found.
+            the encryption key secret  as bytes or None if not found.
         """
         try:
-            if not aes_key_secret_id:
+            if not encryption_key_secret_id:
                 # then its the provider and we can get using label
-                secret = model.get_secret(label=AES_KEY_SECRET_LABEL)
+                secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
             else:
-                secret = model.get_secret(id=aes_key_secret_id)
-            aes_key = secret.get_content().get(AES_KEY_SECRET_CONTENT_LABEL)
-            if not aes_key:
+                secret = model.get_secret(id=encryption_key_secret_id)
+            encryption_key = secret.get_content().get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
+            if not encryption_key:
                 return None
-            return aes_key.encode('utf-8')
+            return encryption_key.encode('utf-8')
         except ops.SecretNotFoundError:
             return None
 
@@ -296,17 +296,17 @@ class MatrixAuthRequirerData(BaseModel):
             Dict containing the representation.
 
         Raises:
-            ValueError if aes key not found.
+            ValueError if encryption key not found.
         """
-        # get aes key
+        # get encryption key
         app = cast(ops.Application, relation.app)
         relation_data = relation.data[app]
-        aes_key_secret_id = relation_data.get("aes_key_secret_id")
-        aes_key = MatrixAuthRequirerData.get_aes_key_secret(model, aes_key_secret_id)
-        if not aes_key:
-            raise ValueError("Invalid relation data: aes_key_secret_id not found")
+        encryption_key_secret_id = relation_data.get("encryption_key_secret_id")
+        encryption_key = MatrixAuthRequirerData.get_encryption_key_secret(model, encryption_key_secret_id)
+        if not encryption_key:
+            raise ValueError("Invalid relation data: encryption_key_secret_id not found")
         # encrypt content
-        content = MatrixAuthRequirerData.encrypt_string(key=aes_key, plaintext=self.registration)
+        content = MatrixAuthRequirerData.encrypt_string(key=encryption_key, plaintext=self.registration)
         dumped_data = {
             "registration_secret": content,
         }
@@ -326,20 +326,20 @@ class MatrixAuthRequirerData(BaseModel):
         Raises:
             ValueError: if the value is not parseable.
         """
-        # get aes key
+        # get encryption key
         app = cast(ops.Application, relation.app)
         relation_data = relation.data[app]
-        aes_key_secret_id = relation_data.get("aes_key_secret_id")
-        aes_key = MatrixAuthRequirerData.get_aes_key_secret(model, aes_key_secret_id)
-        if not aes_key:
-            logger.warning("Invalid relation data: aes_key_secret_id not found")
+        encryption_key_secret_id = relation_data.get("encryption_key_secret_id")
+        encryption_key = MatrixAuthRequirerData.get_encryption_key_secret(model, encryption_key_secret_id)
+        if not encryption_key:
+            logger.warning("Invalid relation data: encryption_key_secret_id not found")
             return None
         # decrypt content
         registration_secret = relation_data.get("registration_secret")
         if not registration_secret:
             return MatrixAuthRequirerData()
         return MatrixAuthRequirerData(
-            registration=MatrixAuthRequirerData.decrypt_string(key=aes_key, ciphertext=registration_secret),
+            registration=MatrixAuthRequirerData.decrypt_string(key=encryption_key, ciphertext=registration_secret),
         )
 
 
