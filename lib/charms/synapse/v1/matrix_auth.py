@@ -240,8 +240,8 @@ class MatrixAuthRequirerData(BaseModel):
             encrypted text.
         """
         plaintext = cast(SecretStr, plaintext)
-        f = Fernet(key)
-        ciphertext = f.encrypt(plaintext.get_secret_value().encode('utf-8'))
+        encryptor = Fernet(key)
+        ciphertext = encryptor.encrypt(plaintext.get_secret_value().encode('utf-8'))
         return ciphertext.decode()
 
     @classmethod
@@ -255,8 +255,8 @@ class MatrixAuthRequirerData(BaseModel):
         Returns:
             decrypted text.
         """
-        f = Fernet(key)
-        plaintext = f.decrypt(ciphertext.encode('utf-8'))
+        decryptor = Fernet(key)
+        plaintext = decryptor.decrypt(ciphertext.encode('utf-8'))
         return plaintext.decode()
 
     @classmethod
