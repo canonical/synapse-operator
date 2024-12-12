@@ -420,6 +420,7 @@ def reconcile(  # noqa: C901
             ignore_string_case=True,
         )
 
+        restart_mas(container, rendered_mas_configuration)
         # Activate MAS on synapse
         synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
 
@@ -440,12 +441,6 @@ def reconcile(  # noqa: C901
                 restart_federation_sender(container=container, charm_state=charm_state)
         else:
             logging.info("Configuration has not changed, no action.")
-
-        # Push MAS configuration and restart MAS
-        _push_mas_config(container, rendered_mas_configuration, MAS_CONFIGURATION_PATH)
-        validate_mas_config(container)
-        sync_mas_config(container)
-        replan_mas(container)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
@@ -630,3 +625,16 @@ def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.Layer
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def restart_mas(container: ops.model.Container, rendered_mas_configuration: str) -> None:
+    """Update MAS configuration and restart MAS.
+
+    Args:
+        container: The synapse container.
+        rendered_mas_configuration: YAML configuration for MAS.
+    """
+    _push_mas_config(container, rendered_mas_configuration, MAS_CONFIGURATION_PATH)
+    validate_mas_config(container)
+    sync_mas_config(container)
+    replan_mas(container)

@@ -30,6 +30,7 @@ MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
                 "summary": "Matrix Authentication Service",
                 "startup": "enabled",
                 "command": f"{MAS_EXECUTABLE_PATH} server -c {MAS_CONFIGURATION_PATH}",
+                "working-dir": MAS_WORKING_DIR,
             }
         },
     }
@@ -224,12 +225,12 @@ def generate_synapse_msc3861_config(
         "client_auth_method": "client_secret_basic",
         "client_secret": mas_context.synapse_oidc_client_secret,
         "admin_token": mas_context.synapse_shared_secret,
-        "account_management_url": f"{mas_public_address}/account",
+        "account_management_url": f"{mas_public_address}account",
         "issuer_metadata": {
-            "authorization_endpoint": f"{mas_local_address}/authorize",
-            "token_endpoint": f"{mas_local_address}/oauth2/token",
-            "jwks_uri": f"{mas_local_address}/oauth2/keys.json",
-            "registration_endpoint": f"{mas_local_address}/oauth2/registration",
-            "introspection_endpoint": f"{mas_local_address}/oauth2/introspect",
+            "authorization_endpoint": f"{mas_local_address}authorize",
+            "token_endpoint": f"{mas_local_address}oauth2/token",
+            "jwks_uri": f"{mas_local_address}oauth2/keys.json",
+            "registration_endpoint": f"{mas_local_address}oauth2/registration",
+            "introspection_endpoint": f"{mas_local_address}oauth2/introspect",
         },
     }
