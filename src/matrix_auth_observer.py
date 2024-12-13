@@ -149,15 +149,15 @@ class MatrixAuthObserver(Object):
         """Handle matrix-auth request received event."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
+        mas_configuration = MASConfiguration.from_charm(charm)
         logger.debug("_on_matrix_auth_relation_changed emitting reconcile")
-        self._charm.reconcile(charm_state)
+        self._charm.reconcile(charm_state, mas_configuration)
 
     @validate_charm_state
     def _on_matrix_auth_relation_departed(self, _: ops.EventBase) -> None:
         """Handle matrix-auth relation departed event."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
+        mas_configuration = MASConfiguration.from_charm(charm)
         logger.debug("_on_matrix_auth_relation_departed emitting reconcile")
-        self._charm.reconcile(charm_state)
+        self._charm.reconcile(charm_state, mas_configuration)

@@ -204,7 +204,7 @@ def test_relation_as_datasource(
     assert synapse_env["POSTGRES_PASSWORD"] == expected["password"]
 
 
-def test_database_reconcile(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+def test_on_database_created(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: add relation and trigger _on_database_created.
