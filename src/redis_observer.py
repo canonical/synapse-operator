@@ -74,8 +74,8 @@ class RedisObserver(Object):
         """Handle redis relation updated event."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
+        mas_configuration = MASConfiguration.from_charm(charm)
 
         self.model.unit.status = ops.MaintenanceStatus("Preparing the Redis integration")
         logger.debug("_on_redis_relation_updated emitting reconcile")
-        charm.reconcile(charm_state)
+        charm.reconcile(charm_state, mas_configuration)
