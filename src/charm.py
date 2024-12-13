@@ -25,6 +25,7 @@ from auth.mas import (
     MASRegisterUserFailedError,
     MASVerifyUserEmailFailedError,
     generate_mas_config,
+    generate_oauth_client_config,
     generate_synapse_msc3861_config,
     register_user,
     verify_user_email,
@@ -222,21 +223,24 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
 
-        oauth_client_config = self._mas.generate_oauth_client_config(
+        oauth_client_config = generate_oauth_client_config(
             mas_configuration, charm_state.synapse_config
         )
+        logger.info('Generated oauth client config: %s', oauth_client_config)
         self._oauth.update_client_config(oauth_client_config)
         oauth_provider_info = None
         if self._oauth.is_client_created():
             oauth_provider_info = self._oauth.get_provider_info()
 
-        rendered_mas_configuration = self._mas.generate_mas_config(
+        logger.info('IS client created: %s', self._oauth.is_client_created())
+
+        rendered_mas_configuration = generate_mas_config(
             mas_configuration,
             charm_state.synapse_config,
             oauth_provider_info,
             self.get_main_unit_address(),
         )
-        synapse_msc3861_configuration = self._mas.generate_synapse_msc3861_config(
+        synapse_msc3861_configuration = generate_synapse_msc3861_config(
             mas_configuration, charm_state.synapse_config
         )
 
@@ -249,12 +253,6 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
-            rendered_mas_configuration = generate_mas_config(
-                mas_configuration, charm_state.synapse_config, self.get_main_unit_address()
-            )
-            synapse_msc3861_configuration = generate_synapse_msc3861_config(
-                mas_configuration, charm_state.synapse_config
-            )
             # reconcile configuration
             pebble.reconcile(
                 charm_state,

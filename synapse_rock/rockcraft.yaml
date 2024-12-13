@@ -201,13 +201,12 @@ parts:
       - NODE_ENV: dev
     override-build: |
       curl -Ls $NODE_URI | tar xzf - -C /usr/ --skip-old-files --no-same-owner --strip-components=1
-      npm --prefix=$CRAFT_PART_BUILD/frontend ci
-      npm --prefix=$CRAFT_PART_BUILD/frontend run build
+      (cd $CRAFT_PART_BUILD/frontend; npm ci; npm run build)
       mkdir -p $CRAFT_PART_INSTALL/mas/share/assets
-      cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets/
       cp frontend/dist/manifest.json $CRAFT_PART_INSTALL/mas/share/manifest.json
+      cp -r frontend/dist/ $CRAFT_PART_INSTALL/mas/share/assets
     stage:
-      - mas/*
+      - mas/share/*
   mas-cli:
     plugin: rust
     rust-channel: stable

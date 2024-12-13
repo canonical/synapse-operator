@@ -47,26 +47,27 @@ templates:
   translations_path: /mas/share/translations
 policy:
   wasm_module: /mas/share/policy.wasm
-{% if oauth_provider_config is not None %}
-providers:
-  - id: {{ upstream_oidc_provider_id }}
-    human_name: SSO
-    issuer: {{ oauth_provider_config.issuer_url }}
-    client_id: {{ oauth_provider_config.client_id }}
-    client_secret: {{ oauth_provider_config.client_secret }}
-    scope: "openid profile email"
-    token_endpoint_auth_method: client_secret_basic
-    discovery_mode: oidc
-    claims_imports:
-        subject:
-            action: require
-            template: {{ '"{{ user.sub }}' }}
-        displayname:
-            action: suggest
-            template: {{ '"{{ user.name }}"' }}
-        localpart:
-            action: ignore
-        email:
-            action: suggest
-            template: {{ '"{{ user.email }}"' }}
+{% if oauth_provider_info is not none %}
+upstream_oauth2:
+  providers:
+    - id: {{ upstream_oidc_provider_id }}
+      human_name: Single Sign-On
+      issuer: {{ oauth_provider_info.issuer_url }}
+      client_id: {{ oauth_provider_info.client_id }}
+      client_secret: {{ oauth_provider_info.client_secret }}
+      scope: "openid profile email"
+      token_endpoint_auth_method: client_secret_basic
+      discovery_mode: oidc
+      claims_imports:
+          subject:
+              action: require
+              template: {{ '"{{ user.sub }}"' }}
+          displayname:
+              action: suggest
+              template: {{ '"{{ user.name }}"' }}
+          localpart:
+              action: ignore
+          email:
+              action: suggest
+              template: {{ '"{{ user.email }}"' }}
 {% endif %}

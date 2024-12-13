@@ -162,6 +162,7 @@ def verify_user_email(
 def generate_mas_config(
     mas_configuration: MASConfiguration,
     synapse_configuration: SynapseConfig,
+    oauth_provider_info: typing.Optional[OauthProviderConfig],
     main_unit_address: str,
 ) -> str:
     """Render the MAS configuration file.
@@ -170,6 +171,7 @@ def generate_mas_config(
         mas_configuration: Path of the template to load.
         synapse_configuration: Context needed to render the template.
         main_unit_address: Address of synapse main unit.
+        oauth_provider_info: upstream provider configuration.
 
     Returns:
         str: The rendered MAS configuration.
@@ -189,6 +191,8 @@ def generate_mas_config(
         "enable_password_config": synapse_configuration.enable_password_config,
         "synapse_server_name_config": synapse_configuration.server_name,
         "synapse_main_unit_address": main_unit_address,
+        "upstream_oidc_provider_id": mas_context.upstream_oidc_provider_id,
+        "oauth_provider_info": oauth_provider_info,
     }
     env = Environment(
         loader=FileSystemLoader("./templates"),
@@ -239,3 +243,27 @@ def generate_synapse_msc3861_config(
             "introspection_endpoint": f"{mas_local_address}oauth2/introspect",
         },
     }
+
+
+def generate_oauth_client_config(
+    mas_configuration: MASConfiguration, synapse_configuration: SynapseConfig
+) -> ClientConfig:
+    """Generate the oauth client config.
+
+    Args:
+        mas_configuration: Path of the template to load.
+        synapse_configuration: Context needed to render the template.
+
+    Returns:
+        ClientConfig: Oauth client config.
+    """
+    redirect_uri = (
+        f"{synapse_configuration.public_baseurl}"
+        f"/auth/upstream/callback/{mas_configuration.mas_context.upstream_oidc_provider_id}"
+    )
+    return ClientConfig(
+        redirect_uri=redirect_uri,
+        scope=MAS_OIDC_SCOPE,
+        grant_types=MAS_AUTHORIZATION_GRANT,
+        token_endpoint_auth_method=MAS_TOKEN_ENDPOINT_AUTH_METHOD,
+    )
