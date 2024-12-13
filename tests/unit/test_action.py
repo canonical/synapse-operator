@@ -7,12 +7,14 @@
 # pylint: disable=protected-access
 
 import unittest.mock
+from unittest.mock import MagicMock
 
 import ops
 import pytest
 from ops.charm import ActionEvent
 from ops.testing import Harness
 
+from auth.mas import MASVerifyUserEmailFailedError, verify_user_email
 from user import User
 
 
@@ -70,3 +72,15 @@ def test_verify_user_email_action(harness: Harness) -> None:
     assert event.set_results.call_count == 1
     event.set_results.assert_called_with({"verify-user-email": True})
     assert isinstance(harness.model.unit.status, ops.ActiveStatus)
+
+
+def test_verify_user_email_action_pebble_exec_error() -> None:
+    """
+    arrange: Given a mocked synapse container with an exec method that raises ExecError.
+    act: run verify_user_email.
+    assert: The correct exception is raised.
+    """
+    container = MagicMock()
+    container.exec = MagicMock(side_effect=ops.pebble.ExecError([], 1, "", ""))
+    with pytest.raises(MASVerifyUserEmailFailedError):
+        verify_user_email(container, "mock_user", "mock_email")

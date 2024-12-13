@@ -126,9 +126,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     )
     monkeypatch.setattr("pebble._push_mas_config", MagicMock())
     monkeypatch.setattr("charm.generate_mas_config", MagicMock(return_value=""))
-    monkeypatch.setattr(
-        "charm.generate_synapse_msc3861_config", MagicMock(return_value={})
-    )
+    monkeypatch.setattr("charm.generate_synapse_msc3861_config", MagicMock(return_value={}))
 
     harness = Harness(SynapseCharm)
     # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
