@@ -152,7 +152,7 @@ class MASConfiguration:
                 raise MASContextNotSetError("Waiting for leader to set MAS context.")
 
             # The leader unit skips raising the above exception to generate the initial values
-            # for the MAS context and put them in juju secret which can be picked up by pees units
+            # for the MAS context and put them in juju secret which can be picked up by peer units
             signing_key = generate_rsa_signing_key()
             mas_context_secret = {
                 "encryption-key": secrets.token_hex(MAS_ENCRYPTION_KEY_LENGTH),
