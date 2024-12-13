@@ -60,11 +60,11 @@ class SMTPObserver(Object):
         """Handle SMTP data available."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
+        mas_configuration = MASConfiguration.from_charm(charm)
 
         self.model.unit.status = ops.MaintenanceStatus("Preparing the SMTP integration")
         logger.debug("_on_smtp_relation_data_available emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        self.get_charm().reconcile(charm_state, mas_configuration)
 
     def get_relation_as_smtp_conf(self) -> Optional[SMTPConfiguration]:
         """Get SMTP data from relation.

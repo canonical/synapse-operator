@@ -33,7 +33,7 @@ class DatabaseObserver(Object):
         Args:
             charm: The parent charm to attach the observer to.
             relation_name: The name of the relation to observe.
-            database_name: The database name.
+            database_name: The name of the database.
         """
         super().__init__(charm, f"{relation_name}-observer")
         self._charm = charm
@@ -60,16 +60,16 @@ class DatabaseObserver(Object):
         """Handle database created."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
-        charm.reconcile(charm_state)
+        mas_configuration = MASConfiguration.from_charm(charm)
+        charm.reconcile(charm_state, mas_configuration)
 
     @validate_charm_state
     def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
         """Handle endpoints change."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
-        charm.reconcile(charm_state)
+        mas_configuration = MASConfiguration.from_charm(charm)
+        charm.reconcile(charm_state, mas_configuration)
 
     def get_relation_as_datasource(self) -> typing.Optional[DatasourcePostgreSQL]:
         """Get database data from relation.
@@ -104,8 +104,7 @@ class SynapseDatabaseObserver(DatabaseObserver):
         """Handle database created events."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        MASConfiguration.validate(charm)
-        charm.reconcile(charm_state)
+        mas_configuration = MASConfiguration.from_charm(charm)
         self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         # In case of psycopg2.Error, Juju will set ErrorStatus
         # See discussion here:
@@ -113,4 +112,4 @@ class SynapseDatabaseObserver(DatabaseObserver):
         datasource = self.get_relation_as_datasource()
         db_client = DatabaseClient(datasource=datasource)
         db_client.prepare()
-        charm.reconcile(charm_state)
+        charm.reconcile(charm_state, mas_configuration)
