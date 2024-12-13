@@ -120,6 +120,12 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
+    # Assume that MAS is working properly
+    monkeypatch.setattr(
+        "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
+    )
+    monkeypatch.setattr("pebble._push_mas_config", MagicMock())
+
     harness = Harness(SynapseCharm)
     # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
     harness.add_network("10.0.0.10")
