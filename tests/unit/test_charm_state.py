@@ -36,11 +36,12 @@ class SimpleCharm(CharmBaseWithState):
             registration_secrets=None,
         )
 
-    def reconcile(self, charm_state) -> None:
+    def reconcile(self, charm_state, mas_configuration) -> None:
         """Reconcile configuration.
 
         Args:
             charm_state: The charm state.
+            mas_configuration: Charm state component needed to configure MAS.
         """
 
 
