@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, NamedTuple, Optional
 
 import ops
-from charms.synapse.v0.matrix_auth import (
+from charms.synapse.v1.matrix_auth import (
     MatrixAuthProviderData,
     MatrixAuthProvides,
     MatrixAuthRequirerData,

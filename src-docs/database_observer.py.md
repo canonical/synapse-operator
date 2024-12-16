@@ -32,7 +32,7 @@ Initialize the observer and register event handlers.
  
  - <b>`charm`</b>:  The parent charm to attach the observer to. 
  - <b>`relation_name`</b>:  The name of the relation to observe. 
- - <b>`database_name`</b>:  The database name. 
+ - <b>`database_name`</b>:  The name of the database. 
 
 
 ---
@@ -104,7 +104,7 @@ Initialize the observer and register event handlers.
  
  - <b>`charm`</b>:  The parent charm to attach the observer to. 
  - <b>`relation_name`</b>:  The name of the relation to observe. 
- - <b>`database_name`</b>:  The database name. 
+ - <b>`database_name`</b>:  The name of the database. 
 
 
 ---
