@@ -10,13 +10,12 @@ import yaml
 from ops.model import SecretNotFoundError
 from ops.testing import Harness
 
-from auth.mas import generate_mas_config
+from auth.mas import generate_mas_config, generate_synapse_msc3861_config
 from charm import SynapseCharm
 from state.charm_state import SynapseConfig
 from state.mas import MAS_DATABASE_INTEGRATION_NAME, MAS_DATABASE_NAME, MASConfiguration
 
 
-# pylint: disable=protected-access
 def test_mas_generate_config(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: Given a synapse charm related to postgresql.
@@ -42,7 +41,12 @@ def test_mas_generate_config(monkeypatch: pytest.MonkeyPatch) -> None:
         "public_baseurl": "https://foo",
     }
     synapse_configuration = SynapseConfig(**config)  # type: ignore[arg-type]
-    rendered_mas_config = generate_mas_config(mas_configuration, synapse_configuration, "10.1.1.0")
+    rendered_mas_config = generate_mas_config(
+        mas_configuration, synapse_configuration, None, "10.1.1.0"
+    )
+    rendered_msc3861_config = generate_synapse_msc3861_config(
+        mas_configuration, synapse_configuration
+    )
     parsed_mas_config = yaml.safe_load(rendered_mas_config)
     assert (
         parsed_mas_config["http"]["public_base"]
@@ -55,4 +59,9 @@ def test_mas_generate_config(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (
         parsed_mas_config["database"]["uri"]
         == f"postgresql://{db_user}:{db_password}@{db_endpoint}/{MAS_DATABASE_NAME}"
+    )
+
+    assert (
+        rendered_msc3861_config["issuer"]
+        == f"{synapse_configuration.public_baseurl}{mas_configuration.mas_prefix}"
     )

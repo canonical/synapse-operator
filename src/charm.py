@@ -11,17 +11,25 @@ import re
 import typing
 
 import ops
+from charms.hydra.v0.oauth import OAuthRequirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
 
-import actions
 import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
-from auth.mas import generate_mas_config
+from auth.mas import (
+    MASRegisterUserFailedError,
+    MASVerifyUserEmailFailedError,
+    generate_mas_config,
+    generate_oauth_client_config,
+    generate_synapse_msc3861_config,
+    register_user,
+    verify_user_email,
+)
 from backup_observer import BackupObserver
 from database_observer import DatabaseObserver, SynapseDatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
@@ -86,6 +94,7 @@ class SynapseCharm(CharmBaseWithState):
             relation_name=INGRESS_INTEGRATION_NAME,
             port=synapse.SYNAPSE_NGINX_PORT,
         )
+        self._oauth = OAuthRequirer(self)
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -99,10 +108,15 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+        self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
+
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
+        self.framework.observe(self._oauth.on.oauth_info_changed, self._on_config_changed)
+        self.framework.observe(self._oauth.on.oauth_info_removed, self._on_config_changed)
+        self.framework.observe(self._oauth.on.invalid_client_config, self._on_config_changed)
 
     def build_charm_state(self) -> CharmState:
         """Build charm state.
@@ -208,6 +222,28 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
+
+        oauth_client_config = generate_oauth_client_config(
+            mas_configuration, charm_state.synapse_config
+        )
+        logger.info('Generated oauth client config: %s', oauth_client_config)
+        self._oauth.update_client_config(oauth_client_config)
+        oauth_provider_info = None
+        if self._oauth.is_client_created():
+            oauth_provider_info = self._oauth.get_provider_info()
+
+        logger.info('IS client created: %s', self._oauth.is_client_created())
+
+        rendered_mas_configuration = generate_mas_config(
+            mas_configuration,
+            charm_state.synapse_config,
+            oauth_provider_info,
+            self.get_main_unit_address(),
+        )
+        synapse_msc3861_configuration = generate_synapse_msc3861_config(
+            mas_configuration, charm_state.synapse_config
+        )
+
         try:
             # check signing key
             signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
@@ -217,13 +253,11 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
-            rendered_mas_configuration = generate_mas_config(
-                mas_configuration, charm_state.synapse_config, self.get_main_unit_address()
-            )
             # reconcile configuration
             pebble.reconcile(
                 charm_state,
                 rendered_mas_configuration,
+                synapse_msc3861_configuration,
                 container,
                 is_main=self.is_main(),
                 unit_number=self.get_unit_number(),
@@ -502,13 +536,37 @@ class SynapseCharm(CharmBaseWithState):
             event.fail("Failed to connect to the container")
             return
         try:
-            user = actions.register_user(
-                container=container, username=event.params["username"], admin=event.params["admin"]
+            password = register_user(
+                container=container,
+                username=event.params["username"],
+                is_admin=event.params["admin"],
             )
-        except actions.RegisterUserError as exc:
+        except MASRegisterUserFailedError as exc:
             event.fail(str(exc))
             return
-        results = {"register-user": True, "user-password": user.password}
+        results = {"register-user": True, "user-password": password}
+        event.set_results(results)
+
+    def _on_verify_user_email_action(self, event: ActionEvent) -> None:
+        """Register user and report action result.
+
+        Args:
+            event: Event triggering the register user instance action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        if not container.can_connect():
+            event.fail("Failed to connect to the container")
+            return
+        try:
+            verify_user_email(
+                container=container,
+                username=event.params["username"],
+                email=event.params["email"],
+            )
+        except MASVerifyUserEmailFailedError as exc:
+            event.fail(str(exc))
+            return
+        results = {"verify-user-email": True}
         event.set_results(results)
 
     @validate_charm_state

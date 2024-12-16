@@ -71,7 +71,7 @@ from .workload import (  # noqa: F401
 )
 from .workload_configuration import (  # noqa: F401
     block_non_admin_invites,
-    disable_password_config,
+    configure_mas,
     disable_room_list_search,
     enable_allow_public_rooms_over_federation,
     enable_federation_domain_whitelist,
