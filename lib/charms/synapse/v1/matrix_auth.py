@@ -82,7 +82,6 @@ from pydantic import BaseModel, Field, SecretStr
 
 logger = logging.getLogger(__name__)
 
-#### Constants ####
 APP_REGISTRATION_LABEL = "app-registration"
 APP_REGISTRATION_CONTENT_LABEL = "app-registration-content"
 DEFAULT_RELATION_NAME = "matrix-auth"
@@ -91,6 +90,34 @@ SHARED_SECRET_CONTENT_LABEL = "shared-secret-content"
 ENCRYPTION_KEY_SECRET_LABEL = "encryption-key-secret"
 ENCRYPTION_KEY_SECRET_CONTENT_LABEL = "encryption-key-content"
 
+def encrypt_string(key: bytes, plaintext: SecretStr) -> str:
+        """Encrypt a string using Fernet.
+
+        Args:
+            key: encryption key in bytes.
+            plaintext: text to encrypt.
+
+        Returns:
+            encrypted text.
+        """
+        plaintext = cast(SecretStr, plaintext)
+        encryptor = Fernet(key)
+        ciphertext = encryptor.encrypt(plaintext.get_secret_value().encode('utf-8'))
+        return ciphertext.decode()
+
+def decrypt_string(key: bytes, ciphertext: str) -> str:
+    """Decrypt a string using Fernet.
+
+    Args:
+        key: encryption key in bytes.
+        ciphertext: encrypted text.
+
+    Returns:
+        decrypted text.
+    """
+    decryptor = Fernet(key)
+    plaintext = decryptor.decrypt(ciphertext.encode('utf-8'))
+    return plaintext.decode()
 
 #### Data models for Provider and Requirer ####
 class MatrixAuthProviderData(BaseModel):
@@ -229,37 +256,6 @@ class MatrixAuthRequirerData(BaseModel):
     registration: Optional[SecretStr] = Field(default=None, exclude=True)
 
     @classmethod
-    def encrypt_string(cls, key: bytes, plaintext: SecretStr) -> str:
-        """Encrypt a string using Fernet.
-
-        Args:
-            key: encryption key in bytes.
-            plaintext: text to encrypt.
-
-        Returns:
-            encrypted text.
-        """
-        plaintext = cast(SecretStr, plaintext)
-        encryptor = Fernet(key)
-        ciphertext = encryptor.encrypt(plaintext.get_secret_value().encode('utf-8'))
-        return ciphertext.decode()
-
-    @classmethod
-    def decrypt_string(cls, key: bytes, ciphertext: str) -> str:
-        """Decrypt a string using Fernet.
-
-        Args:
-            key: encryption key in bytes.
-            ciphertext: encrypted text.
-
-        Returns:
-            decrypted text.
-        """
-        decryptor = Fernet(key)
-        plaintext = decryptor.decrypt(ciphertext.encode('utf-8'))
-        return plaintext.decode()
-
-    @classmethod
     def get_encryption_key_secret(
         cls, model: ops.Model, encryption_key_secret_id: Optional[str]
     ) -> Optional[bytes]:
@@ -306,7 +302,7 @@ class MatrixAuthRequirerData(BaseModel):
         if not encryption_key:
             raise ValueError("Invalid relation data: encryption_key_secret_id not found")
         # encrypt content
-        content = MatrixAuthRequirerData.encrypt_string(key=encryption_key, plaintext=self.registration)
+        content = encrypt_string(key=encryption_key, plaintext=self.registration)
         dumped_data = {
             "registration_secret": content,
         }
@@ -339,7 +335,7 @@ class MatrixAuthRequirerData(BaseModel):
         if not registration_secret:
             return MatrixAuthRequirerData()
         return MatrixAuthRequirerData(
-            registration=MatrixAuthRequirerData.decrypt_string(key=encryption_key, ciphertext=registration_secret),
+            registration=decrypt_string(key=encryption_key, ciphertext=registration_secret),
         )
 
 

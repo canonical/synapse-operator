@@ -9,7 +9,7 @@ from unittest.mock import ANY, MagicMock
 
 import pytest
 import yaml
-from charms.synapse.v1.matrix_auth import MatrixAuthRequirerData
+from charms.synapse.v1.matrix_auth import MatrixAuthRequirerData, encrypt_string
 from ops.testing import Harness
 from pydantic import SecretStr
 
@@ -112,9 +112,7 @@ def test_matrix_auth_registration_secret_success(
 
     rel_id = harness.add_relation("matrix-auth", "maubot")
     harness.add_relation_unit(rel_id, "maubot/0")
-    encrypted_text = MatrixAuthRequirerData.encrypt_string(
-        key=encryption_key, plaintext=SecretStr("foo")
-    )
+    encrypted_text = encrypt_string(key=encryption_key, plaintext=SecretStr("foo"))
     harness.update_relation_data(rel_id, "maubot", {"registration_secret": encrypted_text})
 
     relation = harness.charm.framework.model.get_relation("matrix-auth", rel_id)
