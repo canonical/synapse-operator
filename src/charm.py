@@ -85,6 +85,7 @@ class SynapseCharm(CharmBaseWithState):
             charm=self,
             relation_name=INGRESS_INTEGRATION_NAME,
             port=synapse.SYNAPSE_NGINX_PORT,
+            strip_prefix=True,
         )
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)

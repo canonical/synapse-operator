@@ -178,6 +178,7 @@ def test_traefik_integration(harness: Harness) -> None:
         "model": f'"{model_name}"',
         "name": f'"{app_name}"',
         "port": str(synapse.SYNAPSE_NGINX_PORT),
+        "strip-prefix": "true",
     }
 
 
