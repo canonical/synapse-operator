@@ -111,7 +111,7 @@ parts:
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git
-    source-tag: v1.120.2
+    source-tag: v1.121.1
     build-environment:
       - RUST_VERSION: "1.76.0"
       - POETRY_VERSION: "1.7.1"
@@ -197,7 +197,7 @@ parts:
     <<: *mas-source
     source-subdir: frontend
     build-environment:
-      - NODE_URI: "https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.gz"
+      - NODE_URI: "https://nodejs.org/dist/v20.18.1/node-v20.18.1-linux-x64.tar.gz"
     override-build: |
       curl -Ls $NODE_URI | tar xzf - -C /usr/ --skip-old-files --no-same-owner --strip-components=1
       (cd $CRAFT_PART_BUILD/frontend; npm ci; npm run build)
@@ -213,9 +213,13 @@ parts:
       - "--features dist"
       - "--no-default-features"
     <<: *mas-source
+    build-snaps:
+      - go/1.22/stable
     override-build: |
-      curl -L -o opa https://openpolicyagent.org/downloads/v0.70.0/opa_linux_amd64_static
-      chmod 755 ./opa; mv opa /usr/local/bin
+      # Build the open-policy-agent binary
+      # We build it here instead of in a separate part because opa is only needed during MAS build
+      git clone --depth 1 --branch v0.70.0 https://github.com/open-policy-agent/opa.git
+      (cd opa; make build; chmod +x opa_linux_amd64; mv opa_linux_amd64 /usr/local/bin/opa)
       (cd policies; make)
       mkdir -p $CRAFT_PART_INSTALL/mas/share
       cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/share/policy.wasm
