@@ -11,6 +11,7 @@ Class to interact with pebble.
 - **MAS_PEBBLE_LAYER**
 - **MAS_SERVICE_NAME**
 - **STATS_EXPORTER_SERVICE_NAME**
+- **MAS_CONFIGURATION_PATH**
 
 ---
 
