@@ -6,6 +6,6 @@ jinja2 ==3.1.4
 jsonschema ==4.23.0
 ops ==2.17.1
 psycopg2-binary ==2.9.10
-pydantic ==2.10.3
+pydantic ==2.10.4
 python-ulid ==3.0.0
 requests ==2.32.3
