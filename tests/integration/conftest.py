@@ -5,24 +5,26 @@
 
 
 import json
+import re
 import typing
 from secrets import token_hex
-import re
+
 import boto3
 import pytest
 import pytest_asyncio
 from botocore.config import Config as BotoConfig
 from juju.action import Action
 from juju.application import Application
-from juju.unit import Unit
 from juju.model import Model
+from juju.unit import Unit
 from ops.model import ActiveStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
+from auth.mas import MAS_CONFIGURATION_PATH
 from tests.conftest import SYNAPSE_IMAGE_PARAM
 from tests.integration.helpers import register_user
-from auth.mas import MAS_CONFIGURATION_PATH
+
 # caused by pytest fixtures, mark does not work in fixtures
 # pylint: disable=too-many-arguments, unused-argument
 
