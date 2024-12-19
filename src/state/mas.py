@@ -120,7 +120,7 @@ class MASConfiguration:
         Returns:
             str: The MAS listening prefix
         """
-        return "/auth"
+        return "/auth/"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "MASConfiguration":

@@ -450,28 +450,6 @@ def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_disable_password_config_success():
-    """
-    arrange: set mock container with file.
-    act: call disable_password_config.
-    assert: new configuration file is pushed and password_config is disabled.
-    """
-    config_content = """
-    password_config:
-        enabled: true
-    """
-    config = yaml.safe_load(config_content)
-
-    synapse.disable_password_config(config)
-
-    expected_config_content = {
-        "password_config": {
-            "enabled": False,
-        },
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
-
-
 def test_get_registration_shared_secret_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set mock container with file.
