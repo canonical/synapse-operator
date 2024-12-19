@@ -36,13 +36,15 @@ def set_public_baseurl(current_yaml: dict, charm_state: CharmState) -> None:
     current_yaml["public_baseurl"] = charm_state.synapse_config.public_baseurl
 
 
-def disable_password_config(current_yaml: dict) -> None:
-    """Change the Synapse configuration to disable password config.
+def configure_mas(current_yaml: dict, synapse_msc3861_configuration: dict) -> None:
+    """Change the Synapse configuration to disable password config and enable MAS.
 
     Args:
         current_yaml: current configuration.
+        synapse_msc3861_configuration: Synapse msc3861 configuration.
     """
     current_yaml["password_config"] = {"enabled": False}
+    current_yaml["experimental_features"] = {"msc3861": synapse_msc3861_configuration}
 
 
 def disable_room_list_search(current_yaml: dict) -> None:
