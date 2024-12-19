@@ -3,6 +3,7 @@
 
 """Helper module used to manage MAS-related workloads."""
 import logging
+import re
 import secrets
 
 import ops
@@ -36,6 +37,9 @@ MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
     }
 )
 
+# Disabling it since this is only the label for juju secret
+ADMIN_TOKEN_SECRET_LABEL = "admin.token"  # nosec
+
 
 class MASConfigInvalidError(Exception):
     """Exception raised when validation of the MAS config failed."""
@@ -49,22 +53,19 @@ class MASVerifyUserEmailFailedError(Exception):
     """Exception raised when validation of the MAS config failed."""
 
 
+class MASGenerateAdminAccessTokenError(Exception):
+    """Exception raised when generation of admin token failed."""
+
+
 def validate_mas_config(container: ops.model.Container) -> None:
     """Validate current MAS configuration.
 
     Args:
         container: Synapse container.
-
-    Raises:
-        MASConfigInvalidError: if validation of the MAS config failed.
     """
     command = [MAS_EXECUTABLE_PATH, "config", "check", "-c", MAS_CONFIGURATION_PATH]
-    try:
-        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
-        process.wait_output()
-    except ops.pebble.ExecError as exc:
-        logger.error("Error validating MAS configuration: %s", exc.stderr)
-        raise MASConfigInvalidError("Error validating MAS configuration.") from exc
+    process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
+    process.wait_output()
 
 
 def sync_mas_config(container: ops.model.Container) -> None:
@@ -151,6 +152,61 @@ def verify_user_email(
     except ops.pebble.ExecError as exc:
         logger.error("Error verifying the user email: %s", exc.stderr)
         raise MASVerifyUserEmailFailedError("Error verifying the user email.") from exc
+
+
+def generate_admin_access_token(container: ops.model.Container, username: str) -> str:
+    """Verify a user email with mas-cli.
+
+    Args:
+        container: Synapse container.
+        username: Username to create the access token.
+
+    Raises:
+        MASGenerateAdminAccessTokenError: When regex parsing of the mas-cli output failed.
+
+    Returns:
+        str: The generated admin access token.
+    """
+    command = [
+        MAS_EXECUTABLE_PATH,
+        "-c",
+        MAS_CONFIGURATION_PATH,
+        "manage",
+        "issue-compatibility-token",
+        "--yes-i-want-to-grant-synapse-admin-privileges",
+        username,
+    ]
+
+    process = container.exec(command=command, working_dir=MAS_WORKING_DIR, combine_stderr=True)
+    stdout, _ = process.wait_output()
+    parsing_regex = r"Compatibility token issued: (?P<token>mct_.+) compat_access_token\.id"
+    parsed_output = re.search(parsing_regex, stdout)
+    if not parsed_output:
+        logger.error("Cannot parse mas-cli output: %s", stdout)
+        raise MASGenerateAdminAccessTokenError("Cannot parse mas-cli output.")
+    # We return the second index which is the capturing group that contains the token
+    return parsed_output["token"]
+
+
+def deactivate_user(container: ops.model.Container, username: str) -> None:
+    """Deactivate an user with mas-cli.
+
+    Args:
+        container: Synapse container.
+        username: Username to create the access token.
+    """
+    command = [
+        MAS_EXECUTABLE_PATH,
+        "-c",
+        MAS_CONFIGURATION_PATH,
+        "manage",
+        "lock-user",
+        "--deactivate",
+        username,
+    ]
+
+    process = container.exec(command=command, working_dir=MAS_WORKING_DIR, combine_stderr=True)
+    process.wait_output()
 
 
 def generate_mas_config(

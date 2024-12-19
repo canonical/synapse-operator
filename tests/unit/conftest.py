@@ -118,7 +118,6 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     # Assume that MAS is working properly
     monkeypatch.setattr(

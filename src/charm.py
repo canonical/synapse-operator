@@ -19,10 +19,10 @@ from ops.charm import ActionEvent, RelationDepartedEvent
 
 import pebble
 import synapse
-from admin_access_token import AdminAccessTokenService
 from auth.mas import (
     MASRegisterUserFailedError,
     MASVerifyUserEmailFailedError,
+    deactivate_user,
     generate_mas_config,
     generate_synapse_msc3861_config,
     register_user,
@@ -39,7 +39,6 @@ from smtp_observer import SMTPObserver
 from state.charm_state import CharmState
 from state.mas import MAS_DATABASE_INTEGRATION_NAME, MAS_DATABASE_NAME, MASConfiguration
 from state.validation import CharmBaseWithState, validate_charm_state
-from user import User
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +76,6 @@ class SynapseCharm(CharmBaseWithState):
         )
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
-        self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -93,7 +91,7 @@ class SynapseCharm(CharmBaseWithState):
             port=synapse.SYNAPSE_NGINX_PORT,
         )
         self._observability = Observability(self)
-        self._mjolnir = Mjolnir(self, token_service=self.token_service)
+        self._mjolnir = Mjolnir(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
@@ -106,10 +104,6 @@ class SynapseCharm(CharmBaseWithState):
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
-
-        self.framework.observe(
-            self.on.promote_user_admin_action, self._on_promote_user_admin_action
-        )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
 
     def build_charm_state(self) -> CharmState:
@@ -548,72 +542,28 @@ class SynapseCharm(CharmBaseWithState):
         event.set_results(results)
 
     @validate_charm_state
-    def _on_promote_user_admin_action(self, event: ActionEvent) -> None:
-        """Promote user admin and report action result.
-
-        Args:
-            event: Event triggering the promote user admin action.
-        """
-        charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
-
-        results = {
-            "promote-user-admin": False,
-        }
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-        try:
-            admin_access_token = self.token_service.get(container)
-            if not admin_access_token:
-                event.fail("Failed to get admin access token")
-                return
-            username = event.params["username"]
-            server = charm_state.synapse_config.server_name
-            user = User(username=username, admin=True)
-            synapse.promote_user_admin(
-                user=user, server=server, admin_access_token=admin_access_token
-            )
-            results["promote-user-admin"] = True
-        except synapse.APIError as exc:
-            event.fail(str(exc))
-            return
-        event.set_results(results)
-
-    @validate_charm_state
     def _on_anonymize_user_action(self, event: ActionEvent) -> None:
         """Anonymize user and report action result.
 
         Args:
             event: Event triggering the anonymize user action.
         """
-        charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
-
-        results = {
-            "anonymize-user": False,
-        }
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            event.fail("Container not yet ready. Try again later")
+            event.fail("Failed to connect to the container")
             return
+
         try:
-            admin_access_token = self.token_service.get(container)
-            if not admin_access_token:
-                event.fail("Failed to get admin access token")
-                return
-            username = event.params["username"]
-            server = charm_state.synapse_config.server_name
-            user = User(username=username, admin=False)
-            synapse.deactivate_user(
-                user=user, server=server, admin_access_token=admin_access_token
-            )
-            results["anonymize-user"] = True
-        except synapse.APIError:
-            event.fail("Failed to anonymize the user. Check if the user is created and active.")
-            return
-        event.set_results(results)
+            deactivate_user(container=container, username=event.params["username"])
+        except ops.pebble.ExecError as exc:
+            logger.exception("Error deactivating user.")
+            event.fail(str(exc))
+
+        event.set_results(
+            {
+                "anonymize-user": True,
+            }
+        )
 
 
 if __name__ == "__main__":  # pragma: nocover
