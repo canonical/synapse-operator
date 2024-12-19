@@ -7,21 +7,22 @@
 import json
 import typing
 from secrets import token_hex
-
+import re
 import boto3
 import pytest
 import pytest_asyncio
 from botocore.config import Config as BotoConfig
 from juju.action import Action
 from juju.application import Application
+from juju.unit import Unit
 from juju.model import Model
 from ops.model import ActiveStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
 from tests.conftest import SYNAPSE_IMAGE_PARAM
-from tests.integration.helpers import get_access_token, register_user
-
+from tests.integration.helpers import register_user
+from auth.mas import MAS_CONFIGURATION_PATH
 # caused by pytest fixtures, mark does not work in fixtures
 # pylint: disable=too-many-arguments, unused-argument
 
@@ -263,17 +264,27 @@ async def user_password_fixture(synapse_app: Application, user_username: str) ->
 @pytest_asyncio.fixture(scope="module", name="access_token")
 async def access_token_fixture(
     user_username: str,
-    user_password: str,
     synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ) -> str:
     """Return the access token after login with the username and password.
 
     Returns:
         The access token
     """
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    return get_access_token(synapse_ip, user_username, user_password)
+    pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
+    generate_token_cmd = (
+        f"{pebble_exec_cmd} mas-cli -c {MAS_CONFIGURATION_PATH} manage issue-compatibility-token "
+        f"--yes-i-want-to-grant-synapse-admin-privileges {user_username}"
+    )
+    unit: Unit = synapse_app.units[0]
+    action = await unit.run(generate_token_cmd)
+    await action.wait()
+    assert action.results["return-code"] == 0
+
+    parsing_regex = r"Compatibility token issued: (?P<token>mct_.+) compat_access_token\.id"
+    parsed_output = re.search(parsing_regex, action.results["stdout"])
+    assert parsed_output is not None and parsed_output["token"]
+    return parsed_output["token"]
 
 
 @pytest.fixture(scope="module", name="localstack_address")

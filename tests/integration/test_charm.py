@@ -20,7 +20,7 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 import synapse
-from tests.integration.helpers import create_moderators_room, get_access_token, register_user
+from tests.integration.helpers import create_moderators_room, register_user
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -416,6 +416,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     synapse_charm: str,
     synapse_image: str,
+    access_token: str,
 ):
     """
     arrange: build and deploy the Synapse charm from charmhub and enable Mjolnir.
@@ -426,8 +427,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     await model.wait_for_idle(apps=[synapse_charmhub_app.name], status="blocked")
     synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
     user_username = token_hex(16)
-    user_password = await register_user(synapse_charmhub_app, user_username)
-    access_token = get_access_token(synapse_ip, user_username, user_password)
+    await register_user(synapse_charmhub_app, user_username)
     create_moderators_room(synapse_ip, access_token)
     async with ops_test.fast_forward():
         await synapse_charmhub_app.model.wait_for_idle(
