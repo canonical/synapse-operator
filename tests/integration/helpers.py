@@ -38,33 +38,6 @@ def create_moderators_room(
     res.raise_for_status()
 
 
-def get_access_token(synapse_ip, user_username, user_password) -> str:
-    """Get Access Token for Synapse given user and password
-
-    Args:
-        synapse_ip: Synapse IP
-        user_username: username of the user to get the access_token
-        user_password: password of the user to get the access_token
-
-    Returns:
-        The access token
-    """
-    sess = requests.session()
-    res = sess.post(
-        f"http://{synapse_ip}:8080/_matrix/client/r0/login",
-        json={
-            "identifier": {"type": "m.id.user", "user": user_username},
-            "password": user_password,
-            "type": "m.login.password",
-        },
-        timeout=5,
-    )
-    res.raise_for_status()
-    access_token = res.json().get("access_token")
-    assert access_token
-    return access_token
-
-
 async def register_user(synapse_app: Application, user_username: str) -> str:
     """Register a new user with admin permissions
 

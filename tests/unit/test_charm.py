@@ -275,6 +275,7 @@ def test_enable_federation_domain_whitelist_is_called(
     monkeypatch.setattr(synapse, "enable_media_retention", MagicMock())
     monkeypatch.setattr(synapse, "enable_stale_devices_deletion", MagicMock())
     monkeypatch.setattr(synapse, "validate_config", MagicMock())
+    monkeypatch.setattr(synapse, "configure_mas", MagicMock())
     enable_federation_mock = MagicMock()
     monkeypatch.setattr(synapse, "enable_federation_domain_whitelist", enable_federation_mock)
 
@@ -282,12 +283,12 @@ def test_enable_federation_domain_whitelist_is_called(
     container = MagicMock()
     monkeypatch.setattr(container, "push", MagicMock())
     monkeypatch.setattr(container, "pull", MagicMock(return_value=config))
-    pebble.reconcile(charm_state, "", container=container)
+    pebble.reconcile(charm_state, "", {}, container=container)
 
     enable_federation_mock.assert_called_once()
 
 
-def test_disable_password_config_is_called(
+def test_configure_mas_is_called(
     harness: Harness,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -310,16 +311,16 @@ def test_disable_password_config_is_called(
     monkeypatch.setattr(synapse, "enable_media_retention", MagicMock())
     monkeypatch.setattr(synapse, "enable_stale_devices_deletion", MagicMock())
     monkeypatch.setattr(synapse, "validate_config", MagicMock())
-    disable_password_config_mock = MagicMock()
-    monkeypatch.setattr(synapse, "disable_password_config", disable_password_config_mock)
+    configure_mas_mock = MagicMock()
+    monkeypatch.setattr(synapse, "configure_mas", configure_mas_mock)
 
     charm_state = harness.charm.build_charm_state()
     container = MagicMock()
     monkeypatch.setattr(container, "push", MagicMock())
     monkeypatch.setattr(container, "pull", MagicMock(return_value=io.StringIO("{}")))
-    pebble.reconcile(charm_state, "", container=container)
+    pebble.reconcile(charm_state, "", {}, container=container)
 
-    disable_password_config_mock.assert_called_once()
+    configure_mas_mock.assert_called_once()
 
 
 def test_nginx_replan(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:

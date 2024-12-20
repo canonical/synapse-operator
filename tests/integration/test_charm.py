@@ -20,7 +20,7 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 import synapse
-from tests.integration.helpers import create_moderators_room, get_access_token, register_user
+from tests.integration.helpers import create_moderators_room, register_user
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 async def test_synapse_is_up(
     synapse_app: Application,
+    server_name: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -47,24 +48,20 @@ async def test_synapse_is_up(
         assert response.status_code == 200
         assert "Welcome to the Matrix" in response.text
 
-    pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
-    mas_cli_check_cmd = f"{pebble_exec_cmd} mas-cli help"
-    unit: Unit = synapse_app.units[0]
-    action = await unit.run(mas_cli_check_cmd)
-    await action.wait()
-    assert action.results["return-code"] == 0, "Error running mas-cli."
+        response = requests.get(f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/auth/", timeout=5)
+        assert response.status_code == 200
+        assert "Matrix Authentication Service" in response.text
 
-    check_assets_cmd = (
-        "[ -d /mas/share/assets        -a"
-        "  -f /mas/share/policy.wasm   -a"
-        "  -f /mas/share/manifest.json -a"
-        "  -d /mas/share/templates     -a"
-        "  -d /mas/share/translations ] && echo ok"
-    )
-    action = await unit.run("/bin/bash -c " f"'{pebble_exec_cmd} {check_assets_cmd}'")
-    await action.wait()
-    assert action.results["return-code"] == 0, "mas assets folder not found."
-    assert "ok" in action.results["stdout"]
+        response = requests.get(
+            (
+                f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}"
+                "/auth/.well-known/openid-configuration"
+            ),
+            timeout=5,
+        )
+        assert response.status_code == 200
+        openid_configuration = response.json()
+        assert openid_configuration.get("issuer") == f"https://{server_name}/auth/"
 
 
 async def test_synapse_validate_configuration(synapse_app: Application):
@@ -419,6 +416,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     synapse_charm: str,
     synapse_image: str,
+    access_token: str,
 ):
     """
     arrange: build and deploy the Synapse charm from charmhub and enable Mjolnir.
@@ -429,8 +427,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     await model.wait_for_idle(apps=[synapse_charmhub_app.name], status="blocked")
     synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
     user_username = token_hex(16)
-    user_password = await register_user(synapse_charmhub_app, user_username)
-    access_token = get_access_token(synapse_ip, user_username, user_password)
+    await register_user(synapse_charmhub_app, user_username)
     create_moderators_room(synapse_ip, access_token)
     async with ops_test.fast_forward():
         await synapse_charmhub_app.model.wait_for_idle(
