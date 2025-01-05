@@ -11,6 +11,7 @@ from secrets import token_hex
 
 import pytest
 import requests
+import yaml
 from juju.action import Action
 from juju.application import Application
 from juju.errors import JujuUnitError
@@ -18,9 +19,9 @@ from juju.model import Model
 from juju.unit import Unit
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
-from auth.mas import MAS_CONFIGURATION_PATH
-import yaml
+
 import synapse
+from auth.mas import MAS_CONFIGURATION_PATH
 from tests.integration.helpers import create_moderators_room, register_user
 
 # caused by pytest fixtures
@@ -224,7 +225,7 @@ async def test_synapse_enable_smtp(
     await action.wait()
     assert action.results["return-code"] == 0
     mas_config = yaml.safe_load(action.results["stdout"])
-    assert mas_config["email"]["host"] == "127.0.0.1"
+    assert mas_config["email"]["hostname"] == "127.0.0.1"
 
 
 async def test_promote_user_admin(
