@@ -264,19 +264,19 @@ def user_username_fixture() -> typing.Generator[str, None, None]:
     yield token_hex(16)
 
 
-@pytest_asyncio.fixture(scope="module", name="user_password")
-async def user_password_fixture(synapse_app: Application, user_username: str) -> str:
+@pytest_asyncio.fixture(scope="module", name="user")
+async def user_fixture(synapse_app: Application, user_username: str) -> tuple[str, str]:
     """Register a user and return the new password.
 
     Returns:
         The new user password
     """
-    return await register_user(synapse_app, user_username)
+    return (user_username, await register_user(synapse_app, user_username))
 
 
 @pytest_asyncio.fixture(scope="module", name="access_token")
 async def access_token_fixture(
-    user_username: str,
+    user: tuple[str, str],
     synapse_app: Application,
 ) -> str:
     """Return the access token after login with the username and password.
@@ -284,10 +284,11 @@ async def access_token_fixture(
     Returns:
         The access token
     """
+    username, _ = user
     pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
     generate_token_cmd = (
         f"{pebble_exec_cmd} mas-cli -c {MAS_CONFIGURATION_PATH} manage issue-compatibility-token "
-        f"--yes-i-want-to-grant-synapse-admin-privileges {user_username}"
+        f"--yes-i-want-to-grant-synapse-admin-privileges {username}"
     )
     unit: Unit = synapse_app.units[0]
     action = await unit.run(generate_token_cmd)
@@ -295,7 +296,7 @@ async def access_token_fixture(
     assert action.results["return-code"] == 0
 
     parsing_regex = r"Compatibility token issued: (?P<token>mct_.+) compat_access_token\.id"
-    parsed_output = re.search(parsing_regex, action.results["stdout"])
+    parsed_output = re.search(parsing_regex, action.results["stderr"])
     assert parsed_output is not None and parsed_output["token"]
     return parsed_output["token"]
 
