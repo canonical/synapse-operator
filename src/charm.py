@@ -220,7 +220,10 @@ class SynapseCharm(CharmBaseWithState):
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
             rendered_mas_configuration = generate_mas_config(
-                mas_configuration, charm_state.synapse_config, self.get_main_unit_address()
+                mas_configuration,
+                charm_state.synapse_config,
+                charm_state.smtp_config,
+                self.get_main_unit_address(),
             )
             synapse_msc3861_configuration = generate_synapse_msc3861_config(
                 mas_configuration, charm_state.synapse_config

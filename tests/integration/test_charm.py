@@ -18,7 +18,8 @@ from juju.model import Model
 from juju.unit import Unit
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
-
+from auth.mas import MAS_CONFIGURATION_PATH
+import yaml
 import synapse
 from tests.integration.helpers import create_moderators_room, register_user
 
@@ -184,8 +185,6 @@ async def test_workload_version(
 async def test_synapse_enable_smtp(
     model: Model,
     synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-    access_token: str,
     relation_name: str,
 ):
     """
@@ -218,29 +217,14 @@ async def test_synapse_enable_smtp(
         status=ACTIVE_STATUS_NAME,
     )
 
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    authorization_token = f"Bearer {access_token}"
-    headers = {"Authorization": authorization_token}
-    sample_check = {
-        "client_secret": "this_is_my_secret_string",
-        "email": "example@example.com",
-        "id_server": "id.matrix.org",
-        "send_attempt": "1",
-    }
-    sess = requests.session()
-    res = sess.post(
-        f"http://{synapse_ip}:8080/_matrix/client/r0/register/email/requestToken",
-        json=sample_check,
-        headers=headers,
-        timeout=5,
-    )
-
-    assert res.status_code == 500
-    # If the configuration change fails, will return something like:
-    # "Email-based registration has been disabled on this server".
-    # The expected error confirms that the e-mail is configured but failed since
-    # is not a real SMTP server.
-    assert "error was encountered when sending the email" in res.text
+    pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
+    dump_mas_config_cmd = f"{pebble_exec_cmd} mas-cli -c {MAS_CONFIGURATION_PATH} config dump"
+    unit: Unit = synapse_app.units[0]
+    action = await unit.run(dump_mas_config_cmd)
+    await action.wait()
+    assert action.results["return-code"] == 0
+    mas_config = yaml.safe_load(action.results["stdout"])
+    assert mas_config["email"]["host"] == "127.0.0.1"
 
 
 async def test_promote_user_admin(

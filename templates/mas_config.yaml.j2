@@ -47,3 +47,18 @@ templates:
   translations_path: /mas/share/translations
 policy:
   wasm_module: /mas/share/policy.wasm
+{% if smtp_configuration is not none %}
+email:
+  from: '"The almighty auth service" <auth@example.com>'
+  reply_to: '"No reply" <no-reply@example.com>'
+  transport: smtp
+{% if smtp_configuration.enable_tls %}
+  mode: tls
+{% else %}
+  mode: plain
+{% endif %}
+  hostname: {{ smtp_configuration.host }}
+  port: {{ smtp_configuration.port }}
+  username: {{ smtp_configuration.user }}
+  password: {{ smtp_configuration.password }}
+{% endif %}

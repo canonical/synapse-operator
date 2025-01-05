@@ -5,10 +5,12 @@
 import logging
 import re
 import secrets
+import typing
 
 import ops
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from charm_types import SMTPConfiguration
 from state.charm_state import SynapseConfig
 from state.mas import MASConfiguration
 
@@ -212,6 +214,7 @@ def deactivate_user(container: ops.model.Container, username: str) -> None:
 def generate_mas_config(
     mas_configuration: MASConfiguration,
     synapse_configuration: SynapseConfig,
+    smtp_configuration: typing.Optional[SMTPConfiguration],
     main_unit_address: str,
 ) -> str:
     """Render the MAS configuration file.
@@ -219,6 +222,7 @@ def generate_mas_config(
     Args:
         mas_configuration: Path of the template to load.
         synapse_configuration: Context needed to render the template.
+        smtp_configuration: SMTP configuration.
         main_unit_address: Address of synapse main unit.
 
     Returns:
@@ -239,6 +243,7 @@ def generate_mas_config(
         "enable_password_config": synapse_configuration.enable_password_config,
         "synapse_server_name_config": synapse_configuration.server_name,
         "synapse_main_unit_address": main_unit_address,
+        "smtp_configuration": smtp_configuration,
     }
     env = Environment(
         loader=FileSystemLoader("./templates"),
