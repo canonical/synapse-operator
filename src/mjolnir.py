@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 MJOLNIR_SERVICE_NAME = "mjolnir"
 USERNAME = "moderator"
-MJOLNIR_CONTEXT_SECRET_LABEL = "mjolnir.context"
-MJOLNIR_CONTEXT_KEY_ACCESS_TOKEN = "key.access.token"
+MJOLNIR_CONTEXT_SECRET_LABEL = "mjolnir.context"  # nosec
+MJOLNIR_CONTEXT_KEY_ACCESS_TOKEN = "key.access.token"  # nosec
 
 
 class MjolnirContextNotSetError(Exception):

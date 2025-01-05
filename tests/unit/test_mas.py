@@ -77,11 +77,11 @@ def test_generate_admin_access_token() -> None:
     act: run verify_user_email.
     assert: The correct exception is raised.
     """
-    access_token = "mct_ePEtkuchAMoIDTQ5EyhecPKZry6CWG_hRAnb1"
+    mock_access_token = "mct_xxxxxxxxxxxxxxxxxxx"  # nosec
     mock_issue_mct_output = (
         "2024-12-19T00:31:06.072775Z  "
         "INFO mas_cli::commands::manage: crates/cli/src/commands/manage.rs:295: "
-        f"Compatibility token issued: {access_token} "
+        f"Compatibility token issued: {mock_access_token} "
         "compat_access_token.id=01JFE56JAC215GX3SM8ZAD8BDH "
         "compat_session.id=01JFE56JABDT45508DSCWM4VF0 "
         "compat_session.device=Qssg28l9Wb "
@@ -91,4 +91,4 @@ def test_generate_admin_access_token() -> None:
     exec_process_mock = MagicMock()
     exec_process_mock.wait_output = MagicMock(return_value=(mock_issue_mct_output, None))
     container.exec = MagicMock(return_value=exec_process_mock)
-    assert access_token == generate_admin_access_token(container, "admin")
+    assert mock_access_token == generate_admin_access_token(container, "admin")

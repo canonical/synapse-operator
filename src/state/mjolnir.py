@@ -17,8 +17,8 @@ from synapse import SYNAPSE_CONTAINER_NAME, SYNAPSE_PEER_RELATION_NAME
 
 logger = logging.getLogger()
 
-MJOLNIR_CONTEXT_SECRET_LABEL = "mjolnir.context"
-MJOLNIR_CONTEXT_KEY_ACCESS_TOKEN = "key-access-token"
+MJOLNIR_CONTEXT_SECRET_LABEL = "mjolnir.context"  # nosec
+MJOLNIR_CONTEXT_KEY_ACCESS_TOKEN = "key-access-token"  # nosec
 
 
 class MjolnirNotMainUnitError(Exception):
