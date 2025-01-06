@@ -41,15 +41,6 @@ verify-user-email:
   required:
     - username
     - email
-promote-user-admin:
-  description: |
-    Promote a user as a server administrator.
-    You need to supply a user name.
-  properties:
-    username:
-      description: |
-        User name to be promoted to admin.
-      type: string
 create-backup:
   description: |
     Creates a backup to s3 storage.
