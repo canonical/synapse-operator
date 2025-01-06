@@ -50,3 +50,13 @@ CVE-2024-24788
 # This should be removed once the following PR is merged.
 # https://github.com/element-hq/synapse/pull/17955
 CVE-2024-52804
+# Fix ongoing:
+# https://github.com/element-hq/synapse/pull/17985
+CVE-2024-53981
+# The 3 following CVEs will be fixed by Synapse 1.120.2
+CVE-2024-52805
+CVE-2024-52815
+CVE-2024-53863
+# This should be removed once pebble releases a new version.
+# https://github.com/canonical/pebble/commit/0c134f8e0d80f4bd8f42011279c8f0737b59a673
+CVE-2024-45338
