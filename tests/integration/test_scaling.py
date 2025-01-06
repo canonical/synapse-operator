@@ -45,14 +45,11 @@ async def test_synapse_scaling_nginx_configured(
     status = await ops_test.model.get_status()
     application = typing.cast(Application, status.applications[synapse_app.name])
     unit = list(application.units)[1]
-    logger.info("Units: %s", list(application.units))
-
     address = status["applications"][synapse_app.name]["units"][unit]["address"]
-    logger.info("Requesting %s", f"http://{address}:8008/")
+
     response_worker = requests.get(
         f"http://{address}:8008/", headers={"Host": synapse_app.name}, timeout=5
     )
-    logger.info("Requesting %s", f"http://{address}:8080/")
     response_nginx = requests.get(
         f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5
     )
@@ -85,7 +82,6 @@ async def test_synapse_scaling_down(
     assert ops_test.model
     status = await ops_test.model.get_status()
     application = typing.cast(Application, status.applications[synapse_app.name])
-
     for unit in list(application.units):
         address = status["applications"][synapse_app.name]["units"][unit]["address"]
         response_worker = requests.get(
@@ -103,7 +99,6 @@ async def test_synapse_scaling_down(
     assert ops_test.model
     status = await ops_test.model.get_status()
     application = typing.cast(Application, status.applications[synapse_app.name])
-
     for unit in list(application.units):
         address = status["applications"][synapse_app.name]["units"][unit]["address"]
         response_worker = requests.get(
