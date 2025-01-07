@@ -99,7 +99,7 @@ def register_user(
     Returns:
         str: The generated user password
     """
-    password = secrets.token_urlsafe(16)
+    password = secrets.token_hex(16)
     command = [
         MAS_EXECUTABLE_PATH,
         "-c",
@@ -109,7 +109,7 @@ def register_user(
         "--yes",
         username,
         "--password",
-        password,
+        f"'{password}'",
     ]
     if is_admin:
         command.append("--admin")
