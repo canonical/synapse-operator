@@ -35,8 +35,6 @@ DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
 LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
 LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
-MJOLNIR_MANAGEMENT_ROOM = "management"
-MJOLNIR_MEMBERSHIP_ROOM = "moderators"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
@@ -324,58 +322,6 @@ def get_room_id(
         raise GetRoomIDError(str(exc)) from exc
 
     return None
-
-
-def create_management_room(admin_access_token: str) -> str:
-    """Create the management room to be used by Mjolnir.
-
-    Args:
-        admin_access_token: server admin access token to be used.
-
-    Raises:
-        GetRoomIDError: if there was an error while getting room id.
-
-    Returns:
-        Room id.
-    """
-    power_level_content_override = {"events_default": 0}
-    moderators_room_id = get_room_id(MJOLNIR_MEMBERSHIP_ROOM, admin_access_token)
-    data = {
-        "name": MJOLNIR_MANAGEMENT_ROOM,
-        "power_level_content_override": power_level_content_override,
-        "room_alias_name": MJOLNIR_MANAGEMENT_ROOM,
-        "visibility": "private",
-        "initial_state": [
-            # Always make history visibility shared
-            {
-                "type": "m.room.history_visibility",
-                "state_key": "",
-                "content": {"history_visibility": "shared"},
-            },
-            {
-                "type": "m.room.guest_access",
-                "state_key": "",
-                "content": {"guest_access": "can_join"},
-            },
-            # Only retain the last 90 days of history
-            {"type": "m.room.retention", "state_key": "", "content": {"max_lifetime": 604800000}},
-            # Only users from MJOLNIR_MEMBERSHIP_ROOM can join
-            {
-                "type": "m.room.join_rules",
-                "state_key": "",
-                "content": {
-                    "join_rule": "restricted",
-                    "allow": [{"room_id": f"{moderators_room_id}", "type": "m.room_membership"}],
-                },
-            },
-        ],
-    }
-    res = _do_request("POST", CREATE_ROOM_URL, admin_access_token=admin_access_token, json=data)
-    try:
-        return res.json()["room_id"]
-    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
-        logger.exception("Failed to decode room_id: %r. Received: %s", exc, res.text)
-        raise GetRoomIDError(str(exc)) from exc
 
 
 def make_room_admin(user: User, server: str, admin_access_token: str, room_id: str) -> None:

@@ -107,7 +107,6 @@ parts:
       - xmlsec1
     stage-snaps:
       - aws-cli
-      - mjolnir/latest/edge
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git

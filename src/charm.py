@@ -32,7 +32,6 @@ from backup_observer import BackupObserver
 from database_observer import DatabaseObserver, SynapseDatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
-from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
 from smtp_observer import SMTPObserver
@@ -91,7 +90,6 @@ class SynapseCharm(CharmBaseWithState):
             port=synapse.SYNAPSE_NGINX_PORT,
         )
         self._observability = Observability(self)
-        self._mjolnir = Mjolnir(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(

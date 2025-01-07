@@ -120,22 +120,6 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def check_mjolnir_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse Mjolnir service check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(synapse.CHECK_MJOLNIR_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
-    check.timeout = "10s"
-    check.threshold = 5
-    check.period = "1m"
-    return check.to_dict()
-
-
 def restart_nginx(container: ops.model.Container, main_unit_address: str) -> None:
     """Restart Synapse NGINX service and regenerate configuration.
 
@@ -159,16 +143,6 @@ def restart_federation_sender(container: ops.model.Container, charm_state: Charm
         "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
     )
     container.restart(synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME)
-
-
-def replan_mjolnir(container: ops.model.Container) -> None:
-    """Replan Synapse Mjolnir service.
-
-    Args:
-        container: Charm container.
-    """
-    container.add_layer("synapse-mjolnir", _mjolnir_pebble_layer(), combine=True)
-    container.replan()
 
 
 def replan_stats_exporter(container: ops.model.Container, charm_state: CharmState) -> None:
@@ -519,31 +493,6 @@ def _nginx_pebble_layer() -> ops.pebble.LayerDict:
         },
         "checks": {
             synapse.CHECK_NGINX_READY_NAME: check_nginx_ready(),
-        },
-    }
-    return typing.cast(ops.pebble.LayerDict, layer)
-
-
-def _mjolnir_pebble_layer() -> ops.pebble.LayerDict:
-    """Generate pebble config for the mjolnir service.
-
-    Returns:
-        The pebble configuration for the mjolnir service.
-    """
-    command_params = f"bot --mjolnir-config {synapse.MJOLNIR_CONFIG_PATH}"
-    layer = {
-        "summary": "Synapse mjolnir layer",
-        "description": "Synapse mjolnir layer",
-        "services": {
-            synapse.MJOLNIR_SERVICE_NAME: {
-                "override": "replace",
-                "summary": "Mjolnir service",
-                "command": f"/mjolnir-entrypoint.sh {command_params}",
-                "startup": "enabled",
-            },
-        },
-        "checks": {
-            synapse.CHECK_MJOLNIR_READY_NAME: check_mjolnir_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
