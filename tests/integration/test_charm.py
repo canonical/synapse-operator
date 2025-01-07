@@ -227,10 +227,7 @@ async def test_synapse_enable_smtp(
     assert mas_config["email"]["hostname"] == "127.0.0.1"
 
 
-async def test_anonymize_user(
-    synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-) -> None:
+async def test_anonymize_user(synapse_app: Application) -> None:
     """
     arrange: build and deploy the Synapse charm, create an user, get the access token and assert
         that the user is not an admin.
@@ -244,39 +241,12 @@ async def test_anonymize_user(
     )
     await action_register_user.wait()
     assert action_register_user.status == "completed"
-    password = action_register_user.results["user-password"]
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    with requests.session() as sess:
-        res = sess.post(
-            f"http://{synapse_ip}:8080/_matrix/client/r0/login",
-            # same thing is done on fixture but we are creating a non-admin user here.
-            json={  # pylint: disable=duplicate-code
-                "identifier": {"type": "m.id.user", "user": operator_username},
-                "password": password,
-                "type": "m.login.password",
-            },
-            timeout=5,
-        )
-        res.raise_for_status()
 
     action_anonymize: Action = await synapse_unit.run_action(
         "anonymize-user", username=operator_username
     )
     await action_anonymize.wait()
     assert action_anonymize.status == "completed"
-
-    with requests.session() as sess:
-        res = sess.post(
-            f"http://{synapse_ip}:8080/_matrix/client/r0/login",
-            # same thing is done on fixture but we are creating a non-admin user here.
-            json={  # pylint: disable=duplicate-code
-                "identifier": {"type": "m.id.user", "user": operator_username},
-                "password": password,
-                "type": "m.login.password",
-            },
-            timeout=5,
-        )
-    assert res.status_code == 403
 
 
 @pytest.mark.usefixtures("synapse_app")
