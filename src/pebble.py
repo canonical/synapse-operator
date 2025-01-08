@@ -315,6 +315,8 @@ def reconcile(  # noqa: C901
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
+        restart_mas(container, rendered_mas_configuration)
+
         if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
             # Configurations set via environment variables:
             # synapse_report_stats, database, and proxy
@@ -393,9 +395,7 @@ def reconcile(  # noqa: C901
             ignore_order=True,
             ignore_string_case=True,
         )
-
-        restart_mas(container, rendered_mas_configuration)
-        # Activate MAS on synapse
+        # Activate msc3861
         synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
 
         if config_has_changed:
