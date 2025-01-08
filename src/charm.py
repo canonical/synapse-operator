@@ -200,6 +200,11 @@ class SynapseCharm(CharmBaseWithState):
             charm_state: Instance of CharmState
             mas_configuration: Charm state component to configure MAS
         """
+        logger.debug("Found %d peer unit(s).", self.peer_units_total())
+        if charm_state.redis_config is None and self.peer_units_total() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            return
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("Change_config is setting main unit.")
             self.set_main_unit(self.unit.name)
@@ -304,11 +309,6 @@ class SynapseCharm(CharmBaseWithState):
         charm_state = self.build_charm_state()
         mas_configuration = MASConfiguration.from_charm(self)
 
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
         logger.debug("_on_config_changed emitting reconcile")
         self.reconcile(charm_state, mas_configuration)
         self._set_workload_version()
@@ -352,11 +352,6 @@ class SynapseCharm(CharmBaseWithState):
         charm_state = self.build_charm_state()
         mas_configuration = MASConfiguration.from_charm(self)
 
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
         self.unit.status = ops.ActiveStatus()
         logger.debug("_on_synapse_pebble_ready emitting reconcile")
         self.reconcile(charm_state, mas_configuration)
