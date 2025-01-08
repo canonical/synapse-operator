@@ -3,7 +3,6 @@
 
 """Helper module used to manage MAS-related workloads."""
 import logging
-import re
 import secrets
 import typing
 
