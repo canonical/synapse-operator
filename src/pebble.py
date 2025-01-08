@@ -457,23 +457,6 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
     return typing.cast(ops.pebble.LayerDict, layer)
 
 
-def _pebble_layer_without_restart(charm_state: CharmState) -> ops.pebble.LayerDict:
-    """Return a dictionary representing a Pebble layer without restart.
-
-    Args:
-        charm_state: Instance of CharmState
-
-    Returns:
-        pebble layer
-    """
-    new_layer = _pebble_layer(charm_state)
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
-    ignore = {synapse.CHECK_READY_NAME: "ignore"}
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
-    return new_layer
-
-
 def _nginx_pebble_layer() -> ops.pebble.LayerDict:
     """Generate pebble config for the synapse-nginx container.
 
