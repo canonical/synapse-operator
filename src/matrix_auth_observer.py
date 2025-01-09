@@ -56,12 +56,13 @@ class MatrixAuthObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        for relation in list(self._charm.model.relations["matrix-auth"]):
-            if not relation.units:
-                return
+        matrix_auth_relations = list(self._charm.model.relations["matrix-auth"])
+        logger.info("%d matrix-auth relations found", len(matrix_auth_relations))
+        for relation in matrix_auth_relations:
             provider_data = self._get_matrix_auth_provider_data(charm_state)
             if self._matrix_auth_relation_updated(relation, provider_data):
                 return
+            logger.info("updating matrix-auth relation %d", relation.id)
             self.matrix_auth.update_relation_data(relation, provider_data)
 
     def get_requirer_registration_secrets(self) -> Optional[List]:

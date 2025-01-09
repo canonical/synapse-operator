@@ -4,10 +4,11 @@
 """MatrixAuth library unit tests"""
 
 from secrets import token_hex
+from typing import cast
 
 import ops
 import pytest
-from charms.synapse.v0.matrix_auth import (
+from charms.synapse.v1.matrix_auth import (
     MatrixAuthProviderData,
     MatrixAuthProvides,
     MatrixAuthRequestProcessed,
@@ -16,6 +17,7 @@ from charms.synapse.v0.matrix_auth import (
     MatrixAuthRequires,
 )
 from ops.testing import Harness
+from pydantic import SecretStr
 
 REQUIRER_METADATA = """
 name: matrix-auth-consumer
@@ -36,8 +38,10 @@ SAMPLE_PROVIDER_DATA = {
     "shared_secret_id": "test-secret-id",
 }
 
+# pylint: disable=line-too-long
 SAMPLE_REQUIRER_DATA = {
     "registration_secret_id": "test-registration-id",
+    "registration_secret": "gAAAAABngB_H9JrNUwPDr-4E-ouqyG0V_O_1l4X-7f3wZ2A7dsZAUwUoz1lL5pmrrLdIZa5aBw_-P4iEs1le_u30RMWdtLIwAg==",  # noqa: E501
 }
 
 
@@ -228,7 +232,7 @@ def test_matrix_auth_provider_does_not_emit_event_when_no_data():
 
 
 @pytest.mark.parametrize("is_leader", [True, False])
-def test_matrix_auth_provider_with_valid_relation_data_emits_event(is_leader, monkeypatch):
+def test_matrix_auth_provider_with_valid_relation_data_emits_event(is_leader):
     """
     arrange: set up a charm.
     act: add a matrix-auth relation with valid data.
@@ -237,20 +241,6 @@ def test_matrix_auth_provider_with_valid_relation_data_emits_event(is_leader, mo
     harness = Harness(MatrixAuthProviderCharm, meta=PROVIDER_METADATA)
     harness.begin()
     harness.set_leader(is_leader)
-
-    # Mock the get_registration method to return a test registration
-    def mock_get_registration(*args):  # pylint: disable=unused-argument
-        """Mock get_registration method.
-
-        Args:
-            args: Arguments passed to the method.
-
-        Returns:
-            str: The registration.
-        """
-        return "test-registration"
-
-    monkeypatch.setattr(MatrixAuthRequirerData, "get_registration", mock_get_registration)
 
     harness.add_relation("matrix-auth", "matrix-auth-consumer", app_data=SAMPLE_REQUIRER_DATA)
 
@@ -323,12 +313,13 @@ def test_matrix_auth_provider_get_remote_relation_data(monkeypatch):
         Returns:
             str: The registration.
         """
-        return "test-registration"
+        return b"9u7b67PYr7Jqx4Ot15Fg8f9PAbm8XmLsHecPIqD7VLM="
 
-    monkeypatch.setattr(MatrixAuthRequirerData, "get_registration", mock_get_registration)
+    monkeypatch.setattr(MatrixAuthRequirerData, "get_encryption_key_secret", mock_get_registration)
 
     harness.add_relation("matrix-auth", "matrix-auth-consumer", app_data=SAMPLE_REQUIRER_DATA)
 
     relation_data = harness.charm.matrix_auth.get_remote_relation_data()
     assert relation_data is not None
-    assert relation_data.registration.get_secret_value() == "test-registration"
+    real_value = cast(SecretStr, "registration")
+    assert relation_data == MatrixAuthRequirerData(registration=real_value)
