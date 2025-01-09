@@ -1,0 +1,56 @@
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/s3-integrator-97
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  s3-integrator-media/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  s3-integrator-media/0 [idle] active:
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+  s3-integrator-media/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+  s3-integrator-media/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:929 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-89e31-microk8s  microk8s/localhost  3.4.6    unsupported  06:53:18Z
+
+App             Version  Status  Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s  14.13    active      1  postgresql-k8s  14/stable  462  10.152.183.50   no       
+synapse         1.121.1  active      1  synapse                      0  10.152.183.202  no       
+
+Unit               Workload  Agent  Address      Ports  Message
+postgresql-k8s/0*  active    idle   10.1.118.12         Primary
+synapse/0*         active    idle   10.1.118.14         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:935 Juju error logs:
+
+unit-synapse-0: 06:38:16 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:42:14 ERROR unit.synapse/0.juju-log backup:9: Bucket backups-bucket doesn't exist or you don't have access to it.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/backup.py", line 120, in can_use_bucket
+    self._client.head_bucket(Bucket=self._s3_parameters.bucket)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/botocore/client.py", line 569, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/botocore/client.py", line 1023, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (404) when calling the HeadBucket operation: Not Found
+unit-synapse-0: 06:42:16 ERROR unit.synapse/0.juju-log backup:9: Bucket backups-bucket doesn't exist or you don't have access to it.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/backup.py", line 120, in can_use_bucket
+    self._client.head_bucket(Bucket=self._s3_parameters.bucket)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/botocore/client.py", line 569, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/botocore/client.py", line 1023, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (404) when calling the HeadBucket operation: Not Found
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1017 Forgetting model main...
