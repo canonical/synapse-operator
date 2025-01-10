@@ -15,7 +15,7 @@ import ops
 import pytest
 import yaml
 from ops.testing import Harness
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 import synapse
 from charm import SynapseCharm
@@ -241,20 +241,23 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
     """
     content = config_content
 
-    config = {"server_name": "foo"}
+    config = {
+        "server_name": "foo",
+        "public_baseurl": "https://foo",
+    }
     synapse_config = SynapseConfig(**config)  # type: ignore[arg-type]
 
     synapse.enable_trusted_key_servers(
         content,
         CharmState(  # pylint: disable=duplicate-code
             datasource=None,
-            irc_bridge_datasource=None,
             saml_config=None,
             smtp_config=None,
             media_config=None,
             redis_config=None,
             synapse_config=synapse_config,
             instance_map_config=None,
+            registration_secrets=None,
         ),
     )
 
@@ -381,7 +384,6 @@ listeners:
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
         ],
-        "public_baseurl": TEST_SERVER_NAME,
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
@@ -446,7 +448,6 @@ listeners:
         "listeners": [
             {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
         ],
-        "public_baseurl": TEST_SERVER_NAME,
         "saml2_enabled": True,
         "saml2_config": {
             "sp_config": {
@@ -486,10 +487,10 @@ def test_get_mjolnir_config_success():
     assert config["managementRoom"] == room_id
 
 
-def test_create_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
+def test_generate_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set container, access token and room id parameters.
-    act: call create_mjolnir_config.
+    act: call generate_mjolnir_config.
     assert: file is pushed as expected.
     """
     access_token = token_hex(16)
@@ -498,7 +499,7 @@ def test_create_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "push", push_mock)
 
-    synapse.create_mjolnir_config(
+    synapse.generate_mjolnir_config(
         container=container_mock, access_token=access_token, room_id=room_id
     )
 
@@ -530,17 +531,18 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     synapse_with_notif_config = {
         "notif_from": "noreply@example.com",
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         media_config=None,
         redis_config=None,
         instance_map_config=None,
         synapse_config=synapse_config,
+        registration_secrets=None,
     )
 
     synapse.enable_smtp(config_content, charm_state)
@@ -697,6 +699,41 @@ def test_http_proxy(
         assert env.get(env_name) == env.get(env_name.upper()) == env_value
 
 
+def test_block_non_admin_invites(config_content: dict[str, typing.Any]):
+    """
+    arrange: set mock container with file.
+    act: update block_non_admin_invites config to true.
+    assert: new configuration file is pushed and block_non_admin_invites is enabled.
+    """
+    block_non_admin_invites = {
+        "block_non_admin_invites": True,
+        "server_name": "example.com",
+        "public_baseurl": "https://example.com",
+    }
+    synapse_config = SynapseConfig(**block_non_admin_invites)  # type: ignore[arg-type]
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+        registration_secrets=None,
+    )
+
+    synapse.block_non_admin_invites(config_content, charm_state)
+
+    expected_config_content = {
+        "block_non_admin_invites": True,
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+    }
+
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
 def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     """
     arrange: mock Synapse current configuration with config_content and
@@ -707,17 +744,18 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     synapse_with_notif_config = {
         "publish_rooms_allowlist": "user1:domainX.com,user2:domainY.com",
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        irc_bridge_datasource=None,
         saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
         media_config=None,
         instance_map_config=None,
+        registration_secrets=None,
     )
 
     synapse.enable_room_list_publication_rules(config_content, charm_state)
@@ -755,8 +793,140 @@ def test_publish_rooms_allowlist_error(invalid_config):
     synapse_with_notif_config = {
         "publish_rooms_allowlist": invalid_config,
         "server_name": "example.com",
+        "public_baseurl": "https://example.com",
     }
     with pytest.raises(ValidationError):
         # Prevent mypy error:
         # Argument 1 to "SynapseConfig" has incompatible type "**dict[str, str]"; expected "bool"
         SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
+
+
+def test_enable_rc_joins_remote_rate(
+    harness: Harness,
+    config_content: dict[str, typing.Any],
+):
+    """
+    arrange: set mock container with file.
+    act: update rc_joins_remote_rate config and call rc_joins_remote_rate.
+    assert: new configuration file is pushed and rc_joins_remote_rate is enabled.
+    """
+    config = config_content
+
+    harness.update_config({"rc_joins_remote_burst_count": 10, "rc_joins_remote_per_second": 0.2})
+    harness.begin()
+    synapse.enable_rc_joins_remote_rate(config, harness.charm.build_charm_state())
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "rc_joins": {"remote": {"burst_count": 10, "per_second": 0.2}},
+    }
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
+
+
+def test_enable_limit_remote_rooms_complexity(
+    harness: Harness,
+    config_content: dict[str, typing.Any],
+):
+    """
+    arrange: set mock container with file.
+    act: update limit_remote_rooms_complexity config and call limit_remote_rooms_complexity.
+    assert: new configuration file is pushed and limit_remote_rooms_complexity is enabled.
+    """
+    config = config_content
+
+    harness.update_config({"limit_remote_rooms_complexity": 0.2})
+    harness.begin()
+    synapse.enable_limit_remote_rooms_complexity(config, harness.charm.build_charm_state())
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "limit_remote_rooms": {"enabled": True, "complexity": 0.2},
+    }
+    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
+
+
+def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
+    """
+    arrange: set mock container with file.
+    act: update invite_checker_policy_rooms config.
+    assert: new configuration file is pushed and invite_checker_policy_rooms is enabled.
+    """
+    invite_checker_policy_rooms = {
+        "invite_checker_policy_rooms": "foo:foo.com,foo1:foo1.com,foo2:foo2.foo1.com",
+        "server_name": "example.com",
+        "public_baseurl": "https://example.com",
+    }
+    synapse_config = SynapseConfig(**invite_checker_policy_rooms)  # type: ignore[arg-type]
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+        registration_secrets=None,
+    )
+
+    synapse.enable_synapse_invite_checker(config_content, charm_state)
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "modules": [
+            {
+                "config": {
+                    "policy_room_ids": ["!foo:foo.com", "!foo1:foo1.com", "!foo2:foo2.foo1.com"]
+                },
+                "module": "synapse_invite_checker.InviteChecker",
+            }
+        ],
+    }
+
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
+def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing.Any]):
+    """
+    arrange: set mock container with file.
+    act: update invite_checker_blocklist_allowlist_url config.
+    assert: new configuration file is pushed and invite_checker_blocklist_allowlist_url is enabled.
+    """
+    invite_checker_blocklist_allowlist_url = {
+        "invite_checker_blocklist_allowlist_url": "https://example.com/file",
+        "server_name": "example.com",
+        "public_baseurl": "https://example.com",
+    }
+    # pylint: disable=line-too-long
+    synapse_config = SynapseConfig(**invite_checker_blocklist_allowlist_url)  # type: ignore[arg-type] # noqa: E501
+    charm_state = CharmState(
+        datasource=None,
+        saml_config=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+        registration_secrets=None,
+    )
+
+    synapse.enable_synapse_invite_checker(config_content, charm_state)
+
+    expected_config_content = {
+        "listeners": [
+            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
+        ],
+        "modules": [
+            {
+                "config": {"blocklist_allowlist_url": "https://example.com/file"},
+                "module": "synapse_invite_checker.InviteChecker",
+            }
+        ],
+    }
+
+    assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)

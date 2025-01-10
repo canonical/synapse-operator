@@ -144,8 +144,6 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
     harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
     harness.set_leader(True)
 
-    harness.charm.on.config_changed.emit()
-
     root = harness.get_filesystem_root(synapse.SYNAPSE_CONTAINER_NAME)
     config_path = root / synapse.SYNAPSE_CONFIG_PATH[1:]
     with open(config_path, encoding="utf-8") as config_file:
@@ -154,6 +152,10 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
         assert content["instance_map"] == {
             "main": {
                 "host": "synapse-0.synapse-endpoints",
+                "port": 8035,
+            },
+            "federationsender1": {
+                "host": "synapse-0.synapse-endpoints",
                 "port": 8034,
             },
             "worker1": {
@@ -161,6 +163,33 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
                 "port": 8034,
             },
         }
+    worker_config_path = root / synapse.SYNAPSE_WORKER_CONFIG_PATH[1:]
+    with open(worker_config_path, encoding="utf-8") as config_file:
+        content = yaml.safe_load(config_file)
+        assert content["worker_name"] == "federationsender1"
+
+
+def test_scaling_instance_restarts_federation_service(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: charm deployed, integrated with Redis, one more unit in peer relation
+        and set as leader.
+    act: emit config-changed event.
+    assert: Synapse charm is configured with instance_map and the federation service is restarted.
+    """
+    rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.add_relation_unit(rel_id, "synapse/1")
+    harness.begin_with_initial_hooks()
+    federation_container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    harness.set_can_connect(federation_container, True)
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
+    harness.set_leader(True)
+
+    restart_federation_mock = MagicMock()
+    monkeypatch.setattr(pebble, "restart_federation_sender", restart_federation_mock)
+    harness.update_config({"workers_ignore_list": "worker1"})
+    assert restart_federation_mock.called
 
 
 def test_scaling_instance_map_not_configured(harness: Harness) -> None:
@@ -221,16 +250,13 @@ def test_scaling_main_unit_changed_nginx_reconfigured(
         "synapse",
         app_data={"main_unit_id": "synapse/0"},
     )
-    harness.begin_with_initial_hooks()
-    nginx_container = harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME]
-    harness.set_can_connect(nginx_container, True)
-    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
-    harness.set_leader(False)
-    # emit nginx ready
-    # assert was called with synapse/0
     restart_nginx_mock = MagicMock()
     monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
-    harness.charm.on.synapse_nginx_pebble_ready.emit(MagicMock())
+    nginx_container = harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME]
+    harness.set_can_connect(nginx_container, True)
+    harness.begin_with_initial_hooks()
+    harness.add_relation("redis", "redis", unit_data={"hostname": "redis-host", "port": "1010"})
+    harness.set_leader(False)
     restart_nginx_mock.assert_called_with(nginx_container, "synapse-0.synapse-endpoints")
 
     harness.update_relation_data(
@@ -408,6 +434,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             {
                 "main": {
                     "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
+                    "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
                 "worker3": {
@@ -424,6 +454,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             "worker1 ,worker2",
             {
                 "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
                     "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
@@ -442,6 +476,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             {
                 "main": {
                     "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
+                    "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
                 "worker2": {
@@ -458,6 +496,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             "worker4",
             {
                 "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
                     "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
@@ -479,6 +521,10 @@ def test_scaling_signing_not_found(harness: Harness, monkeypatch: pytest.MonkeyP
             "workerfake",
             {
                 "main": {
+                    "host": "synapse-0.synapse-endpoints",
+                    "port": 8035,
+                },
+                "federationsender1": {
                     "host": "synapse-0.synapse-endpoints",
                     "port": 8034,
                 },
@@ -527,6 +573,10 @@ def test_scaling_instance_map_configured_ignoring_workers(
         assert "instance_map" in content
         assert content["instance_map"] == {
             "main": {
+                "host": "synapse-0.synapse-endpoints",
+                "port": 8035,
+            },
+            "federationsender1": {
                 "host": "synapse-0.synapse-endpoints",
                 "port": 8034,
             },

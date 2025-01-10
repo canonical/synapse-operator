@@ -6,7 +6,6 @@
 from pytest import Parser
 
 SYNAPSE_IMAGE_PARAM = "--synapse-image"
-SYNAPSE_NGINX_IMAGE_PARAM = "--synapse-nginx-image"
 
 
 def pytest_addoption(parser: Parser) -> None:
@@ -16,9 +15,6 @@ def pytest_addoption(parser: Parser) -> None:
         parser: Pytest parser.
     """
     parser.addoption(SYNAPSE_IMAGE_PARAM, action="store", help="Synapse image to be deployed")
-    parser.addoption(
-        SYNAPSE_NGINX_IMAGE_PARAM, action="store", help="Synapse NGINX image to be deployed"
-    )
     parser.addoption("--charm-file", action="store", help="Charm file to be deployed")
     parser.addoption(
         "--use-existing",

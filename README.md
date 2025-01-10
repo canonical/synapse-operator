@@ -23,16 +23,49 @@ For DevOps or SRE teams this charm will make operating Synapse simple and
 straightforward through Juju's clean interface. It will allow easy deployment
 into multiple environments for testing of changes.
 
+## Get started
+
+To begin, refer to the [Getting Started](https://charmhub.io/synapse/docs/tutorial-getting-started)
+tutorial for step-by-step instructions.
+
+### Basic operations
+
+#### Configure a server name
+
+The configuration `server_name` sets the public-facing domain of the server and
+refers to [`server_name`](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#server_name) Synapse configuration.
+
+To change it to `tutorial-synapse.juju.local`, for example, run the following
+command:
+
+```
+juju config synapse server_name=tutorial-synapse.juju.local
+```
+
+#### Create a user
+
+The following command creates a local user named `alice`.
+
+```
+juju run synapse/0 register-user username=alice password=<secure-password> admin=no
+```
+
+#### Promote user to admin
+
+The following command can be used to promote an existing user to admin.
+
+```
+juju run synapse/0 promote-user-admin username=alice
+```
+
+## Learn more
+* [Read more](https://charmhub.io/synapse)
+* [Developer documentation](https://element-hq.github.io/synapse/latest/development/contributing_guide.html)
+* [Official webpage](https://github.com/element-hq/synapse)
+* [Troubleshooting](https://element-hq.github.io/synapse/latest/usage/administration/admin_faq.html)
+
+
 ## Project and community
-
-The Synapse Operator is a member of the Ubuntu family. It's an open source
-project that warmly welcomes community projects, contributions, suggestions,
-fixes and constructive feedback.
-* [Code of conduct](https://ubuntu.com/community/code-of-conduct)
-* [Get support](https://discourse.charmhub.io/)
-* [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-* [Contribute](https://charmhub.io/synapse/docs/contributing)
-* [Getting Started](https://charmhub.io/synapse/docs/getting-started)
-Thinking about using the Synapse Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
-
----
+* [Issues](https://github.com/canonical/synapse-operator/issues)
+* [Contributing](https://charmhub.io/synapse/docs/contributing)
+* [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)

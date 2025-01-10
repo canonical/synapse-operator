@@ -21,7 +21,7 @@ def test_register_user_action(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: run register-user action.
-    assert: Synapse charm should reset the instance.
+    assert: User is created and the charm is active.
     """
     harness.begin_with_initial_hooks()
     get_registration_mock = unittest.mock.Mock(return_value="shared_secret")

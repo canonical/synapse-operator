@@ -11,7 +11,7 @@ import typing
 import ops
 
 # pydantic is causing this no-name-in-module problem
-from pydantic import ValidationError  # pylint: disable=no-name-in-module,import-error
+from pydantic.v1 import ValidationError  # pylint: disable=no-name-in-module,import-error
 
 import synapse
 from user import User

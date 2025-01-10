@@ -16,7 +16,7 @@ Provide the Observability class to represent the observability stack for Synapse
 ## <kbd>class</kbd> `Observability`
 A class representing the observability stack for Synapse application. 
 
-<a href="../src/observability.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/observability.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -34,23 +34,5 @@ Initialize a new instance of the Observability class.
 
 
 
-
----
-
-<a href="../src/observability.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `update_targets`
-
-```python
-update_targets(targets: List[str]) → None
-```
-
-Update prometheus targets. 
-
-
-
-**Args:**
- 
- - <b>`targets`</b>:  new target list. 
 
 

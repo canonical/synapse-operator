@@ -11,7 +11,32 @@ Class to interact with pebble.
 
 ---
 
-<a href="../src/pebble.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `check_synapse_alive`
+
+```python
+check_synapse_alive(charm_state: CharmState) → CheckDict
+```
+
+Return the Synapse container alive check. 
+
+
+
+**Args:**
+ 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+
+**Returns:**
+ 
+ - <b>`Dict`</b>:  check object converted to its dict representation. 
+
+
+---
+
+<a href="../src/pebble.py#L65"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_synapse_ready`
 
@@ -30,26 +55,7 @@ Return the Synapse container ready check.
 
 ---
 
-<a href="../src/pebble.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `check_synapse_alive`
-
-```python
-check_synapse_alive() → CheckDict
-```
-
-Return the Synapse container alive check. 
-
-
-
-**Returns:**
- 
- - <b>`Dict`</b>:  check object converted to its dict representation. 
-
-
----
-
-<a href="../src/pebble.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_synapse`
 
@@ -76,7 +82,7 @@ This will force a restart even if its plan hasn't changed.
 
 ---
 
-<a href="../src/pebble.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_nginx_ready`
 
@@ -95,7 +101,7 @@ Return the Synapse NGINX container check.
 
 ---
 
-<a href="../src/pebble.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_mjolnir_ready`
 
@@ -114,26 +120,7 @@ Return the Synapse Mjolnir service check.
 
 ---
 
-<a href="../src/pebble.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `check_irc_bridge_ready`
-
-```python
-check_irc_bridge_ready() → CheckDict
-```
-
-Return the Synapse IRC bridge service check. 
-
-
-
-**Returns:**
- 
- - <b>`Dict`</b>:  check object converted to its dict representation. 
-
-
----
-
-<a href="../src/pebble.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_nginx`
 
@@ -153,7 +140,27 @@ Restart Synapse NGINX service and regenerate configuration.
 
 ---
 
-<a href="../src/pebble.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `restart_federation_sender`
+
+```python
+restart_federation_sender(container: Container, charm_state: CharmState) → None
+```
+
+Restart Synapse federation sender service and regenerate configuration. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+---
+
+<a href="../src/pebble.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_mjolnir`
 
@@ -172,26 +179,7 @@ Replan Synapse Mjolnir service.
 
 ---
 
-<a href="../src/pebble.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `replan_irc_bridge`
-
-```python
-replan_irc_bridge(container: Container) → None
-```
-
-Replan Synapse IRC bridge service. 
-
-
-
-**Args:**
- 
- - <b>`container`</b>:  Charm container. 
-
-
----
-
-<a href="../src/pebble.py#L162"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_stats_exporter`
 
@@ -211,7 +199,30 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `replan_synapse_federation_sender`
+
+```python
+replan_synapse_federation_sender(
+    container: Container,
+    charm_state: CharmState
+) → None
+```
+
+Replan Synapse Federation Sender service. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+ - <b>`charm_state`</b>:  Instance of CharmState. 
+
+
+---
+
+<a href="../src/pebble.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reconcile`
 
@@ -246,38 +257,12 @@ This is the main entry for changes that require a restart done via Pebble.
 
 ---
 
-<a href="../src/pebble.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `reset_instance`
-
-```python
-reset_instance(charm_state: CharmState, container: Container) → None
-```
-
-Reset instance. 
-
-
-
-**Args:**
- 
- - <b>`charm_state`</b>:  Instance of CharmState 
- - <b>`container`</b>:  Charm container. 
-
-
-
-**Raises:**
- 
- - <b>`PebbleServiceError`</b>:  if something goes wrong while interacting with Pebble. 
-
-
----
-
 ## <kbd>class</kbd> `PebbleServiceError`
 Exception raised when something fails while interacting with Pebble. 
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/pebble.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

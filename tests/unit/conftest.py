@@ -121,15 +121,14 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     harness = Harness(SynapseCharm)
+    # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
+    harness.add_network("10.0.0.10")
     harness.update_config({"server_name": TEST_SERVER_NAME})
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(
         synapse.SYNAPSE_CONTAINER_NAME
     )
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.set_can_connect(
-        harness.model.unit.containers[synapse.SYNAPSE_NGINX_CONTAINER_NAME], True
-    )
     synapse_container.make_dir("/data", make_parents=True)
     synapse_container.push(f"/data/{TEST_SERVER_NAME}.signing.key", "123")
     # unused-variable disabled to pass constants values to inner function
@@ -178,17 +177,19 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         executable="/usr/bin/python3",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
-    synapse_nginx_container: ops.Container = harness.model.unit.get_container(
-        synapse.SYNAPSE_NGINX_CONTAINER_NAME
-    )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=synapse_nginx_container,
+        container=synapse_container,
         executable="cp",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=synapse_nginx_container,
+        container=synapse_container,
         executable="sed",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_container,
+        executable="rm",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness

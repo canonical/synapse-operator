@@ -101,7 +101,11 @@ async def test_synapse_create_backup_correct(
     object_key = f"{path}/{backup_action.results['backup-id']}"
     s3objresp = boto_s3_client.get_object(Bucket=bucket_name, Key=object_key)
     objbuf = s3objresp["Body"].read()
-    assert "GPG symmetrically encrypted data (AES256 cipher)" in magic.from_buffer(objbuf)
+    # GnuPG 2.2.x and earlier outputs "GPG symmetrically encrypted data (AES256 cipher)"
+    assert (
+        "PGP symmetric key encrypted data - AES with 256-bit key salted & iterated - SHA512"
+        in magic.from_buffer(objbuf)
+    )
 
 
 @pytest.mark.s3
@@ -247,7 +251,7 @@ async def test_synapse_backup_delete(
 
 @pytest.mark.s3
 @pytest.mark.usefixtures("s3_media_bucket")
-async def test_synapse_enable_media(
+async def test_synapse_enable_media(  # pylint: disable=too-many-positional-arguments
     model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
