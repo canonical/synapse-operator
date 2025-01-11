@@ -1,0 +1,194 @@
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/synapse-531
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [allocating] waiting: installing agent
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [executing] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] maintenance: Waiting for Synapse pebble
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] maintenance: Waiting for Synapse pebble
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] maintenance: Waiting for Synapse pebble
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse/0 [idle] active: 
+  smtp-integrator/0 [idle] active: 
+  nginx-ingress-integrator/0 [idle] active: Ingress IP(s): 127.0.0.1
+  synapse-charmhub/0 [idle] active:
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] blocked: moderators not found and is required by Mjolnir. Please, check the logs.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] blocked: moderators not found and is required by Mjolnir. Please, check the logs.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [executing] maintenance: Configuring Mjolnir
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-charmhub/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:929 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-1e8ee-microk8s  microk8s/localhost  3.4.6    unsupported  18:57:16Z
+
+App                       Version  Status  Scale  Charm                     Channel        Rev  Address         Exposed  Message
+nginx-ingress-integrator  24.2.0   active      1  nginx-ingress-integrator  latest/stable  121  10.152.183.28   no       Ingress IP(s): 127.0.0.1
+postgresql-k8s            14.13    active      1  postgresql-k8s            14/stable      462  10.152.183.167  no       
+smtp-integrator                    active      1  smtp-integrator           latest/edge     57  10.152.183.36   no       
+synapse                   1.121.1  active      1  synapse                                    0  10.152.183.171  no       
+synapse-charmhub          1.121.1  active      1  synapse                                    1  10.152.183.85   no       
+
+Unit                         Workload  Agent  Address      Ports  Message
+nginx-ingress-integrator/0*  active    idle   10.1.88.211         Ingress IP(s): 127.0.0.1
+postgresql-k8s/0*            active    idle   10.1.88.204         Primary
+smtp-integrator/0*           active    idle   10.1.88.210         
+synapse-charmhub/0*          active    idle   10.1.88.214         
+synapse/0*                   active    idle   10.1.88.206         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:935 Juju error logs:
+
+unit-synapse-0: 18:38:40 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 18:40:19 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/charm_state.py", line 321, in from_charm
+    valid_synapse_config = SynapseConfig(**config)  # type: ignore
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/pydantic/v1/main.py", line 341, in __init__
+    raise validation_error
+pydantic.v1.error_wrappers.ValidationError: 1 validation error for SynapseConfig
+ip_range_whitelist
+  string does not match regex "^[\.:,/\d]+\d+(?:,[:,\d]+)*$" (type=value_error.str.regex; pattern=^[\.:,/\d]+\d+(?:,[:,\d]+)*$)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 297, in _on_config_changed
+    charm_state = self.build_charm_state()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 113, in build_charm_state
+    return CharmState.from_charm(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/charm_state.py", line 345, in from_charm
+    raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
+state.charm_state.CharmConfigInvalidError: invalid configuration: ip_range_whitelist
+unit-synapse-0: 18:40:19 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/charm_state.py", line 321, in from_charm
+    valid_synapse_config = SynapseConfig(**config)  # type: ignore
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/pydantic/v1/main.py", line 341, in __init__
+    raise validation_error
+pydantic.v1.error_wrappers.ValidationError: 1 validation error for SynapseConfig
+ip_range_whitelist
+  string does not match regex "^[\.:,/\d]+\d+(?:,[:,\d]+)*$" (type=value_error.str.regex; pattern=^[\.:,/\d]+\d+(?:,[:,\d]+)*$)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/mjolnir.py", line 81, in _on_collect_status
+    charm_state = charm.build_charm_state()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 113, in build_charm_state
+    return CharmState.from_charm(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/charm_state.py", line 345, in from_charm
+    raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
+state.charm_state.CharmConfigInvalidError: invalid configuration: ip_range_whitelist
+unit-synapse-1: 18:43:40 ERROR unit.synapse/1.juju-log Failed to get main unit: no peer relation synapse-peers found
+unit-synapse-1: 18:43:40 ERROR unit.synapse/1.juju-log Failed to get main unit: no peer relation synapse-peers found
+unit-synapse-1: 18:43:40 ERROR unit.synapse/1.juju-log Failed to get main unit: no peer relation synapse-peers found
+unit-synapse-1: 18:43:40 ERROR unit.synapse/1.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-1: 18:43:41 ERROR unit.synapse/1.juju-log database:5: Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-1: 18:43:42 ERROR unit.synapse/1.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 346, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 139, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-1: 18:43:42 ERROR unit.synapse/1.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-1: 18:43:43 ERROR unit.synapse/1.juju-log database:5: Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-1: 18:43:44 ERROR unit.synapse/1.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 18:49:57 ERROR unit.synapse/0.juju-log The Mjolnir configuration will be done in  after the room moderators is created.This interval is set in update-status-hook-interval model config.
+unit-synapse-charmhub-0: 18:51:55 ERROR unit.synapse-charmhub/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-charmhub-0/charm/src/state/validation.py", line 96, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-charmhub-0/charm/src/mjolnir.py", line 82, in _on_collect_status
+    MASConfiguration.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-charmhub-0/charm/src/state/mas.py", line 193, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-charmhub-0: 18:54:22 ERROR unit.synapse-charmhub/0.juju-log The Mjolnir configuration will be done in  after the room moderators is created.This interval is set in update-status-hook-interval model config.
+unit-synapse-charmhub-0: 18:54:35 ERROR unit.synapse-charmhub/0.juju-log synapse-peers:12: The Mjolnir configuration will be done in  after the room moderators is created.This interval is set in update-status-hook-interval model config.
+unit-synapse-charmhub-0: 18:54:52 ERROR unit.synapse-charmhub/0.juju-log The Mjolnir configuration will be done in  after the room moderators is created.This interval is set in update-status-hook-interval model config.
+unit-synapse-charmhub-0: 18:56:25 ERROR unit.synapse-charmhub/0.juju-log HTTP error from http://localhost:8008/_synapse/admin/v1/register: HTTPError('400 Client Error: Bad Request for url: http://localhost:8008/_synapse/admin/v1/register')
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-charmhub-0/charm/src/synapse/api.py", line 165, in _do_request
+    response.raise_for_status()
+  File "/var/lib/juju/agents/unit-synapse-charmhub-0/charm/venv/requests/models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: http://localhost:8008/_synapse/admin/v1/register
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1017 Forgetting model main...
