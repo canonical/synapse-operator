@@ -56,7 +56,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/matrix_auth_observer.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/matrix_auth_observer.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_requirer_registration_secrets`
 
