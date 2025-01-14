@@ -10,6 +10,7 @@ import ops
 import pytest
 from ops.testing import ActionFailed, Harness
 
+from pebble import check_synapse_alive
 from state.charm_state import CharmConfigInvalidError, CharmState, SynapseConfig
 from state.validation import CharmBaseWithState, validate_charm_state
 
@@ -192,3 +193,28 @@ def test_validate_charm_state_action_failed() -> None:
         harness.run_action("create-backup")
     assert "Invalid configuration" in str(err.value.message)
     assert not hasattr(charm, "charm_state")
+
+
+def test_check_synapse_alive_experimental_alive_check_disabled():
+    """
+    arrange: Create a mock charmstate with experimental_alive_check = "".
+    act: Run check_synapse_alive method.
+    assert: The values are NOT added to the pebble check dictionary.
+    """
+    synapse_config = SynapseConfig(
+        server_name="example.com",
+        public_baseurl="https://example.com",
+    )  # type: ignore[call-arg]
+    charm_state = CharmState(
+        synapse_config=synapse_config,
+        datasource=None,
+        smtp_config=None,
+        media_config=None,
+        redis_config=None,
+        instance_map_config=None,
+        registration_secrets=None,
+    )
+    generated_checks = check_synapse_alive(charm_state)
+    assert generated_checks.get("period") is None
+    assert generated_checks.get("threshold") is None
+    assert generated_checks.get("timeout") is None

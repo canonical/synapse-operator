@@ -35,8 +35,6 @@ DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
 LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
 LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
-MJOLNIR_MANAGEMENT_ROOM = "management"
-MJOLNIR_MEMBERSHIP_ROOM = "moderators"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
@@ -177,63 +175,6 @@ def _do_request(
         raise NetworkError(f"HTTP error from {url}.") from exc
 
 
-# admin_access_token is not a password
-def register_user(
-    registration_shared_secret: str,
-    user: User,
-    server: typing.Optional[str] = None,
-    admin_access_token: typing.Optional[str] = None,  # nosec
-) -> str:
-    """Register user.
-
-    Args:
-        registration_shared_secret: secret to be used to register the user.
-        user: user to be registered.
-        server: to be used to create the user id.
-        admin_access_token: admin access token to get user's access token if it exists.
-
-    Raises:
-        RegisterUserError: if there was an error registering the user.
-
-    Returns:
-        Access token to be used by the user.
-    """
-    # get nonce
-    nonce = _get_nonce()
-    # generate mac
-    hex_mac = _generate_mac(
-        shared_secret=registration_shared_secret,
-        nonce=nonce,
-        user=user.username,
-        password=user.password,
-        admin=user.admin,
-    )
-    # build data
-    data = {
-        "nonce": nonce,
-        "username": user.username,
-        "password": user.password,
-        "mac": hex_mac,
-        "admin": user.admin,
-    }
-    # finally register user
-    try:
-        res = _do_request("POST", REGISTER_URL, json=data)
-        return res.json()["access_token"]
-    except UserExistsError as exc:
-        logger.warning("User %s exists, getting the access token.", user.username)
-        if not server or not admin_access_token:
-            raise RegisterUserError(
-                f"User {user.username} exists but there is no server/admin access token set."
-            ) from exc
-        return get_access_token(
-            user=user, server=str(server), admin_access_token=str(admin_access_token)
-        )
-    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
-        logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
-        raise RegisterUserError(str(exc)) from exc
-
-
 def _generate_mac(  # pylint: disable=too-many-positional-arguments
     shared_secret: str,
     nonce: str,
@@ -331,35 +272,6 @@ def get_version(main_unit_address: str) -> str:
     return version_match.group(1)
 
 
-def get_access_token(user: User, server: str, admin_access_token: str) -> str:
-    """Get an access token that can be used to authenticate as that user.
-
-    This is a way to do actions on behalf of a user.
-
-    Args:
-        user: the user on behalf of whom you want to request the access token.
-        server: to be used to create the user id. User ID example: @user:server.com.
-        admin_access_token: a server admin access token to be used for the request.
-
-    Returns:
-        Access token.
-
-    Raises:
-        GetAccessTokenError: if there was an error while getting access token.
-    """
-    # @user:server.com
-    user_id = f"@{user.username}:{server}"
-    res = _do_request(
-        "POST", f"{LOGIN_URL}/{user_id}/login", admin_access_token=admin_access_token
-    )
-    try:
-        res_access_token = res.json()["access_token"]
-    except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
-        logger.exception("Failed to decode access_token: %r. Received: %s", exc, res.text)
-        raise GetAccessTokenError(str(exc)) from exc
-    return res_access_token
-
-
 def override_rate_limit(user: User, admin_access_token: str, charm_state: CharmState) -> None:
     """Override user's rate limit.
 
@@ -412,78 +324,6 @@ def get_room_id(
     return None
 
 
-def deactivate_user(
-    user: User,
-    server: str,
-    admin_access_token: str,
-) -> None:
-    """Deactivate user.
-
-    Args:
-        user: user to be deactivated.
-        server: to be used to create the user id.
-        admin_access_token: server admin access token to be used.
-    """
-    data = {
-        "erase": True,
-    }
-    user_id = f"@{user.username}:{server}"
-    url = f"{DEACTIVATE_ACCOUNT_URL}/{user_id}"
-    _do_request("POST", url, admin_access_token=admin_access_token, json=data)
-
-
-def create_management_room(admin_access_token: str) -> str:
-    """Create the management room to be used by Mjolnir.
-
-    Args:
-        admin_access_token: server admin access token to be used.
-
-    Raises:
-        GetRoomIDError: if there was an error while getting room id.
-
-    Returns:
-        Room id.
-    """
-    power_level_content_override = {"events_default": 0}
-    moderators_room_id = get_room_id(MJOLNIR_MEMBERSHIP_ROOM, admin_access_token)
-    data = {
-        "name": MJOLNIR_MANAGEMENT_ROOM,
-        "power_level_content_override": power_level_content_override,
-        "room_alias_name": MJOLNIR_MANAGEMENT_ROOM,
-        "visibility": "private",
-        "initial_state": [
-            # Always make history visibility shared
-            {
-                "type": "m.room.history_visibility",
-                "state_key": "",
-                "content": {"history_visibility": "shared"},
-            },
-            {
-                "type": "m.room.guest_access",
-                "state_key": "",
-                "content": {"guest_access": "can_join"},
-            },
-            # Only retain the last 90 days of history
-            {"type": "m.room.retention", "state_key": "", "content": {"max_lifetime": 604800000}},
-            # Only users from MJOLNIR_MEMBERSHIP_ROOM can join
-            {
-                "type": "m.room.join_rules",
-                "state_key": "",
-                "content": {
-                    "join_rule": "restricted",
-                    "allow": [{"room_id": f"{moderators_room_id}", "type": "m.room_membership"}],
-                },
-            },
-        ],
-    }
-    res = _do_request("POST", CREATE_ROOM_URL, admin_access_token=admin_access_token, json=data)
-    try:
-        return res.json()["room_id"]
-    except (requests.exceptions.JSONDecodeError, TypeError, KeyError) as exc:
-        logger.exception("Failed to decode room_id: %r. Received: %s", exc, res.text)
-        raise GetRoomIDError(str(exc)) from exc
-
-
 def make_room_admin(user: User, server: str, admin_access_token: str, room_id: str) -> None:
     """Make user a room's admin.
 
@@ -497,26 +337,6 @@ def make_room_admin(user: User, server: str, admin_access_token: str, room_id: s
     data = {"user_id": user_id}
     url = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms/{room_id}/make_room_admin"
     _do_request("POST", url, admin_access_token=admin_access_token, json=data)
-
-
-def promote_user_admin(
-    user: User,
-    server: str,
-    admin_access_token: str,
-) -> None:
-    """Promote user to admin.
-
-    Args:
-        user: user to be promoted to admin.
-        server: to be used to promote the user id.
-        admin_access_token: server admin access token to be used.
-    """
-    data = {
-        "admin": True,
-    }
-    user_id = f"@{user.username}:{server}"
-    url = PROMOTE_USER_ADMIN_URL.replace("user_id", user_id)
-    _do_request("PUT", url, admin_access_token=admin_access_token, json=data)
 
 
 def is_token_valid(access_token: str) -> bool:
