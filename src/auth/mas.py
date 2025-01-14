@@ -51,7 +51,11 @@ class MASConfigInvalidError(Exception):
 
 
 class MASRegisterUserFailedError(Exception):
-    """Exception raised when validation of the MAS config failed."""
+    """Exception raised when user registration failed."""
+
+
+class MASProvisionUserFailedError(Exception):
+    """Exception raised when provisioning of users failed."""
 
 
 class MASVerifyUserEmailFailedError(Exception):
@@ -96,7 +100,7 @@ def register_user(
     username: str,
     is_admin: bool = False,
 ) -> str:
-    """Register a new user with MAS.
+    """Register a new user with MAS. Afterwards start a provisioning job for all users.
 
     Args:
         container: Synapse container.
@@ -130,7 +134,34 @@ def register_user(
         logger.error("Error registering new user: %s", exc.stderr)
         raise MASRegisterUserFailedError("Error validating MAS configuration.") from exc
 
+    provision_all_users(container=container)
     return password
+
+
+def provision_all_users(
+    container: ops.model.Container,
+) -> None:
+    """Start jobs to provision all users.
+
+    Args:
+        container: Synapse container.
+
+    Raises:
+        MASProvisionUserFailedError: when triggering the provisioning jobs fails.
+    """
+    command = [
+        MAS_EXECUTABLE_PATH,
+        "-c",
+        MAS_CONFIGURATION_PATH,
+        "manage",
+        "provision-all-users",
+    ]
+
+    try:
+        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
+        process.wait_output()
+    except ops.pebble.ExecError as exc:
+        raise MASProvisionUserFailedError("Error provisioning users.") from exc
 
 
 def verify_user_email(
@@ -218,7 +249,10 @@ def generate_mas_config(
         "synapse_shared_secret": mas_context.synapse_shared_secret,
         "synapse_public_baseurl": synapse_configuration.public_baseurl,
         "mas_database_uri": mas_configuration.database_uri,
-        "enable_password_config": synapse_configuration.enable_password_config,
+        # False with a capital F is not handled properly by MAS -_-
+        "enable_password_config": (
+            "true" if synapse_configuration.enable_password_config else "false"
+        ),
         "synapse_server_name_config": synapse_configuration.server_name,
         "synapse_main_unit_address": main_unit_address,
         "upstream_oidc_provider_id": mas_context.upstream_oidc_provider_id,
