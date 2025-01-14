@@ -16,7 +16,6 @@ from state.mas import MASConfiguration
 logger = logging.getLogger()
 
 MAS_TEMPLATE_FILE_NAME = "mas_config.yaml.j2"
-
 MAS_SERVICE_NAME = "synapse-mas"
 MAS_EXECUTABLE_PATH = "/usr/bin/mas-cli"
 MAS_WORKING_DIR = "/mas"
@@ -46,12 +45,20 @@ class MASConfigInvalidError(Exception):
     """Exception raised when validation of the MAS config failed."""
 
 
+class MASConfigSyncError(Exception):
+    """Exception raised when synchronisation of the MAS config failed."""
+
+
 class MASRegisterUserFailedError(Exception):
     """Exception raised when validation of the MAS config failed."""
 
 
 class MASVerifyUserEmailFailedError(Exception):
     """Exception raised when validation of the MAS config failed."""
+
+
+class MASDeactivateUserFailedError(Exception):
+    """Exception raised when deactivation of a MAS user failed."""
 
 
 class MASGenerateAdminAccessTokenError(Exception):
@@ -63,10 +70,18 @@ def validate_mas_config(container: ops.model.Container) -> None:
 
     Args:
         container: Synapse container.
+
+    Raises:
+        MASConfigInvalidError: when validation of the MAS config failed.
     """
     command = [MAS_EXECUTABLE_PATH, "config", "check", "-c", MAS_CONFIGURATION_PATH]
-    process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
-    process.wait_output()
+
+    try:
+        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
+        process.wait_output()
+    except ops.pebble.ExecError as exc:
+        logger.exception("Validation of the MAS config failed.")
+        raise MASConfigInvalidError("Validation of the MAS config failed.") from exc
 
 
 def sync_mas_config(container: ops.model.Container) -> None:
@@ -74,10 +89,18 @@ def sync_mas_config(container: ops.model.Container) -> None:
 
     Args:
         container: Synapse container.
+
+    Raises:
+        MASConfigSyncError: when synchronisation of the MAS config failed.
     """
     command = [MAS_EXECUTABLE_PATH, "config", "sync", "--prune", "-c", MAS_CONFIGURATION_PATH]
-    process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
-    process.wait()
+
+    try:
+        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
+        process.wait()
+    except ops.pebble.ExecError as exc:
+        logger.exception("Error syncing MAS config with the database.")
+        raise MASConfigSyncError("Error validating MAS configuration.") from exc
 
 
 def register_user(
@@ -116,7 +139,7 @@ def register_user(
         process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
         process.wait_output()
     except ops.pebble.ExecError as exc:
-        logger.error("Error registering new user: %s", exc.stderr)
+        logger.exception("Error registering new user.")
         raise MASRegisterUserFailedError("Error validating MAS configuration.") from exc
 
     return password
@@ -151,7 +174,7 @@ def verify_user_email(
         process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
         process.wait_output()
     except ops.pebble.ExecError as exc:
-        logger.error("Error verifying the user email: %s", exc.stderr)
+        logger.exception("Error verifying the user email.")
         raise MASVerifyUserEmailFailedError("Error verifying the user email.") from exc
 
 
@@ -161,6 +184,9 @@ def deactivate_user(container: ops.model.Container, username: str) -> None:
     Args:
         container: Synapse container.
         username: Username to create the access token.
+
+    Raises:
+        MASDeactivateUserFailedError: when deactivation of the user fails
     """
     command = [
         MAS_EXECUTABLE_PATH,
@@ -172,8 +198,12 @@ def deactivate_user(container: ops.model.Container, username: str) -> None:
         username,
     ]
 
-    process = container.exec(command=command, working_dir=MAS_WORKING_DIR, combine_stderr=True)
-    process.wait_output()
+    try:
+        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
+        process.wait_output()
+    except ops.pebble.ExecError as exc:
+        logger.error("Error registering new user: %s", exc.stderr)
+        raise MASDeactivateUserFailedError("Error deactivating user.") from exc
 
 
 def generate_mas_config(
