@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """State of the Charm."""
@@ -35,6 +35,10 @@ class MASContextNotSetError(Exception):
 
 class MASContextValidationError(Exception):
     """Exception raised when validation of the MAS Context failed."""
+
+
+class MASDatasourceInvalidError(Exception):
+    """Exception raised when validation of the MAS datasource failed."""
 
 
 class MASContext(BaseModel):
@@ -141,6 +145,9 @@ class MASConfiguration:
         cls.validate(charm)
         # pylint: disable=protected-access
         datasource = charm._mas_database.get_relation_as_datasource()  # type: ignore
+        validate_datasource(datasource)
+
+        logger.info("Datasource validated: %s", datasource)
 
         try:
             secret = charm.model.get_secret(label=MAS_CONTEXT_LABEL)
@@ -195,3 +202,23 @@ class MASConfiguration:
         """
         if not charm.model.relations.get(MAS_DATABASE_INTEGRATION_NAME):
             raise MASDatasourceMissingError("Waiting for mas-database integration.")
+
+
+def validate_datasource(datasource: DatasourcePostgreSQL) -> None:
+    """Validate if datasource has all the expected values.
+
+    Args:
+        datasource: The fetched datasource from integration data.
+
+    Raises:
+        MASDatasourceInvalidError: When datasource is incomplete.
+    """
+    if not all(
+        [
+            datasource.get("user"),
+            datasource.get("password"),
+            datasource.get("host"),
+            datasource.get("port"),
+        ]
+    ):
+        raise MASDatasourceInvalidError("Missing values in postgresql datasource.")

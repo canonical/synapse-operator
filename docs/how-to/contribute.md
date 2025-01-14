@@ -63,6 +63,12 @@ Run the following command:
 echo -e "tox -e src-docs\ngit add src-docs\n" >> .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
+### Changelog
+
+Please ensure that any new feature, fix, or significant change is documented by
+adding an entry to the `docs/changelog.md` file.
+
+To learn more about changelog best practices, visit [Keep a Changelog](https://keepachangelog.com/).
 
 ## Build charm
 

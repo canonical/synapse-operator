@@ -60,22 +60,4 @@ For details and implementation, visit the module’s repository: [Synapse Invite
 
 ## Mjolnir
 
-Synapse charm also has Mjolnir in place. Mjolnir is an all-in-one moderation
-tool designed to protect Synapse server from malicious invites, spam messages,
-and other unwanted activities.
-
-### Key features
-
-- Bans and redactions: Quickly remove malicious users and their messages from
-rooms.
-- Anti-spam: Automatically detect and mitigate spam activity.
-- Server ACLs: Manage and enforce access control lists at the server level.
-- Room directory changes and alias transfers: Adjust room visibility and manage
-aliases efficiently.
-- Account deactivation: Disable abusive or compromised accounts.
-- Room shutdown: Close problematic rooms completely.
-
-### More information
-
-For more details and implementation guidance, refer to the [Mjolnir GitHub repository](https://github.com/matrix-org/mjolnir).
-
+With the arrival of MAS mjolnir has been temporary disabled.

@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Helper module used to manage MAS-related workloads."""
@@ -10,6 +10,7 @@ import ops
 from charms.hydra.v0.oauth import ClientConfig, OauthProviderConfig
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from charm_types import SMTPConfiguration
 from state.charm_state import SynapseConfig
 from state.mas import MASConfiguration
 
@@ -39,8 +40,10 @@ MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
 )
 
 MAS_AUTHORIZATION_GRANT = ["authorization_code"]
-MAS_TOKEN_ENDPOINT_AUTH_METHOD = "client_secret_basic"
 MAS_OIDC_SCOPE = "openid profile email"
+# Disabling bandit checks since these are only the labels for juju secret
+MAS_TOKEN_ENDPOINT_AUTH_METHOD = "client_secret_basic"  # nosec
+ADMIN_TOKEN_SECRET_LABEL = "admin.token"  # nosec
 
 
 class MASConfigInvalidError(Exception):
@@ -53,6 +56,10 @@ class MASRegisterUserFailedError(Exception):
 
 class MASVerifyUserEmailFailedError(Exception):
     """Exception raised when validation of the MAS config failed."""
+
+
+class MASGenerateAdminAccessTokenError(Exception):
+    """Exception raised when generation of admin token failed."""
 
 
 def validate_mas_config(container: ops.model.Container) -> None:
@@ -102,7 +109,7 @@ def register_user(
     Returns:
         str: The generated user password
     """
-    password = secrets.token_urlsafe(16)
+    password = secrets.token_hex(16)
     command = [
         MAS_EXECUTABLE_PATH,
         "-c",
@@ -112,7 +119,7 @@ def register_user(
         "--yes",
         username,
         "--password",
-        password,
+        f"'{password}'",
     ]
     if is_admin:
         command.append("--admin")
@@ -159,10 +166,32 @@ def verify_user_email(
         raise MASVerifyUserEmailFailedError("Error verifying the user email.") from exc
 
 
+def deactivate_user(container: ops.model.Container, username: str) -> None:
+    """Deactivate an user with mas-cli.
+
+    Args:
+        container: Synapse container.
+        username: Username to create the access token.
+    """
+    command = [
+        MAS_EXECUTABLE_PATH,
+        "-c",
+        MAS_CONFIGURATION_PATH,
+        "manage",
+        "lock-user",
+        "--deactivate",
+        username,
+    ]
+
+    process = container.exec(command=command, working_dir=MAS_WORKING_DIR, combine_stderr=True)
+    process.wait_output()
+
+
 def generate_mas_config(
     mas_configuration: MASConfiguration,
     synapse_configuration: SynapseConfig,
     oauth_provider_info: typing.Optional[OauthProviderConfig],
+    smtp_configuration: typing.Optional[SMTPConfiguration],
     main_unit_address: str,
 ) -> str:
     """Render the MAS configuration file.
@@ -170,6 +199,7 @@ def generate_mas_config(
     Args:
         mas_configuration: Path of the template to load.
         synapse_configuration: Context needed to render the template.
+        smtp_configuration: SMTP configuration.
         main_unit_address: Address of synapse main unit.
         oauth_provider_info: upstream provider configuration.
 
@@ -193,6 +223,7 @@ def generate_mas_config(
         "synapse_main_unit_address": main_unit_address,
         "upstream_oidc_provider_id": mas_context.upstream_oidc_provider_id,
         "oauth_provider_info": oauth_provider_info,
+        "smtp_configuration": smtp_configuration,
     }
     env = Environment(
         loader=FileSystemLoader("./templates"),

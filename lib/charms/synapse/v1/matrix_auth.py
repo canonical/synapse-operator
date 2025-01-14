@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # Licensed under the Apache2.0. See LICENSE file in charm source for details.
 
 """Library to manage the plugin integrations with the Synapse charm.
@@ -63,29 +63,61 @@ class MatrixAuthProviderCharm(ops.CharmBase):
 LIBID = "ff6788c89b204448b3b62ba6f93e2768"
 
 # Increment this major API version when introducing breaking changes
-LIBAPI = 0
+LIBAPI = 1
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 3
+LIBPATCH = 0
 
 # pylint: disable=wrong-import-position
 import json
 import logging
 from typing import Dict, List, Optional, Tuple, cast
+import secrets
+import base64
+from cryptography.fernet import Fernet
 
 import ops
 from pydantic import BaseModel, Field, SecretStr
 
 logger = logging.getLogger(__name__)
 
-#### Constants ####
 APP_REGISTRATION_LABEL = "app-registration"
 APP_REGISTRATION_CONTENT_LABEL = "app-registration-content"
 DEFAULT_RELATION_NAME = "matrix-auth"
 SHARED_SECRET_LABEL = "shared-secret"
 SHARED_SECRET_CONTENT_LABEL = "shared-secret-content"
+ENCRYPTION_KEY_SECRET_LABEL = "encryption-key-secret"
+ENCRYPTION_KEY_SECRET_CONTENT_LABEL = "encryption-key-content"
 
+def encrypt_string(key: bytes, plaintext: SecretStr) -> str:
+        """Encrypt a string using Fernet.
+
+        Args:
+            key: encryption key in bytes.
+            plaintext: text to encrypt.
+
+        Returns:
+            encrypted text.
+        """
+        plaintext = cast(SecretStr, plaintext)
+        encryptor = Fernet(key)
+        ciphertext = encryptor.encrypt(plaintext.get_secret_value().encode('utf-8'))
+        return ciphertext.decode()
+
+def decrypt_string(key: bytes, ciphertext: str) -> str:
+    """Decrypt a string using Fernet.
+
+    Args:
+        key: encryption key in bytes.
+        ciphertext: encrypted text.
+
+    Returns:
+        decrypted text.
+    """
+    decryptor = Fernet(key)
+    plaintext = decryptor.decrypt(ciphertext.encode('utf-8'))
+    return plaintext.decode()
 
 #### Data models for Provider and Requirer ####
 class MatrixAuthProviderData(BaseModel):
@@ -100,6 +132,7 @@ class MatrixAuthProviderData(BaseModel):
     homeserver: str
     shared_secret: Optional[SecretStr] = Field(default=None, exclude=True)
     shared_secret_id: Optional[SecretStr] = Field(default=None)
+    encryption_key_secret_id: Optional[SecretStr] = Field(default=None)
 
     def set_shared_secret_id(self, model: ops.Model, relation: ops.Relation) -> None:
         """Store the Matrix shared secret as a Juju secret.
@@ -123,6 +156,27 @@ class MatrixAuthProviderData(BaseModel):
             )
             secret.grant(relation)
             self.shared_secret_id = cast(str, secret.id)
+
+    def set_encryption_key_secret_id(self, model: ops.Model, relation: ops.Relation) -> None:
+        """Store the encryption key to encrypt/decrypt appservice registrations.
+
+        Args:
+            model: the Juju model
+            relation: relation to grant access to the secrets to.
+        """
+        key = Fernet.generate_key()
+        encryption_key = key.decode('utf-8')
+        try:
+            secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
+            secret.set_content({ENCRYPTION_KEY_SECRET_CONTENT_LABEL: encryption_key})
+            # secret.id is not None at this point
+            self.encryption_key_secret_id = cast(str, secret.id)
+        except ops.SecretNotFoundError:
+            secret = relation.app.add_secret(
+                {ENCRYPTION_KEY_SECRET_CONTENT_LABEL: encryption_key}, label=ENCRYPTION_KEY_SECRET_LABEL
+            )
+            secret.grant(relation)
+            self.encryption_key_secret_id = cast(str, secret.id)
 
     @classmethod
     def get_shared_secret(
@@ -159,6 +213,7 @@ class MatrixAuthProviderData(BaseModel):
             Dict containing the representation.
         """
         self.set_shared_secret_id(model, relation)
+        self.set_encryption_key_secret_id(model, relation)
         return self.model_dump(exclude_unset=True)
 
     @classmethod
@@ -196,56 +251,33 @@ class MatrixAuthRequirerData(BaseModel):
 
     Attributes:
         registration: a generated app registration file.
-        registration_id: the registration Juju secret ID.
     """
 
     registration: Optional[SecretStr] = Field(default=None, exclude=True)
-    registration_secret_id: Optional[SecretStr] = Field(default=None)
-
-    def set_registration_id(self, model: ops.Model, relation: ops.Relation) -> None:
-        """Store the app registration as a Juju secret.
-
-        Args:
-            model: the Juju model
-            relation: relation to grant access to the secrets to.
-        """
-        # password is always defined since pydantic guarantees it
-        password = cast(SecretStr, self.registration)
-        # pylint doesn't like get_secret_value
-        secret_value = password.get_secret_value()  # pylint: disable=no-member
-        try:
-            secret = model.get_secret(label=APP_REGISTRATION_LABEL)
-            secret.set_content({APP_REGISTRATION_CONTENT_LABEL: secret_value})
-            # secret.id is not None at this point
-            self.registration_secret_id = cast(str, secret.id)
-        except ops.SecretNotFoundError:
-            secret = relation.app.add_secret(
-                {APP_REGISTRATION_CONTENT_LABEL: secret_value}, label=APP_REGISTRATION_LABEL
-            )
-            secret.grant(relation)
-            self.registration_secret_id = cast(str, secret.id)
 
     @classmethod
-    def get_registration(
-        cls, model: ops.Model, registration_secret_id: Optional[str]
-    ) -> Optional[SecretStr]:
-        """Retrieve the registration corresponding to the registration_secret_id.
+    def get_encryption_key_secret(
+        cls, model: ops.Model, encryption_key_secret_id: Optional[str]
+    ) -> Optional[bytes]:
+        """Retrieve the encryption key secret corresponding to the encryption_key_secret_id.
 
         Args:
             model: the Juju model.
-            registration_secret_id: the secret ID for the registration.
+            encryption_key_secret_id: the secret ID for the encryption key secret.
 
         Returns:
-            the registration or None if not found.
+            the encryption key secret  as bytes or None if not found.
         """
-        if not registration_secret_id:
-            return None
         try:
-            secret = model.get_secret(id=registration_secret_id)
-            password = secret.get_content().get(APP_REGISTRATION_CONTENT_LABEL)
-            if not password:
+            if not encryption_key_secret_id:
+                # then its the provider and we can get using label
+                secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
+            else:
+                secret = model.get_secret(id=encryption_key_secret_id)
+            encryption_key = secret.get_content().get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
+            if not encryption_key:
                 return None
-            return SecretStr(password)
+            return encryption_key.encode('utf-8')
         except ops.SecretNotFoundError:
             return None
 
@@ -258,11 +290,21 @@ class MatrixAuthRequirerData(BaseModel):
 
         Returns:
             Dict containing the representation.
+
+        Raises:
+            ValueError if encryption key not found.
         """
-        self.set_registration_id(model, relation)
-        dumped_model = self.model_dump(exclude_unset=True)
+        # get encryption key
+        app = cast(ops.Application, relation.app)
+        relation_data = relation.data[app]
+        encryption_key_secret_id = relation_data.get("encryption_key_secret_id")
+        encryption_key = MatrixAuthRequirerData.get_encryption_key_secret(model, encryption_key_secret_id)
+        if not encryption_key:
+            raise ValueError("Invalid relation data: encryption_key_secret_id not found")
+        # encrypt content
+        content = encrypt_string(key=encryption_key, plaintext=self.registration)
         dumped_data = {
-            "registration_secret_id": dumped_model["registration_secret_id"],
+            "registration_secret": content,
         }
         return dumped_data
 
@@ -280,12 +322,20 @@ class MatrixAuthRequirerData(BaseModel):
         Raises:
             ValueError: if the value is not parseable.
         """
+        # get encryption key
         app = cast(ops.Application, relation.app)
         relation_data = relation.data[app]
-        registration_secret_id = relation_data.get("registration_secret_id")
-        registration = MatrixAuthRequirerData.get_registration(model, registration_secret_id)
+        encryption_key_secret_id = relation_data.get("encryption_key_secret_id")
+        encryption_key = MatrixAuthRequirerData.get_encryption_key_secret(model, encryption_key_secret_id)
+        if not encryption_key:
+            logger.warning("Invalid relation data: encryption_key_secret_id not found")
+            return None
+        # decrypt content
+        registration_secret = relation_data.get("registration_secret")
+        if not registration_secret:
+            return MatrixAuthRequirerData()
         return MatrixAuthRequirerData(
-            registration=registration,
+            registration=decrypt_string(key=encryption_key, ciphertext=registration_secret),
         )
 
 

@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse charm unit tests."""
@@ -42,7 +42,7 @@ def test_mas_generate_config(monkeypatch: pytest.MonkeyPatch) -> None:
     }
     synapse_configuration = SynapseConfig(**config)  # type: ignore[arg-type]
     rendered_mas_config = generate_mas_config(
-        mas_configuration, synapse_configuration, None, "10.1.1.0"
+        mas_configuration, synapse_configuration, None, None, "10.1.1.0"
     )
     rendered_msc3861_config = generate_synapse_msc3861_config(
         mas_configuration, synapse_configuration

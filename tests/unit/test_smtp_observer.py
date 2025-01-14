@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """SMTPObserver unit tests."""
@@ -6,10 +6,12 @@
 # pylint: disable=protected-access
 
 from secrets import token_hex
+from unittest.mock import MagicMock
 
 import pytest
 from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.testing import Harness
+from pydantic.v1 import ValidationError
 
 from charm_types import SMTPConfiguration
 from state.charm_state import CharmConfigInvalidError
@@ -144,3 +146,26 @@ def test_get_relation_as_smtp_conf_password_from_juju_secret(harness: Harness):
     smtp_configuration = harness.charm._smtp.get_relation_as_smtp_conf()
 
     assert smtp_configuration["password"] == password
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(ValueError),
+        pytest.param(ValidationError, marks=[pytest.mark.requires_secrets]),
+    ],
+)
+def test_get_relation_as_smtp_conf_error(harness: Harness, monkeypatch: pytest.MonkeyPatch, error):
+    """
+    arrange: Mock charm with get_relation_data method raising errors.
+    act: get SMTPConfiguration from smtp observer.
+    assert: fetched smtp configuration is none.
+    """
+    monkeypatch.setattr(
+        "charms.smtp_integrator.v0.smtp.SmtpRequires.get_relation_data",
+        MagicMock(side_effect=error(MagicMock(), MagicMock())),
+    )
+    harness.add_relation("smtp", "smtp-integrator", app_data={})
+    harness.begin()
+
+    assert harness.charm._smtp.get_relation_as_smtp_conf() is None

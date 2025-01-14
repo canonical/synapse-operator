@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """State of the Charm."""
@@ -12,7 +12,7 @@ import ops
 from state.mas import MASContextNotSetError
 
 from .charm_state import CharmConfigInvalidError, CharmState
-from .mas import MASConfiguration, MASDatasourceMissingError
+from .mas import MASConfiguration, MASDatasourceInvalidError, MASDatasourceMissingError
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,10 @@ def validate_charm_state(  # pylint: disable=protected-access
 
         try:
             return method(instance, event)
-        except (CharmConfigInvalidError, MASDatasourceMissingError) as exc:
+        except (
+            CharmConfigInvalidError,
+            MASDatasourceMissingError,
+        ) as exc:
             logger.exception("Error initializing charm state.")
             # There are two main types of events, Hooks and Actions.
             # Each one of them should be treated differently.
@@ -102,8 +105,8 @@ def validate_charm_state(  # pylint: disable=protected-access
                 event.fail(str(exc))
             else:
                 charm.model.unit.status = ops.BlockedStatus(str(exc))
-        except MASContextNotSetError as exc:
-            logger.exception("MAS context not set by leader.")
+        except (MASContextNotSetError, MASDatasourceInvalidError) as exc:
+            logger.exception("Waiting for the charm to settle into a correct state.")
             charm.model.unit.status = ops.WaitingStatus(str(exc))
 
         return None
