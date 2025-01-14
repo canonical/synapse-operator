@@ -7,12 +7,14 @@ Class to interact with pebble.
 
 **Global Variables**
 ---------------
-- **STATS_EXPORTER_SERVICE_NAME**
 - **MAS_CONFIGURATION_PATH**
+- **MAS_PEBBLE_LAYER**
+- **MAS_SERVICE_NAME**
+- **STATS_EXPORTER_SERVICE_NAME**
 
 ---
 
-<a href="../src/pebble.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_synapse_alive`
 
@@ -37,7 +39,7 @@ Return the Synapse container alive check.
 
 ---
 
-<a href="../src/pebble.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_synapse_ready`
 
@@ -56,7 +58,7 @@ Return the Synapse container ready check.
 
 ---
 
-<a href="../src/pebble.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_synapse`
 
@@ -83,7 +85,7 @@ This will force a restart even if its plan hasn't changed.
 
 ---
 
-<a href="../src/pebble.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_nginx_ready`
 
@@ -102,26 +104,7 @@ Return the Synapse NGINX container check.
 
 ---
 
-<a href="../src/pebble.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `check_mjolnir_ready`
-
-```python
-check_mjolnir_ready() → CheckDict
-```
-
-Return the Synapse Mjolnir service check. 
-
-
-
-**Returns:**
- 
- - <b>`Dict`</b>:  check object converted to its dict representation. 
-
-
----
-
-<a href="../src/pebble.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_nginx`
 
@@ -141,7 +124,7 @@ Restart Synapse NGINX service and regenerate configuration.
 
 ---
 
-<a href="../src/pebble.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_federation_sender`
 
@@ -161,26 +144,7 @@ Restart Synapse federation sender service and regenerate configuration.
 
 ---
 
-<a href="../src/pebble.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `replan_mjolnir`
-
-```python
-replan_mjolnir(container: Container) → None
-```
-
-Replan Synapse Mjolnir service. 
-
-
-
-**Args:**
- 
- - <b>`container`</b>:  Charm container. 
-
-
----
-
-<a href="../src/pebble.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_stats_exporter`
 
@@ -200,7 +164,7 @@ Replan Synapse StatsExporter service.
 
 ---
 
-<a href="../src/pebble.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replan_synapse_federation_sender`
 
@@ -223,7 +187,26 @@ Replan Synapse Federation Sender service.
 
 ---
 
-<a href="../src/pebble.py#L302"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `replan_mas`
+
+```python
+replan_mas(container: Container) → None
+```
+
+Replan Matrix Authentication Service. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  Charm container. 
+
+
+---
+
+<a href="../src/pebble.py#L294"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reconcile`
 
@@ -231,6 +214,7 @@ Replan Synapse Federation Sender service.
 reconcile(
     charm_state: CharmState,
     rendered_mas_configuration: str,
+    synapse_msc3861_configuration: dict,
     container: Container,
     is_main: bool = True,
     unit_number: str = ''
@@ -247,6 +231,7 @@ This is the main entry for changes that require a restart done via Pebble.
  
  - <b>`charm_state`</b>:  Instance of CharmState 
  - <b>`rendered_mas_configuration`</b>:  Rendered MAS yaml configuration. 
+ - <b>`synapse_msc3861_configuration`</b>:  Synapse's msc3861 configuration 
  - <b>`container`</b>:  Charm container. 
  - <b>`is_main`</b>:  if unit is main. 
  - <b>`unit_number`</b>:  unit number id to set the worker name. 
@@ -260,12 +245,32 @@ This is the main entry for changes that require a restart done via Pebble.
 
 ---
 
+<a href="../src/pebble.py#L579"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `restart_mas`
+
+```python
+restart_mas(container: Container, rendered_mas_configuration: str) → None
+```
+
+Update MAS configuration and restart MAS. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  The synapse container. 
+ - <b>`rendered_mas_configuration`</b>:  YAML configuration for MAS. 
+
+
+---
+
 ## <kbd>class</kbd> `PebbleServiceError`
 Exception raised when something fails while interacting with Pebble. 
 
 Attrs:  msg (str): Explanation of the error. 
 
-<a href="../src/pebble.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

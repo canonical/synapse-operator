@@ -17,23 +17,27 @@ from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
 
-import actions
 import pebble
 import synapse
-from admin_access_token import AdminAccessTokenService
-from auth.mas import generate_mas_config
+from auth.mas import (
+    MASRegisterUserFailedError,
+    MASVerifyUserEmailFailedError,
+    deactivate_user,
+    generate_mas_config,
+    generate_synapse_msc3861_config,
+    register_user,
+    verify_user_email,
+)
 from backup_observer import BackupObserver
 from database_observer import DatabaseObserver, SynapseDatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
-from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
 from smtp_observer import SMTPObserver
 from state.charm_state import CharmState
 from state.mas import MAS_DATABASE_INTEGRATION_NAME, MAS_DATABASE_NAME, MASConfiguration
 from state.validation import CharmBaseWithState, validate_charm_state
-from user import User
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +75,6 @@ class SynapseCharm(CharmBaseWithState):
         )
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
-        self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -87,7 +90,6 @@ class SynapseCharm(CharmBaseWithState):
             port=synapse.SYNAPSE_NGINX_PORT,
         )
         self._observability = Observability(self)
-        self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
@@ -99,9 +101,7 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
-        self.framework.observe(
-            self.on.promote_user_admin_action, self._on_promote_user_admin_action
-        )
+        self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
 
     def build_charm_state(self) -> CharmState:
@@ -200,6 +200,11 @@ class SynapseCharm(CharmBaseWithState):
             charm_state: Instance of CharmState
             mas_configuration: Charm state component to configure MAS
         """
+        logger.debug("Found %d peer unit(s).", self.peer_units_total())
+        if charm_state.redis_config is None and self.peer_units_total() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            return
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("Change_config is setting main unit.")
             self.set_main_unit(self.unit.name)
@@ -218,12 +223,19 @@ class SynapseCharm(CharmBaseWithState):
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
             rendered_mas_configuration = generate_mas_config(
-                mas_configuration, charm_state.synapse_config, self.get_main_unit_address()
+                mas_configuration,
+                charm_state.synapse_config,
+                charm_state.smtp_config,
+                self.get_main_unit_address(),
+            )
+            synapse_msc3861_configuration = generate_synapse_msc3861_config(
+                mas_configuration, charm_state.synapse_config
             )
             # reconcile configuration
             pebble.reconcile(
                 charm_state,
                 rendered_mas_configuration,
+                synapse_msc3861_configuration,
                 container,
                 is_main=self.is_main(),
                 unit_number=self.get_unit_number(),
@@ -297,11 +309,6 @@ class SynapseCharm(CharmBaseWithState):
         charm_state = self.build_charm_state()
         mas_configuration = MASConfiguration.from_charm(self)
 
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
         logger.debug("_on_config_changed emitting reconcile")
         self.reconcile(charm_state, mas_configuration)
         self._set_workload_version()
@@ -345,11 +352,6 @@ class SynapseCharm(CharmBaseWithState):
         charm_state = self.build_charm_state()
         mas_configuration = MASConfiguration.from_charm(self)
 
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
         self.unit.status = ops.ActiveStatus()
         logger.debug("_on_synapse_pebble_ready emitting reconcile")
         self.reconcile(charm_state, mas_configuration)
@@ -502,47 +504,37 @@ class SynapseCharm(CharmBaseWithState):
             event.fail("Failed to connect to the container")
             return
         try:
-            user = actions.register_user(
-                container=container, username=event.params["username"], admin=event.params["admin"]
+            password = register_user(
+                container=container,
+                username=event.params["username"],
+                is_admin=event.params["admin"],
             )
-        except actions.RegisterUserError as exc:
+        except MASRegisterUserFailedError as exc:
             event.fail(str(exc))
             return
-        results = {"register-user": True, "user-password": user.password}
+        results = {"register-user": True, "user-password": password}
         event.set_results(results)
 
-    @validate_charm_state
-    def _on_promote_user_admin_action(self, event: ActionEvent) -> None:
-        """Promote user admin and report action result.
+    def _on_verify_user_email_action(self, event: ActionEvent) -> None:
+        """Register user and report action result.
 
         Args:
-            event: Event triggering the promote user admin action.
+            event: Event triggering the register user instance action.
         """
-        charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
-
-        results = {
-            "promote-user-admin": False,
-        }
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             event.fail("Failed to connect to the container")
             return
         try:
-            admin_access_token = self.token_service.get(container)
-            if not admin_access_token:
-                event.fail("Failed to get admin access token")
-                return
-            username = event.params["username"]
-            server = charm_state.synapse_config.server_name
-            user = User(username=username, admin=True)
-            synapse.promote_user_admin(
-                user=user, server=server, admin_access_token=admin_access_token
+            verify_user_email(
+                container=container,
+                username=event.params["username"],
+                email=event.params["email"],
             )
-            results["promote-user-admin"] = True
-        except synapse.APIError as exc:
+        except MASVerifyUserEmailFailedError as exc:
             event.fail(str(exc))
             return
+        results = {"verify-user-email": True}
         event.set_results(results)
 
     @validate_charm_state
@@ -552,32 +544,22 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             event: Event triggering the anonymize user action.
         """
-        charm_state = self.build_charm_state()
-        MASConfiguration.validate(self)
-
-        results = {
-            "anonymize-user": False,
-        }
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            event.fail("Container not yet ready. Try again later")
+            event.fail("Failed to connect to the container")
             return
+
         try:
-            admin_access_token = self.token_service.get(container)
-            if not admin_access_token:
-                event.fail("Failed to get admin access token")
-                return
-            username = event.params["username"]
-            server = charm_state.synapse_config.server_name
-            user = User(username=username, admin=False)
-            synapse.deactivate_user(
-                user=user, server=server, admin_access_token=admin_access_token
-            )
-            results["anonymize-user"] = True
-        except synapse.APIError:
-            event.fail("Failed to anonymize the user. Check if the user is created and active.")
-            return
-        event.set_results(results)
+            deactivate_user(container=container, username=event.params["username"])
+        except ops.pebble.ExecError as exc:
+            logger.exception("Error deactivating user.")
+            event.fail(str(exc))
+
+        event.set_results(
+            {
+                "anonymize-user": True,
+            }
+        )
 
 
 if __name__ == "__main__":  # pragma: nocover

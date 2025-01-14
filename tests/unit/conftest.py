@@ -118,13 +118,14 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     # Assume that MAS is working properly
     monkeypatch.setattr(
         "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
     )
     monkeypatch.setattr("pebble._push_mas_config", MagicMock())
+    monkeypatch.setattr("charm.generate_mas_config", MagicMock(return_value=""))
+    monkeypatch.setattr("charm.generate_synapse_msc3861_config", MagicMock(return_value={}))
 
     harness = Harness(SynapseCharm)
     # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
@@ -197,6 +198,11 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
         executable="rm",
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_container,
+        executable="/usr/bin/mas-cli",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness
