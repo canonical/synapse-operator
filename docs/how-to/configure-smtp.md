@@ -5,7 +5,7 @@ emails. Synapse should be deployed beforehand.
 
 ## Deploy smtp-integrator charm
 
-For synapse to use SMTP, it uses the smtp-integrator charm. Replace the configuration options with your specific configuration.
+For Synapse to use SMTP, it uses the smtp-integrator charm. Replace the configuration options with your specific configuration.
 Configuring SMTP without tls or starttls or without authentication is not supported.
 
 ```

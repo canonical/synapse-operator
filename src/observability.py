@@ -1,9 +1,8 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Provide the Observability class to represent the observability stack for Synapse."""
 
-import typing
 
 import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
@@ -28,14 +27,25 @@ class Observability:  # pylint: disable=too-few-public-methods
         self._grafana_dashboards = GrafanaDashboardProvider(
             charm, relation_name="grafana-dashboard"
         )
-        self.targets = [
-            f"*:{synapse.PROMETHEUS_MAIN_TARGET_PORT}",
+        synapse_target = [
+            f"*:{synapse.SYNAPSE_EXPORTER_PORT}",
+        ]
+        synapse_stats_target = [
             f"*:{synapse.STATS_EXPORTER_PORT}",
         ]
         self._metrics_endpoint = MetricsEndpointProvider(
             charm,
             relation_name="metrics-endpoint",
-            jobs=[{"static_configs": [{"targets": self.targets}]}],
+            jobs=[
+                {
+                    "job_name": "synapse_application",
+                    "static_configs": [{"targets": synapse_target}],
+                },
+                {
+                    "job_name": "synapse_stats_exporter",
+                    "static_configs": [{"targets": synapse_stats_target}],
+                },
+            ],
         )
         self._logging = LogProxyConsumer(
             charm,
@@ -46,17 +56,3 @@ class Observability:  # pylint: disable=too-few-public-methods
                 },
             },
         )
-
-    def update_targets(self, targets: typing.List[str]) -> None:
-        """Update prometheus targets.
-
-        Args:
-            targets: new target list.
-        """
-        self.targets.sort()
-        targets.sort()
-        if targets != self.targets:
-            self._metrics_endpoint.update_scrape_job_spec(
-                jobs=[{"static_configs": [{"targets": targets}]}]
-            )
-            self.targets = targets

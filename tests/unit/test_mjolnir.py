@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Mjolnir unit tests."""
@@ -226,8 +226,8 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(synapse, "get_room_id", get_room_id)
     make_room_admin = MagicMock()
     monkeypatch.setattr(synapse, "make_room_admin", make_room_admin)
-    create_mjolnir_config = MagicMock()
-    monkeypatch.setattr(synapse, "create_mjolnir_config", create_mjolnir_config)
+    generate_mjolnir_config = MagicMock()
+    monkeypatch.setattr(synapse, "generate_mjolnir_config", generate_mjolnir_config)
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
@@ -240,7 +240,7 @@ def test_enable_mjolnir(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> No
     make_room_admin.assert_called_once_with(
         user=ANY, server=ANY, admin_access_token=admin_access_token, room_id=room_id
     )
-    create_mjolnir_config.assert_called_once_with(
+    generate_mjolnir_config.assert_called_once_with(
         container=ANY, access_token=mjolnir_access_token, room_id=room_id
     )
     override_rate_limit.assert_called_once_with(
@@ -272,8 +272,8 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(synapse, "create_management_room", create_management_room)
     make_room_admin = MagicMock()
     monkeypatch.setattr(synapse, "make_room_admin", make_room_admin)
-    create_mjolnir_config = MagicMock()
-    monkeypatch.setattr(synapse, "create_mjolnir_config", create_mjolnir_config)
+    generate_mjolnir_config = MagicMock()
+    monkeypatch.setattr(synapse, "generate_mjolnir_config", generate_mjolnir_config)
     override_rate_limit = MagicMock()
     monkeypatch.setattr(synapse, "override_rate_limit", override_rate_limit)
 
@@ -288,7 +288,7 @@ def test_enable_mjolnir_room_none(harness: Harness, monkeypatch: pytest.MonkeyPa
     make_room_admin.assert_called_once_with(
         user=ANY, server=ANY, admin_access_token=admin_access_token, room_id=room_id
     )
-    create_mjolnir_config.assert_called_once_with(
+    generate_mjolnir_config.assert_called_once_with(
         container=ANY, access_token=mjolnir_access_token, room_id=room_id
     )
     override_rate_limit.assert_called_once_with(
@@ -465,3 +465,33 @@ def test_on_collect_status_not_main_unit(
 
     event_mock.add_status.assert_not_called()
     enable_mjolnir_mock.assert_not_called()
+
+
+def test_on_collect_status_not_main_unit_and_is_started(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, unit has Mjolnir started.
+    act: call _on_collect_status.
+    assert: Mjolnir is stopped since this is not the main unit.
+    """
+    harness.add_relation(
+        synapse.SYNAPSE_PEER_RELATION_NAME,
+        "synapse",
+        app_data={"main_unit_id": "synapse/1"},
+    )
+    harness.update_config({"enable_mjolnir": True})
+    harness.begin_with_initial_hooks()
+    enable_mjolnir_mock = MagicMock()
+    monkeypatch.setattr(Mjolnir, "enable_mjolnir", enable_mjolnir_mock)
+    container_mock = MagicMock(spec=ops.Container)
+    monkeypatch.setattr(
+        harness.charm.unit, "get_container", MagicMock(return_value=container_mock)
+    )
+
+    event_mock = MagicMock()
+    harness.charm._mjolnir._on_collect_status(event_mock)
+
+    event_mock.add_status.assert_not_called()
+    enable_mjolnir_mock.assert_not_called()
+    container_mock.stop.assert_called_with("mjolnir")

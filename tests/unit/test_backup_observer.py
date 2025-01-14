@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse backup observer unit tests."""
@@ -74,7 +74,7 @@ import synapse
         ),
     ],
 )
-def test_on_s3_credentials_changed(
+def test_on_s3_credentials_changed(  # pylint: disable=too-many-positional-arguments
     harness: Harness,
     monkeypatch: pytest.MonkeyPatch,
     relation_data: dict,

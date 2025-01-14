@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """The SMTP integrator relation observer."""
@@ -15,7 +15,7 @@ from charms.smtp_integrator.v0.smtp import (
     TransportSecurity,
 )
 from ops.framework import Object
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 from charm_state import CharmBaseWithState, CharmConfigInvalidError, CharmState, inject_charm_state
 from charm_types import SMTPConfiguration

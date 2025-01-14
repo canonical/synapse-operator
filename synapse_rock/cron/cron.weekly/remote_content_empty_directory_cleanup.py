@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """
@@ -9,8 +9,8 @@ Related: https://github.com/matrix-org/synapse/issues/16229
 Related: https://github.com/matrix-org/synapse/issues/7690
 """
 
-import os
 import json
+import os
 import time
 
 # We assume that pyyaml is present thanks to synapse

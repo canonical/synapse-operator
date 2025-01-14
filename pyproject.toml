@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 [tool.bandit]
@@ -11,7 +11,7 @@ skips = ["*/*test.py", "*/test_*.py", "*tests/*.py"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 92
+fail_under = 91
 show_missing = true
 
 

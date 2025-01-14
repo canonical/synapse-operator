@@ -439,96 +439,109 @@
         }
       },
       {
+        "aliasColors": {},
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
         "datasource": "${prometheusds}",
         "fieldConfig": {
           "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 10,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "lineInterpolation": "linear",
-              "lineWidth": 3,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "spanNulls": false,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "line+area"
-              }
-            },
-            "links": [],
-            "mappings": [],
-            "max": 1.5,
-            "min": 0,
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "transparent",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 1
-                }
-              ]
-            },
-            "unit": "percentunit"
+            "displayName": "CPU usage",
+            "links": []
           },
           "overrides": []
         },
+        "fill": 1,
+        "fillGradient": 0,
         "gridPos": {
           "h": 9,
           "w": 12,
           "x": 0,
           "y": 10
         },
+        "hiddenSeries": false,
         "id": 75,
-        "links": [],
-        "options": {
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": true
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
+        "legend": {
+          "avg": true,
+          "current": true,
+          "max": true,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": true
         },
+        "lines": true,
+        "linewidth": 3,
+        "links": [],
+        "nullPointMode": "null",
+        "options": {
+          "alertThreshold": true
+        },
+        "paceLength": 10,
+        "percentage": false,
         "pluginVersion": "9.5.3",
+        "pointradius": 5,
+        "points": false,
+        "renderer": "flot",
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
         "targets": [
           {
             "datasource": "${prometheusds}",
-            "editorMode": "code",
-            "expr": "rate(process_cpu_user_seconds_total{juju_application=\"synapse\"}[$__rate_interval]) + rate(process_cpu_system_seconds_total{juju_application=\"synapse\"}[$__rate_interval])",
-            "legendFormat": "__auto",
-            "range": true,
+            "expr": "rate(process_cpu_seconds_total{job=~\".*synapse_application.*\",juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[$bucket_size])",
+            "format": "time_series",
+            "interval": "",
+            "intervalFactor": 1,
+            "legendFormat": "{{job}}-{{index}} ",
             "refId": "A"
           }
         ],
+        "thresholds": [
+          {
+            "$$hashKey": "object:566",
+            "colorMode": "critical",
+            "fill": true,
+            "line": true,
+            "op": "gt",
+            "value": 1,
+            "yaxis": "left"
+          }
+        ],
+        "timeRegions": [],
         "title": "CPU usage",
-        "type": "timeseries"
+        "tooltip": {
+          "shared": false,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "mode": "time",
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "$$hashKey": "object:538",
+            "format": "percentunit",
+            "label": "",
+            "logBase": 1,
+            "min": "0",
+            "show": true
+          },
+          {
+            "$$hashKey": "object:539",
+            "format": "short",
+            "label": "",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false
+        }
       },
       {
         "datasource": "${prometheusds}",
@@ -913,7 +926,7 @@
               "uid": "${prometheusds}"
             },
             "editorMode": "code",
-            "expr": "count_values(\"juju_unit\", up{juju_application=\"synapse\"}) by (juju_model)",
+            "expr": "count(up{juju_application=\"synapse\", job=~\".*prometheus_scrape_synapse_application.*\", juju_model=~\"$juju_model\"}) by (juju_model)",
             "legendFormat": "{{juju_model}}",
             "range": true,
             "refId": "A"

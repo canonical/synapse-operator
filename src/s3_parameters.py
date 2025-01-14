@@ -1,11 +1,11 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Provides S3 Parameters configuration."""
 
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic.v1 import BaseModel, Field, validator
 
 
 class S3Parameters(BaseModel):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm integrated with Redis."""
@@ -12,6 +12,8 @@ from juju.application import Application
 from juju.model import Model
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
+
+import synapse
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
@@ -41,15 +43,13 @@ async def test_synapse_scaling_nginx_configured(
     )
     assert ops_test.model
     status = await ops_test.model.get_status()
-    unit = list(status.applications[synapse_app.name].units)[1]
+    application = typing.cast(Application, status.applications[synapse_app.name])
+    unit = list(application.units)[1]
     address = status["applications"][synapse_app.name]["units"][unit]["address"]
 
-    logger.info("Units: %s", list(status.applications[synapse_app.name].units))
-    logger.info("Requesting %s", f"http://{address}:8008/")
     response_worker = requests.get(
         f"http://{address}:8008/", headers={"Host": synapse_app.name}, timeout=5
     )
-    logger.info("Requesting %s", f"http://{address}:8080/")
     response_nginx = requests.get(
         f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5
     )
@@ -81,7 +81,8 @@ async def test_synapse_scaling_down(
     )
     assert ops_test.model
     status = await ops_test.model.get_status()
-    for unit in list(status.applications[synapse_app.name].units):
+    application = typing.cast(Application, status.applications[synapse_app.name])
+    for unit in list(application.units):
         address = status["applications"][synapse_app.name]["units"][unit]["address"]
         response_worker = requests.get(
             f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5
@@ -97,9 +98,39 @@ async def test_synapse_scaling_down(
     )
     assert ops_test.model
     status = await ops_test.model.get_status()
-    for unit in list(status.applications[synapse_app.name].units):
+    application = typing.cast(Application, status.applications[synapse_app.name])
+    for unit in list(application.units):
         address = status["applications"][synapse_app.name]["units"][unit]["address"]
         response_worker = requests.get(
             f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5
         )
         assert response_worker.status_code == 200
+
+
+@pytest.mark.redis
+async def test_synapse_prometheus_configured(
+    model: Model,
+    synapse_app: Application,
+    redis_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: integrate Synapse with Redis and scale 1 unit.
+    act:  get all unit IPs and do a http request via port 9000.
+    assert: collect metrics should work for all units.
+    """
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, redis_app.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+    await synapse_app.scale(2)
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, redis_app.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+    for unit_ip in await get_unit_ips(synapse_app.name):
+        response = requests.get(f"http://{unit_ip}:{synapse.SYNAPSE_EXPORTER_PORT}/", timeout=5)
+        assert response.status_code == 200
+        assert "python_gc_objects_collected_total" in response.text
