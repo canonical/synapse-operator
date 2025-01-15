@@ -17,9 +17,18 @@
       "fileMatch": ["(^|/)rockcraft.yaml$"],
       "description": "Update Synapse workload",
       "matchStringsStrategy": "any",
-      "matchStrings": ["source-tag: (?<currentValue>.+)"],
+      "matchStrings": ["source:.*synapse.*\n.*source-type: git.*\n.*source-tag: (?<currentValue>.+)"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "element-hq/synapse",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "fileMatch": ["(^|/)rockcraft.yaml$"],
+      "description": "Update MAS workload",
+      "matchStringsStrategy": "any",
+      "matchStrings": ["source:.*matrix-authentication-service.*\n.*source-type: git.*\n.*source-tag: (?<currentValue>.+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "element-hq/matrix-authentication-service",
       "versioningTemplate": "semver-coerced"
     }
 
