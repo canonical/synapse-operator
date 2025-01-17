@@ -3,7 +3,7 @@
 
 name: synapse
 display-name: Synapse
-summary: Matrix synapse chat server.
+summary: Matrix Synapse chat server.
 description: |
   A charm for the matrix synapse chat server.
   Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
