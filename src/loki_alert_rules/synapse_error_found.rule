@@ -1,0 +1,8 @@
+alert: SynapseErrorFound
+expr: rate({%%juju_topology%%, pebble_service="synapse"} |= " - ERROR - "[5m]) > 0
+for: 5m
+labels:
+  severity: error
+annotations:
+  summary: Synapse errors detected.
+  description: This alert is triggered when Synapse logs an error level message in the last 5 minutes.
