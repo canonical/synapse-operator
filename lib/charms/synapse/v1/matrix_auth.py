@@ -67,7 +67,7 @@ LIBAPI = 1
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 0
+LIBPATCH = 4
 
 # pylint: disable=wrong-import-position
 import json
@@ -195,7 +195,7 @@ class MatrixAuthProviderData(BaseModel):
             return None
         try:
             secret = model.get_secret(id=shared_secret_id)
-            password = secret.get_content().get(SHARED_SECRET_CONTENT_LABEL)
+            password = secret.get_content(refresh=True).get(SHARED_SECRET_CONTENT_LABEL)
             if not password:
                 return None
             return SecretStr(password)
@@ -274,7 +274,7 @@ class MatrixAuthRequirerData(BaseModel):
                 secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
             else:
                 secret = model.get_secret(id=encryption_key_secret_id)
-            encryption_key = secret.get_content().get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
+            encryption_key = secret.get_content(refresh=True).get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
             if not encryption_key:
                 return None
             return encryption_key.encode('utf-8')
