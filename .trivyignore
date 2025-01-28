@@ -60,3 +60,5 @@ CVE-2024-53863
 # This should be removed once pebble releases a new version.
 # https://github.com/canonical/pebble/commit/0c134f8e0d80f4bd8f42011279c8f0737b59a673
 CVE-2024-45338
+# Node.js vulnerabilty
+CVE-2024-52798
