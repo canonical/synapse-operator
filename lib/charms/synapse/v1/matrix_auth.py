@@ -452,11 +452,9 @@ class MatrixAuthProvides(ops.Object):
                 updated.
         """
         try:
-            logger.warning(relation)
             MatrixAuthProviderData.from_relation(self.model, relation=relation)
             logger.warning("Matrix Provider relation data is already set, skipping")
-        except ValueError as e:
-            logger.warning(e)
+        except ValueError:
             logger.warning("Matrix Provider relation data is invalid or empty, updating")
             relation_data = matrix_auth_provider_data.to_relation_data(self.model, relation)
             relation.data[self.model.app].update(relation_data)
