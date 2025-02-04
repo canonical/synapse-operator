@@ -67,7 +67,7 @@ LIBAPI = 1
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 0
+LIBPATCH = 5
 
 # pylint: disable=wrong-import-position
 import json
@@ -442,15 +442,22 @@ class MatrixAuthProvides(ops.Object):
     def update_relation_data(
         self, relation: ops.Relation, matrix_auth_provider_data: MatrixAuthProviderData
     ) -> None:
-        """Update the relation data.
+        """Update the relation data. Since provider values should not be changed
+            while instance exists, this method updates relation data only if
+            invalid or empty.
 
         Args:
             relation: the relation for which to update the data.
             matrix_auth_provider_data: a MatrixAuthProviderData instance wrapping the data to be
                 updated.
         """
-        relation_data = matrix_auth_provider_data.to_relation_data(self.model, relation)
-        relation.data[self.model.app].update(relation_data)
+        try:
+            MatrixAuthProviderData.from_relation(self.model, relation=relation)
+            logger.warning("Matrix Provider relation data is already set, skipping")
+        except ValueError:
+            logger.warning("Matrix Provider relation data is invalid or empty, updating")
+            relation_data = matrix_auth_provider_data.to_relation_data(self.model, relation)
+            relation.data[self.model.app].update(relation_data)
 
 
 class MatrixAuthRequires(ops.Object):

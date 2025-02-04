@@ -5,11 +5,16 @@
 
 # pylint: disable=protected-access
 
+import logging
 from unittest.mock import ANY, MagicMock
 
 import pytest
 import yaml
-from charms.synapse.v1.matrix_auth import MatrixAuthRequirerData, encrypt_string
+from charms.synapse.v1.matrix_auth import (
+    MatrixAuthProviderData,
+    MatrixAuthRequirerData,
+    encrypt_string,
+)
 from ops.testing import Harness
 from pydantic import SecretStr
 
@@ -45,6 +50,40 @@ def test_matrix_auth_update_success(harness: Harness, monkeypatch: pytest.Monkey
     update_relation_data.assert_called_with(relation, ANY)
 
     assert update_relation_data.call_args[0][1].homeserver == f"https://{TEST_SERVER_NAME}"
+
+
+def test_matrix_auth_update_only_once(harness: Harness, monkeypatch: pytest.MonkeyPatch, caplog):
+    """
+    arrange: start the Synapse charm.
+    act: integrate via matrix-auth.
+    assert: update_relation_data is called and homeserver has same value as
+        server_name.
+    """
+    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    harness.begin()
+    monkeypatch.setattr(
+        MatrixAuthProviderData, "get_shared_secret", MagicMock(return_value="shared-secret")
+    )
+    monkeypatch.setattr(
+        synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
+    )
+    rel_id = harness.add_relation(
+        "matrix-auth",
+        "maubot",
+        app_data={
+            "homeserver": "example.com",
+            "shared_secret_id": "test-secret-id",
+            "encryption_key_secret_id": "test-secret-id",
+        },
+    )
+    harness.add_relation_unit(rel_id, "maubot/0")
+
+    with caplog.at_level(logging.WARNING):
+        harness.charm.on.config_changed.emit()
+
+    assert "Matrix Provider relation data is invalid or empty, updating" not in caplog.text
 
 
 def test_matrix_auth_update_public_baseurl_success(
