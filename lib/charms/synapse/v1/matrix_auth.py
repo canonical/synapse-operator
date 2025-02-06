@@ -67,7 +67,7 @@ LIBAPI = 1
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 0
+LIBPATCH = 5
 
 # pylint: disable=wrong-import-position
 import json
@@ -195,7 +195,7 @@ class MatrixAuthProviderData(BaseModel):
             return None
         try:
             secret = model.get_secret(id=shared_secret_id)
-            password = secret.get_content().get(SHARED_SECRET_CONTENT_LABEL)
+            password = secret.get_content(refresh=True).get(SHARED_SECRET_CONTENT_LABEL)
             if not password:
                 return None
             return SecretStr(password)
@@ -274,7 +274,7 @@ class MatrixAuthRequirerData(BaseModel):
                 secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
             else:
                 secret = model.get_secret(id=encryption_key_secret_id)
-            encryption_key = secret.get_content().get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
+            encryption_key = secret.get_content(refresh=True).get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
             if not encryption_key:
                 return None
             return encryption_key.encode('utf-8')
@@ -442,15 +442,22 @@ class MatrixAuthProvides(ops.Object):
     def update_relation_data(
         self, relation: ops.Relation, matrix_auth_provider_data: MatrixAuthProviderData
     ) -> None:
-        """Update the relation data.
+        """Update the relation data. Since provider values should not be changed
+            while instance exists, this method updates relation data only if
+            invalid or empty.
 
         Args:
             relation: the relation for which to update the data.
             matrix_auth_provider_data: a MatrixAuthProviderData instance wrapping the data to be
                 updated.
         """
-        relation_data = matrix_auth_provider_data.to_relation_data(self.model, relation)
-        relation.data[self.model.app].update(relation_data)
+        try:
+            MatrixAuthProviderData.from_relation(self.model, relation=relation)
+            logger.warning("Matrix Provider relation data is already set, skipping")
+        except ValueError:
+            logger.warning("Matrix Provider relation data is invalid or empty, updating")
+            relation_data = matrix_auth_provider_data.to_relation_data(self.model, relation)
+            relation.data[self.model.app].update(relation_data)
 
 
 class MatrixAuthRequires(ops.Object):

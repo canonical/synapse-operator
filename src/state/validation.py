@@ -54,7 +54,7 @@ E = typing.TypeVar("E", bound=ops.EventBase)
 
 
 def validate_charm_state(  # pylint: disable=protected-access
-    method: typing.Callable[[C, E], None]
+    method: typing.Callable[[C, E], None],
 ) -> typing.Callable[[C, E], None]:
     """Create a decorator that injects the argument charm_state to an observer hook.
 
