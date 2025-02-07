@@ -100,7 +100,7 @@ def sync_mas_config(container: ops.model.Container) -> None:
         process.wait()
     except ops.pebble.ExecError as exc:
         logger.exception("Error syncing MAS config with the database.")
-        raise MASConfigSyncError("Error validating MAS configuration.") from exc
+        raise MASConfigSyncError("Error syncing MAS config with the database.") from exc
 
 
 def register_user(
@@ -140,7 +140,7 @@ def register_user(
         process.wait_output()
     except ops.pebble.ExecError as exc:
         logger.exception("Error registering new user.")
-        raise MASRegisterUserFailedError("Error validating MAS configuration.") from exc
+        raise MASRegisterUserFailedError("Error registering new user.") from exc
 
     return password
 
