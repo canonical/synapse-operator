@@ -104,7 +104,6 @@ class SynapseDatabaseObserver(DatabaseObserver):
         """Handle database created events."""
         charm = self.get_charm()
         charm_state = charm.build_charm_state()
-        mas_configuration = MASConfiguration.from_charm(charm)
         self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         # In case of psycopg2.Error, Juju will set ErrorStatus
         # See discussion here:
@@ -112,4 +111,6 @@ class SynapseDatabaseObserver(DatabaseObserver):
         datasource = self.get_relation_as_datasource()
         db_client = DatabaseClient(datasource=datasource)
         db_client.prepare()
+
+        mas_configuration = MASConfiguration.from_charm(charm)
         charm.reconcile(charm_state, mas_configuration)
