@@ -41,27 +41,31 @@ MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
 ADMIN_TOKEN_SECRET_LABEL = "admin.token"  # nosec
 
 
+class MASCLIBaseError(Exception):
+    """Base exception for mas-cli related operations."""
+
+
 class MASConfigInvalidError(Exception):
     """Exception raised when validation of the MAS config failed."""
 
 
-class MASConfigSyncError(Exception):
+class MASConfigSyncError(MASCLIBaseError):
     """Exception raised when synchronisation of the MAS config failed."""
 
 
-class MASRegisterUserFailedError(Exception):
+class MASRegisterUserFailedError(MASCLIBaseError):
     """Exception raised when validation of the MAS config failed."""
 
 
-class MASVerifyUserEmailFailedError(Exception):
+class MASVerifyUserEmailFailedError(MASCLIBaseError):
     """Exception raised when validation of the MAS config failed."""
 
 
-class MASDeactivateUserFailedError(Exception):
+class MASDeactivateUserFailedError(MASCLIBaseError):
     """Exception raised when deactivation of a MAS user failed."""
 
 
-class MASGenerateAdminAccessTokenError(Exception):
+class MASGenerateAdminAccessTokenError(MASCLIBaseError):
     """Exception raised when generation of admin token failed."""
 
 
@@ -202,7 +206,7 @@ def deactivate_user(container: ops.model.Container, username: str) -> None:
         process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
         process.wait_output()
     except ops.pebble.ExecError as exc:
-        logger.error("Error registering new user: %s", exc.stderr)
+        logger.exception("Error deactivating user.")
         raise MASDeactivateUserFailedError("Error deactivating user.") from exc
 
 
