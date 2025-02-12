@@ -21,6 +21,8 @@ parts:
   charm:
     build-packages:
       - libpq-dev
+      - libssl-dev
+      - pkg-config
     build-snaps:
       - rustup
     override-build: |
