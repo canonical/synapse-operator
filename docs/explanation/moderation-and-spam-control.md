@@ -59,5 +59,4 @@ For details and implementation, visit the module’s repository: [Synapse Invite
 ---
 
 ## Mjolnir
-
-With the arrival of MAS mjolnir has been temporary disabled.
+With the arrival of MAS, mjolnir has been temporary disabled.
