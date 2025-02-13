@@ -20,6 +20,7 @@ from ops.charm import ActionEvent, RelationDepartedEvent
 import pebble
 import synapse
 from auth.mas import (
+    MASDeactivateUserFailedError,
     MASRegisterUserFailedError,
     MASVerifyUserEmailFailedError,
     deactivate_user,
@@ -537,7 +538,6 @@ class SynapseCharm(CharmBaseWithState):
         results = {"verify-user-email": True}
         event.set_results(results)
 
-    @validate_charm_state
     def _on_anonymize_user_action(self, event: ActionEvent) -> None:
         """Anonymize user and report action result.
 
@@ -551,7 +551,7 @@ class SynapseCharm(CharmBaseWithState):
 
         try:
             deactivate_user(container=container, username=event.params["username"])
-        except ops.pebble.ExecError as exc:
+        except MASDeactivateUserFailedError as exc:
             logger.exception("Error deactivating user.")
             event.fail(str(exc))
 
