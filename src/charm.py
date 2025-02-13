@@ -21,6 +21,7 @@ from ops.charm import ActionEvent, RelationChangedEvent, RelationDepartedEvent
 import pebble
 import synapse
 from auth.mas import (
+    MASDeactivateUserFailedError,
     MASRegisterUserFailedError,
     MASVerifyUserEmailFailedError,
     deactivate_user,
@@ -567,7 +568,7 @@ class SynapseCharm(CharmBaseWithState):
 
         try:
             deactivate_user(container=container, username=event.params["username"])
-        except ops.pebble.ExecError as exc:
+        except MASDeactivateUserFailedError as exc:
             logger.exception("Error deactivating user.")
             event.fail(str(exc))
 

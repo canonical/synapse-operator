@@ -9,10 +9,15 @@ from abc import ABC, abstractmethod
 
 import ops
 
-from state.mas import MASContextNotSetError
+from auth.mas import MASCLIBaseError
+from state.mas import (
+    MASConfiguration,
+    MASContextNotSetError,
+    MASDatasourceInvalidError,
+    MASDatasourceMissingError,
+)
 
 from .charm_state import CharmConfigInvalidError, CharmState
-from .mas import MASConfiguration, MASDatasourceInvalidError, MASDatasourceMissingError
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +59,7 @@ E = typing.TypeVar("E", bound=ops.EventBase)
 
 
 def validate_charm_state(  # pylint: disable=protected-access
-    method: typing.Callable[[C, E], None]
+    method: typing.Callable[[C, E], None],
 ) -> typing.Callable[[C, E], None]:
     """Create a decorator that injects the argument charm_state to an observer hook.
 
@@ -94,10 +99,7 @@ def validate_charm_state(  # pylint: disable=protected-access
 
         try:
             return method(instance, event)
-        except (
-            CharmConfigInvalidError,
-            MASDatasourceMissingError,
-        ) as exc:
+        except (CharmConfigInvalidError, MASDatasourceMissingError, MASCLIBaseError) as exc:
             logger.exception("Error initializing charm state.")
             # There are two main types of events, Hooks and Actions.
             # Each one of them should be treated differently.

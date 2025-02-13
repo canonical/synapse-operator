@@ -17,7 +17,6 @@ from state.mas import MASConfiguration
 logger = logging.getLogger()
 
 MAS_TEMPLATE_FILE_NAME = "mas_config.yaml.j2"
-
 MAS_SERVICE_NAME = "synapse-mas"
 MAS_EXECUTABLE_PATH = "/usr/bin/mas-cli"
 MAS_WORKING_DIR = "/mas"
@@ -46,6 +45,10 @@ MAS_TOKEN_ENDPOINT_AUTH_METHOD = "client_secret_basic"  # nosec
 ADMIN_TOKEN_SECRET_LABEL = "admin.token"  # nosec
 
 
+class MASCLIBaseError(Exception):
+    """Base exception for mas-cli related operations."""
+
+
 class MASConfigInvalidError(Exception):
     """Exception raised when validation of the MAS config failed."""
 
@@ -58,11 +61,19 @@ class MASProvisionUserFailedError(Exception):
     """Exception raised when provisioning of users failed."""
 
 
-class MASVerifyUserEmailFailedError(Exception):
+class MASConfigSyncError(MASCLIBaseError):
+    """Exception raised when synchronisation of the MAS config failed."""
+
+
+class MASVerifyUserEmailFailedError(MASCLIBaseError):
     """Exception raised when validation of the MAS config failed."""
 
 
-class MASGenerateAdminAccessTokenError(Exception):
+class MASDeactivateUserFailedError(MASCLIBaseError):
+    """Exception raised when deactivation of a MAS user failed."""
+
+
+class MASGenerateAdminAccessTokenError(MASCLIBaseError):
     """Exception raised when generation of admin token failed."""
 
 
@@ -73,15 +84,16 @@ def validate_mas_config(container: ops.model.Container) -> None:
         container: Synapse container.
 
     Raises:
-        MASConfigInvalidError: if validation of the MAS config failed.
+        MASConfigInvalidError: when validation of the MAS config failed.
     """
     command = [MAS_EXECUTABLE_PATH, "config", "check", "-c", MAS_CONFIGURATION_PATH]
+
     try:
         process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
         process.wait_output()
     except ops.pebble.ExecError as exc:
-        logger.error("Error validating MAS configuration: %s", exc.stderr)
-        raise MASConfigInvalidError("Error validating MAS configuration.") from exc
+        logger.exception("Validation of the MAS config failed.")
+        raise MASConfigInvalidError("Validation of the MAS config failed.") from exc
 
 
 def sync_mas_config(container: ops.model.Container) -> None:
@@ -89,10 +101,18 @@ def sync_mas_config(container: ops.model.Container) -> None:
 
     Args:
         container: Synapse container.
+
+    Raises:
+        MASConfigSyncError: when synchronisation of the MAS config failed.
     """
     command = [MAS_EXECUTABLE_PATH, "config", "sync", "--prune", "-c", MAS_CONFIGURATION_PATH]
-    process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
-    process.wait()
+
+    try:
+        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
+        process.wait()
+    except ops.pebble.ExecError as exc:
+        logger.exception("Error syncing MAS config with the database.")
+        raise MASConfigSyncError("Error syncing MAS config with the database.") from exc
 
 
 def register_user(
@@ -131,8 +151,8 @@ def register_user(
         process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
         process.wait_output()
     except ops.pebble.ExecError as exc:
-        logger.error("Error registering new user: %s", exc.stderr)
-        raise MASRegisterUserFailedError("Error validating MAS configuration.") from exc
+        logger.exception("Error registering new user.")
+        raise MASRegisterUserFailedError("Error registering new user.") from exc
 
     provision_all_users(container=container)
     return password
@@ -193,7 +213,7 @@ def verify_user_email(
         process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
         process.wait_output()
     except ops.pebble.ExecError as exc:
-        logger.error("Error verifying the user email: %s", exc.stderr)
+        logger.exception("Error verifying the user email.")
         raise MASVerifyUserEmailFailedError("Error verifying the user email.") from exc
 
 
@@ -203,6 +223,9 @@ def deactivate_user(container: ops.model.Container, username: str) -> None:
     Args:
         container: Synapse container.
         username: Username to create the access token.
+
+    Raises:
+        MASDeactivateUserFailedError: when deactivation of the user fails
     """
     command = [
         MAS_EXECUTABLE_PATH,
@@ -214,8 +237,12 @@ def deactivate_user(container: ops.model.Container, username: str) -> None:
         username,
     ]
 
-    process = container.exec(command=command, working_dir=MAS_WORKING_DIR, combine_stderr=True)
-    process.wait_output()
+    try:
+        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
+        process.wait_output()
+    except ops.pebble.ExecError as exc:
+        logger.exception("Error deactivating user.")
+        raise MASDeactivateUserFailedError("Error deactivating user.") from exc
 
 
 def generate_mas_config(
