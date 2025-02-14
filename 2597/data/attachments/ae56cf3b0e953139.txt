@@ -1,0 +1,137 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:794 Connecting to existing model github-pr-fa99b-microk8s:testing on unspecified cloud
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/postgresql-k8s-462
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:synapse-0
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] blocked: Waiting for mas-database integration.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [idle] active: Primary
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/redis-k8s-38
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse/0 [idle] active: 
+  redis/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse/0 [idle] active: 
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  redis/0 [executing] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:936 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-fa99b-microk8s  microk8s/localhost  3.4.6    unsupported  06:47:31Z
+
+App             Version  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+postgresql-k8s  14.13    active      1  postgresql-k8s  14/stable    462  10.152.183.39   no       
+redis           7.2.5    active      1  redis-k8s       latest/edge   38  10.152.183.130  no       
+synapse                  active      1  synapse                        0  10.152.183.134  no       
+
+Unit               Workload  Agent      Address       Ports  Message
+postgresql-k8s/0*  active    idle       10.1.130.140         Primary
+redis/0*           active    executing  10.1.130.144         
+synapse/0*         active    idle       10.1.130.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:942 Juju error logs:
+
+unit-synapse-0: 06:35:25 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 464, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 143, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 200, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:35:27 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 311, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 143, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 200, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:35:32 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 354, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 143, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 200, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-redis-0: 06:37:02 ERROR unit.redis/0.juju-log redis-peers:6: Error when connecting to sentinel: Error 111 connecting to 0.0.0.0:26379. Connection refused.
+unit-redis-0: 06:37:02 ERROR unit.redis/0.juju-log redis-peers:6: Unit redis/0 doesn't agree on tracked master
+unit-redis-0: 06:37:02 ERROR unit.redis/0.juju-log redis-peers:6: Error when connecting to sentinel: Error 111 connecting to localhost:26379. Connection refused.
+unit-synapse-0: 06:37:32 ERROR unit.synapse/0.juju-log redis:7: Failed to get Redis relation data: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/redis_observer.py", line 58, in get_relation_as_redis_conf
+    redis_port = int(self.redis.relation_data.get("port"))
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1024 Forgetting model main...
