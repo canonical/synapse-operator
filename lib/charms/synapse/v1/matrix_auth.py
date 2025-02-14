@@ -6,6 +6,55 @@
 This library contains the Requires and Provides classes for handling the integration
 between an application and a charm providing the `matrix_plugin` integration.
 
+### Summary
+
+#### Provider
+
+Handles requests from requirers.
+
+- Observes:
+relation_changed → Triggers workload reconciliation.
+relation_departed → Triggers workload reconciliation.
+- During reconciliation:
+If the unit is the leader, update_relation_data is called.
+If registration_secrets (IRC registration encrypted content) are present, the
+required files are created, and Synapse configuration is updated.
+
+#### Requirer (IRC Bridge, Bidirectional)
+
+Requests data (uses homeserver URL, registration shared secret and encryption key)
+from the provider and updates its configuration accordingly.
+
+- Observes:
+matrix_auth_request_processed (emitted after valid relation_changed) → Triggers
+workload reconciliation.
+- During reconciliation:
+Configures IRC using data from get_remote_relation_data.
+Updates relation data with IRC registration, calling update_relation_data.
+
+#### Requirer (Maubot, Unidirectional)
+
+Requests data (uses homeserver URL) from the provider but does not send
+registration data back.
+
+Observes:
+matrix_auth_request_processed (emitted after valid relation_changed) → Triggers
+workload reconciliation.
+
+### Why setting a encryption key?
+
+In a CMR (Cross-Model Relation), the provider cannot read a secret created by
+the requirer. To securely share the IRC appservice configuration, the provider
+generates an encryption key that both sides use: the requirer encrypts the
+content, and the provider decrypts it.
+
+This key is generated once by the provider and stored as a secret.
+The same applies to the registration shared secret, as both remain unchanged
+throughout Synapse's lifecycle.
+
+When the relation is removed, if there are no observers for the secret, it is
+deleted.
+
 ### Requirer Charm
 
 ```python
@@ -67,7 +116,7 @@ LIBAPI = 1
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 5
+LIBPATCH = 6
 
 # pylint: disable=wrong-import-position
 import json
@@ -90,6 +139,7 @@ SHARED_SECRET_CONTENT_LABEL = "shared-secret-content"
 ENCRYPTION_KEY_SECRET_LABEL = "encryption-key-secret"
 ENCRYPTION_KEY_SECRET_CONTENT_LABEL = "encryption-key-content"
 
+#### Handlers for encrypted content ####
 def encrypt_string(key: bytes, plaintext: SecretStr) -> str:
         """Encrypt a string using Fernet.
 
@@ -127,6 +177,7 @@ class MatrixAuthProviderData(BaseModel):
         homeserver: the homeserver URL.
         shared_secret: the Matrix shared secret.
         shared_secret_id: the shared secret Juju secret ID.
+        encryption_key_secret_id: encryption key secret ID.
     """
 
     homeserver: str
@@ -137,22 +188,23 @@ class MatrixAuthProviderData(BaseModel):
     def set_shared_secret_id(self, model: ops.Model, relation: ops.Relation) -> None:
         """Store the Matrix shared secret as a Juju secret.
 
+        If the secret exists, grant access to the relation.
+        If not found, create one.
+
         Args:
             model: the Juju model
             relation: relation to grant access to the secrets to.
         """
-        # password is always defined since pydantic guarantees it
-        password = cast(SecretStr, self.shared_secret)
+        shared_secret_content = cast(SecretStr, self.shared_secret)
         # pylint doesn't like get_secret_value
-        secret_value = password.get_secret_value()  # pylint: disable=no-member
+        shared_secret_value = shared_secret_content.get_secret_value()  # pylint: disable=no-member
         try:
             secret = model.get_secret(label=SHARED_SECRET_LABEL)
-            secret.set_content({SHARED_SECRET_CONTENT_LABEL: secret_value})
-            # secret.id is not None at this point
+            secret.grant(relation)
             self.shared_secret_id = cast(str, secret.id)
         except ops.SecretNotFoundError:
             secret = relation.app.add_secret(
-                {SHARED_SECRET_CONTENT_LABEL: secret_value}, label=SHARED_SECRET_LABEL
+                {SHARED_SECRET_CONTENT_LABEL: shared_secret_value}, label=SHARED_SECRET_LABEL
             )
             secret.grant(relation)
             self.shared_secret_id = cast(str, secret.id)
@@ -168,8 +220,7 @@ class MatrixAuthProviderData(BaseModel):
         encryption_key = key.decode('utf-8')
         try:
             secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
-            secret.set_content({ENCRYPTION_KEY_SECRET_CONTENT_LABEL: encryption_key})
-            # secret.id is not None at this point
+            secret.grant(relation)
             self.encryption_key_secret_id = cast(str, secret.id)
         except ops.SecretNotFoundError:
             secret = relation.app.add_secret(
@@ -194,12 +245,14 @@ class MatrixAuthProviderData(BaseModel):
         if not shared_secret_id:
             return None
         try:
-            secret = model.get_secret(id=shared_secret_id)
-            password = secret.get_content(refresh=True).get(SHARED_SECRET_CONTENT_LABEL)
-            if not password:
+            shared_secret_secret = model.get_secret(id=shared_secret_id)
+            shared_secret_content = shared_secret_secret.get_content(refresh=True).get(SHARED_SECRET_CONTENT_LABEL)
+            if not shared_secret_content:
+                logger.warning("Shared secret is empty: %s", shared_secret_id)
                 return None
-            return SecretStr(password)
+            return SecretStr(shared_secret_content)
         except ops.SecretNotFoundError:
+            logger.warning("Shared secret not found: %s", shared_secret_id)
             return None
 
     def to_relation_data(self, model: ops.Model, relation: ops.Relation) -> Dict[str, str]:
@@ -270,15 +323,17 @@ class MatrixAuthRequirerData(BaseModel):
         """
         try:
             if not encryption_key_secret_id:
-                # then its the provider and we can get using label
+                # then its the provider and we can get it using label
                 secret = model.get_secret(label=ENCRYPTION_KEY_SECRET_LABEL)
             else:
                 secret = model.get_secret(id=encryption_key_secret_id)
-            encryption_key = secret.get_content(refresh=True).get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
+            encryption_key = secret.get_content().get(ENCRYPTION_KEY_SECRET_CONTENT_LABEL)
             if not encryption_key:
+                logger.warning("Encryption key is empty")
                 return None
             return encryption_key.encode('utf-8')
         except ops.SecretNotFoundError:
+            logger.warning("Encryption key secret not found")
             return None
 
     def to_relation_data(self, model: ops.Model, relation: ops.Relation) -> Dict[str, str]:
@@ -322,21 +377,29 @@ class MatrixAuthRequirerData(BaseModel):
         Raises:
             ValueError: if the value is not parseable.
         """
-        # get encryption key
-        app = cast(ops.Application, relation.app)
-        relation_data = relation.data[app]
-        encryption_key_secret_id = relation_data.get("encryption_key_secret_id")
-        encryption_key = MatrixAuthRequirerData.get_encryption_key_secret(model, encryption_key_secret_id)
-        if not encryption_key:
-            logger.warning("Invalid relation data: encryption_key_secret_id not found")
-            return None
-        # decrypt content
-        registration_secret = relation_data.get("registration_secret")
-        if not registration_secret:
-            return MatrixAuthRequirerData()
-        return MatrixAuthRequirerData(
-            registration=decrypt_string(key=encryption_key, ciphertext=registration_secret),
-        )
+        try:
+            # get encryption key
+            app = cast(ops.Application, relation.app)
+            relation_data = relation.data[app]
+            encryption_key_secret_id = relation_data.get("encryption_key_secret_id")
+            encryption_key = MatrixAuthRequirerData.get_encryption_key_secret(model, encryption_key_secret_id)
+            if not encryption_key:
+                logger.warning("Invalid relation data: encryption_key_secret_id not found")
+                return None
+            # decrypt content
+            registration_secret = relation_data.get("registration_secret")
+            if not registration_secret:
+                logger.warning("Invalid relation data: registration_secret not found")
+                return None
+            return MatrixAuthRequirerData(
+                registration=decrypt_string(key=encryption_key, ciphertext=registration_secret),
+            )
+        except ops.model.ModelError as e:
+            logger.error("Failed to interact with Juju model: %s", str(e))
+        except cryptography.fernet.InvalidToken as e:
+            logger.error("Failed to interact encrypted content: %s", str(e))
+        logger.warning("MatrixAuthRequirerData is empty")
+        return None
 
 
 #### Events ####
@@ -434,10 +497,12 @@ class MatrixAuthProvides(ops.Object):
         """
         assert event.relation.app
         relation_data = event.relation.data[event.relation.app]
-        if relation_data and self._is_remote_relation_data_valid(event.relation):
-            self.on.matrix_auth_request_received.emit(
-                event.relation, app=event.app, unit=event.unit
-            )
+        if not relation_data or not self._is_remote_relation_data_valid(event.relation):
+            logger.warning("matrix-auth-relation-changed received but remote relation data is invalid")
+            return
+        self.on.matrix_auth_request_received.emit(
+            event.relation, app=event.app, unit=event.unit
+        )
 
     def update_relation_data(
         self, relation: ops.Relation, matrix_auth_provider_data: MatrixAuthProviderData
@@ -458,6 +523,10 @@ class MatrixAuthProvides(ops.Object):
             logger.warning("Matrix Provider relation data is invalid or empty, updating")
             relation_data = matrix_auth_provider_data.to_relation_data(self.model, relation)
             relation.data[self.model.app].update(relation_data)
+        except ops.model.ModelError as e:
+            logger.error("Failed to interact with Juju model: %s", str(e))
+        except cryptography.fernet.InvalidToken as e:
+            logger.error("Failed to interact encrypted content: %s", str(e))
 
 
 class MatrixAuthRequires(ops.Object):
@@ -513,10 +582,12 @@ class MatrixAuthRequires(ops.Object):
         """
         assert event.relation.app
         relation_data = event.relation.data[event.relation.app]
-        if relation_data and self._is_remote_relation_data_valid(event.relation):
-            self.on.matrix_auth_request_processed.emit(
-                event.relation, app=event.app, unit=event.unit
-            )
+        if not relation_data or not self._is_remote_relation_data_valid(event.relation):
+            logger.warning("matrix-auth-relation-changed received but remote relation data is invalid")
+            return
+        self.on.matrix_auth_request_processed.emit(
+            event.relation, app=event.app, unit=event.unit
+        )
 
     def update_relation_data(
         self,
