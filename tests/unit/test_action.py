@@ -18,7 +18,14 @@ import synapse
 from user import User
 
 
-def test_register_user_action(harness: Harness) -> None:
+@pytest.mark.parametrize(
+    "admin",
+    [
+        pytest.param(True),
+        pytest.param(False),
+    ],
+)
+def test_register_user_action(harness: Harness, admin: bool) -> None:
     """
     arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
     act: run register-user action.
@@ -29,7 +36,7 @@ def test_register_user_action(harness: Harness) -> None:
     event = unittest.mock.MagicMock(spec=ActionEvent)
     event.params = {
         "username": user,
-        "admin": "no",
+        "admin": admin,
     }
 
     # Calling to test the action since is not possible calling via harness
