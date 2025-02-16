@@ -284,6 +284,7 @@ def generate_mas_config(
         "synapse_main_unit_address": main_unit_address,
         "upstream_oidc_provider_id": mas_context.upstream_oidc_provider_id,
         "oauth_provider_info": oauth_provider_info,
+        "mas_oidc_scope": MAS_OIDC_SCOPE,
         "smtp_configuration": smtp_configuration,
     }
     env = Environment(

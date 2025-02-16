@@ -55,7 +55,7 @@ upstream_oauth2:
       issuer: {{ oauth_provider_info.issuer_url }}
       client_id: {{ oauth_provider_info.client_id }}
       client_secret: {{ oauth_provider_info.client_secret }}
-      scope: "openid profile email"
+      scope: "{{ mas_oidc_scope }}"
       token_endpoint_auth_method: client_secret_basic
       discovery_mode: oidc
       claims_imports:
