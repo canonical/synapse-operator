@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse workload unit tests."""
@@ -338,45 +338,6 @@ def test_enable_forgotten_room_success(config_content: dict[str, typing.Any]):
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
-def test_get_mjolnir_config_success():
-    """
-    arrange: set access token and room id parameters.
-    act: call _get_mjolnir_config.
-    assert: config returns as expected.
-    """
-    access_token = token_hex(16)
-    room_id = token_hex(16)
-
-    config = synapse.workload._get_mjolnir_config(access_token=access_token, room_id=room_id)
-
-    assert config["accessToken"] == access_token
-    assert config["managementRoom"] == room_id
-
-
-def test_generate_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set container, access token and room id parameters.
-    act: call generate_mjolnir_config.
-    assert: file is pushed as expected.
-    """
-    access_token = token_hex(16)
-    room_id = token_hex(16)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "push", push_mock)
-
-    synapse.generate_mjolnir_config(
-        container=container_mock, access_token=access_token, room_id=room_id
-    )
-
-    expected_config = synapse.workload._get_mjolnir_config(
-        access_token=access_token, room_id=room_id
-    )
-    push_mock.assert_called_once_with(
-        synapse.MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
-    )
-
-
 SMTP_CONFIGURATION = SMTPConfiguration(
     enable_tls=True,
     force_tls=False,
@@ -448,28 +409,6 @@ def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.
         "serve_server_wellknown": True,
     }
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
-
-
-def test_disable_password_config_success():
-    """
-    arrange: set mock container with file.
-    act: call disable_password_config.
-    assert: new configuration file is pushed and password_config is disabled.
-    """
-    config_content = """
-    password_config:
-        enabled: true
-    """
-    config = yaml.safe_load(config_content)
-
-    synapse.disable_password_config(config)
-
-    expected_config_content = {
-        "password_config": {
-            "enabled": False,
-        },
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_get_registration_shared_secret_success(monkeypatch: pytest.MonkeyPatch):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # Ignoring for the config change call
@@ -17,6 +17,13 @@ from deepdiff import DeepDiff
 from ops.pebble import Check
 
 import synapse
+from auth.mas import (
+    MAS_CONFIGURATION_PATH,
+    MAS_PEBBLE_LAYER,
+    MAS_SERVICE_NAME,
+    sync_mas_config,
+    validate_mas_config,
+)
 from state.charm_state import CharmState
 
 logger = logging.getLogger(__name__)
@@ -113,22 +120,6 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def check_mjolnir_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse Mjolnir service check.
-
-    Returns:
-        Dict: check object converted to its dict representation.
-    """
-    check = Check(synapse.CHECK_MJOLNIR_READY_NAME)
-    check.override = "replace"
-    check.level = "ready"
-    check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
-    check.timeout = "10s"
-    check.threshold = 5
-    check.period = "1m"
-    return check.to_dict()
-
-
 def restart_nginx(container: ops.model.Container, main_unit_address: str) -> None:
     """Restart Synapse NGINX service and regenerate configuration.
 
@@ -152,16 +143,6 @@ def restart_federation_sender(container: ops.model.Container, charm_state: Charm
         "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
     )
     container.restart(synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME)
-
-
-def replan_mjolnir(container: ops.model.Container) -> None:
-    """Replan Synapse Mjolnir service.
-
-    Args:
-        container: Charm container.
-    """
-    container.add_layer("synapse-mjolnir", _mjolnir_pebble_layer(), combine=True)
-    container.replan()
 
 
 def replan_stats_exporter(container: ops.model.Container, charm_state: CharmState) -> None:
@@ -206,6 +187,16 @@ def replan_synapse_federation_sender(
     container.replan()
 
 
+def replan_mas(container: ops.model.Container) -> None:
+    """Replan Matrix Authentication Service.
+
+    Args:
+        container: Charm container.
+    """
+    container.add_layer(MAS_SERVICE_NAME, MAS_PEBBLE_LAYER, combine=True)
+    container.replan()
+
+
 def _get_synapse_config(container: ops.model.Container) -> dict:
     """Get the current Synapse configuration.
 
@@ -247,6 +238,27 @@ def _push_synapse_config(
         raise PebbleServiceError(str(exc)) from exc
 
 
+def _push_mas_config(
+    container: ops.model.Container,
+    rendered_mas_config: str,
+    config_path: str = MAS_CONFIGURATION_PATH,
+) -> None:
+    """Push the Synapse configuration to the container.
+
+    Args:
+        container: Synapse container.
+        rendered_mas_config: Rendered MAS configuration.
+        config_path: Synapse configuration file path.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        container.push(config_path, rendered_mas_config.encode("utf-8"))
+    except ops.pebble.PathError as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
 def _environment_has_changed(
     charm_state: CharmState, container: ops.model.Container, is_main: bool = True
 ) -> bool:
@@ -277,8 +289,12 @@ def _environment_has_changed(
 
 
 # The complexity of this method will be reviewed.
-def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def reconcile(  # noqa: C901
     charm_state: CharmState,
+    rendered_mas_configuration: str,
+    synapse_msc3861_configuration: dict,
     container: ops.model.Container,
     is_main: bool = True,
     unit_number: str = "",
@@ -289,6 +305,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
 
     Args:
         charm_state: Instance of CharmState
+        rendered_mas_configuration: Rendered MAS yaml configuration.
+        synapse_msc3861_configuration: Synapse's msc3861 configuration
         container: Charm container.
         is_main: if unit is main.
         unit_number: unit number id to set the worker name.
@@ -297,6 +315,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
+        restart_mas(container, rendered_mas_configuration)
+
         if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
             # Configurations set via environment variables:
             # synapse_report_stats, database, and proxy
@@ -350,8 +370,6 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         if charm_state.redis_config is not None:
             logger.debug("pebble.change_config: Enabling Redis")
             synapse.enable_redis(current_synapse_config, charm_state=charm_state)
-        if not charm_state.synapse_config.enable_password_config:
-            synapse.disable_password_config(current_synapse_config)
         if charm_state.synapse_config.federation_domain_whitelist:
             synapse.enable_federation_domain_whitelist(
                 current_synapse_config, charm_state=charm_state
@@ -377,6 +395,9 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
             ignore_order=True,
             ignore_string_case=True,
         )
+        # Activate msc3861
+        synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
+
         if config_has_changed:
             logging.info("Configuration has changed, Synapse will be restarted.")
             logging.debug("The change is: %s", config_has_changed)
@@ -436,23 +457,6 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
     return typing.cast(ops.pebble.LayerDict, layer)
 
 
-def _pebble_layer_without_restart(charm_state: CharmState) -> ops.pebble.LayerDict:
-    """Return a dictionary representing a Pebble layer without restart.
-
-    Args:
-        charm_state: Instance of CharmState
-
-    Returns:
-        pebble layer
-    """
-    new_layer = _pebble_layer(charm_state)
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
-    ignore = {synapse.CHECK_READY_NAME: "ignore"}
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
-    return new_layer
-
-
 def _nginx_pebble_layer() -> ops.pebble.LayerDict:
     """Generate pebble config for the synapse-nginx container.
 
@@ -472,31 +476,6 @@ def _nginx_pebble_layer() -> ops.pebble.LayerDict:
         },
         "checks": {
             synapse.CHECK_NGINX_READY_NAME: check_nginx_ready(),
-        },
-    }
-    return typing.cast(ops.pebble.LayerDict, layer)
-
-
-def _mjolnir_pebble_layer() -> ops.pebble.LayerDict:
-    """Generate pebble config for the mjolnir service.
-
-    Returns:
-        The pebble configuration for the mjolnir service.
-    """
-    command_params = f"bot --mjolnir-config {synapse.MJOLNIR_CONFIG_PATH}"
-    layer = {
-        "summary": "Synapse mjolnir layer",
-        "description": "Synapse mjolnir layer",
-        "services": {
-            synapse.MJOLNIR_SERVICE_NAME: {
-                "override": "replace",
-                "summary": "Mjolnir service",
-                "command": f"/mjolnir-entrypoint.sh {command_params}",
-                "startup": "enabled",
-            },
-        },
-        "checks": {
-            synapse.CHECK_MJOLNIR_READY_NAME: check_mjolnir_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
@@ -578,3 +557,16 @@ def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.Layer
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def restart_mas(container: ops.model.Container, rendered_mas_configuration: str) -> None:
+    """Update MAS configuration and restart MAS.
+
+    Args:
+        container: The synapse container.
+        rendered_mas_configuration: YAML configuration for MAS.
+    """
+    _push_mas_config(container, rendered_mas_configuration, MAS_CONFIGURATION_PATH)
+    validate_mas_config(container)
+    sync_mas_config(container)
+    replan_mas(container)

@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """State of the Charm."""
@@ -9,8 +9,15 @@ from abc import ABC, abstractmethod
 
 import ops
 
+from auth.mas import MASCLIBaseError
+from state.mas import (
+    MASConfiguration,
+    MASContextNotSetError,
+    MASDatasourceInvalidError,
+    MASDatasourceMissingError,
+)
+
 from .charm_state import CharmConfigInvalidError, CharmState
-from .mas import MASDatasourceMissingError
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +38,12 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         return self
 
     @abstractmethod
-    def reconcile(self, charm_state: "CharmState") -> None:
+    def reconcile(self, charm_state: "CharmState", mas_configuration: MASConfiguration) -> None:
         """Reconcile Synapse configuration.
 
         Args:
             charm_state: The charm state.
+            mas_configuration: Charm state component to configure MAS.
         """
 
 
@@ -51,7 +59,7 @@ E = typing.TypeVar("E", bound=ops.EventBase)
 
 
 def validate_charm_state(  # pylint: disable=protected-access
-    method: typing.Callable[[C, E], None]
+    method: typing.Callable[[C, E], None],
 ) -> typing.Callable[[C, E], None]:
     """Create a decorator that injects the argument charm_state to an observer hook.
 
@@ -91,7 +99,7 @@ def validate_charm_state(  # pylint: disable=protected-access
 
         try:
             return method(instance, event)
-        except (CharmConfigInvalidError, MASDatasourceMissingError) as exc:
+        except (CharmConfigInvalidError, MASDatasourceMissingError, MASCLIBaseError) as exc:
             logger.exception("Error initializing charm state.")
             # There are two main types of events, Hooks and Actions.
             # Each one of them should be treated differently.
@@ -99,6 +107,10 @@ def validate_charm_state(  # pylint: disable=protected-access
                 event.fail(str(exc))
             else:
                 charm.model.unit.status = ops.BlockedStatus(str(exc))
+        except (MASContextNotSetError, MASDatasourceInvalidError) as exc:
+            logger.exception("Waiting for the charm to settle into a correct state.")
+            charm.model.unit.status = ops.WaitingStatus(str(exc))
+
         return None
 
     return wrapper

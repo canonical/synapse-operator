@@ -7,6 +7,8 @@ Charm for Synapse on kubernetes.
 
 **Global Variables**
 ---------------
+- **MAS_DATABASE_INTEGRATION_NAME**
+- **MAS_DATABASE_NAME**
 - **MAIN_UNIT_ID**
 - **INGRESS_INTEGRATION_NAME**
 
@@ -18,7 +20,7 @@ Charm the service.
 
 Attrs:  on: listen to Redis events. 
 
-<a href="../src/charm.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -75,7 +77,7 @@ Unit that this execution is responsible for.
 
 ---
 
-<a href="../src/charm.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `build_charm_state`
 
@@ -92,7 +94,7 @@ Build charm state.
 
 ---
 
-<a href="../src/charm.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L364"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit`
 
@@ -109,7 +111,7 @@ Get main unit.
 
 ---
 
-<a href="../src/charm.py#L357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_main_unit_address`
 
@@ -126,7 +128,7 @@ Get main unit address. If main unit is None, use unit name.
 
 ---
 
-<a href="../src/charm.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L431"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_signing_key`
 
@@ -143,7 +145,7 @@ Get signing key from secret.
 
 ---
 
-<a href="../src/charm.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_unit_number`
 
@@ -167,7 +169,7 @@ Get unit number from unit name.
 
 ---
 
-<a href="../src/charm.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `instance_map`
 
@@ -184,7 +186,7 @@ Build instance_map config.
 
 ---
 
-<a href="../src/charm.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_main`
 
@@ -202,7 +204,7 @@ Verify if this unit is the main.
 
 ---
 
-<a href="../src/charm.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L341"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `peer_units_total`
 
@@ -219,12 +221,12 @@ Get peer units total.
 
 ---
 
-<a href="../src/charm.py#L186"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `reconcile`
 
 ```python
-reconcile(charm_state: CharmState) → None
+reconcile(charm_state: CharmState, mas_configuration: MASConfiguration) → None
 ```
 
 Reconcile Synapse configuration with charm state. 
@@ -236,10 +238,11 @@ This is the main entry for changes that require a restart.
 **Args:**
  
  - <b>`charm_state`</b>:  Instance of CharmState 
+ - <b>`mas_configuration`</b>:  Charm state component to configure MAS 
 
 ---
 
-<a href="../src/charm.py#L369"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L391"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `set_main_unit`
 
@@ -257,7 +260,7 @@ Create/Renew an admin access token and put it in the peer relation.
 
 ---
 
-<a href="../src/charm.py#L385"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L407"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `set_signing_key`
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Helper module used to manage interactions with Synapse."""
@@ -16,18 +16,12 @@ from ops.pebble import ExecError, PathError
 
 from state.charm_state import CharmState
 
-from .api import SYNAPSE_URL
-
 SYNAPSE_CONFIG_DIR = "/data"
 
 CHECK_ALIVE_NAME = "synapse-alive"
-CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
 CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
 CHECK_READY_NAME = "synapse-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
-MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
-MJOLNIR_HEALTH_PORT = 7777
-MJOLNIR_SERVICE_NAME = "mjolnir"
 SYNAPSE_EXPORTER_PORT = "9000"
 STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -75,10 +69,6 @@ class ServerNameModifiedError(WorkloadError):
 
 class EnableMetricsError(WorkloadError):
     """Exception raised when something goes wrong while enabling metrics."""
-
-
-class CreateMjolnirConfigError(WorkloadError):
-    """Exception raised when something goes wrong while creating mjolnir config."""
 
 
 class EnableSMTPError(WorkloadError):
@@ -363,43 +353,6 @@ def generate_worker_config(unit_number: str, is_main: bool) -> dict:
         "worker_log_config": "/data/log.config",
     }
     return worker_config
-
-
-def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
-    """Get config as expected by mjolnir.
-
-    Args:
-        access_token: access token to be used by the mjolnir bot.
-        room_id: management room id monitored by the Mjolnir.
-
-    Returns:
-        Mjolnir configuration
-    """
-    with open("templates/mjolnir_production.yaml", encoding="utf-8") as mjolnir_config_file:
-        config = yaml.safe_load(mjolnir_config_file)
-        config["homeserverUrl"] = SYNAPSE_URL
-        config["rawHomeserverUrl"] = SYNAPSE_URL
-        config["accessToken"] = access_token
-        config["managementRoom"] = room_id
-        return config
-
-
-def generate_mjolnir_config(container: ops.Container, access_token: str, room_id: str) -> None:
-    """Generate mjolnir configuration.
-
-    Args:
-        container: Container of the charm.
-        access_token: access token to be used by the Mjolnir.
-        room_id: management room id monitored by the Mjolnir.
-
-    Raises:
-        CreateMjolnirConfigError: something went wrong creating mjolnir config.
-    """
-    try:
-        config = _get_mjolnir_config(access_token, room_id)
-        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
-    except ops.pebble.PathError as exc:
-        raise CreateMjolnirConfigError(str(exc)) from exc
 
 
 def create_registration_secrets_files(container: ops.Container, charm_state: CharmState) -> None:

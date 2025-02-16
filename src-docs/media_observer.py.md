@@ -16,7 +16,7 @@ The media integrator relation observer.
 ## <kbd>class</kbd> `MediaObserver`
 The media relation observer. 
 
-<a href="../src/media_observer.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/media_observer.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -43,7 +43,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/media_observer.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/media_observer.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -60,7 +60,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/media_observer.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/media_observer.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_relation_as_media_conf`
 

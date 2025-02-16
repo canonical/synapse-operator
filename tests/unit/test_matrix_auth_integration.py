@@ -1,16 +1,22 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse charm matrix-auth integration unit tests."""
 
 # pylint: disable=protected-access
 
+import logging
 from unittest.mock import ANY, MagicMock
 
 import pytest
 import yaml
-from charms.synapse.v0.matrix_auth import MatrixAuthRequirerData
+from charms.synapse.v1.matrix_auth import (
+    MatrixAuthProviderData,
+    MatrixAuthRequirerData,
+    encrypt_string,
+)
 from ops.testing import Harness
+from pydantic import SecretStr
 
 import synapse
 
@@ -44,6 +50,40 @@ def test_matrix_auth_update_success(harness: Harness, monkeypatch: pytest.Monkey
     update_relation_data.assert_called_with(relation, ANY)
 
     assert update_relation_data.call_args[0][1].homeserver == f"https://{TEST_SERVER_NAME}"
+
+
+def test_matrix_auth_update_only_once(harness: Harness, monkeypatch: pytest.MonkeyPatch, caplog):
+    """
+    arrange: start the Synapse charm.
+    act: integrate via matrix-auth.
+    assert: update_relation_data is called and homeserver has same value as
+        server_name.
+    """
+    harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    harness.begin()
+    monkeypatch.setattr(
+        MatrixAuthProviderData, "get_shared_secret", MagicMock(return_value="shared-secret")
+    )
+    monkeypatch.setattr(
+        synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
+    )
+    rel_id = harness.add_relation(
+        "matrix-auth",
+        "maubot",
+        app_data={
+            "homeserver": "example.com",
+            "shared_secret_id": "test-secret-id",
+            "encryption_key_secret_id": "test-secret-id",
+        },
+    )
+    harness.add_relation_unit(rel_id, "maubot/0")
+
+    with caplog.at_level(logging.WARNING):
+        harness.charm.on.config_changed.emit()
+
+    assert "Matrix Provider relation data is invalid or empty, updating" not in caplog.text
 
 
 def test_matrix_auth_update_public_baseurl_success(
@@ -83,7 +123,8 @@ def test_matrix_auth_registration_secret_success(
 ):
     """
     arrange: start the Synapse charm with public_base url set.
-    act: integrate via matrix-auth and add relation data.
+    act: integrate via matrix-auth with maubot and add registration as relation
+        data.
     assert: update_relation_data is called, homeserver has same value as
         public_baseurl and app_service_config_files is set.
     """
@@ -96,11 +137,12 @@ def test_matrix_auth_registration_secret_success(
     monkeypatch.setattr(
         harness.charm._matrix_auth.matrix_auth, "update_relation_data", update_relation_data
     )
+    encryption_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
     monkeypatch.setattr(
-        synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
+        MatrixAuthRequirerData, "get_encryption_key_secret", MagicMock(return_value=encryption_key)
     )
     monkeypatch.setattr(
-        MatrixAuthRequirerData, "get_registration", lambda *args: "test-registration"
+        synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
     )
     create_registration_secrets_files_mock = MagicMock()
     monkeypatch.setattr(
@@ -109,7 +151,8 @@ def test_matrix_auth_registration_secret_success(
 
     rel_id = harness.add_relation("matrix-auth", "maubot")
     harness.add_relation_unit(rel_id, "maubot/0")
-    harness.update_relation_data(rel_id, "maubot/0", {"registration_secret_id": "foo"})
+    encrypted_text = encrypt_string(key=encryption_key, plaintext=SecretStr("foo"))
+    harness.update_relation_data(rel_id, "maubot", {"registration_secret": encrypted_text})
 
     relation = harness.charm.framework.model.get_relation("matrix-auth", rel_id)
     update_relation_data.assert_called_with(relation, ANY)
@@ -123,3 +166,45 @@ def test_matrix_auth_registration_secret_success(
         assert content["app_service_config_files"] == [
             f"/data/appservice-registration-matrix-auth-{rel_id}.yaml"
         ]
+
+
+def test_matrix_auth_registration_secret_empty(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the Synapse charm with public_base url set.
+    act: integrate via matrix-auth with maubot and add registration as relation
+        data.
+    assert: update_relation_data is called, homeserver has same value as
+        public_baseurl and since registration is empty there are no registration
+        files.
+    """
+    base_url_value = "https://new-server"
+    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": base_url_value})
+    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
+    harness.set_leader(True)
+    harness.begin_with_initial_hooks()
+    update_relation_data = MagicMock()
+    monkeypatch.setattr(
+        harness.charm._matrix_auth.matrix_auth, "update_relation_data", update_relation_data
+    )
+    encryption_key = b"DXnflqjmmM8-UASxTl9oWeM7PWKQoclMFVb_bp9zLGY="
+    monkeypatch.setattr(
+        MatrixAuthRequirerData, "get_encryption_key_secret", MagicMock(return_value=encryption_key)
+    )
+    monkeypatch.setattr(
+        synapse, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
+    )
+    create_registration_secrets_files_mock = MagicMock()
+    monkeypatch.setattr(
+        synapse, "create_registration_secrets_files", create_registration_secrets_files_mock
+    )
+
+    rel_id = harness.add_relation("matrix-auth", "maubot")
+    harness.add_relation_unit(rel_id, "maubot/0")
+    relation = harness.charm.framework.model.get_relation("matrix-auth", rel_id)
+    harness.charm.on["matrix-auth"].relation_changed.emit(
+        relation, harness.charm.app, harness.charm.unit
+    )
+
+    update_relation_data.assert_called_with(relation, ANY)
+    assert update_relation_data.call_args[0][1].homeserver == base_url_value
+    create_registration_secrets_files_mock.assert_not_called()
