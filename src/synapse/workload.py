@@ -381,8 +381,8 @@ def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
     """
     with open("templates/mjolnir_production.yaml", encoding="utf-8") as mjolnir_config_file:
         config = yaml.safe_load(mjolnir_config_file)
-        config["homeserverUrl"] = SYNAPSE_URL
-        config["rawHomeserverUrl"] = SYNAPSE_URL
+        config["homeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}
+        config["rawHomeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}
         config["accessToken"] = access_token
         config["managementRoom"] = room_id
         return config
