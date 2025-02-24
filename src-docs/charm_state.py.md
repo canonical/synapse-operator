@@ -283,7 +283,7 @@ Represent Synapse builtin configuration values.
  - <b>`allow_public_rooms_over_federation`</b>:  allow_public_rooms_over_federation config. 
  - <b>`block_non_admin_invites`</b>:  block_non_admin_invites config. 
  - <b>`enable_email_notifs`</b>:  enable_email_notifs config. 
- - <b>`enable_mjolnir`</b>:  enable_mjolnir config. 
+ - <b>`enable_draupnir`</b>:  enable_draupnir config. 
  - <b>`enable_password_config`</b>:  enable_password_config config. 
  - <b>`enable_room_list_search`</b>:  enable_room_list_search config. 
  - <b>`federation_domain_whitelist`</b>:  federation_domain_whitelist config. 

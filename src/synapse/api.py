@@ -35,8 +35,8 @@ DEACTIVATE_ACCOUNT_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/deactivate"
 LIST_ROOMS_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/rooms"
 LIST_USERS_URL = f"{SYNAPSE_URL}/_synapse/admin/v2/users?from=0&limit=10&name="
 LOGIN_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/users"
-MJOLNIR_MANAGEMENT_ROOM = "management"
-MJOLNIR_MEMBERSHIP_ROOM = "moderators"
+DRAUPNIR_MANAGEMENT_ROOM = "management"
+DRAUPNIR_MEMBERSHIP_ROOM = "moderators"
 REGISTER_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/register"
 SYNAPSE_VERSION_REGEX = r"(\d+\.\d+\.\d+(?:\w+)?)\s?"
 VERSION_URL = f"{SYNAPSE_URL}/_synapse/admin/v1/server_version"
@@ -433,7 +433,7 @@ def deactivate_user(
 
 
 def create_management_room(admin_access_token: str) -> str:
-    """Create the management room to be used by Mjolnir.
+    """Create the management room to be used by Draupnir.
 
     Args:
         admin_access_token: server admin access token to be used.
@@ -445,11 +445,11 @@ def create_management_room(admin_access_token: str) -> str:
         Room id.
     """
     power_level_content_override = {"events_default": 0}
-    moderators_room_id = get_room_id(MJOLNIR_MEMBERSHIP_ROOM, admin_access_token)
+    moderators_room_id = get_room_id(DRAUPNIR_MEMBERSHIP_ROOM, admin_access_token)
     data = {
-        "name": MJOLNIR_MANAGEMENT_ROOM,
+        "name": DRAUPNIR_MANAGEMENT_ROOM,
         "power_level_content_override": power_level_content_override,
-        "room_alias_name": MJOLNIR_MANAGEMENT_ROOM,
+        "room_alias_name": DRAUPNIR_MANAGEMENT_ROOM,
         "visibility": "private",
         "initial_state": [
             # Always make history visibility shared
@@ -465,7 +465,7 @@ def create_management_room(admin_access_token: str) -> str:
             },
             # Only retain the last 90 days of history
             {"type": "m.room.retention", "state_key": "", "content": {"max_lifetime": 604800000}},
-            # Only users from MJOLNIR_MEMBERSHIP_ROOM can join
+            # Only users from DRAUPNIR_MEMBERSHIP_ROOM can join
             {
                 "type": "m.room.join_rules",
                 "state_key": "",

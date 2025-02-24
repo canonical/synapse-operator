@@ -162,7 +162,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         allow_public_rooms_over_federation: allow_public_rooms_over_federation config.
         block_non_admin_invites: block_non_admin_invites config.
         enable_email_notifs: enable_email_notifs config.
-        enable_mjolnir: enable_mjolnir config.
+        enable_draupnir: enable_draupnir config.
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
@@ -185,7 +185,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     allow_public_rooms_over_federation: bool = False
     block_non_admin_invites: bool = False
     enable_email_notifs: bool = False
-    enable_mjolnir: bool = False
+    enable_draupnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
     experimental_alive_check: str | None = Field(None)

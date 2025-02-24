@@ -359,8 +359,8 @@ async def test_nginx_route_integration(
     assert "Welcome to the Matrix" in response.text
 
 
-@pytest.mark.mjolnir
-async def test_synapse_enable_mjolnir(
+@pytest.mark.draupnir
+async def test_synapse_enable_draupnir(
     ops_test: OpsTest,
     synapse_app: Application,
     access_token: str,
@@ -368,11 +368,11 @@ async def test_synapse_enable_mjolnir(
 ):
     """
     arrange: build and deploy the Synapse charm, create an user, get the access token,
-        enable Mjolnir and create the management room.
-    act: check Mjolnir health point.
-    assert: the Synapse application is active and Mjolnir health point returns a correct response.
+        enable Draupnir and create the management room.
+    act: check Draupnir health point.
+    assert: the Synapse application is active and Draupnir health point returns a correct response.
     """
-    await synapse_app.set_config({"enable_mjolnir": "true"})
+    await synapse_app.set_config({"enable_draupnir": "true"})
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
     )
@@ -384,14 +384,14 @@ async def test_synapse_enable_mjolnir(
             idle_period=30, apps=[synapse_app.name], status="active"
         )
 
-    res = requests.get(f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5)
+    res = requests.get(f"http://{synapse_ip}:{synapse.DRAUPNIR_HEALTH_PORT}/healthz", timeout=5)
 
     assert res.status_code == 200
 
 
 # pylint: disable=too-many-positional-arguments
-@pytest.mark.mjolnir
-async def test_synapse_with_mjolnir_from_refresh_is_up(
+@pytest.mark.draupnir
+async def test_synapse_with_draupnir_from_refresh_is_up(
     ops_test: OpsTest,
     model: Model,
     synapse_charmhub_app: Application,
@@ -400,11 +400,11 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     synapse_image: str,
 ):
     """
-    arrange: build and deploy the Synapse charm from charmhub and enable Mjolnir.
+    arrange: build and deploy the Synapse charm from charmhub and enable Draupnir.
     act: Refresh the charm with the local one.
-    assert: Synapse and Mjolnir health points should return correct responses.
+    assert: Synapse and Draupnir health points should return correct responses.
     """
-    await synapse_charmhub_app.set_config({"enable_mjolnir": "true"})
+    await synapse_charmhub_app.set_config({"enable_draupnir": "true"})
     await model.wait_for_idle(apps=[synapse_charmhub_app.name], status="blocked")
     synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
     user_username = token_hex(16)
@@ -433,7 +433,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
 
-    mjolnir_response = requests.get(
-        f"http://{synapse_ip}:{synapse.MJOLNIR_HEALTH_PORT}/healthz", timeout=5
+    draupnir_response = requests.get(
+        f"http://{synapse_ip}:{synapse.DRAUPNIR_HEALTH_PORT}/healthz", timeout=5
     )
-    assert mjolnir_response.status_code == 200
+    assert draupnir_response.status_code == 200

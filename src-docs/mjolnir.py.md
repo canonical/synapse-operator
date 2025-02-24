@@ -1,24 +1,24 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/mjolnir.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/draupnir.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-# <kbd>module</kbd> `mjolnir.py`
-Provide the Mjolnir class to represent the Mjolnir plugin for Synapse. 
+# <kbd>module</kbd> `draupnir.py`
+Provide the Draupnir class to represent the Draupnir plugin for Synapse. 
 
 **Global Variables**
 ---------------
-- **MJOLNIR_SERVICE_NAME**
+- **DRAUPNIR_SERVICE_NAME**
 - **USERNAME**
 
 
 ---
 
-## <kbd>class</kbd> `Mjolnir`
-A class representing the Mjolnir plugin for Synapse application. 
+## <kbd>class</kbd> `Draupnir`
+A class representing the Draupnir plugin for Synapse application. 
 
-Mjolnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/matrix-org/mjolnir/ for more details about it. 
+Draupnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/matrix-org/draupnir/ for more details about it. 
 
-<a href="../src/mjolnir.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/draupnir.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -26,13 +26,13 @@ Mjolnir is a moderation tool for Matrix to be used to protect your server from m
 __init__(charm: CharmBaseWithState, token_service: AdminAccessTokenService)
 ```
 
-Initialize a new instance of the Mjolnir class. 
+Initialize a new instance of the Draupnir class. 
 
 
 
 **Args:**
  
- - <b>`charm`</b>:  The charm object that the Mjolnir instance belongs to. 
+ - <b>`charm`</b>:  The charm object that the Draupnir instance belongs to. 
  - <b>`token_service`</b>:  Instance of Admin Access Token Service. 
 
 
@@ -46,27 +46,27 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/mjolnir.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/draupnir.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>function</kbd> `enable_mjolnir`
+### <kbd>function</kbd> `enable_draupnir`
 
 ```python
-enable_mjolnir(charm_state: CharmState, admin_access_token: str) → None
+enable_draupnir(charm_state: CharmState, admin_access_token: str) → None
 ```
 
-Enable mjolnir service. 
+Enable draupnir service. 
 
-The required steps to enable Mjolnir are: 
+The required steps to enable Draupnir are: 
  - Get an admin access token. 
- - Check if the MJOLNIR_MEMBERSHIP_ROOM room is created. 
+ - Check if the DRAUPNIR_MEMBERSHIP_ROOM room is created. 
  -- Only users from there will be allowed to join the management room. 
- - Create Mjolnir user or get its access token if already exists. 
+ - Create Draupnir user or get its access token if already exists. 
  - Create the management room or get its room id if already exists. 
- -- The management room will allow only members of MJOLNIR_MEMBERSHIP_ROOM room to join it. 
- - Make the Mjolnir user admin of this room. 
- - Create the Mjolnir configuration file. 
- - Override Mjolnir user rate limit. 
- - Finally, add Mjolnir pebble layer. 
+ -- The management room will allow only members of DRAUPNIR_MEMBERSHIP_ROOM room to join it. 
+ - Make the Draupnir user admin of this room. 
+ - Create the Draupnir configuration file. 
+ - Override Draupnir user rate limit. 
+ - Finally, add Draupnir pebble layer. 
 
 
 
@@ -77,7 +77,7 @@ The required steps to enable Mjolnir are:
 
 ---
 
-<a href="../src/mjolnir.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/draupnir.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_charm`
 
@@ -94,7 +94,7 @@ Return the current charm.
 
 ---
 
-<a href="../src/mjolnir.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/draupnir.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_membership_room_id`
 

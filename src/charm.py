@@ -24,9 +24,9 @@ from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
+from draupnir import Draupnir
 from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
-from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
@@ -81,7 +81,7 @@ class SynapseCharm(CharmBaseWithState):
             port=synapse.SYNAPSE_NGINX_PORT,
         )
         self._observability = Observability(self)
-        self._mjolnir = Mjolnir(self, token_service=self.token_service)
+        self._draupnir = Draupnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
@@ -235,7 +235,7 @@ class SynapseCharm(CharmBaseWithState):
 
     def _set_unit_status(self) -> None:
         """Set unit status depending on Synapse and NGINX state."""
-        # This method contains a similar check that the one in mjolnir.py for Synapse
+        # This method contains a similar check that the one in draupnir.py for Synapse
         # container and service. Until a refactoring is done for a different way of checking
         # and setting the unit status in a hollistic way, both checks will be in place.
         # pylint: disable=R0801

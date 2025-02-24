@@ -472,25 +472,25 @@ listeners:
     assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
-def test_get_mjolnir_config_success():
+def test_get_draupnir_config_success():
     """
     arrange: set access token and room id parameters.
-    act: call _get_mjolnir_config.
+    act: call _get_draupnir_config.
     assert: config returns as expected.
     """
     access_token = token_hex(16)
     room_id = token_hex(16)
 
-    config = synapse.workload._get_mjolnir_config(access_token=access_token, room_id=room_id)
+    config = synapse.workload._get_draupnir_config(access_token=access_token, room_id=room_id)
 
     assert config["accessToken"] == access_token
     assert config["managementRoom"] == room_id
 
 
-def test_generate_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
+def test_generate_draupnir_config_success(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: set container, access token and room id parameters.
-    act: call generate_mjolnir_config.
+    act: call generate_draupnir_config.
     assert: file is pushed as expected.
     """
     access_token = token_hex(16)
@@ -499,15 +499,15 @@ def test_generate_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
     container_mock = MagicMock()
     monkeypatch.setattr(container_mock, "push", push_mock)
 
-    synapse.generate_mjolnir_config(
+    synapse.generate_draupnir_config(
         container=container_mock, access_token=access_token, room_id=room_id
     )
 
-    expected_config = synapse.workload._get_mjolnir_config(
+    expected_config = synapse.workload._get_draupnir_config(
         access_token=access_token, room_id=room_id
     )
     push_mock.assert_called_once_with(
-        synapse.MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
+        synapse.DRAUPNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
     )
 
 

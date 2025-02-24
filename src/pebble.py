@@ -113,16 +113,16 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def check_mjolnir_ready() -> ops.pebble.CheckDict:
-    """Return the Synapse Mjolnir service check.
+def check_draupnir_ready() -> ops.pebble.CheckDict:
+    """Return the Synapse Draupnir service check.
 
     Returns:
         Dict: check object converted to its dict representation.
     """
-    check = Check(synapse.CHECK_MJOLNIR_READY_NAME)
+    check = Check(synapse.CHECK_DRAUPNIR_READY_NAME)
     check.override = "replace"
     check.level = "ready"
-    check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
+    check.http = {"url": f"http://localhost:{synapse.DRAUPNIR_HEALTH_PORT}/healthz"}
     check.timeout = "10s"
     check.threshold = 5
     check.period = "1m"
@@ -154,13 +154,13 @@ def restart_federation_sender(container: ops.model.Container, charm_state: Charm
     container.restart(synapse.SYNAPSE_FEDERATION_SENDER_SERVICE_NAME)
 
 
-def replan_mjolnir(container: ops.model.Container) -> None:
-    """Replan Synapse Mjolnir service.
+def replan_draupnir(container: ops.model.Container) -> None:
+    """Replan Synapse Draupnir service.
 
     Args:
         container: Charm container.
     """
-    container.add_layer("synapse-mjolnir", _mjolnir_pebble_layer(), combine=True)
+    container.add_layer("synapse-draupnir", _draupnir_pebble_layer(), combine=True)
     container.replan()
 
 
@@ -480,26 +480,26 @@ def _nginx_pebble_layer() -> ops.pebble.LayerDict:
     return typing.cast(ops.pebble.LayerDict, layer)
 
 
-def _mjolnir_pebble_layer() -> ops.pebble.LayerDict:
-    """Generate pebble config for the mjolnir service.
+def _draupnir_pebble_layer() -> ops.pebble.LayerDict:
+    """Generate pebble config for the draupnir service.
 
     Returns:
-        The pebble configuration for the mjolnir service.
+        The pebble configuration for the draupnir service.
     """
-    command_params = f"bot --mjolnir-config {synapse.MJOLNIR_CONFIG_PATH}"
+    command_params = f"bot --draupnir-config {synapse.DRAUPNIR_CONFIG_PATH}"
     layer = {
-        "summary": "Synapse mjolnir layer",
-        "description": "Synapse mjolnir layer",
+        "summary": "Synapse draupnir layer",
+        "description": "Synapse draupnir layer",
         "services": {
-            synapse.MJOLNIR_SERVICE_NAME: {
+            synapse.DRAUPNIR_SERVICE_NAME: {
                 "override": "replace",
-                "summary": "Mjolnir service",
-                "command": f"/mjolnir-entrypoint.sh {command_params}",
+                "summary": "Draupnir service",
+                "command": f"/draupnir-entrypoint.sh {command_params}",
                 "startup": "enabled",
             },
         },
         "checks": {
-            synapse.CHECK_MJOLNIR_READY_NAME: check_mjolnir_ready(),
+            synapse.CHECK_DRAUPNIR_READY_NAME: check_draupnir_ready(),
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)

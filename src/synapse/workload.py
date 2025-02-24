@@ -19,13 +19,13 @@ from charm_state import CharmState
 SYNAPSE_CONFIG_DIR = "/data"
 
 CHECK_ALIVE_NAME = "synapse-alive"
-CHECK_MJOLNIR_READY_NAME = "synapse-mjolnir-ready"
+CHECK_DRAUPNIR_READY_NAME = "synapse-draupnir-ready"
 CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
 CHECK_READY_NAME = "synapse-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
-MJOLNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
-MJOLNIR_HEALTH_PORT = 7777
-MJOLNIR_SERVICE_NAME = "mjolnir"
+DRAUPNIR_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
+DRAUPNIR_HEALTH_PORT = 7777
+DRAUPNIR_SERVICE_NAME = "draupnir"
 SYNAPSE_EXPORTER_PORT = "9000"
 STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -75,8 +75,8 @@ class EnableMetricsError(WorkloadError):
     """Exception raised when something goes wrong while enabling metrics."""
 
 
-class CreateMjolnirConfigError(WorkloadError):
-    """Exception raised when something goes wrong while creating mjolnir config."""
+class CreateDraupnirConfigError(WorkloadError):
+    """Exception raised when something goes wrong while creating draupnir config."""
 
 
 class EnableSAMLError(WorkloadError):
@@ -367,18 +367,18 @@ def generate_worker_config(unit_number: str, is_main: bool) -> dict:
     return worker_config
 
 
-def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
-    """Get config as expected by mjolnir.
+def _get_draupnir_config(access_token: str, room_id: str) -> typing.Dict:
+    """Get config as expected by draupnir.
 
     Args:
-        access_token: access token to be used by the mjolnir bot.
-        room_id: management room id monitored by the Mjolnir.
+        access_token: access token to be used by the draupnir bot.
+        room_id: management room id monitored by the Draupnir.
 
     Returns:
-        Mjolnir configuration
+        Draupnir configuration
     """
-    with open("templates/mjolnir_production.yaml", encoding="utf-8") as mjolnir_config_file:
-        config = yaml.safe_load(mjolnir_config_file)
+    with open("templates/draupnir_production.yaml", encoding="utf-8") as draupnir_config_file:
+        config = yaml.safe_load(draupnir_config_file)
         config["homeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
         config["rawHomeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
         config["accessToken"] = access_token
@@ -386,22 +386,22 @@ def _get_mjolnir_config(access_token: str, room_id: str) -> typing.Dict:
         return config
 
 
-def generate_mjolnir_config(container: ops.Container, access_token: str, room_id: str) -> None:
-    """Generate mjolnir configuration.
+def generate_draupnir_config(container: ops.Container, access_token: str, room_id: str) -> None:
+    """Generate draupnir configuration.
 
     Args:
         container: Container of the charm.
-        access_token: access token to be used by the Mjolnir.
-        room_id: management room id monitored by the Mjolnir.
+        access_token: access token to be used by the Draupnir.
+        room_id: management room id monitored by the Draupnir.
 
     Raises:
-        CreateMjolnirConfigError: something went wrong creating mjolnir config.
+        CreateDraupnirConfigError: something went wrong creating draupnir config.
     """
     try:
-        config = _get_mjolnir_config(access_token, room_id)
-        container.push(MJOLNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
+        config = _get_draupnir_config(access_token, room_id)
+        container.push(DRAUPNIR_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
     except ops.pebble.PathError as exc:
-        raise CreateMjolnirConfigError(str(exc)) from exc
+        raise CreateDraupnirConfigError(str(exc)) from exc
 
 
 def create_registration_secrets_files(container: ops.Container, charm_state: CharmState) -> None:

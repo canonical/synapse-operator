@@ -104,13 +104,13 @@ Return the Synapse NGINX container check.
 
 <a href="../src/pebble.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `check_mjolnir_ready`
+## <kbd>function</kbd> `check_draupnir_ready`
 
 ```python
-check_mjolnir_ready() → CheckDict
+check_draupnir_ready() → CheckDict
 ```
 
-Return the Synapse Mjolnir service check. 
+Return the Synapse Draupnir service check. 
 
 
 
@@ -163,13 +163,13 @@ Restart Synapse federation sender service and regenerate configuration.
 
 <a href="../src/pebble.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `replan_mjolnir`
+## <kbd>function</kbd> `replan_draupnir`
 
 ```python
-replan_mjolnir(container: Container) → None
+replan_draupnir(container: Container) → None
 ```
 
-Replan Synapse Mjolnir service. 
+Replan Synapse Draupnir service. 
 
 
 

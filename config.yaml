@@ -22,12 +22,12 @@ options:
     default: false
     description: |
       Configures whether to enable e-mail notifications. Requires SMTP integration.
-  enable_mjolnir:
+  enable_draupnir:
     type: boolean
     default: false
     description: |
-      Configures whether to enable Mjolnir - moderation tool for Matrix.
-      Reference: https://github.com/matrix-org/mjolnir
+      Configures whether to enable Draupnir - moderation tool for Matrix.
+      Reference: https://github.com/matrix-org/draupnir
   enable_password_config:
     type: boolean
     default: true
