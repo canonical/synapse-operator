@@ -1,5 +1,9 @@
 # Changelog
 
+### 2025-02-24
+
+- Add Synapse Service Health Grafana dashboard.
+
 ### 2025-02-21
 
 - Refactor Synapse Grafana dashboard.
