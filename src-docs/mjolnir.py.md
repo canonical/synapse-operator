@@ -16,7 +16,7 @@ Provide the Draupnir class to represent the Draupnir plugin for Synapse.
 ## <kbd>class</kbd> `Draupnir`
 A class representing the Draupnir plugin for Synapse application. 
 
-Draupnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/matrix-org/draupnir/ for more details about it. 
+Draupnir is a moderation tool for Matrix to be used to protect your server from malicious invites, spam messages etc. See https://github.com/the-draupnir-project/draupnir/ for more details about it. 
 
 <a href="../src/draupnir.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
