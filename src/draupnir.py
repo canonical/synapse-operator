@@ -27,7 +27,7 @@ class Draupnir(ops.Object):  # pylint: disable=too-few-public-methods
 
     Draupnir is a moderation tool for Matrix to be used to protect your server from malicious
     invites, spam messages etc.
-    See https://github.com/matrix-org/draupnir/ for more details about it.
+    See https://github.com/the-draupnir-project/draupnir/ for more details about it.
     """
 
     def __init__(self, charm: CharmBaseWithState, token_service: AdminAccessTokenService):
