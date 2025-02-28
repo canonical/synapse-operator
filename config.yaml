@@ -27,7 +27,7 @@ options:
     default: false
     description: |
       Configures whether to enable Draupnir - moderation tool for Matrix.
-      Reference: https://github.com/matrix-org/draupnir
+      Reference: https://github.com/the-draupnir-project/draupnir
   enable_password_config:
     type: boolean
     default: true
