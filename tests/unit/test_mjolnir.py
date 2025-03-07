@@ -19,6 +19,27 @@ import synapse
 from draupnir import Draupnir
 
 
+def test_enable_draupnir_precedence(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    arrange: start the Synapse charm, set server_name, set both configurations
+        enable_draupnir and enable_mjolnir.
+    act: call get_membership_room_id.
+    assert: get_membership_room_id is called once with expected args since
+        enable_mjolnir true will enable draupnir.
+    """
+    harness.update_config({"enable_draupnir": False, "enable_mjolnir": True})
+    harness.begin_with_initial_hooks()
+    admin_access_token = token_hex(16)
+    get_room_id = MagicMock()
+    monkeypatch.setattr(synapse, "get_room_id", get_room_id)
+
+    harness.charm._draupnir.get_membership_room_id(admin_access_token)
+
+    get_room_id.assert_called_once_with(
+        room_name="moderators", admin_access_token=admin_access_token
+    )
+
+
 def test_get_membership_room_id(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     arrange: start the Synapse charm, set server_name.

@@ -26,8 +26,16 @@ options:
     type: boolean
     default: false
     description: |
+      If enable_mjolnir is set, this configuration will be enabled.
       Configures whether to enable Draupnir - moderation tool for Matrix.
       Reference: https://github.com/the-draupnir-project/draupnir
+  enable_mjolnir:
+    type: boolean
+    default: false
+    description: |
+      Deprecated, please use enable_draupnir instead.
+      Configures whether to enable Mjolnir - moderation tool for Matrix.
+      Reference: https://github.com/matrix-org/mjolnir
   enable_password_config:
     type: boolean
     default: true

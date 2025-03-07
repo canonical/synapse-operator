@@ -404,7 +404,7 @@ async def test_synapse_with_draupnir_from_refresh_is_up(
     act: Refresh the charm with the local one.
     assert: Synapse and Draupnir health points should return correct responses.
     """
-    await synapse_charmhub_app.set_config({"enable_draupnir": "true"})
+    await synapse_charmhub_app.set_config({"enable_mjolnir": "true"})
     await model.wait_for_idle(apps=[synapse_charmhub_app.name], status="blocked")
     synapse_ip = (await get_unit_ips(synapse_charmhub_app.name))[0]
     user_username = token_hex(16)

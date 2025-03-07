@@ -163,6 +163,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         block_non_admin_invites: block_non_admin_invites config.
         enable_email_notifs: enable_email_notifs config.
         enable_draupnir: enable_draupnir config.
+        enable_mjolnir: enable_mjolnir config (deprecated).
         enable_password_config: enable_password_config config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
@@ -186,6 +187,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     block_non_admin_invites: bool = False
     enable_email_notifs: bool = False
     enable_draupnir: bool = False
+    enable_mjolnir: bool = False
     enable_password_config: bool = True
     enable_room_list_search: bool = True
     experimental_alive_check: str | None = Field(None)
@@ -215,6 +217,25 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         """
 
         extra = Extra.allow
+
+    @validator("enable_draupnir", pre=True, always=True)
+    @classmethod
+    def set_enable_draupnir(cls, value: bool, values: dict) -> bool:
+        """Ensure enable_draupnir follows the correct logic.
+
+        - If enable_draupnir is True, it takes precedence.
+        - If enable_mjolnir is True and enable_draupnir is False, set enable_draupnir to True.
+
+        Args:
+            value: The current value of enable_draupnir.
+            values: Other values in the model.
+
+        Returns:
+            The corrected value of enable_draupnir.
+        """
+        if value:
+            return True
+        return values.get("enable_mjolnir", False)
 
     @validator("notif_from", pre=True, always=True)
     @classmethod
