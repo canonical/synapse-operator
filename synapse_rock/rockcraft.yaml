@@ -143,7 +143,7 @@ parts:
       cd ..
       #
       # install synapse invite checker
-      git clone https://git.buechner.me/nbuechner/synapse-invite-checker
+      git clone https://github.com/nbuechner/synapse-invite-checker.git
       cd synapse-invite-checker
       git checkout ab6c8b78d78c4cbf31e1a30981ae45c09285b34a
       pip3 install --break-system-packages --prefix="/install" --no-warn-script-location -U .
