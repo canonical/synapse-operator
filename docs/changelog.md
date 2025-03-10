@@ -1,5 +1,9 @@
 # Changelog
 
+### 2025-03-10
+
+- Add Draupnir as moderation tool.
+
 ### 2025-02-24
 
 - Add Synapse Service Health Grafana dashboard.

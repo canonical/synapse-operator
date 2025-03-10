@@ -17,6 +17,17 @@ options:
     description: |
       When enabled, room invites to users on this server will be blocked
       (except those sent by local server admins).
+  moderation_access_token:
+    type: string
+    description: |
+      Matrix Access Token to be used by moderation tool.
+  moderation_room_alias:
+    type: string
+    description: |
+      The room alias of the management room, anyone in this room
+      can issue moderation commands. Provide the name without the server. Example:
+      moderators will result in the room #moderators:server_name
+    default: "moderators"
   enable_email_notifs:
     type: boolean
     default: false
