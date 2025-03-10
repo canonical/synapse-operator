@@ -64,6 +64,8 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         invite_checker_policy_rooms: invite_checker_policy_rooms config.
         ip_range_whitelist: ip_range_whitelist config.
         limit_remote_rooms_complexity: limit_remote_rooms_complexity config.
+        moderation_access_token: moderation_access_token config.
+        moderation_room_alias: moderation_room_alias config.
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
         publish_rooms_allowlist: publish_rooms_allowlist config.
@@ -87,6 +89,8 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     invite_checker_policy_rooms: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     limit_remote_rooms_complexity: float | None = Field(None)
+    moderation_access_token: str | None = Field(None)
+    moderation_room_alias: str | None = Field(None)
     public_baseurl: str = Field(..., min_length=2)
     publish_rooms_allowlist: str | None = Field(None)
     rc_joins_remote_burst_count: int | None = Field(None)

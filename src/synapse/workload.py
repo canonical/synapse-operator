@@ -22,6 +22,7 @@ CHECK_ALIVE_NAME = "synapse-alive"
 CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
 CHECK_READY_NAME = "synapse-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
+MODERATION_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
 SYNAPSE_EXPORTER_PORT = "9000"
 STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -366,3 +367,19 @@ def create_registration_secrets_files(container: ops.Container, charm_state: Cha
     if charm_state.registration_secrets:
         for registration_secret in charm_state.registration_secrets:
             registration_secret.file_path.write_text(registration_secret.value, encoding="utf-8")
+
+
+def generate_moderation_config(container: ops.Container, charm_state: CharmState) -> None:
+    """Generate moderation configuration.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+    """
+    with open("templates/moderation_production.yaml", encoding="utf-8") as moderation_config_file:
+        config = yaml.safe_load(moderation_config_file)
+        config["homeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
+        config["rawHomeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
+        config["accessToken"] = charm_state.synapse_config.moderation_access_token
+        config["managementRoom"] = charm_state.synapse_config.moderation_room_alias
+        container.push(MODERATION_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)

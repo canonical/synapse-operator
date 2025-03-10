@@ -389,6 +389,11 @@ def reconcile(  # noqa: C901
         if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
+        if charm_state.synapse_config.moderation_access_token and is_main:
+            logger.info("Moderation enabled.")
+            synapse.generate_moderation_config(container=container, charm_state=charm_state)
+            container.add_layer("moderation", _moderation_pebble_layer(), combine=True)
+            container.replan()
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,
@@ -557,6 +562,47 @@ def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.Layer
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def _moderation_pebble_layer() -> ops.pebble.LayerDict:
+    """Generate pebble config for the moderation service.
+
+    Returns:
+        The pebble configuration for the moderation service.
+    """
+    command_params = f"bot --draupnir-config {synapse.MODERATION_CONFIG_PATH}"
+    layer = {
+        "summary": "Synapse moderation layer",
+        "description": "Synapse moderation layer",
+        "services": {
+            "moderation": {
+                "override": "replace",
+                "summary": "Moderation service",
+                "command": f"/draupnir-entrypoint.sh {command_params}",
+                "startup": "enabled",
+            },
+        },
+        "checks": {
+            "moderation-ready": check_moderation_ready(),
+        },
+    }
+    return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def check_moderation_ready() -> ops.pebble.CheckDict:
+    """Return the Moderation service check.
+
+    Returns:
+        Dict: check object converted to its dict representation.
+    """
+    check = Check("moderation-ready")
+    check.override = "replace"
+    check.level = "ready"
+    check.http = {"url": "http://localhost:7777/healthz"}
+    check.timeout = "10s"
+    check.threshold = 5
+    check.period = "1m"
+    return check.to_dict()
 
 
 def restart_mas(container: ops.model.Container, rendered_mas_configuration: str) -> None:
