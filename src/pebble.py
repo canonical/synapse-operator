@@ -393,7 +393,7 @@ def reconcile(  # noqa: C901
             logger.info("Moderation enabled.")
             synapse.generate_moderation_config(container=container, charm_state=charm_state)
             container.add_layer("moderation", _moderation_pebble_layer(), combine=True)
-            container.replan()
+            container.restart("moderation")
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,
