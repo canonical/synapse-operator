@@ -380,6 +380,6 @@ def generate_moderation_config(container: ops.Container, charm_state: CharmState
         config = yaml.safe_load(moderation_config_file)
         config["homeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
         config["rawHomeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
-        config["accessToken"] = charm_state.synapse_config.moderation_access_token
+        config["accessToken"] = str(charm_state.moderation_token)
         config["managementRoom"] = charm_state.synapse_config.moderation_room_alias
         container.push(MODERATION_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)

@@ -389,7 +389,7 @@ def reconcile(  # noqa: C901
         if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
-        if charm_state.synapse_config.moderation_access_token and is_main:
+        if charm_state.moderation_token and is_main:
             logger.info("Moderation enabled.")
             synapse.generate_moderation_config(container=container, charm_state=charm_state)
             container.add_layer("moderation", _moderation_pebble_layer(), combine=True)
