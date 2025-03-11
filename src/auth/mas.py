@@ -154,34 +154,7 @@ def register_user(
         logger.exception("Error registering new user.")
         raise MASRegisterUserFailedError("Error registering new user.") from exc
 
-    provision_all_users(container=container)
     return password
-
-
-def provision_all_users(
-    container: ops.model.Container,
-) -> None:
-    """Start jobs to provision all users.
-
-    Args:
-        container: Synapse container.
-
-    Raises:
-        MASProvisionUserFailedError: when triggering the provisioning jobs fails.
-    """
-    command = [
-        MAS_EXECUTABLE_PATH,
-        "-c",
-        MAS_CONFIGURATION_PATH,
-        "manage",
-        "provision-all-users",
-    ]
-
-    try:
-        process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
-        process.wait_output()
-    except ops.pebble.ExecError as exc:
-        raise MASProvisionUserFailedError("Error provisioning users.") from exc
 
 
 def verify_user_email(
