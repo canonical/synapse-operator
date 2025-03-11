@@ -752,7 +752,7 @@ def test_generate_moderation_config():
         media_config=None,
         instance_map_config=None,
         registration_secrets=None,
-        moderation_token="abc", # nosec
+        moderation_token="abc",  # nosec
     )
 
     mock_container = MagicMock()

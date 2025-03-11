@@ -481,7 +481,7 @@ def test_moderation_enabled():
         ]
         # mypy fails checking Container class
         container = testing.Container("synapse", can_connect=True)  # type: ignore[call-arg]
-        moderation_token_mock = "stt_YW1hbmAbcGxh_VQlRZRAGRlxACTqCrJxl_0Wcabc" # nosec
+        moderation_token_mock = "stt_YW1hbmAbcGxh_VQlRZRAGRlxACTqCrJxl_0Wcabc"  # nosec
         secrets = [
             testing.Secret(
                 id="123", tracked_content={"matrix-access-token": moderation_token_mock}
