@@ -291,8 +291,8 @@ async def test_moderation(
     )
     await register_user_action.wait()
     assert register_user_action.status == "completed"
-    assert register_user_action.results["password"]
-    password = register_user_action.results["password"]
+    assert register_user_action.results["user-password"]
+    password = register_user_action.results["user-password"]
     # get token
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     url = f"http://{synapse_ip}:8080/_matrix/client/r0/login"
