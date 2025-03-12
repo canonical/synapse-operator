@@ -135,7 +135,7 @@ def register_user(
         "--yes",
         username,
         "--password",
-        f"'{password}'",
+        str(password),
     ]
     if is_admin:
         command.append("--admin")
