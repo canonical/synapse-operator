@@ -741,6 +741,7 @@ def test_generate_moderation_config():
     base_config = {
         "server_name": "example.com",
         "public_baseurl": "https://example.com",
+        "moderation_room_alias": "moderation",
     }
     # pylint: disable=line-too-long
     synapse_config = SynapseConfig(**base_config)  # type: ignore[arg-type] # noqa: E501
@@ -781,7 +782,7 @@ health:
   sentry: null
 homeserverUrl: http://localhost:8080
 logLevel: INFO
-managementRoom: null
+managementRoom: '#moderation:example.com'
 noop: false
 pollReports: false
 protectAllJoinedRooms: false
