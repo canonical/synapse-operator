@@ -317,7 +317,9 @@ async def test_moderation(
     assert room_id
     # create secret
     # refers to juju secret name, not hardcoded password.
-    secret = await model.add_secret("moderation", {"matrix-access-token": access_token})
+    secret = await model.add_secret(
+        "moderation", data_args=[f"matrix-access-token={access_token}"]
+    )
     secret_id = secret.split(":")[-1]
     await model.grant_secret("moderation", synapse_app.name)
 
