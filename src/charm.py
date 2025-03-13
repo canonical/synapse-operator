@@ -11,11 +11,12 @@ import re
 import typing
 
 import ops
+from charms.hydra.v0.oauth import OAuthRequirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
-from ops.charm import ActionEvent, RelationDepartedEvent
+from ops.charm import ActionEvent, RelationChangedEvent, RelationDepartedEvent
 
 import pebble
 import synapse
@@ -25,6 +26,7 @@ from auth.mas import (
     MASVerifyUserEmailFailedError,
     deactivate_user,
     generate_mas_config,
+    generate_oauth_client_config,
     generate_synapse_msc3861_config,
     register_user,
     verify_user_email,
@@ -44,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 MAIN_UNIT_ID = "main_unit_id"
 INGRESS_INTEGRATION_NAME = "ingress"
+OAUTH_INTEGRATION_NAME = "oauth"
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -90,6 +93,7 @@ class SynapseCharm(CharmBaseWithState):
             relation_name=INGRESS_INTEGRATION_NAME,
             port=synapse.SYNAPSE_NGINX_PORT,
         )
+        self._oauth = OAuthRequirer(self)
         self._observability = Observability(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
@@ -104,6 +108,12 @@ class SynapseCharm(CharmBaseWithState):
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
+        self.framework.observe(self._oauth.on.oauth_info_changed, self._on_config_changed)
+        self.framework.observe(self._oauth.on.oauth_info_removed, self._on_config_changed)
+        self.framework.observe(self._oauth.on.invalid_client_config, self._on_config_changed)
+        self.framework.observe(
+            self.on[OAUTH_INTEGRATION_NAME].relation_changed, self._on_oauth_relation_changed
+        )
 
     def build_charm_state(self) -> CharmState:
         """Build charm state.
@@ -214,6 +224,22 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
+
+        oauth_provider_info = None
+        if self._oauth.is_client_created():
+            oauth_provider_info = self._oauth.get_provider_info()
+
+        rendered_mas_configuration = generate_mas_config(
+            mas_configuration,
+            charm_state.synapse_config,
+            oauth_provider_info,
+            charm_state.smtp_config,
+            self.get_main_unit_address(),
+        )
+        synapse_msc3861_configuration = generate_synapse_msc3861_config(
+            mas_configuration, charm_state.synapse_config
+        )
+
         try:
             # check signing key
             signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
@@ -223,15 +249,6 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
-            rendered_mas_configuration = generate_mas_config(
-                mas_configuration,
-                charm_state.synapse_config,
-                charm_state.smtp_config,
-                self.get_main_unit_address(),
-            )
-            synapse_msc3861_configuration = generate_synapse_msc3861_config(
-                mas_configuration, charm_state.synapse_config
-            )
             # reconcile configuration
             pebble.reconcile(
                 charm_state,
@@ -555,6 +572,16 @@ class SynapseCharm(CharmBaseWithState):
                 "anonymize-user": True,
             }
         )
+
+    def _on_oauth_relation_changed(self, _: RelationChangedEvent) -> None:
+        """Handle oauth_relation_changed event."""
+        charm_state = self.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(self)
+        oauth_client_config = generate_oauth_client_config(
+            mas_configuration, charm_state.synapse_config
+        )
+        self._oauth.update_client_config(oauth_client_config)
+        self.reconcile(charm_state, mas_configuration)
 
 
 if __name__ == "__main__":  # pragma: nocover

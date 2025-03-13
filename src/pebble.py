@@ -394,14 +394,16 @@ def reconcile(  # noqa: C901
             synapse.generate_moderation_config(container=container, charm_state=charm_state)
             container.add_layer("moderation", _moderation_pebble_layer(), combine=True)
             container.restart("moderation")
+
+        # Activate msc3861
+        synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
+
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,
             ignore_order=True,
             ignore_string_case=True,
         )
-        # Activate msc3861
-        synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
 
         if config_has_changed:
             logging.info("Configuration has changed, Synapse will be restarted.")

@@ -7,6 +7,7 @@ import secrets
 import typing
 
 import ops
+from charms.hydra.v0.oauth import ClientConfig, OauthProviderConfig
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from charm_types import SMTPConfiguration
@@ -37,7 +38,10 @@ MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
     }
 )
 
-# Disabling it since this is only the label for juju secret
+MAS_AUTHORIZATION_GRANT = ["authorization_code"]
+MAS_OIDC_SCOPE = "openid profile email"
+# Disabling bandit checks since these are only the labels for juju secret
+MAS_TOKEN_ENDPOINT_AUTH_METHOD = "client_secret_basic"  # nosec
 ADMIN_TOKEN_SECRET_LABEL = "admin.token"  # nosec
 
 
@@ -49,12 +53,16 @@ class MASConfigInvalidError(Exception):
     """Exception raised when validation of the MAS config failed."""
 
 
+class MASRegisterUserFailedError(Exception):
+    """Exception raised when user registration failed."""
+
+
+class MASProvisionUserFailedError(Exception):
+    """Exception raised when provisioning of users failed."""
+
+
 class MASConfigSyncError(MASCLIBaseError):
     """Exception raised when synchronisation of the MAS config failed."""
-
-
-class MASRegisterUserFailedError(MASCLIBaseError):
-    """Exception raised when validation of the MAS config failed."""
 
 
 class MASVerifyUserEmailFailedError(MASCLIBaseError):
@@ -112,7 +120,7 @@ def register_user(
     username: str,
     is_admin: bool = False,
 ) -> str:
-    """Register a new user with MAS.
+    """Register a new user with MAS. Afterwards start a provisioning job for all users.
 
     Args:
         container: Synapse container.
@@ -213,6 +221,7 @@ def deactivate_user(container: ops.model.Container, username: str) -> None:
 def generate_mas_config(
     mas_configuration: MASConfiguration,
     synapse_configuration: SynapseConfig,
+    oauth_provider_info: typing.Optional[OauthProviderConfig],
     smtp_configuration: typing.Optional[SMTPConfiguration],
     main_unit_address: str,
 ) -> str:
@@ -223,6 +232,7 @@ def generate_mas_config(
         synapse_configuration: Context needed to render the template.
         smtp_configuration: SMTP configuration.
         main_unit_address: Address of synapse main unit.
+        oauth_provider_info: upstream provider configuration.
 
     Returns:
         str: The rendered MAS configuration.
@@ -239,9 +249,15 @@ def generate_mas_config(
         "synapse_shared_secret": mas_context.synapse_shared_secret,
         "synapse_public_baseurl": synapse_configuration.public_baseurl,
         "mas_database_uri": mas_configuration.database_uri,
-        "enable_password_config": synapse_configuration.enable_password_config,
+        # False with a capital F is not handled properly by MAS -_-
+        "enable_password_config": (
+            "true" if synapse_configuration.enable_password_config else "false"
+        ),
         "synapse_server_name_config": synapse_configuration.server_name,
         "synapse_main_unit_address": main_unit_address,
+        "upstream_oidc_provider_id": mas_context.upstream_oidc_provider_id,
+        "oauth_provider_info": oauth_provider_info,
+        "mas_oidc_scope": MAS_OIDC_SCOPE,
         "smtp_configuration": smtp_configuration,
     }
     env = Environment(
@@ -270,7 +286,6 @@ def generate_synapse_msc3861_config(
         str: The rendered msc3861 configuration.
     """
     mas_context = mas_configuration.mas_context
-
     mas_prefix = mas_configuration.mas_prefix
     # We explicitly set the oauth2 endpoints using MAS local address
     # This is to avoid problems with TLS self-signed certificates
@@ -294,3 +309,27 @@ def generate_synapse_msc3861_config(
             "introspection_endpoint": f"{mas_local_address}oauth2/introspect",
         },
     }
+
+
+def generate_oauth_client_config(
+    mas_configuration: MASConfiguration, synapse_configuration: SynapseConfig
+) -> ClientConfig:
+    """Generate the oauth client config.
+
+    Args:
+        mas_configuration: Path of the template to load.
+        synapse_configuration: Context needed to render the template.
+
+    Returns:
+        ClientConfig: Oauth client config.
+    """
+    redirect_uri = (
+        f"{synapse_configuration.public_baseurl}"
+        f"/auth/upstream/callback/{mas_configuration.mas_context.upstream_oidc_provider_id}"
+    )
+    return ClientConfig(
+        redirect_uri=redirect_uri,
+        scope=MAS_OIDC_SCOPE,
+        grant_types=MAS_AUTHORIZATION_GRANT,
+        token_endpoint_auth_method=MAS_TOKEN_ENDPOINT_AUTH_METHOD,
+    )
