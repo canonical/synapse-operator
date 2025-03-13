@@ -324,7 +324,7 @@ async def test_moderation(
     await model.grant_secret("moderation", synapse_app.name)
 
     # change synapse configuration
-    await synapse_app.set_config({"synapse moderation_access_token_secret_id": secret_id})
+    await synapse_app.set_config({"moderation_access_token_secret_id": secret_id})
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
     )
