@@ -10,7 +10,11 @@ import yaml
 from ops.model import SecretNotFoundError
 from ops.testing import Harness
 
-from auth.mas import generate_mas_config, generate_synapse_msc3861_config
+from auth.mas import (
+    generate_mas_config,
+    generate_oauth_client_config,
+    generate_synapse_msc3861_config,
+)
 from charm import SynapseCharm
 from state.charm_state import SynapseConfig
 from state.mas import MAS_DATABASE_INTEGRATION_NAME, MAS_DATABASE_NAME, MASConfiguration
@@ -42,7 +46,7 @@ def test_mas_generate_config(monkeypatch: pytest.MonkeyPatch) -> None:
     }
     synapse_configuration = SynapseConfig(**config)  # type: ignore[arg-type]
     rendered_mas_config = generate_mas_config(
-        mas_configuration, synapse_configuration, None, "10.1.1.0"
+        mas_configuration, synapse_configuration, None, None, "10.1.1.0"
     )
     rendered_msc3861_config = generate_synapse_msc3861_config(
         mas_configuration, synapse_configuration
@@ -64,4 +68,10 @@ def test_mas_generate_config(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (
         rendered_msc3861_config["issuer"]
         == f"{synapse_configuration.public_baseurl}{mas_configuration.mas_prefix}"
+    )
+
+    oauth_client_config = generate_oauth_client_config(mas_configuration, synapse_configuration)
+    assert oauth_client_config.redirect_uri == (
+        f"{synapse_configuration.public_baseurl}"
+        f"/auth/upstream/callback/{mas_configuration.mas_context.upstream_oidc_provider_id}"
     )
