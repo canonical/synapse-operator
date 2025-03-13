@@ -275,6 +275,7 @@ async def test_nginx_route_integration(
 
 
 async def test_moderation(
+    model: Model,
     synapse_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
@@ -316,10 +317,9 @@ async def test_moderation(
     assert room_id
     # create secret
     # refers to juju secret name, not hardcoded password.
-    secret_name = "moderation"  # nosec
-    secret = await synapse_app.model.add_secret(secret_name, {"matrix-access-token": access_token})
+    secret = await model.add_secret("moderation", {"matrix-access-token": access_token})
     secret_id = secret.split(":")[-1]
-    await synapse_app.model.grant_secret(secret_name, synapse_app.name)
+    await model.grant_secret("moderation", synapse_app.name)
 
     # change synapse configuration
     await synapse_app.set_config({"synapse moderation_access_token_secret_id": secret_id})
