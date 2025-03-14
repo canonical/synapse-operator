@@ -330,6 +330,6 @@ async def test_moderation(
     )
 
     # verify draupnir health endpoint
-    response = requests.get("http://{synapse_ip}:7777/", timeout=5)
+    response = requests.get(f"http://{synapse_ip}:7777/", timeout=5)
     assert response.status_code == 200
     assert "health code: 200" in response.text
