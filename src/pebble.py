@@ -389,14 +389,15 @@ def reconcile(  # noqa: C901
         if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
+        # Activate msc3861
+        synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
+
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,
             ignore_order=True,
             ignore_string_case=True,
         )
-        # Activate msc3861
-        synapse.configure_mas(current_synapse_config, synapse_msc3861_configuration)
 
         if config_has_changed:
             logging.info("Configuration has changed, Synapse will be restarted.")
