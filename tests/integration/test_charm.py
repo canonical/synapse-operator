@@ -21,7 +21,8 @@ from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 import synapse
-from auth.mas import MAS_CONFIGURATION_PATH
+
+from .conftest import DUMP_MAS_CONFIG
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -217,10 +218,8 @@ async def test_synapse_enable_smtp(
         status=ACTIVE_STATUS_NAME,
     )
 
-    pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
-    dump_mas_config_cmd = f"{pebble_exec_cmd} mas-cli -c {MAS_CONFIGURATION_PATH} config dump"
     unit: Unit = synapse_app.units[0]
-    action = await unit.run(dump_mas_config_cmd)
+    action = await unit.run(DUMP_MAS_CONFIG)
     await action.wait()
     assert action.results["return-code"] == 0
     mas_config = yaml.safe_load(action.results["stdout"])
