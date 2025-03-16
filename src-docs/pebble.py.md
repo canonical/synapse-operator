@@ -245,7 +245,7 @@ This is the main entry for changes that require a restart done via Pebble.
 
 ---
 
-<a href="../src/pebble.py#L579"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/pebble.py#L563"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `restart_mas`
 
