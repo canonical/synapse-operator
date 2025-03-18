@@ -67,7 +67,7 @@ When Synapse is scaled, not all layers are added to every unit. Only one unit is
 
 To demonstrate the difference, here’s what you can expect when logging in via `kubectl` to the main and worker units:
 
-#### Leader Unit (Main)
+#### Leader unit (main)
 
 ```bash
 kubectl exec -it synapse-1 -c synapse -- /bin/bash
