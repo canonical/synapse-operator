@@ -743,7 +743,6 @@ def test_generate_moderation_config():
         "public_baseurl": "https://example.com",
         "moderation_room_alias": "moderation",
     }
-    # pylint: disable=line-too-long
     synapse_config = SynapseConfig(**base_config)  # type: ignore[arg-type] # noqa: E501
     charm_state = CharmState(
         datasource=None,
