@@ -15,9 +15,6 @@ from juju.unit import Unit
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
-# caused by pytest fixtures, mark does not work in fixtures
-# pylint: disable=too-many-arguments, unused-argument
-
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 
