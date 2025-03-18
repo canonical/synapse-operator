@@ -61,7 +61,7 @@ The Synapse charm deploys a container named `synapse` with the following Pebble 
 
 7. mjolnir: Matrix moderation bot tool. This layer runs only on the main unit.
 
-### Scaling Behavior
+### Scaling behavior
 
 When Synapse is scaled, not all layers are added to every unit. Only one unit is elected as the main (leader) unit, while the others are worker units.
 
