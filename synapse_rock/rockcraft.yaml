@@ -105,6 +105,7 @@ parts:
       - python3
       - python3-pip
       - xmlsec1
+      - mas-cli/latest/edge
     stage-snaps:
       - aws-cli
     plugin: nil
@@ -205,27 +206,3 @@ parts:
       cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets
     stage:
       - mas/share/*
-  mas-cli:
-    plugin: rust
-    rust-channel: stable
-    rust-cargo-parameters:
-      - "--features dist"
-      - "--no-default-features"
-    <<: *mas-source
-    build-snaps:
-      - go/1.22/stable
-    override-build: |
-      # Build the open-policy-agent binary
-      # We build it here instead of in a separate part because opa is only needed during MAS build
-      git clone --depth 1 --branch v0.70.0 https://github.com/open-policy-agent/opa.git
-      (cd opa; make build; chmod +x opa_linux_amd64; mv opa_linux_amd64 /usr/local/bin/opa)
-      (cd policies; make)
-      mkdir -p $CRAFT_PART_INSTALL/mas/share
-      cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/share/policy.wasm
-
-      craftctl default
-    organize:
-      "mas-cli": usr/bin/mas-cli
-    stage:
-      - usr/bin/mas-cli
-      - mas/share/policy.wasm
