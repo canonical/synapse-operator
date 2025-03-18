@@ -43,7 +43,7 @@ Rel(stats-exporter, synapse-database, "")
 UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
 ```
 
-### Pebble Layers
+### Pebble layers
 
 The Synapse charm deploys a container named `synapse` with the following Pebble layers configured:
 
