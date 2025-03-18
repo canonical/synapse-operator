@@ -15,7 +15,7 @@ title Component diagram for Synapse Charm
 Container_Boundary(synapse, "Synapse") {
   
   
-  Component(synapse-nginx, "Synapse NGINX", "Reverse Proxy", "Reverse Proxy")
+  Component(synapse-nginx, "Synapse NGINX", "Reverse Proxy", "Reverse proxy")
   Component(synapse-mas, "Synapse MAS", "Authentication Service", "Handles user authentication")
   Component(mjolnir, "Mjolnir", "Bot Application", "Interacts as a bot")
   Component(synapse, "Synapse", "Main Application", "Matrix homeserver")
