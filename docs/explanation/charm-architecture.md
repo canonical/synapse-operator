@@ -9,7 +9,7 @@ configuring processes to run in a container and controlling those processes
 throughout the workload lifecycle.
 
 ```mermaid
-C4Component
+C4Context
 title Component diagram for Synapse Charm
 
 Container_Boundary(synapse, "Synapse") {
