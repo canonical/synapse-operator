@@ -107,7 +107,7 @@ root         835       1  0 Mar10 ?        00:00:00 nginx: master process /usr/s
 nginx        836     835  0 Mar10 ?        00:01:32 nginx: worker process
 ```
 
-### Expected Services Status
+### Expected services status
 
 On the leader unit, the following Pebble services will be active:
 
