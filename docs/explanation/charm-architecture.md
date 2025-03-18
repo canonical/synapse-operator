@@ -89,7 +89,7 @@ root        4014       1  0 Mar10 ?        00:00:00 nginx: master process /usr/s
 nginx       4015    4014  0 Mar10 ?        00:02:03 nginx: worker process
 ```
 
-#### Worker Unit
+#### Worker unit
 
 ```bash
 kubectl exec -it synapse-0 -c synapse -- /bin/bash
