@@ -51,7 +51,7 @@ The Synapse charm deploys a container named `synapse` with the following Pebble 
 
 2. synapse-cron: Installs a cron script that helps clean up empty directories within Synapse's media content storage locations. These directories can accumulate and consume inodes and disk space, and the cron job ensures they are purged.
 
-3. synapse-nginx: This layer configures NGINX to efficiently serve static resources and acts as the entry point for all web traffic to the pod.
+3. synapse-nginx: Configures NGINX to efficiently serve static resources and acts as the entry point for all web traffic to the pod.
 
 4. synapse-federation-sender: This layer runs a Synapse worker instance responsible for sending federation requests. By offloading this task from the main unit, the layer helps improve the performance of the main unit. Only the main unit runs this layer.
 
