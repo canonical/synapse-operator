@@ -55,7 +55,7 @@ The Synapse charm deploys a container named `synapse` with the following Pebble 
 
 4. synapse-federation-sender: Runs a Synapse worker instance responsible for sending federation requests. By offloading this task from the main unit, the layer helps improve the performance of the main unit. Only the main unit runs this layer.
 
-5. stats-exporter: A Prometheus exporter that collects statistical metrics from the Synapse database. Like the `synapse-federation-sender`, this layer runs only on the main unit.
+5. stats-exporter: A Prometheus exporter that collects statistical metrics from the Synapse database. Like the synapse-federation-sender, this layer runs only on the main unit.
 
 6. synapse-mas: Configures the Matrix Authentication Service (MAS) on the unit.
 
