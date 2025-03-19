@@ -24,9 +24,6 @@ import synapse
 
 from .conftest import DUMP_MAS_CONFIG
 
-# caused by pytest fixtures
-# pylint: disable=too-many-arguments
-
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 
