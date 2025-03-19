@@ -1,8 +1,8 @@
 # Charm architecture
 
 Synapse is a drop in replacement for other chat servers like Mattermost and
-Slack. It integrates with [PostgreSQL](https://www.postgresql.org/) as its
-database.
+Slack. It integrates with [PostgreSQL](https://www.postgresql.org/) as its database,
+which is provided by the [PostgreSQL charm](https://charmhub.io/postgresql).
 
 Pebble is a lightweight, API-driven process supervisor that is responsible for
 configuring processes to run in a container and controlling those processes
@@ -10,9 +10,9 @@ throughout the workload lifecycle.
 
 ```mermaid
 C4Context
-title Component diagram for Synapse Charm
+title Component diagram for Synapse Charm integrated with PostgreSQL Charm
 
-Container_Boundary(synapse, "Synapse") {
+Container_Boundary(synapse, "Synapse Charm") {
   
   
   Component(synapse-nginx, "Synapse NGINX", "Reverse Proxy", "Reverse proxy")
@@ -31,7 +31,7 @@ Container_Boundary(synapse, "Synapse") {
   
 }
 
-Container_Boundary(postgresql, "PostgreSQL") {
+Container_Boundary(postgresql, "PostgreSQL Charm") {
     Component(mas-database, "MAS database", "","")
     Component(synapse-database, "Synapse database", "","")
 }
