@@ -463,7 +463,7 @@ def test_create_backup_correct(
         assert any(("'dir1'" in arg for arg in args))
         return synapse.ExecResult(0, "", "")
 
-    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+    harness.register_command_handler(  # type: ignore
         container=container,
         executable=backup.BASH_COMMAND,
         handler=backup_command_handler,
@@ -514,7 +514,7 @@ def test_create_backup_failure(
         """
         return synapse.ExecResult(1, "", "")
 
-    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+    harness.register_command_handler(  # type: ignore
         container=container,
         executable=backup.BASH_COMMAND,
         handler=backup_command_handler,
@@ -559,7 +559,7 @@ def test_restore_backup_correct(
         assert any(("--decrypt" in arg for arg in args))
         return synapse.ExecResult(0, "", "")
 
-    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+    harness.register_command_handler(  # type: ignore
         container=container,
         executable=backup.BASH_COMMAND,
         handler=backup_command_handler,
@@ -601,7 +601,7 @@ def test_restore_backup_failure(
         """
         return synapse.ExecResult(1, "", "")
 
-    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+    harness.register_command_handler(  # type: ignore
         container=container,
         executable=backup.BASH_COMMAND,
         handler=backup_command_handler,
@@ -646,7 +646,7 @@ def test_prepare_container_correct(harness: Harness, s3_parameters_backup):
         # let the rest of checks for the integration tests.
         return synapse.ExecResult(0, "", "")
 
-    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+    harness.register_command_handler(  # type: ignore
         container=container,
         executable=backup.AWS_COMMAND,
         handler=aws_command_handler,
@@ -680,7 +680,7 @@ def test_prepare_container_error_aws(harness: Harness, s3_parameters_backup):
         # let the rest of checks for the integration tests.
         return synapse.ExecResult(1, "", "error")
 
-    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+    harness.register_command_handler(  # type: ignore
         container=container,
         executable=backup.AWS_COMMAND,
         handler=aws_command_handler,
@@ -792,7 +792,7 @@ def test_calculate_size(harness: Harness):
 
     # A better option would be to use run harness.handle_exec,
     # but the harness is monkey patched in conftest.py
-    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+    harness.register_command_handler(  # type: ignore
         container=container,
         executable="/usr/bin/bash",
         handler=du_handler,

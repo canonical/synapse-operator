@@ -5,7 +5,7 @@
 
 """Helper module used to manage interactions with Synapse API."""
 
-# pylint: disable=too-few-public-methods, too-many-arguments
+# pylint: disable=too-many-arguments
 
 import hashlib
 import hmac
