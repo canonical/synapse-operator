@@ -10,9 +10,7 @@ import re
 import typing
 
 import ops
-
-# pydantic is causing this no-name-in-module problem
-from pydantic.v1 import (  # pylint: disable=no-name-in-module,import-error
+from pydantic.v1 import (
     AnyHttpUrl,
     BaseModel,
     Extra,
@@ -36,7 +34,7 @@ class CharmConfigInvalidError(Exception):
     """Exception raised when a charm configuration is found to be invalid."""
 
 
-class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
+class ProxyConfig(BaseModel):
     """Configuration for accessing Synapse through proxy.
 
     Attributes:
@@ -50,7 +48,7 @@ class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
     no_proxy: typing.Optional[str]
 
 
-class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
+class SynapseConfig(BaseModel):
     """Represent Synapse builtin configuration values.
 
     Attributes:
@@ -238,7 +236,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
 
 
 @dataclasses.dataclass(frozen=True)
-class CharmState:  # pylint: disable=too-many-instance-attributes
+class CharmState:
     """State of the Charm.
 
     Attributes:

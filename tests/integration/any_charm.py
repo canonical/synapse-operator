@@ -1,7 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=import-error,consider-using-with,no-member,too-few-public-methods
+# pylint: disable=import-error,too-few-public-methods
 
 """This code should be loaded into any-charm which is used for integration tests."""
 

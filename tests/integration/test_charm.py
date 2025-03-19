@@ -23,9 +23,6 @@ from pytest_operator.plugin import OpsTest
 import synapse
 from auth.mas import MAS_CONFIGURATION_PATH
 
-# caused by pytest fixtures
-# pylint: disable=too-many-arguments
-
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 
