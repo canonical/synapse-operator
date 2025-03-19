@@ -3,7 +3,7 @@
 
 """Synapse workload unit tests."""
 
-# pylint: disable=protected-access, too-many-lines, duplicate-code
+# pylint: disable=duplicate-code
 
 
 import io
