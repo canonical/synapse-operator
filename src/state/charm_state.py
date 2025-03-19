@@ -236,7 +236,7 @@ class SynapseConfig(BaseModel):
 
 
 @dataclasses.dataclass(frozen=True)
-class CharmState:
+class CharmState:  # pylint: disable=too-many-instance-attributes
     """State of the Charm.
 
     Attributes:
