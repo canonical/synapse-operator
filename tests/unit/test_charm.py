@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 
 import ops
 import pytest
+from ops import testing
 from ops.testing import Harness
 
 import pebble
@@ -445,3 +446,61 @@ def test_redis_enabled_reconcile_pebble_error(
 
     assert isinstance(harness.model.unit.status, ops.BlockedStatus)
     assert error_message in str(harness.model.unit.status)
+
+
+def test_moderation_enabled(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: start the charm with all integrations and commands mocked.
+    act: trigger config-changed event.
+    assert: The moderation token is available and extracted from the secret. If
+        secret not found, moderation token is None.
+    """
+    mock_reconcile = MagicMock()
+    monkeypatch.setattr(SynapseCharm, "reconcile", mock_reconcile)
+    monkeypatch.setattr(SynapseCharm, "_set_workload_version", MagicMock())
+    ctx = testing.Context(SynapseCharm)
+    config = {"server_name": TEST_SERVER_NAME, "moderation_access_token_secret_id": "123"}
+    database_data = {
+        "database": "synapse-mas",
+        "endpoints": "postgresql-k8s-primary.local:5432",
+        "password": "123",
+        "username": "user1",
+    }
+    relations = [
+        testing.Relation(
+            id=1,
+            endpoint="mas-database",
+            interface="postgresql_client",
+            remote_app_data=database_data,
+        ),
+    ]
+    # mypy fails checking Container class
+    container = testing.Container("synapse", can_connect=True)  # type: ignore[call-arg]
+    moderation_token = "stt_YW1hbmAbcGxh_VQlRZRAGRlxACTqCrJxl_0Wcabc"  # nosec
+    secrets = [testing.Secret(id="123", tracked_content={"matrix-access-token": moderation_token})]
+    state = testing.State(
+        leader=True,
+        config=config,
+        containers={container},
+        relations=relations,
+        secrets=secrets,
+    )
+
+    ctx.run(ctx.on.config_changed(), state)
+
+    assert mock_reconcile.called
+    args, _ = mock_reconcile.call_args
+    assert args[0].moderation_token == moderation_token
+
+    state = testing.State(
+        leader=True,
+        config=config,
+        containers={container},
+        relations=relations,
+    )
+
+    ctx.run(ctx.on.config_changed(), state)
+
+    assert mock_reconcile.called
+    args, _ = mock_reconcile.call_args
+    assert args[0].moderation_token is None

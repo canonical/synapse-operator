@@ -1,0 +1,8 @@
+alert: SynapseModerationErrorFound
+expr: rate({%%juju_topology%%, pebble_service="moderation"} |= "[ERROR]"[5m]) > 0
+for: 5m
+labels:
+  severity: error
+annotations:
+  summary: Synapse Moderation error detected.
+  description: This alert is triggered when Moderation logs an error level message in the last 5 minutes.
