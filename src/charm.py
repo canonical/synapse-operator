@@ -11,6 +11,7 @@ import re
 import typing
 
 import ops
+import requests
 from charms.hydra.v0.oauth import OAuthRequirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
@@ -310,11 +311,19 @@ class SynapseCharm(CharmBaseWithState):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
+        synapse_version = "-"
+        main_unit_address = self.get_main_unit_address()
+        res = requests.get(
+            url=f"http://{main_unit_address}:8008/_synapse/admin/v1/server_version", timeout=5
+        )
         try:
-            synapse_version = synapse.get_version(self.get_main_unit_address())
-            self.unit.set_workload_version(synapse_version)
-        except synapse.APIError as exc:
-            logger.debug("Cannot set workload version at this time: %s", exc)
+            server_version = res.json()["server_version"]
+        except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
+            logger.exception("Failed to decode version: %r. Received: %s", exc, res.text)
+        version_match = re.search(r"(\d+\.\d+\.\d+(?:\w+)?)\s?", server_version)
+        if version_match:
+            synapse_version = version_match.group(1)
+        self.unit.set_workload_version(synapse_version)
 
     @validate_charm_state
     def _on_config_changed(self, _: ops.HookEvent) -> None:
