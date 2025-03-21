@@ -105,10 +105,10 @@ parts:
       - python3
       - python3-pip
       - xmlsec1
-      - mas-cli/latest/edge
     stage-snaps:
       - aws-cli
       - draupnir/latest/edge
+      - mas-cli/latest/edge
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git
