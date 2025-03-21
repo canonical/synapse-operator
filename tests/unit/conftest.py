@@ -201,7 +201,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
-        executable="/usr/bin/mas-cli",
+        executable="/snap/bin/mas-cli",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness

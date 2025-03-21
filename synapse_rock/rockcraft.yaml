@@ -164,6 +164,8 @@ parts:
       cp -r docker/conf $CRAFT_PART_INSTALL/
       cp -r /install/local/* $CRAFT_PART_INSTALL/usr/local/
       rm -rf $CRAFT_PART_INSTALL/aws/dist/awscli/examples/
+      mkdir -p $CRAFT_PART_INSTALL/mas/share/
+      cp /snap/mas-cli/x1/mas/share/policy.wasm $CRAFT_PART_INSTALL/mas/share/policy.wasm
     overlay-packages:
       - ca-certificates
       - libjemalloc2

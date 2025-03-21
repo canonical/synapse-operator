@@ -18,7 +18,7 @@ logger = logging.getLogger()
 
 MAS_TEMPLATE_FILE_NAME = "mas_config.yaml.j2"
 MAS_SERVICE_NAME = "synapse-mas"
-MAS_EXECUTABLE_PATH = "/usr/bin/mas-cli"
+MAS_EXECUTABLE_PATH = "/snap/bin/mas-cli"
 MAS_WORKING_DIR = "/mas"
 MAS_CONFIGURATION_PATH = f"{MAS_WORKING_DIR}/config.yaml"
 
