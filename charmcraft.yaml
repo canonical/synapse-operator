@@ -21,7 +21,6 @@ parts:
   charm:
     build-packages:
       - libpq-dev
-      - python3-requests
     build-snaps:
       - rustup
     override-build: |
