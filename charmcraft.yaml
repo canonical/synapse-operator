@@ -28,6 +28,7 @@ parts:
       craftctl default
     charm-python-packages:
     - setuptools==77.0.3
+    - requests==2.32.3
     charm-binary-python-packages:
     - psycopg2-binary
     - cryptography
