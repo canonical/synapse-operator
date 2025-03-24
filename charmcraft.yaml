@@ -26,6 +26,8 @@ parts:
     override-build: |
       rustup default stable
       craftctl default
+    charm-python-packages:
+    - setuptools==77.0.3
     charm-binary-python-packages:
     - psycopg2-binary
     - cryptography
