@@ -21,12 +21,12 @@ parts:
   charm:
     build-packages:
       - libpq-dev
+      - python3-requests
     build-snaps:
       - rustup
     override-build: |
       rustup default stable
       craftctl default
     charm-binary-python-packages:
-    - setuptools
     - psycopg2-binary
     - cryptography
