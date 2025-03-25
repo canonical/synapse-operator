@@ -19,18 +19,13 @@ from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationChangedEvent, RelationDepartedEvent
 
+import actions
 import pebble
 import synapse
 from auth.mas import (
-    MASDeactivateUserFailedError,
-    MASRegisterUserFailedError,
-    MASVerifyUserEmailFailedError,
-    deactivate_user,
     generate_mas_config,
     generate_oauth_client_config,
     generate_synapse_msc3861_config,
-    register_user,
-    verify_user_email,
 )
 from backup_observer import BackupObserver
 from database_observer import DatabaseObserver, SynapseDatabaseObserver
@@ -96,6 +91,13 @@ class SynapseCharm(CharmBaseWithState):
         )
         self._oauth = OAuthRequirer(self)
         self._observability = Observability(self)
+
+        # Actions
+        self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+        self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
+        self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
+
+        # Events
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
@@ -106,15 +108,39 @@ class SynapseCharm(CharmBaseWithState):
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
-        self.framework.observe(self.on.register_user_action, self._on_register_user_action)
-        self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
-        self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
         self.framework.observe(self._oauth.on.oauth_info_changed, self._on_config_changed)
         self.framework.observe(self._oauth.on.oauth_info_removed, self._on_config_changed)
         self.framework.observe(self._oauth.on.invalid_client_config, self._on_config_changed)
         self.framework.observe(
             self.on[OAUTH_INTEGRATION_NAME].relation_changed, self._on_oauth_relation_changed
         )
+
+    def _on_register_user_action(self, event: ActionEvent) -> None:
+        """Register user and report action result.
+
+        Args:
+            event: Event triggering the register user instance action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        actions.register_user_action(container, event)
+
+    def _on_verify_user_email_action(self, event: ActionEvent) -> None:
+        """Register user and report action result.
+
+        Args:
+            event: Event triggering the register user instance action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        actions.verify_user_email_action(container, event)
+
+    def _on_anonymize_user_action(self, event: ActionEvent) -> None:
+        """Anonymize user and report action result.
+
+        Args:
+            event: Event triggering the anonymize user action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        actions.anonymize_user_action(container, event)
 
     def build_charm_state(self) -> CharmState:
         """Build charm state.
@@ -503,73 +529,6 @@ class SynapseCharm(CharmBaseWithState):
 
         logger.debug("_on_relation_changed emitting reconcile")
         self.reconcile(charm_state, mas_configuration)
-
-    def _on_register_user_action(self, event: ActionEvent) -> None:
-        """Register user and report action result.
-
-        Args:
-            event: Event triggering the register user instance action.
-        """
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-        try:
-            password = register_user(
-                container=container,
-                username=event.params["username"],
-                is_admin=event.params["admin"],
-            )
-        except MASRegisterUserFailedError as exc:
-            event.fail(str(exc))
-            return
-        results = {"register-user": True, "user-password": password}
-        event.set_results(results)
-
-    def _on_verify_user_email_action(self, event: ActionEvent) -> None:
-        """Register user and report action result.
-
-        Args:
-            event: Event triggering the register user instance action.
-        """
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-        try:
-            verify_user_email(
-                container=container,
-                username=event.params["username"],
-                email=event.params["email"],
-            )
-        except MASVerifyUserEmailFailedError as exc:
-            event.fail(str(exc))
-            return
-        results = {"verify-user-email": True}
-        event.set_results(results)
-
-    def _on_anonymize_user_action(self, event: ActionEvent) -> None:
-        """Anonymize user and report action result.
-
-        Args:
-            event: Event triggering the anonymize user action.
-        """
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-
-        try:
-            deactivate_user(container=container, username=event.params["username"])
-        except MASDeactivateUserFailedError as exc:
-            logger.exception("Error deactivating user.")
-            event.fail(str(exc))
-
-        event.set_results(
-            {
-                "anonymize-user": True,
-            }
-        )
 
     def _on_oauth_relation_changed(self, _: RelationChangedEvent) -> None:
         """Handle oauth_relation_changed event."""
