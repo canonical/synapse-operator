@@ -3,7 +3,7 @@
 
 """Synapse workload unit tests."""
 
-# pylint: disable=protected-access, too-many-lines, duplicate-code
+# pylint: disable=duplicate-code
 
 
 import io
@@ -730,3 +730,70 @@ def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing
     }
 
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
+def test_generate_moderation_config():
+    """
+    arrange: set mock container with file.
+    act: update invite_checker_blocklist_allowlist_url config.
+    assert: new configuration file is pushed and invite_checker_blocklist_allowlist_url is enabled.
+    """
+    base_config = {
+        "server_name": "example.com",
+        "public_baseurl": "https://example.com",
+        "moderation_room_alias": "moderation",
+    }
+    synapse_config = SynapseConfig(**base_config)  # type: ignore[arg-type] # noqa: E501
+    charm_state = CharmState(
+        datasource=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+        registration_secrets=None,
+        moderation_token="abc",  # nosec
+    )
+
+    mock_container = MagicMock()
+    synapse.generate_moderation_config(mock_container, charm_state)
+
+    assert mock_container.push.called
+    args, _ = mock_container.push.call_args
+    assert (
+        args[1]
+        == """accessToken: abc
+automaticallyRedactForReasons:
+- spam
+- advertising
+backgroundDelayMS: 500
+dataPath: /data/storage
+displayReports: true
+fasterMembershipChecks: false
+health:
+  healthz:
+    address: 0.0.0.0
+    enabled: true
+    endpoint: /healthz
+    healthyStatus: 200
+    port: 7777
+    unhealthyStatus: 418
+  sentry: null
+homeserverUrl: http://localhost:8080
+logLevel: INFO
+managementRoom: '#moderation:example.com'
+noop: false
+pollReports: false
+protectAllJoinedRooms: false
+rawHomeserverUrl: http://localhost:8080
+syncOnStartup: true
+verboseLogging: false
+verifyPermissionsOnStartup: true
+web:
+  abuseReporting:
+    enabled: true
+  address: 0.0.0.0
+  enabled: true
+  port: 9999
+"""
+    )
