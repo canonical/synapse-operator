@@ -16,28 +16,23 @@ from charm import SynapseCharm
 
 def test_moderation_enabled(monkeypatch: pytest.MonkeyPatch, base_state, matrix_auth_secret):
     """
-    arrange: start the charm with all integrations and commands mocked.
-    act: trigger config-changed event.
-    assert: The moderation token is available and extracted from the secret. If
+    arrange: start the charm with all integrations and commands mocked.  If
         secret not found, moderation token is None.
+    act: trigger config-changed event.
+    assert: The moderation token is available and extracted from the secret.
     """
     mock_reconcile = MagicMock()
     monkeypatch.setattr(SynapseCharm, "reconcile", mock_reconcile)
     monkeypatch.setattr(SynapseCharm, "_set_workload_version", MagicMock())
     ctx = testing.Context(SynapseCharm)
-    # no secret found
     state = testing.State(**base_state)
-
     ctx.run(ctx.on.config_changed(), state)
-
     assert mock_reconcile.called
     args, _ = mock_reconcile.call_args
     assert args[0].moderation_token is None
 
-    # secret found
     base_state["secrets"] = [matrix_auth_secret]
     state = testing.State(**base_state)
-
     ctx.run(ctx.on.config_changed(), state)
 
     assert mock_reconcile.called

@@ -12,7 +12,7 @@ from pathlib import Path
 import ops
 import yaml
 from jinja2 import Environment, FileSystemLoader
-from ops.pebble import ExecError, PathError
+from ops.pebble import APIError, ExecError, PathError
 
 from state.charm_state import CharmState
 
@@ -387,14 +387,47 @@ def generate_moderation_config(container: ops.Container, charm_state: CharmState
         container.push(MODERATION_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
 
 
-def run_media_sync_cleanup(container: ops.Container) -> None:
+def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) -> None:
     """Run s3_media_upload command and clean media directory locally.
 
     Args:
         container: Container of the charm.
+        charm_state: Instance of CharmState.
     """
-    logger.info(
-        "media_sync_cleanup started. See the logs in %s for results.",
-        SYNAPSE_MEDIA_SYNC_CLEANUP_LOG,
-    )
-    container.exec(["date"])
+    if not charm_state.media_config:
+        logger.warning("media_sync_cleanup started but no media integration was found, skipping")
+        return
+    media_store_path = get_media_store_path(container)
+    commands = [
+        ["s3_media_upload", "update-db", "1d"],
+        ["s3_media_upload", "check-deleted", media_store_path],
+        [
+            "s3_media_upload",
+            "upload",
+            media_store_path,
+            charm_state.media_config["bucket"],
+            "--delete",
+            "--storage-class",
+            "STANDARD",
+            "--endpoint-url",
+            charm_state.media_config["endpoint_url"],
+        ],
+    ]
+
+    try:
+        for command in commands:
+            logger.info("media_sync_cleanup executing: %s", " ".join(command))
+            exec_process = container.exec(
+                command,
+                user=SYNAPSE_USER,
+                group=SYNAPSE_GROUP,
+            )
+            stdout, stderr = exec_process.wait_output()
+            logger.info("media_sync_cleanup output: %s", stdout.strip())
+            if stderr:
+                logger.warning("media_sync_cleanup errors: %s", stderr.strip())
+
+        logger.info("media_sync_cleanup completed successfully.")
+
+    except (APIError, ops.pebble.ExecError) as exc:
+        logger.critical("media_sync_cleanup failed: %s", str(exc))

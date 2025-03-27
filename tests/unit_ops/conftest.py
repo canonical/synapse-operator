@@ -77,12 +77,22 @@ def synapse_container_fixture():
 
 
 @pytest.fixture(name="matrix_auth_secret")
-def matrix_auth_secret_fixture():
+def matrix_auth_secret_fixture(matrix_auth_secret_id):
     """Matrix Auth secret fixture."""
     moderation_token = "stt_YW1hbmAbcGxh_VQlRZRAGRlxACTqCrJxl_0Wcabc"  # nosec
-    yield testing.Secret(id="123", tracked_content={"matrix-access-token": moderation_token})
+    yield testing.Secret(
+        id=matrix_auth_secret_id, tracked_content={"matrix-access-token": moderation_token}
+    )
 
 
 @pytest.fixture(name="synapse_config")
-def synapse_config_fixture():
-    yield {"server_name": TEST_SERVER_NAME, "moderation_access_token_secret_id": token_hex(16)}
+def synapse_config_fixture(matrix_auth_secret_id):
+    yield {
+        "server_name": TEST_SERVER_NAME,
+        "moderation_access_token_secret_id": matrix_auth_secret_id,
+    }
+
+
+@pytest.fixture(name="matrix_auth_secret_id")
+def matrix_auth_secret_id_fixture():
+    yield token_hex(16)
