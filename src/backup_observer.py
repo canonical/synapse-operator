@@ -87,8 +87,8 @@ class BackupObserver(Object):
     def _on_create_backup_action(self, event: ActionEvent) -> None:
         """Create new backup of Synapse data.
 
-        If enable_media_sync_cleanup, after a successful backup, run media sync
-            and cleanup.
+        If enable_media_sync_cleanup and s3 media integration are in place,
+            after a successful backup, run media sync and cleanup.
 
         Args:
             event: Event triggering the create backup action.
@@ -118,7 +118,7 @@ class BackupObserver(Object):
         media_sync_cleanup_result = "disabled"
         charm_state = charm.build_charm_state()
         media_sync_cleanup = charm_state.synapse_config.enable_media_sync_cleanup
-        if media_sync_cleanup:
+        if media_sync_cleanup and charm_state.media_config:
             media_sync_cleanup_result = "started"
 
         result = {
