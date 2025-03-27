@@ -3,11 +3,14 @@
 
 """Synapse charm unit tests."""
 
+from secrets import token_hex
 from unittest.mock import MagicMock
 
 import pytest
 from ops import testing
 
+import backup
+import synapse
 from charm import SynapseCharm
 
 
@@ -40,3 +43,31 @@ def test_moderation_enabled(monkeypatch: pytest.MonkeyPatch, base_state, matrix_
     assert mock_reconcile.called
     args, _ = mock_reconcile.call_args
     assert args[0].moderation_token == matrix_auth_secret.tracked_content["matrix-access-token"]
+
+
+def test_create_backup_correct_enable_media_sync_cleanup(
+    monkeypatch: pytest.MonkeyPatch, base_state, s3_media_relation, s3_backup_relation
+):
+    """
+    arrange: start the Synapse charm. Integrate with s3-integrator.
+        Mock can_use_bucket and create_backup.
+    act: Run the backup action.
+    assert: Backup should end correctly, returning correct and the backup name.
+    """
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+    create_backup = MagicMock()
+    monkeypatch.setattr(backup, "create_backup", create_backup)
+    run_media_sync_cleanup_mock = MagicMock()
+    monkeypatch.setattr(synapse, "run_media_sync_cleanup", run_media_sync_cleanup_mock)
+    ctx = testing.Context(SynapseCharm)
+    base_state["config"]["enable_media_sync_cleanup"] = True
+    base_state["config"]["backup_passphrase"] = token_hex(16)
+    base_state["relations"].extend([s3_media_relation, s3_backup_relation])
+    state = testing.State(**base_state)
+
+    ctx.run(ctx.on.action("create-backup"), state)
+
+    create_backup.assert_called_once()
+    assert "backup-id" in ctx.action_results
+    assert ctx.action_results["result"] == "correct"
+    run_media_sync_cleanup_mock.assert_called_once()
