@@ -107,10 +107,10 @@ parts:
         plugin: nil
         source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.120.0
+        source-tag: v1.127.1
         build-environment:
-          - RUST_VERSION: "1.76.0"
-          - POETRY_VERSION: "1.7.1"
+          - RUST_VERSION: "1.82.0"
+          - POETRY_VERSION: "2.1.1"
         override-build: |
             craftctl default
             export RUSTUP_HOME=/rust
@@ -124,6 +124,7 @@ parts:
             # install synapse requirements
             pip3 install --break-system-packages --root-user-action=ignore "poetry==$POETRY_VERSION"
             cp pyproject.toml poetry.lock /synapse/
+            $CRAFT_PART_INSTALL/usr/local/bin/poetry self add poetry-plugin-export
             $CRAFT_PART_INSTALL/usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
             pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
             #
@@ -153,7 +154,7 @@ parts:
             pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
             # fix issue while creating file
             # https://github.com/element-hq/synapse/issues/17882
-            pip3 install --break-system-packages --prefix="/install" --force-reinstall -v "Twisted==24.7.0"
+            #pip3 install --break-system-packages --prefix="/install" --force-reinstall -v "Twisted==24.7.0"
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
