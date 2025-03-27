@@ -398,11 +398,12 @@ def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) ->
         logger.warning("media_sync_cleanup started but no media integration was found, skipping")
         return
     media_store_path = get_media_store_path(container)
+    s3_media_upload_path = "/usr/local/bin/s3_media_upload"
     commands = [
-        ["s3_media_upload", "update-db", "1d"],
-        ["s3_media_upload", "check-deleted", media_store_path],
+        [s3_media_upload_path, "update-db", "1d"],
+        [s3_media_upload_path, "check-deleted", media_store_path],
         [
-            "s3_media_upload",
+            s3_media_upload_path,
             "upload",
             media_store_path,
             charm_state.media_config["bucket"],
