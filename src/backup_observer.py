@@ -15,6 +15,7 @@ from ops.pebble import APIError, ExecError
 import backup
 import synapse
 from s3_parameters import S3Parameters
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class BackupObserver(Object):
 
     _S3_RELATION_NAME = "backup"
 
-    def __init__(self, charm: ops.CharmBase):
+    def __init__(self, charm: CharmBaseWithState):
         """Initialize the backup object.
 
         Args:
@@ -48,37 +49,51 @@ class BackupObserver(Object):
         )
         self.framework.observe(self._charm.on.delete_backup_action, self._on_delete_backup_action)
 
+    def get_charm(self) -> CharmBaseWithState:
+        """Return the current charm.
+
+        Returns:
+           The current charm
+        """
+        return self._charm
+
     def _on_s3_credential_changed(self, _: CredentialsChangedEvent) -> None:
         """Check new S3 credentials set the unit to blocked if they are wrong."""
+        charm = self.get_charm()
         try:
             s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
-            self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
+            charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
         try:
             s3_client = backup.S3Client(s3_parameters)
         except backup.S3Error:
             logger.exception("Error creating S3Client.")
-            self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
+            charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
         if not s3_client.can_use_bucket():
-            self._charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
+            charm.unit.status = ops.BlockedStatus(S3_CANNOT_ACCESS_BUCKET)
             return
 
-        self._charm.unit.status = ops.ActiveStatus()
+        charm.unit.status = ops.ActiveStatus()
 
     def _on_s3_credential_gone(self, _: CredentialsChangedEvent) -> None:
         """Handle s3 credentials gone. Set unit status to active."""
-        self._charm.unit.status = ops.ActiveStatus()
+        self.get_charm().unit.status = ops.ActiveStatus()
 
+    @validate_charm_state
     def _on_create_backup_action(self, event: ActionEvent) -> None:
         """Create new backup of Synapse data.
+
+        If enable_media_sync_cleanup, after a successful backup, run media sync
+            and cleanup.
 
         Args:
             event: Event triggering the create backup action.
         """
+        charm = self.get_charm()
         try:
             s3_parameters = S3Parameters(**self._s3_client.get_s3_connection_info())
         except ValueError:
@@ -86,12 +101,12 @@ class BackupObserver(Object):
             event.fail("Wrong S3 configuration on create backup action. Check S3 integration.")
             return
 
-        backup_passphrase = typing.cast(str, self._charm.config.get("backup_passphrase"))
+        backup_passphrase = typing.cast(str, charm.config.get("backup_passphrase"))
         if not backup_passphrase:
             event.fail("Missing backup_passphrase config option.")
             return
 
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        container = charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
 
         try:
             backup_id = backup.create_backup(container, s3_parameters, backup_passphrase)
@@ -100,7 +115,18 @@ class BackupObserver(Object):
             event.fail("Error Creating Backup.")
             return
 
-        event.set_results({"result": "correct", "backup-id": backup_id})
+        media_sync_cleanup_result = "disabled"
+        charm_state = charm.build_charm_state()
+        media_sync_cleanup = charm_state.synapse_config.enable_media_sync_cleanup
+        if media_sync_cleanup:
+            media_sync_cleanup_result = "started"
+
+        result = {
+            "result": "correct",
+            "backup-id": backup_id,
+            "media-sync-cleanup-result": media_sync_cleanup_result,
+        }
+        event.set_results(result)
 
     def _generate_backup_list_formatted(self, backup_list: list[backup.S3Backup]) -> str:
         """Generate a formatted string for the backups.
@@ -161,6 +187,7 @@ class BackupObserver(Object):
         Args:
             event: Event triggering the restore backup action.
         """
+        charm = self.get_charm()
         backup_id = event.params["backup-id"]
         logger.info("A restore with backup-id %s has been requested on unit.", backup_id)
 
@@ -181,12 +208,12 @@ class BackupObserver(Object):
             event.fail("Error accessing S3 in restore backup action.")
             return
 
-        backup_passphrase = typing.cast(str, self._charm.config.get("backup_passphrase"))
+        backup_passphrase = typing.cast(str, charm.config.get("backup_passphrase"))
         if not backup_passphrase:
             event.fail("Missing backup_passphrase config option.")
             return
 
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        container = charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
 
         try:
             backup.restore_backup(container, s3_parameters, backup_passphrase, backup_id)
