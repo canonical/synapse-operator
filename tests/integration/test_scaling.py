@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
@@ -43,10 +46,11 @@ async def test_synapse_scaling_nginx_configured(
     )
     assert ops_test.model
     status = await ops_test.model.get_status()
-    unit = list(status.applications[synapse_app.name].units)[1]
+    application = typing.cast(Application, status.applications[synapse_app.name])
+    unit = list(application.units)[1]
     address = status["applications"][synapse_app.name]["units"][unit]["address"]
 
-    logger.info("Units: %s", list(status.applications[synapse_app.name].units))
+    logger.info("Units: %s", list(application.units))
     logger.info("Requesting %s", f"http://{address}:8008/")
     response_worker = requests.get(
         f"http://{address}:8008/", headers={"Host": synapse_app.name}, timeout=5
@@ -83,7 +87,8 @@ async def test_synapse_scaling_down(
     )
     assert ops_test.model
     status = await ops_test.model.get_status()
-    for unit in list(status.applications[synapse_app.name].units):
+    application = typing.cast(Application, status.applications[synapse_app.name])
+    for unit in list(application.units):
         address = status["applications"][synapse_app.name]["units"][unit]["address"]
         response_worker = requests.get(
             f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5
@@ -99,7 +104,8 @@ async def test_synapse_scaling_down(
     )
     assert ops_test.model
     status = await ops_test.model.get_status()
-    for unit in list(status.applications[synapse_app.name].units):
+    application = typing.cast(Application, status.applications[synapse_app.name])
+    for unit in list(application.units):
         address = status["applications"][synapse_app.name]["units"][unit]["address"]
         response_worker = requests.get(
             f"http://{address}:8080/", headers={"Host": synapse_app.name}, timeout=5

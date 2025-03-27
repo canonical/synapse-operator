@@ -1,3 +1,6 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
@@ -70,7 +73,7 @@ E = typing.TypeVar("E", bound=ops.EventBase)
 
 
 def inject_charm_state(  # pylint: disable=protected-access
-    method: typing.Callable[[C, E, "CharmState"], None]
+    method: typing.Callable[[C, E, "CharmState"], None],
 ) -> typing.Callable[[C, E], None]:
     """Create a decorator that injects the argument charm_state to an observer hook.
 
