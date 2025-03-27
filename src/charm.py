@@ -11,6 +11,7 @@ import re
 import typing
 
 import ops
+import requests
 from charms.hydra.v0.oauth import OAuthRequirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
@@ -336,11 +337,8 @@ class SynapseCharm(CharmBaseWithState):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
-        try:
-            synapse_version = synapse.get_version(self.get_main_unit_address())
-            self.unit.set_workload_version(synapse_version)
-        except synapse.APIError as exc:
-            logger.debug("Cannot set workload version at this time: %s", exc)
+        synapse_version = query_workload_version(self.get_main_unit_address())
+        self.unit.set_workload_version(synapse_version)
 
     @validate_charm_state
     def _on_config_changed(self, _: ops.HookEvent) -> None:
@@ -541,6 +539,42 @@ class SynapseCharm(CharmBaseWithState):
         )
         self._oauth.update_client_config(oauth_client_config)
         self.reconcile(charm_state, mas_configuration)
+
+
+def query_workload_version(main_unit_address: str) -> str:
+    """Query the version of Synapse server from the specified main unit address.
+
+    In case of an error, it logs the error and returns a default value ('-').
+
+    Args:
+        main_unit_address (str): The address of the main unit hosting the Synapse server.
+
+    Returns:
+        str: The version of the Synapse server or a default value ('-') if an error occurs.
+    """
+    synapse_version = "-"
+    try:
+        res = requests.get(
+            url=f"http://{main_unit_address}:8008/_synapse/admin/v1/server_version", timeout=5
+        )
+        server_version = res.json()["server_version"]
+        version_match = re.search(r"(\d+\.\d+\.\d+(?:\w+)?)\s?", server_version)
+        if version_match:
+            synapse_version = version_match.group(1)
+    except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
+        logger.exception("Failed to decode version: %r. Received: %s", exc, res.text)
+    except requests.exceptions.RequestException as exc:
+        logger.exception(
+            "Request error while querying version from %s: %r", main_unit_address, exc
+        )
+    # Getting broad exception to guarantee that won't affect the charm
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.exception(
+            "Unexpected error occurred while querying version from %s: %r",
+            main_unit_address,
+            exc,
+        )
+    return synapse_version
 
 
 if __name__ == "__main__":  # pragma: nocover
