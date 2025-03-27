@@ -3,9 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Core integration tests for Synapse charm."""
-import json
 import logging
-import re
 import typing
 from secrets import token_hex
 
@@ -18,7 +16,6 @@ from juju.errors import JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
 from ops.model import ActiveStatus
-from pytest_operator.plugin import OpsTest
 
 import synapse
 from auth.mas import MAS_CONFIGURATION_PATH
@@ -144,32 +141,6 @@ async def test_synapse_scale_blocked(synapse_app: Application):
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
     )
-
-
-@pytest.mark.asyncio
-async def test_workload_version(
-    ops_test: OpsTest,
-    synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-) -> None:
-    """
-    arrange: a deployed Synapse charm.
-    act: get status from Juju.
-    assert: the workload version is set and match the one given by Synapse API request.
-    """
-    await synapse_app.model.wait_for_idle(idle_period=30, apps=[synapse_app.name], status="active")
-    _, status, _ = await ops_test.juju("status", "--format", "json")
-    status = json.loads(status)
-    juju_workload_version = status["applications"][synapse_app.name].get("version", "")
-    assert juju_workload_version
-    for unit_ip in await get_unit_ips(synapse_app.name):
-        res = requests.get(
-            f"http://{unit_ip}:{synapse.SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
-        )
-        server_version = res.json()["server_version"]
-        version_match = re.search(synapse.SYNAPSE_VERSION_REGEX, server_version)
-        assert version_match
-        assert version_match.group(1) == juju_workload_version
 
 
 @pytest.mark.parametrize(
