@@ -116,7 +116,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 @pytest.fixture(name="harness")
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr("charm.SynapseCharm._set_workload_version", MagicMock(return_value=None))
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     # Assume that MAS is working properly
     monkeypatch.setattr(
@@ -333,16 +333,3 @@ def config_content_fixture() -> dict:
         bind_addresses: ['::']
     """
     return yaml.safe_load(config_content)
-
-
-@pytest.fixture(name="mocked_synapse_calls")
-def mocked_synapse_calls_fixture(monkeypatch):
-    """Mock synapse calls functions."""
-    monkeypatch.setattr(
-        synapse.workload, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(
-        synapse.workload, "_get_configuration_field", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(synapse.api, "register_user", MagicMock(return_value="access_token"))
-    monkeypatch.setattr(synapse, "create_management_room", MagicMock(return_value=token_hex(16)))
