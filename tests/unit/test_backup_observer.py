@@ -139,6 +139,44 @@ def test_create_backup_correct(
     assert output.results["result"] == "correct"
 
 
+def test_create_backup_correct_enable_media_sync_cleanup(
+    s3_relation_data_backup, harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: start the Synapse charm. Integrate with s3-integrator.
+        Mock can_use_bucket and create_backup.
+    act: Run the backup action.
+    assert: Backup should end correctly, returning correct and the backup name.
+    """
+    # Config media and set media relation
+    harness.update_config({"enable_media_sync_cleanup": True})
+    relation_data = {
+        "bucket": "bucket2",
+        "region": "region2",
+        "endpoint": "endpoint2",
+        "access-key": "access_key2",
+        "secret-key": token_hex(16),
+        "path": "media",
+    }
+    harness.add_relation("media", "s3-integrator", app_data=relation_data)
+    # Create backup
+    monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
+    create_backup = MagicMock()
+    monkeypatch.setattr(backup, "create_backup", create_backup)
+    run_media_sync_cleanup_mock = MagicMock()
+    monkeypatch.setattr(synapse, "run_media_sync_cleanup", run_media_sync_cleanup_mock)
+    harness.update_config({"backup_passphrase": token_hex(16)})
+    harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
+    harness.begin_with_initial_hooks()
+
+    output = harness.run_action("create-backup")
+
+    create_backup.assert_called_once()
+    assert "backup-id" in output.results
+    assert output.results["result"] == "correct"
+    run_media_sync_cleanup_mock.assert_called_once()
+
+
 def test_create_backup_no_passphrase(
     s3_relation_data_backup, harness: Harness, monkeypatch: pytest.MonkeyPatch
 ):

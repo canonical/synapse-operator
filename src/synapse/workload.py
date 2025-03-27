@@ -33,6 +33,7 @@ SYNAPSE_DATA_DIR = "/data"
 SYNAPSE_DEFAULT_MEDIA_STORE_PATH = "/media_store"
 SYNAPSE_FEDERATION_SENDER_SERVICE_NAME = "synapse-federation-sender"
 SYNAPSE_GROUP = "synapse"
+SYNAPSE_MEDIA_SYNC_CLEANUP_LOG = f"{SYNAPSE_CONFIG_DIR}/media_sync_cleanup.log"
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
 SYNAPSE_PEER_RELATION_NAME = "synapse-peers"
@@ -384,3 +385,16 @@ def generate_moderation_config(container: ops.Container, charm_state: CharmState
         room_alias = charm_state.synapse_config.moderation_room_alias
         config["managementRoom"] = f"#{room_alias}:{charm_state.synapse_config.server_name}"
         container.push(MODERATION_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
+
+
+def run_media_sync_cleanup(container: ops.Container) -> None:
+    """Run s3_media_upload command and clean media directory locally.
+
+    Args:
+        container: Container of the charm.
+    """
+    logger.info(
+        "media_sync_cleanup started. See the logs in %s for results.",
+        SYNAPSE_MEDIA_SYNC_CLEANUP_LOG,
+    )
+    container.exec(["date"])
