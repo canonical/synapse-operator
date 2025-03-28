@@ -163,8 +163,8 @@ def test_create_backup_correct_enable_media_sync_cleanup(
     monkeypatch.setattr(backup.S3Client, "can_use_bucket", MagicMock(return_value=True))
     create_backup = MagicMock()
     monkeypatch.setattr(backup, "create_backup", create_backup)
-    background_media_sync_cleanup_mock = MagicMock()
-    monkeypatch.setattr(synapse, "background_media_sync_cleanup", background_media_sync_cleanup_mock)
+    run_media_sync_cleanup_mock = MagicMock()
+    monkeypatch.setattr(synapse, "run_media_sync_cleanup", run_media_sync_cleanup_mock)
     harness.update_config({"backup_passphrase": token_hex(16)})
     harness.add_relation("backup", "s3-integrator", app_data=s3_relation_data_backup)
     harness.begin_with_initial_hooks()
@@ -174,7 +174,7 @@ def test_create_backup_correct_enable_media_sync_cleanup(
     create_backup.assert_called_once()
     assert "backup-id" in output.results
     assert output.results["result"] == "correct"
-    background_media_sync_cleanup_mock.assert_called_once()
+    run_media_sync_cleanup_mock.assert_called_once()
 
 
 def test_create_backup_no_passphrase(

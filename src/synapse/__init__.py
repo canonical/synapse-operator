@@ -31,7 +31,6 @@ from .workload import (  # noqa: F401
     SYNAPSE_WORKER_CONFIG_PATH,
     ExecResult,
     WorkloadError,
-    background_media_sync_cleanup,
     create_registration_secrets_files,
     execute_migrate_config,
     generate_moderation_config,
@@ -40,6 +39,7 @@ from .workload import (  # noqa: F401
     get_environment,
     get_media_store_path,
     get_registration_shared_secret,
+    run_media_sync_cleanup,
     validate_config,
 )
 from .workload_configuration import (  # noqa: F401
