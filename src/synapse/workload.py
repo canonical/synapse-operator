@@ -389,12 +389,28 @@ def generate_moderation_config(container: ops.Container, charm_state: CharmState
         container.push(MODERATION_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
 
 
-def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) -> None:
+async def background_media_sync_cleanup(container: ops.Container, charm_state: CharmState) -> None:
     """Run s3_media_upload command and clean media directory locally.
 
     Args:
         container: Container of the charm.
         charm_state: Instance of CharmState.
+    """
+    try:
+        await run_media_sync_cleanup(container, charm_state)
+    except WorkloadError as e:
+        logger.error("Media sync cleanup failed: %s", e)
+
+
+async def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) -> None:
+    """Run s3_media_upload command and clean media directory locally.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: if one of the commands fail.
     """
     if not charm_state.media_config:
         logger.warning("media_sync_cleanup started but no media integration was found, skipping")
@@ -424,6 +440,7 @@ def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) ->
                 command,
                 user=SYNAPSE_USER,
                 group=SYNAPSE_GROUP,
+                timeout=3600,  # 1 hour
             )
             stdout, stderr = exec_process.wait_output()
             logger.info("media_sync_cleanup output: %s", stdout.strip())
@@ -434,3 +451,4 @@ def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) ->
 
     except (APIError, ops.pebble.ExecError) as exc:
         logger.critical("media_sync_cleanup failed: %s", str(exc))
+        raise WorkloadError("media_sync_cleanup failed, verify the logs") from exc

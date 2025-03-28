@@ -3,6 +3,7 @@
 
 """S3 Backup relation observer for Synapse."""
 
+import asyncio
 import logging
 import typing
 
@@ -120,7 +121,7 @@ class BackupObserver(Object):
         media_sync_cleanup = charm_state.synapse_config.enable_media_sync_cleanup
         if media_sync_cleanup and charm_state.media_config:
             media_sync_cleanup_result = "started"
-            synapse.run_media_sync_cleanup(container, charm_state)
+            asyncio.create_task(synapse.background_media_sync_cleanup(container, charm_state))
 
         result = {
             "result": "correct",
