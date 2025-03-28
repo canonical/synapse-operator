@@ -454,5 +454,5 @@ def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) ->
         logger.info("media_sync_cleanup completed successfully.")
 
     except (APIError, ops.pebble.ExecError) as exc:
-        logger.critical("media_sync_cleanup failed: %s", str(exc))
+        logger.error("media_sync_cleanup failed: %s", str(exc))
         raise WorkloadError("media_sync_cleanup failed, verify the logs") from exc

@@ -857,3 +857,66 @@ def test_query_workload_version_timeout(monkeypatch):
     version = query_workload_version("127.0.0.1")
 
     assert version == "-"
+
+
+def test_media_sync_cleanup_success(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should be run with expected parameters.
+    """
+    container = MagicMock(spec=ops.Container)
+    charm_state = MagicMock(spec=CharmState)
+    charm_state.media_config = {
+        "bucket": "test-bucket",
+        "endpoint_url": "http://test-endpoint",
+        "prefix": "test-prefix",
+        "access_key_id": "test-access-key",
+        "secret_access_key": "test-secret-key",
+        "region_name": "test-region",
+    }
+    mock_exec = MagicMock()
+    mock_exec.wait_output.return_value = ("Success", "")
+    container.exec.return_value = mock_exec
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+
+    synapse.run_media_sync_cleanup(container, charm_state)
+
+    assert container.exec.call_count == 2
+    calls = [call[0][0] for call in container.exec.call_args_list]
+    assert (
+        " ".join(calls[0]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "update --homeserver-config-path /data/homeserver.yaml /test/media/store 1d"
+    )
+    assert (
+        " ".join(calls[1]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "upload /test/media/store test-bucket --delete --storage-class STANDARD "
+        "--endpoint-url http://test-endpoint --prefix test-prefix"
+    )
+
+
+def test_run_media_sync_cleanup_failure(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should fail and raise exception.
+    """
+    container = MagicMock(spec=ops.Container)
+    charm_state = MagicMock(spec=CharmState)
+    charm_state.media_config = {
+        "bucket": "test-bucket",
+        "endpoint_url": "https://s3.example.com",
+        "prefix": "test-prefix",
+        "access_key_id": "test-key",
+        "secret_access_key": "test-secret",
+        "region_name": "us-east-1",
+    }
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+    container.exec.return_value.wait_output.side_effect = ops.pebble.ExecError(
+        ["cmd"], 1, "stderr", "stdout"
+    )
+
+    with pytest.raises(synapse.WorkloadError, match="media_sync_cleanup failed, verify the logs"):
+        synapse.run_media_sync_cleanup(container, charm_state)
+
+    container.exec.assert_called()

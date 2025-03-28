@@ -119,8 +119,11 @@ class BackupObserver(Object):
         charm_state = charm.build_charm_state()
         media_sync_cleanup = charm_state.synapse_config.enable_media_sync_cleanup
         if media_sync_cleanup and charm_state.media_config:
-            media_sync_cleanup_result = "started"
-            synapse.run_media_sync_cleanup(container, charm_state)
+            media_sync_cleanup_result = "correct"
+            try:
+                synapse.run_media_sync_cleanup(container, charm_state)
+            except synapse.WorkloadError:
+                media_sync_cleanup_result = "error"
 
         result = {
             "result": "correct",
