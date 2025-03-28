@@ -3,7 +3,6 @@
 
 """State of the Charm."""
 
-import dataclasses
 import logging
 import secrets
 import typing
@@ -13,6 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from ops.model import SecretNotFoundError
 from pydantic import BaseModel, Field, ValidationError
+from pydantic.dataclasses import dataclass
 from ulid import ULID
 
 from charm_types import DatasourcePostgreSQL
@@ -92,19 +92,21 @@ def generate_rsa_signing_key() -> SigningKey:
     return SigningKey(key_id, private_bytes.decode())
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class MASConfiguration:
     """Information needed to configure MAS.
 
     Attributes:
         datasource: datasource information.
         mas_context: MAS context to render configuration file.
+        oidc_subject_claim: Configured oidc subject claim
         database_uri: The database URI used in MAS config.
         mas_prefix: The MAS listening prefix.
     """
 
     datasource: DatasourcePostgreSQL
     mas_context: MASContext
+    oidc_subject_claim: str = Field(min_length=1)
 
     @property
     def database_uri(self) -> str:
@@ -147,8 +149,7 @@ class MASConfiguration:
         datasource = charm._mas_database.get_relation_as_datasource()  # type: ignore
         validate_datasource(datasource)
 
-        logger.info("Datasource validated: %s", datasource)
-
+        oidc_subject_claim = typing.cast(str, charm.config.get("oidc_subject_claim"))
         try:
             secret = charm.model.get_secret(label=MAS_CONTEXT_LABEL)
             mas_context_secret = secret.get_content()
@@ -188,7 +189,9 @@ class MASConfiguration:
             logger.exception("Error validating MAS context.")
             raise MASContextValidationError("MAS secret content validation failed") from exc
 
-        return cls(datasource=datasource, mas_context=mas_context)
+        return cls(
+            datasource=datasource, mas_context=mas_context, oidc_subject_claim=oidc_subject_claim
+        )
 
     @classmethod
     def validate(cls, charm: ops.CharmBase) -> None:

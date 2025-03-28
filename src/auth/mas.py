@@ -259,6 +259,7 @@ def generate_mas_config(
         "oauth_provider_info": oauth_provider_info,
         "mas_oidc_scope": MAS_OIDC_SCOPE,
         "smtp_configuration": smtp_configuration,
+        "oidc_subject_claim": f"\"{{{{ {mas_configuration.oidc_subject_claim} }}}}\""
     }
     env = Environment(
         loader=FileSystemLoader("./templates"),
