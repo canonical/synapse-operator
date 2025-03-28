@@ -882,14 +882,14 @@ def test_media_sync_cleanup_success(monkeypatch):
 
     synapse.run_media_sync_cleanup(container, charm_state)
 
-    assert container.exec.call_count == 2
+    assert container.exec.call_count == 3
     calls = [call[0][0] for call in container.exec.call_args_list]
     assert (
-        " ".join(calls[0]) == "/usr/local/bin/s3_media_upload --no-progress "
+        " ".join(calls[1]) == "/usr/local/bin/s3_media_upload --no-progress "
         "update --homeserver-config-path /data/homeserver.yaml /test/media/store 1d"
     )
     assert (
-        " ".join(calls[1]) == "/usr/local/bin/s3_media_upload --no-progress "
+        " ".join(calls[2]) == "/usr/local/bin/s3_media_upload --no-progress "
         "upload /test/media/store test-bucket --delete --storage-class STANDARD "
         "--endpoint-url http://test-endpoint --prefix test-prefix"
     )
