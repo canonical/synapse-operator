@@ -17,6 +17,7 @@ from ops.pebble import ExecError
 from ops.testing import Harness
 
 import synapse
+from auth.mas import MAS_EXECUTABLE_PATH
 from charm import SynapseCharm
 from s3_parameters import S3Parameters
 
@@ -201,7 +202,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
-        executable="/usr/bin/mas-cli",
+        executable=MAS_EXECUTABLE_PATH,
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness

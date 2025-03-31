@@ -21,7 +21,7 @@ from ops.model import ActiveStatus, BlockedStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
-from auth.mas import MAS_CONFIGURATION_PATH
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 from tests.conftest import SYNAPSE_IMAGE_PARAM
 from tests.integration.helpers import register_user
 
@@ -287,8 +287,9 @@ async def access_token_fixture(
     username, _ = user
     pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
     generate_token_cmd = (
-        f"{pebble_exec_cmd} mas-cli -c {MAS_CONFIGURATION_PATH} manage issue-compatibility-token "
-        f"--yes-i-want-to-grant-synapse-admin-privileges {username}"
+        f"{pebble_exec_cmd} {MAS_EXECUTABLE_PATH} -c {MAS_CONFIGURATION_PATH}"
+        " manage issue-compatibility-token"
+        f" --yes-i-want-to-grant-synapse-admin-privileges {username}"
     )
     unit: Unit = synapse_app.units[0]
     action = await unit.run(generate_token_cmd)
