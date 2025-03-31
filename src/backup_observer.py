@@ -121,7 +121,7 @@ class BackupObserver(Object):
         if media_sync_cleanup and charm_state.media_config:
             media_sync_cleanup_result = "correct"
             try:
-                synapse.run_media_sync_cleanup(container, charm_state)
+                synapse.run_media_sync_cleanup(container, charm_state.media_config)
             except synapse.WorkloadError:
                 media_sync_cleanup_result = "error"
 

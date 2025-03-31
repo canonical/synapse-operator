@@ -20,7 +20,7 @@ from pydantic.v1 import ValidationError
 
 import synapse
 from charm import query_workload_version
-from charm_types import SMTPConfiguration
+from charm_types import MediaConfiguration, SMTPConfiguration
 from state.charm_state import CharmState, SynapseConfig
 
 
@@ -866,21 +866,21 @@ def test_media_sync_cleanup_success(monkeypatch):
     assert: The commands should be run with expected parameters.
     """
     container = MagicMock(spec=ops.Container)
-    charm_state = MagicMock(spec=CharmState)
-    charm_state.media_config = {
-        "bucket": "test-bucket",
-        "endpoint_url": "http://test-endpoint",
-        "prefix": "test-prefix",
-        "access_key_id": "test-access-key",
-        "secret_access_key": "test-secret-key",
-        "region_name": "test-region",
-    }
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
     mock_exec = MagicMock()
     mock_exec.wait_output.return_value = ("Success", "")
     container.exec.return_value = mock_exec
     monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
 
-    synapse.run_media_sync_cleanup(container, charm_state)
+    synapse.run_media_sync_cleanup(container, media_config)
 
     assert container.exec.call_count == 2
     calls = [call[0][0] for call in container.exec.call_args_list]
@@ -890,8 +890,8 @@ def test_media_sync_cleanup_success(monkeypatch):
     )
     assert (
         " ".join(calls[1]) == "/usr/local/bin/s3_media_upload --no-progress "
-        "upload /test/media/store test-bucket --delete --storage-class STANDARD "
-        "--endpoint-url http://test-endpoint --prefix test-prefix"
+        "upload /test/media/store synapse-media-bucket --delete --storage-class STANDARD "
+        "--endpoint-url https:/example.com --prefix media"
     )
 
 
@@ -902,21 +902,21 @@ def test_run_media_sync_cleanup_failure(monkeypatch):
     assert: The commands should fail and raise exception.
     """
     container = MagicMock(spec=ops.Container)
-    charm_state = MagicMock(spec=CharmState)
-    charm_state.media_config = {
-        "bucket": "test-bucket",
-        "endpoint_url": "https://s3.example.com",
-        "prefix": "test-prefix",
-        "access_key_id": "test-key",
-        "secret_access_key": "test-secret",
-        "region_name": "us-east-1",
-    }
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
     monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
     container.exec.return_value.wait_output.side_effect = ops.pebble.ExecError(
         ["cmd"], 1, "stderr", "stdout"
     )
 
     with pytest.raises(synapse.WorkloadError, match="media_sync_cleanup failed, verify the logs"):
-        synapse.run_media_sync_cleanup(container, charm_state)
+        synapse.run_media_sync_cleanup(container, media_config)
 
     container.exec.assert_called()

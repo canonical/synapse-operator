@@ -14,6 +14,7 @@ import yaml
 from jinja2 import Environment, FileSystemLoader
 from ops.pebble import APIError, ExecError, PathError
 
+from charm_types import MediaConfiguration
 from state.charm_state import CharmState
 
 SYNAPSE_CONFIG_DIR = "/data"
@@ -389,17 +390,17 @@ def generate_moderation_config(container: ops.Container, charm_state: CharmState
         container.push(MODERATION_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
 
 
-def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) -> None:
+def run_media_sync_cleanup(container: ops.Container, media_config: MediaConfiguration) -> None:
     """Run s3_media_upload command and clean media directory locally.
 
     Args:
         container: Container of the charm.
-        charm_state: Instance of CharmState.
+        media_config: Instance of MediaConfiguration.
 
     Raises:
         WorkloadError: if one of the commands fail.
     """
-    if not charm_state.media_config:
+    if not media_config:
         logger.warning("media_sync_cleanup started but no media integration was found, skipping")
         return
     media_store_path = get_media_store_path(container)
@@ -419,22 +420,22 @@ def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) ->
             "--no-progress",
             "upload",
             media_store_path,
-            charm_state.media_config["bucket"],
+            media_config["bucket"],
             "--delete",
             "--storage-class",
             "STANDARD",
             "--endpoint-url",
-            charm_state.media_config["endpoint_url"],
+            media_config["endpoint_url"],
             "--prefix",
-            charm_state.media_config["prefix"],
+            media_config["prefix"],
         ],
     ]
 
     try:
         environment = {
-            "AWS_ACCESS_KEY_ID": charm_state.media_config["access_key_id"],
-            "AWS_SECRET_ACCESS_KEY": charm_state.media_config["secret_access_key"],
-            "AWS_DEFAULT_REGION": charm_state.media_config["region_name"],
+            "AWS_ACCESS_KEY_ID": media_config["access_key_id"],
+            "AWS_SECRET_ACCESS_KEY": media_config["secret_access_key"],
+            "AWS_DEFAULT_REGION": media_config["region_name"],
         }
         for command in commands:
             logger.info("media_sync_cleanup executing: %s", " ".join(command))
