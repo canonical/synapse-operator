@@ -302,7 +302,7 @@ async def test_synapse_enable_media(  # pylint: disable=too-many-positional-argu
 @pytest.mark.s3
 @pytest.mark.usefixtures("s3_backup_bucket")
 @pytest.mark.usefixtures("s3_media_bucket")
-async def test_synapse_create_backup_correct_media_sync_cleanup(  # noqa: E501 pylint: disable=line-too-long, too-many-positional-arguments
+async def test_synapse_create_backup_correct_media_sync_cleanup(  # noqa: E501 pylint: disable=too-many-positional-arguments
     model: Model,
     synapse_app: Application,
     s3_integrator_app_backup: Application,
@@ -327,7 +327,7 @@ async def test_synapse_create_backup_correct_media_sync_cleanup(  # noqa: E501 p
     await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
     passphrase = token_hex(16)
     await synapse_app.set_config(
-        {"backup_passphrase": passphrase, "enable_media_sync_cleanup": True}
+        {"backup_passphrase": passphrase, "enable_media_sync_cleanup": "true"}
     )
     await model.wait_for_idle(
         idle_period=30,
