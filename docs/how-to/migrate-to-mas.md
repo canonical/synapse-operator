@@ -104,7 +104,7 @@ mas-cli -c /mas/config.yaml manage provision-all-users
 ```
 
 ### (Optional) Configure the OIDC subject claim
-After the migration, the `external_id` of the synapse user is used as the OIDC subject in MAS. Most of the time this needs to be changed so that the local account gets recognized by MAS when authenticating with the upstread provider. 
+After the migration, the `external_id` of the synapse user is used as the OIDC subject in MAS. Most of the time this needs to be changed so that the local account gets recognized by MAS when authenticating with the upstream provider. 
 
 ```
 PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT mas
