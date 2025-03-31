@@ -406,12 +406,6 @@ def run_media_sync_cleanup(container: ops.Container, charm_state: CharmState) ->
     s3_media_upload_path = "/usr/local/bin/s3_media_upload"
     commands = [
         [
-            "sed",
-            "-i",
-            "s|#!/root/parts/synapse/install/usr/bin/python3|#!/usr/bin/python3|",
-            "/usr/local/bin/s3_media_upload",
-        ],
-        [
             s3_media_upload_path,
             "--no-progress",
             "update",
