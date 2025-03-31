@@ -2,7 +2,9 @@
 
 ### 2025-03-27
 
-- Add a new configuration, enable_media_sync_cleanup. When enabled, and if S3 integration for media is configured, the charm will run [s3_media_upload](https://github.        com/matrix-org/synapse-s3-storage-provider#regular-cleanup-job) after a successful backup to upload local media to S3 and then clean it up locally.
+- Add a new configuration, enable_media_sync_cleanup. When enabled, and if S3
+integration for media is configured, the charm will run [s3_media_upload](https://github.com/matrix-org/synapse-s3-storage-provider#regular-cleanup-job) after a successful backup to
+upload local media to S3 and then clean it up locally.
 
 ### 2025-03-10
 
