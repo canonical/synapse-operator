@@ -55,7 +55,7 @@ juju scp --container synapse ./homeserver.yaml server-mas/0:/homeserver.yaml
 ### Access the new synapse charm's container
 
 ```
-juju ssh --container synapse server2/0 bash
+juju ssh --container synapse server-mas/0 bash
 ```
 
 From this point forward it's assumed that you are running commands in the `synapse` container of the new synapse charm.
@@ -64,7 +64,7 @@ From this point forward it's assumed that you are running commands in the `synap
 We'll install `yq` to help fetch the Oauth provider id that the synapse charm has generated in its MAS configuration file
 ```
 apt update
-apt install wget
+apt install -y wget
 wget https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
 
 export OAUTH2_PROVIDER_ID=$(yq e '.upstream_oauth2.providers[0].id' /mas/config.yaml)
@@ -76,9 +76,7 @@ Run the `advisir` command as well as the `migrate` command with the `--dryRun` f
 ```
 npx --yes @vector-im/syn2mas \
     --command advisor \
-    --synapseConfigFile /homeserver.yaml \
-    --masConfigFile /mas/config.yaml \
-    --upstreamProviderMapping saml:$OAUTH2_PROVIDER_ID \
+    --synapseConfigFile /homeserver.yaml
 
 npx --yes @vector-im/syn2mas \
     --command migrate \
