@@ -19,8 +19,9 @@ from ops.pebble import Check
 import synapse
 from auth.mas import (
     MAS_CONFIGURATION_PATH,
-    MAS_PEBBLE_LAYER,
+    MAS_EXECUTABLE_PATH,
     MAS_SERVICE_NAME,
+    MAS_WORKING_DIR,
     sync_mas_config,
     validate_mas_config,
 )
@@ -187,13 +188,14 @@ def replan_synapse_federation_sender(
     container.replan()
 
 
-def replan_mas(container: ops.model.Container) -> None:
+def replan_mas(container: ops.model.Container, charm_state: CharmState) -> None:
     """Replan Matrix Authentication Service.
 
     Args:
         container: Charm container.
+        charm_state: Instance of CharmState.
     """
-    container.add_layer(MAS_SERVICE_NAME, MAS_PEBBLE_LAYER, combine=True)
+    container.add_layer(MAS_SERVICE_NAME, _mas_pebble_layer(charm_state), combine=True)
     container.replan()
 
 
@@ -315,7 +317,7 @@ def reconcile(  # noqa: C901
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        restart_mas(container, rendered_mas_configuration)
+        restart_mas(container, rendered_mas_configuration, charm_state)
 
         if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
             # Configurations set via environment variables:
@@ -591,6 +593,39 @@ def _moderation_pebble_layer() -> ops.pebble.LayerDict:
     return typing.cast(ops.pebble.LayerDict, layer)
 
 
+def _mas_pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
+    """Generate pebble config for the MAS service.
+
+    Args:
+        charm_state: Instance of CharmState
+
+    Returns:
+        The pebble configuration for the MAS service.
+    """
+    environment = {}
+    for proxy in ("http_proxy", "https_proxy", "no_proxy"):
+        proxy_value = getattr(charm_state.proxy, proxy)
+        if proxy_value:
+            environment[proxy] = str(proxy_value)
+            environment[proxy.upper()] = str(proxy_value)
+
+    layer = {
+        "summary": "Matrix Authentication Service layer",
+        "description": "pebble config layer for MAS",
+        "services": {
+            MAS_SERVICE_NAME: {
+                "override": "replace",
+                "summary": "Matrix Authentication Service",
+                "startup": "enabled",
+                "command": f"{MAS_EXECUTABLE_PATH} server -c {MAS_CONFIGURATION_PATH}",
+                "working-dir": MAS_WORKING_DIR,
+                "environment": environment,
+            }
+        },
+    }
+    return typing.cast(ops.pebble.LayerDict, layer)
+
+
 def check_moderation_ready() -> ops.pebble.CheckDict:
     """Return the Moderation service check.
 
@@ -607,14 +642,17 @@ def check_moderation_ready() -> ops.pebble.CheckDict:
     return check.to_dict()
 
 
-def restart_mas(container: ops.model.Container, rendered_mas_configuration: str) -> None:
+def restart_mas(
+    container: ops.model.Container, rendered_mas_configuration: str, charm_state: CharmState
+) -> None:
     """Update MAS configuration and restart MAS.
 
     Args:
         container: The synapse container.
         rendered_mas_configuration: YAML configuration for MAS.
+        charm_state: Instance of CharmState
     """
     _push_mas_config(container, rendered_mas_configuration, MAS_CONFIGURATION_PATH)
     validate_mas_config(container)
     sync_mas_config(container)
-    replan_mas(container)
+    replan_mas(container, charm_state)
