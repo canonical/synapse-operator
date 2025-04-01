@@ -65,4 +65,5 @@ def test_create_backup_correct_enable_media_sync_cleanup(
     create_backup.assert_called_once()
     assert "backup-id" in ctx.action_results
     assert ctx.action_results["result"] == "correct"
+    assert ctx.action_results["media-sync-cleanup-result"] == "correct"
     run_media_sync_cleanup_mock.assert_called_once()
