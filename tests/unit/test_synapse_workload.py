@@ -20,7 +20,7 @@ from pydantic.v1 import ValidationError
 
 import synapse
 from charm import query_workload_version
-from charm_types import SMTPConfiguration
+from charm_types import MediaConfiguration, SMTPConfiguration
 from state.charm_state import CharmState, SynapseConfig
 
 
@@ -857,3 +857,66 @@ def test_query_workload_version_timeout(monkeypatch):
     version = query_workload_version("127.0.0.1")
 
     assert version == "-"
+
+
+def test_media_sync_cleanup_success(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should be run with expected parameters.
+    """
+    container = MagicMock(spec=ops.Container)
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
+    mock_exec = MagicMock()
+    mock_exec.wait_output.return_value = ("Success", "")
+    container.exec.return_value = mock_exec
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+
+    synapse.run_media_sync_cleanup(container, media_config)
+
+    assert container.exec.call_count == 2
+    calls = [call[0][0] for call in container.exec.call_args_list]
+    assert (
+        " ".join(calls[0]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "update --homeserver-config-path /data/homeserver.yaml /test/media/store 1d"
+    )
+    assert (
+        " ".join(calls[1]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "upload /test/media/store synapse-media-bucket --delete --storage-class STANDARD "
+        "--endpoint-url https:/example.com --prefix media"
+    )
+
+
+def test_run_media_sync_cleanup_failure(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should fail and raise exception.
+    """
+    container = MagicMock(spec=ops.Container)
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+    container.exec.return_value.wait_output.side_effect = ops.pebble.ExecError(
+        ["cmd"], 1, "stderr", "stdout"
+    )
+
+    with pytest.raises(synapse.WorkloadError, match="media_sync_cleanup failed, verify the logs"):
+        synapse.run_media_sync_cleanup(container, media_config)
+
+    container.exec.assert_called()
