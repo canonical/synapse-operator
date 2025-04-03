@@ -95,19 +95,23 @@ PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT
 PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres -c "create database \"server-mas\" with template server owner $DB_USER;"
 ```
 
-In case where postgres gives you an error saying "", drop all connections from the database
+In case where postgres gives you an error saying "ERROR:  source database "synapse" is being accessed by other users", drop all connections from the database:
+
+First login to the database
 ```
-PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres -c SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = "server" AND pid <> pg_backend_pid();
+PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres
+```
+
+Then run this SQL query to drop all connection from the relevant database ( `<database_name>` )
+```
+SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity 
+WHERE pg_stat_activity.datname = '<database_name>' AND pid <> pg_backend_pid();
 ```
 
 ## Migrating users to MAS
 ### Perform user migration to MAS database
-Run the `advisir` command as well as the `migrate` command with the `--dryRun` flag to check that there are no errors.
+Run the `migrate` command with the `--dryRun` flag to check that there are no errors:
 ```
-npx --yes @vector-im/syn2mas \
-    --command advisor \
-    --synapseConfigFile /data/homeserver.yaml
-
 OAUTH2_PROVIDER_ID=$(yq e '.upstream_oauth2.providers[0].id' /mas/config.yaml)
 npx --yes @vector-im/syn2mas \
     --command migrate \
@@ -115,6 +119,11 @@ npx --yes @vector-im/syn2mas \
     --masConfigFile /mas/config.yaml \
     --upstreamProviderMapping saml:$OAUTH2_PROVIDER_ID \
     --dryRun
+```
+
+You should see the 0 fatals and 0 warnings in the command output:
+```
+[INFO] migrate - Completed migration dry-run of x users with 0 fatals and 0 warnings:
 ```
 
 Finally, run the migration command:
