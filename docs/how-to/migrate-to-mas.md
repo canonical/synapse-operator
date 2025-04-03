@@ -125,7 +125,7 @@ npx --yes @vector-im/syn2mas \
 ```
 
 ### Configure the OIDC subject claim
-After the migration, the `external_id` of the synapse user is used as the OIDC subject in MAS. Most of the time this needs to be changed so that the local account gets recognized by MAS when authenticating with the upstream provider. 
+After the migration, the `external_id` of the Synapse user is used as the OIDC subject in MAS. Most of the time, this needs to be changed so that the local account gets recognized by MAS when authenticating with the upstream provider. 
 
 ```
 psql $(yq e '.database.uri' /mas/config.yaml)
