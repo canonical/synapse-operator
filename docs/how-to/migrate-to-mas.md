@@ -135,11 +135,9 @@ Then run the appropriate SQL command to update the subject field. For example, t
 ```
 update upstream_oauth_links
 SET subject=(select email from user_emails where upstream_oauth_links.user_id=user_emails.user_id);
-
-\q
 ```
 
-After updating the OIDC subject in the MAS database, we need to also configure the OIDC subject claim:
+After updating the OIDC subject in the MAS database, we need to also configure the OIDC subject claim. **On the host machine**, run:
 ```
 juju config server-mas oidc_subject_claim=user.email
 ```
