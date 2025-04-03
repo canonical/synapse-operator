@@ -13,7 +13,7 @@ juju deploy synapse server-mas --channel=2/edge \
     --config public_baseurl=<public_baseurl>
 ```
 
-### Integrate with postgresql
+### Integrate with the `postgresql-k8s` charm
 Integrate with the existing `postgresql-k8s` charm to set up the database for the new charm. Note that you need to integrate with the `postgresql-k8s` charm via both the `database` and the `mas-database` endpoint
 ```
 juju integrate server-mas:mas-database postgresql-k8s
