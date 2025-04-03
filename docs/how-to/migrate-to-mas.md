@@ -1,8 +1,8 @@
-# How to back up and restore Synapse
-This document shows how to migrate a legacy synapse homeserver (`latest/edge` track) to an oidc-native homeserver (`2/edge` track).
+# How to migrate Synapse to the `2/edge` track
+This document shows how to migrate a legacy synapse homeserver (`1/edge` track) to an oidc-native homeserver (`2/edge` track).
 
 ## Initial deployment setup 
-This document will cover the migration path for a synapse charm on the `latest\edge` track, using the `saml-integrator` charm to provide authentication via SAML.
+This document will cover the migration path for a synapse charm on the `1/edge` track, using the `saml-integrator` charm to provide authentication via SAML.
 
 ## Prepare the new synapse charm
 ### Deploy the 2/edge channel on the same model
