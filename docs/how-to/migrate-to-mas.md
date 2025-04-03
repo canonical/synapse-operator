@@ -115,7 +115,7 @@ npx --yes @vector-im/syn2mas \
     --dryRun
 ```
 
-Finally, run the migration command
+Finally, run the migration command:
 ```
 npx --yes @vector-im/syn2mas \
     --command migrate \
