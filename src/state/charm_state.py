@@ -56,6 +56,7 @@ class SynapseConfig(BaseModel):
         block_non_admin_invites: block_non_admin_invites config.
         enable_email_notifs: enable_email_notifs config.
         enable_password_config: enable_password_config config.
+        enable_media_sync_cleanup: enable_media_sync_cleanup config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
         invite_checker_blocklist_allowlist_url: invite_checker_blocklist_allowlist_url config.
@@ -80,6 +81,7 @@ class SynapseConfig(BaseModel):
     block_non_admin_invites: bool = False
     enable_email_notifs: bool = False
     enable_password_config: bool = True
+    enable_media_sync_cleanup: bool = False
     enable_room_list_search: bool = True
     experimental_alive_check: str | None = Field(None)
     federation_domain_whitelist: str | None = Field(None)
