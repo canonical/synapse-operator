@@ -6,7 +6,7 @@ This document will cover the migration path for a synapse charm on the `1/edge` 
 
 ## Prepare the new synapse charm
 ### Deploy the 2/edge channel on the same model
-We will use the same configuration as the existing synapse charm.
+We will deploy the new synapse charm with the name `server-mas`. We will use the same configuration as the existing synapse charm.
 ```
 juju deploy synapse server-mas --channel=2/edge \
     --config server_name=<server_name> \
