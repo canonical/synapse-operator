@@ -135,6 +135,8 @@ npx --yes @vector-im/syn2mas \
     --upstreamProviderMapping saml:$OAUTH2_PROVIDER_ID
 ```
 
+You should see an output similar to that of the dry-run command
+
 ### Configure the OIDC subject claim
 After the migration, the `external_id` of the Synapse user is used as the OIDC subject in MAS. Most of the time, this needs to be changed so that the local account gets recognized by MAS when authenticating with the upstream provider. 
 
