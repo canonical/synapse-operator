@@ -62,7 +62,7 @@ juju run server/leader create-backup
 
 Take note of the backup ID; we will use it to restore the backup on the new synapse charm.
 ```
-juju relate s3-integrator server-mas
+juju integrate s3-integrator server-mas
 juju run synapse/leader restore-backup backup-id=<backup-id>
 ```
 
