@@ -54,7 +54,7 @@ juju config s3-integrator endpoint=<s3 endpoint> bucket=<bucket name> path=<opti
 juju run s3-integrator/leader sync-s3-credentials access-key=<access-key> secret-key=<secret-key>
 ```
 
-Then we integrate with the existing synapse charm and create the backup
+Then we integrate with the existing synapse charm and create the backup:
 ```
 juju relate s3-integrator server
 juju run server/leader create-backup
