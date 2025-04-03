@@ -56,7 +56,7 @@ juju run s3-integrator/leader sync-s3-credentials access-key=<access-key> secret
 
 Then we integrate with the existing synapse charm and create the backup:
 ```
-juju relate s3-integrator server
+juju integrate s3-integrator server
 juju run server/leader create-backup
 ```
 
