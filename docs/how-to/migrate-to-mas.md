@@ -4,6 +4,10 @@ This document shows how to migrate a legacy synapse homeserver (`1/edge` track) 
 ## Initial deployment setup 
 This document will cover the migration path for a synapse charm on the `1/edge` track that us using the `saml-integrator` charm to provide authentication via SAML.
 
+[note]
+The existing synapse charm is deployed with the name `server`.
+[/note]
+
 ## Prepare the new synapse charm
 ### Deploy the 2/edge channel on the same model
 We will deploy the new synapse charm with the name `server-mas`. We will use the same configuration as the existing synapse charm.
