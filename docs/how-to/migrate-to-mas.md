@@ -97,7 +97,7 @@ PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT
 
 In case where postgres gives you an error saying "ERROR:  source database "synapse" is being accessed by other users", drop all connections from the database:
 
-First login to the database
+First log in to the database:
 ```
 PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres
 ```
