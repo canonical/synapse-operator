@@ -87,7 +87,7 @@ apt install wget postgresql-client -y
 wget https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
 ```
 
-Copy the original synapse database
+Copy the original synapse charm database:
 ```
 DB_HOST=$(yq e '.database.args.host' /data/homeserver.yaml)
 DB_PORT=$(yq e '.database.args.port' /data/homeserver.yaml)
