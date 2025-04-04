@@ -102,7 +102,7 @@ First login to the database
 PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres
 ```
 
-Then run this SQL query to drop all connection from the relevant database ( `<database_name>` )
+Then run this SQL query to drop all connection from the relevant database ( `<database_name>` ):
 ```
 SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity 
 WHERE pg_stat_activity.datname = '<database_name>' AND pid <> pg_backend_pid();
