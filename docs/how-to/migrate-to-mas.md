@@ -67,7 +67,7 @@ juju run synapse/leader restore-backup backup-id=<backup-id>
 ```
 
 ## Synapse database migration
-### Stop all services on the new and the existing synapse charms
+Stop all services on the new and the existing synapse charms:
 ```
 juju ssh --container synapse server-mas/0 "pebble stop synapse; pebble stop synapse-mas; pebble stop stats-exporter"
 juju ssh --container synapse server/0 "pebble stop synapse; pebble stop stats-exporter"
