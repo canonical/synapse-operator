@@ -1,5 +1,5 @@
 # How to migrate Synapse to the `2/edge` track
-This document shows how to migrate a legacy synapse homeserver (`1/edge` track) to an oidc-native homeserver (`2/edge` track).
+This document shows how to migrate a legacy Synapse homeserver (`1/edge` track) to an oidc-native homeserver (`2/edge` track).
 
 ## Initial deployment setup 
 This document will cover the migration path for a synapse charm on the `1/edge` track that uses the `saml-integrator` charm to provide authentication via SAML.
