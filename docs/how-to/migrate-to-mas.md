@@ -110,7 +110,7 @@ SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity
 WHERE pg_stat_activity.datname = '<database_name>' AND pid <> pg_backend_pid();
 ```
 
-## Migrating users to MAS
+## Migrate users to MAS
 ### Perform user migration to MAS database
 Run the `migrate` command with the `--dryRun` flag to check that there are no errors:
 ```
