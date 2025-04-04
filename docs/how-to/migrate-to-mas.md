@@ -73,7 +73,7 @@ juju ssh --container synapse server-mas/0 "pebble stop synapse; pebble stop syna
 juju ssh --container synapse server/0 "pebble stop synapse; pebble stop stats-exporter"
 ```
 
-### Connect to the database
+Connect the new synapse charm to the database:
 ```
 juju ssh --container synapse server-mas/0 bash
 ```
