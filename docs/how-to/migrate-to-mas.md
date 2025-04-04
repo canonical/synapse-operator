@@ -47,7 +47,7 @@ The MAS redirect URL will be formatted like `<public_baseurl>/auth/upstream/call
 
 ## Back up the existing synapse charm and restore on the new synapse charm
 ### Back up and restore using the s3-integrator charm
-To migrate everything persisted in the Synapse's `/data` directory, we will use the `s3-integrator` charm. For more information please look at the ["Back up and Restore"](https://charmhub.io/synapse/docs/how-to-backup-and-restore) section of the charm's documentation. First we deploy the `s3-integrator` charm and configure it with the credentials for the target s3 bucket:
+To migrate everything persisted in the Synapse's `/data` directory, we will use the `s3-integrator` charm. For more information please look at the ["Back up and Restore"](https://charmhub.io/synapse/docs/how-to-backup-and-restore) section of the charm's documentation. First we deploy the `s3-integrator` charm and configure it with the credentials for the target S3 bucket:
 ```
 juju deploy s3-integrator --channel edge
 juju config s3-integrator endpoint=<s3 endpoint> bucket=<bucket name> path=<optional-path> region=<region> s3-uri-style=<path or host>
