@@ -43,7 +43,7 @@ Finally, we need to allow the MAS redirect URL on the OIDC client. First we get 
 juju ssh --container synapse server-mas "cat /mas/config.yaml | grep 'id:'"
 ```
 
-The MAS redirect URL will be formatted like `<public_baseurl>/auth/upstream/callback/<provider_id>`. We can now go back to the OIDC client configuration on the IdP and whitelist the redirect URL. 
+The MAS redirect URL will be formatted like `<public_baseurl>/auth/upstream/callback/<provider_id>`. We can now go back to the OIDC client configuration on the IdP and add the redirect URL to the allowlist. 
 
 ## Back up the existing synapse charm and restore on the new synapse charm
 ### Back up and restore using the s3-integrator charm
