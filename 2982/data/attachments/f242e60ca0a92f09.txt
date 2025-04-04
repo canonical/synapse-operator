@@ -1,0 +1,173 @@
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+  redis/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+  redis/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+  synapse/1 [executing] blocked: Redis integration is required.
+  redis/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+  synapse/1 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:937 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-ac505-microk8s  microk8s/localhost  3.4.6    unsupported  18:32:31Z
+
+App             Version  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable    495  10.152.183.216  no       
+redis           7.2.5    active      1  redis-k8s       latest/edge   41  10.152.183.73   no       
+synapse                  active      2  synapse                        0  10.152.183.211  no       
+
+Unit               Workload  Agent  Address       Ports  Message
+postgresql-k8s/0*  active    idle   10.1.162.204         Primary
+redis/0*           active    idle   10.1.162.208         
+synapse/0*         active    idle   10.1.162.206         
+synapse/1          active    idle   10.1.162.211         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:943 Juju error logs:
+
+unit-synapse-0: 18:24:13 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 500, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 145, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 204, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 18:24:15 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 347, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 145, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 204, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 18:24:24 ERROR unit.synapse/0.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 390, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-redis-0: 18:25:42 ERROR unit.redis/0.juju-log redis-peers:6: Error when connecting to sentinel: Error 111 connecting to 0.0.0.0:26379. Connection refused.
+unit-redis-0: 18:25:42 ERROR unit.redis/0.juju-log redis-peers:6: Unit redis/0 doesn't agree on tracked master
+unit-redis-0: 18:25:42 ERROR unit.redis/0.juju-log redis-peers:6: Error when connecting to sentinel: Error 111 connecting to localhost:26379. Connection refused.
+unit-synapse-0: 18:26:12 ERROR unit.synapse/0.juju-log redis:7: Failed to get Redis relation data: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/redis_observer.py", line 58, in get_relation_as_redis_conf
+    redis_port = int(self.redis.relation_data.get("port"))
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+unit-synapse-1: 18:27:33 ERROR unit.synapse/1.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 390, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-1: 18:27:35 ERROR unit.synapse/1.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 347, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-1: 18:30:00 ERROR unit.synapse/1.juju-log redis:7: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/redis_observer.py", line 77, in _on_redis_relation_updated
+    mas_configuration = MASConfiguration.from_charm(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-1: 18:30:04 ERROR unit.synapse/1.juju-log synapse-peers:3: Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 361, in _on_relation_departed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 145, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 204, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-1: 18:31:25 ERROR unit.synapse/1.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 390, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-1: 18:31:27 ERROR unit.synapse/1.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 347, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-1: 18:31:31 ERROR unit.synapse/1.juju-log database:5: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/database_observer.py", line 115, in _on_database_created
+    mas_configuration = MASConfiguration.from_charm(charm)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-1: 18:31:32 ERROR unit.synapse/1.juju-log synapse-peers:3: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 528, in _on_relation_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-1: 18:31:35 ERROR unit.synapse/1.juju-log synapse-peers:3: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/./src/charm.py", line 528, in _on_relation_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 148, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-1/charm/src/state/mas.py", line 224, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1025 Forgetting model main...
