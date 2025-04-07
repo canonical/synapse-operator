@@ -181,6 +181,7 @@ parts:
       - git
     override-stage: |
       patch -f -u ./start.py -i srv/patches/start.patch
+      patch -f -u ./usr/local/bin/s3_media_upload -i srv/patches/s3_media_upload.patch
   mas-templates:
     plugin: dump
     <<: *mas-source

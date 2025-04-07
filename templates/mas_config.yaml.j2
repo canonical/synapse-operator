@@ -61,7 +61,7 @@ upstream_oauth2:
       claims_imports:
           subject:
               action: require
-              template: {{ '"{{ user.sub }}"' }}
+              template: {{ oidc_subject_claim }}
           displayname:
               action: suggest
               template: {{ '"{{ user.name }}"' }}
