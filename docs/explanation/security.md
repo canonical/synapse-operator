@@ -69,7 +69,7 @@ A denial-of-service attack could overwhelm Synapse with traffic, preventing legi
 
 #### Best practices
 
-- Rate-limit remote room joins
+- Rate-limit remote room joins:
 
   The Synapse charm provides two configuration options:
   - [rc_joins_remote_burst_count](https://charmhub.io/synapse/configurations#rc_joins_remote_burst_count)
