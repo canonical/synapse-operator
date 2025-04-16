@@ -42,7 +42,7 @@ be accessed or stolen by unauthorized individuals.
 
 - Protect your moderation access token secret:
 
-  The [moderation_access_token_secret_id](https://charmhub.io/synapse/configurations#moderation_access_token_secret_id) Juju secret contains a token used by the Moderation tool. This token
+  The [moderation_access_token_secret_id](https://charmhub.io/synapse/configurations#moderation_access_token_secret_id) Juju secret contains a token used by the moderation tool. This token
   grants high power-level access to multiple rooms. Treat it as sensitive and avoid sharing it.
 
 ### Unexpected downtime
