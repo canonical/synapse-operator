@@ -72,10 +72,6 @@ class ServerNameModifiedError(WorkloadError):
     """Exception raised while checking configuration file."""
 
 
-class EnableMetricsError(WorkloadError):
-    """Exception raised when something goes wrong while enabling metrics."""
-
-
 class EnableSMTPError(WorkloadError):
     """Exception raised when something goes wrong while enabling SMTP."""
 
