@@ -36,7 +36,7 @@ be accessed or stolen by unauthorized individuals.
 
 #### Best practices
 
-- Secure your backup passphrase
+- Secure your backup passphrase:
 
   Store your [backup_passphrase](https://charmhub.io/synapse/configurations#backup_passphrase) securely and do not share it.
 
