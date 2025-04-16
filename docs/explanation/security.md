@@ -22,7 +22,7 @@ Synapse configuration files or the database might be destroyed, corrupted, or be
 
   Synapse uses a file to store its [signing key](https://element-hq.github.io/synapse/latest/usage/administration/backups.html#server-signing-key). If this file is lost, Synapse will generate
   a new one on startup. However, events signed with the old key will no longer be considered valid
-  by other homeservers. So, it's critical having a backup of the charm.
+  by other homeservers, so it's critical to have a backup of the charm.
 
 - Avoid manual media deletion
 
