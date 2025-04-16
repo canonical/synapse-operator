@@ -1,6 +1,6 @@
 # Security
 
-This document outlines common risks and possible Best Practices specifically for the Synapse charm. It
+This document outlines common risks and possible best practices specifically for the Synapse charm. It
 focuses on configurations and protections available through the charm itself.
 
 For details regarding upstream Synapse configuration and broader security considerations, please
@@ -8,7 +8,7 @@ refer to the [official Synapse documentation](https://element-hq.github.io/synap
 
 ## Risks
 
-The following items outline common risks and their corresponding best practices for mitigation.
+The following items include descriptions of the risks, their corresponding best practices for mitigation, as well as links to related documentation and configuration guidelines.
 
 ### Loss of data
 
