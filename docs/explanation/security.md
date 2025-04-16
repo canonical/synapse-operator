@@ -16,7 +16,7 @@ Synapse configuration files or the database might be destroyed, corrupted, or be
 
 #### Best practices
 
-- Set up regular backups
+- Set up regular backups:
 
   Follow the [charm documentation](https://charmhub.io/synapse/docs/how-to-backup-and-restore) for guidance on creating backups.
 
