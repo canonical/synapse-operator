@@ -24,7 +24,7 @@ Synapse configuration files or the database might be destroyed, corrupted, or be
   a new one on startup. However, events signed with the old key will no longer be considered valid
   by other homeservers, so it's critical to have a backup of the charm.
 
-- Avoid manual media deletion
+- Avoid manual media deletion:
 
   Manually deleting media files will cause Synapse to lose track of them. Always use Synapse's API
   for [media removal](https://element-hq.github.io/synapse/latest/admin_api/media_admin_api.html#purge-remote-media-api) to ensure consistency.
