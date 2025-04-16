@@ -58,6 +58,7 @@ def add_default_configurations(current_yaml: dict) -> None:
             "resources": [resources],
         }
         current_yaml["listeners"].extend([replication_listener])
+        current_yaml["room_list_publication_rules"] = [{"action": "allow"}]
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
