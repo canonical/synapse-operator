@@ -77,7 +77,7 @@ A denial-of-service attack could overwhelm Synapse with traffic, preventing legi
 
   These configurations control the rate at which users can join remote rooms. Refer to the [official documentation](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#rc_joins) for details on how to configure these values.
 
-- Restrict invites and federation sources
+- Restrict invites and federation sources:
 
   The Synapse charm provides the following configuration options that can help with restricting access:
 
