@@ -40,7 +40,7 @@ be accessed or stolen by unauthorized individuals.
 
   Store your [backup_passphrase](https://charmhub.io/synapse/configurations#backup_passphrase) securely and do not share it.
 
-- Protect your moderation access token secret
+- Protect your moderation access token secret:
 
   The [moderation_access_token_secret_id](https://charmhub.io/synapse/configurations#moderation_access_token_secret_id) Juju secret contains a token used by Moderation tool. This token
   grants high power-level access to multiple rooms. Treat it as sensitive and avoid sharing it.
