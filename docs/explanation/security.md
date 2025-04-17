@@ -94,3 +94,13 @@ Running Synapse with one or more weakness that can be exploited by attackers.
 #### Best practices
 
   - Keep the Juju and the charm updated. See more about Juju updates in the [documentation](https://documentation.ubuntu.com/juju/latest/explanation/juju-security/index.html#regular-updates-and-patches).
+
+### Unencrypted traffic
+
+When HTTPS is not enabled, data exchanged between Synapse and its clients — including authentication tokens, registration secrets, and personal information — is transmitted in plain text. This makes it vulnerable to interception, tampering, and impersonation through [man-in-the-middle (MitM)](https://www.sciencedirect.com/topics/computer-science/man-in-the-middle-attack) attacks.
+
+#### Best practices
+
+- Always enable HTTPS:
+
+  Configure Synapse to use HTTPS for all clients communication. The Synapse charm supports ingress integration, allowing HTTPS to be enabled when integrating with charms such as [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) and [traefik](https://charmhub.io/traefik-k8s).
