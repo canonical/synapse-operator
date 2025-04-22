@@ -301,42 +301,38 @@ def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
         synapse.validate_config(container_mock)
 
 
-def test_enable_metrics_success(config_content: dict[str, typing.Any]):
+def test_add_default_configurations_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
-    assert: new configuration file is pushed and metrics are enabled.
+    assert: new configuration file is pushed and default configs are enabled.
     """
     content = config_content
 
-    synapse.enable_metrics(content)
+    synapse.add_default_configurations(content)
 
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            {"port": 9000, "type": "metrics", "bind_addresses": ["::"]},
+            {"type": "metrics", "port": 9000, "bind_addresses": ["::"]},
+            {
+                "type": "http",
+                "port": 8035,
+                "bind_addresses": ["::"],
+                "resources": [{"names": ["replication"]}],
+            },
         ],
         "enable_metrics": True,
-    }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_forgotten_room_success(config_content: dict[str, typing.Any]):
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: new configuration file is pushed and forgotten_room_retention_period is enabled.
-    """
-    content = config_content
-
-    synapse.enable_forgotten_room_retention(content)
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-        ],
+        "delete_stale_devices_after": "1y",
         "forgotten_room_retention_period": "28d",
+        "media_retention": {
+            "local_media_lifetime": "28d",
+            "remote_media_lifetime": "14d",
+        },
+        "serve_server_wellknown": True,
+        "room_list_publication_rules": [{"action": "allow"}],
     }
+
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
@@ -392,25 +388,6 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
         },
     }
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.Any]):
-    """
-    arrange: set mock container with file.
-    act: call enable_serve_server_wellknown.
-    assert: new configuration file is pushed and serve_server_wellknown is enabled.
-    """
-    content = config_content
-
-    synapse.enable_serve_server_wellknown(content)
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-        ],
-        "serve_server_wellknown": True,
-    }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
 def test_get_registration_shared_secret_success(monkeypatch: pytest.MonkeyPatch):
