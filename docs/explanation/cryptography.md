@@ -4,7 +4,7 @@ This document explains why and how cryptography is used in the integration betwe
 
 ## Why cryptography is needed
 
-When applications like [IRC bridge](https://charmhub.io/irc-bridge) or [Maubot](https://charmhub.io/maubot) integrate with Synapse (a Matrix homeserver), they need to exchange configuration information that includes sensitive credentials — such as registration secrets. If this data were transmitted as plain text, it would expose the system to serious security risks, especially in distributed environments.
+When applications like [IRC bridge](https://charmhub.io/irc-bridge) or [Maubot](https://charmhub.io/maubot) integrate with Synapse (a Matrix homeserver), they need to exchange configuration information that includes sensitive credentials such as registration secrets. If this data were transmitted as plain text, it would expose the system to serious security risks, especially in distributed environments.
 
 This is especially true when the charm relation crosses model boundaries ([Cross-Model Relations or CMR](https://documentation.ubuntu.com/juju/3.6/reference/relation/#cross-model)). In such cases, the provider side cannot directly access secrets created by the requirer, so an alternative method is required to ensure data confidentiality.
 
