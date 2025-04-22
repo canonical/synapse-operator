@@ -18,25 +18,9 @@ logger = logging.getLogger()
 
 MAS_TEMPLATE_FILE_NAME = "mas_config.yaml.j2"
 MAS_SERVICE_NAME = "synapse-mas"
-MAS_EXECUTABLE_PATH = "/usr/bin/mas-cli"
+MAS_EXECUTABLE_PATH = "/mas-cli"
 MAS_WORKING_DIR = "/mas"
 MAS_CONFIGURATION_PATH = f"{MAS_WORKING_DIR}/config.yaml"
-
-MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
-    {
-        "summary": "Matrix Authentication Service layer",
-        "description": "pebble config layer for MAS",
-        "services": {
-            MAS_SERVICE_NAME: {
-                "override": "replace",
-                "summary": "Matrix Authentication Service",
-                "startup": "enabled",
-                "command": f"{MAS_EXECUTABLE_PATH} server -c {MAS_CONFIGURATION_PATH}",
-                "working-dir": MAS_WORKING_DIR,
-            }
-        },
-    }
-)
 
 MAS_AUTHORIZATION_GRANT = ["authorization_code"]
 MAS_OIDC_SCOPE = "openid profile email"
@@ -259,6 +243,7 @@ def generate_mas_config(
         "oauth_provider_info": oauth_provider_info,
         "mas_oidc_scope": MAS_OIDC_SCOPE,
         "smtp_configuration": smtp_configuration,
+        "oidc_subject_claim": f'"{{{{ {mas_context.oidc_subject_claim} }}}}"',
     }
     env = Environment(
         loader=FileSystemLoader("./templates"),

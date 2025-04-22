@@ -13,12 +13,14 @@ from unittest.mock import MagicMock, Mock
 
 import ops
 import pytest
+import requests
 import yaml
 from ops.testing import Harness
 from pydantic.v1 import ValidationError
 
 import synapse
-from charm_types import SMTPConfiguration
+from charm import query_workload_version
+from charm_types import MediaConfiguration, SMTPConfiguration
 from state.charm_state import CharmState, SynapseConfig
 
 
@@ -797,3 +799,124 @@ web:
   port: 9999
 """
     )
+
+
+@pytest.mark.parametrize(
+    "mock_response_data, expected_version",
+    [
+        pytest.param(
+            {"server_version": "1.7.0"},
+            "1.7.0",
+            id="valid version",
+        ),
+        pytest.param(
+            {"server_version": "invalid_version"},
+            "-",
+            id="invalid version",
+        ),
+        pytest.param(
+            {"error": "failed"},
+            "-",
+            id="invalid response",
+        ),
+    ],
+)
+def test_query_workload_version(mock_response_data, expected_version, monkeypatch):
+    """
+    arrange: Mock the requests.get to return a custom response containing the server version.
+    act: Run query_workload_version.
+    assert: The function returns the correct version if the server version
+        is valid, or defaults to '-' if the version is invalid.
+    """
+    mock_response = MagicMock()
+    mock_response.json.return_value = mock_response_data
+    mock_response.status_code = 200
+
+    def mock_get(url, timeout):  # noqa: DCO010  # pylint: disable=unused-argument
+        return mock_response
+
+    monkeypatch.setattr("requests.get", mock_get)
+
+    version = query_workload_version("127.0.0.1")
+
+    assert version == expected_version
+
+
+def test_query_workload_version_timeout(monkeypatch):
+    """
+    arrange: Mock requests.get to raise a Timeout exception.
+    act: Run query_workload_version.
+    assert: The function should handle the timeout and return '-'.
+    """
+
+    def mock_get_timeout(url, timeout):  # noqa: DCO010
+        raise requests.exceptions.Timeout("Request timed out")
+
+    monkeypatch.setattr("requests.get", mock_get_timeout)
+
+    version = query_workload_version("127.0.0.1")
+
+    assert version == "-"
+
+
+def test_media_sync_cleanup_success(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should be run with expected parameters.
+    """
+    container = MagicMock(spec=ops.Container)
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
+    mock_exec = MagicMock()
+    mock_exec.wait_output.return_value = ("Success", "")
+    container.exec.return_value = mock_exec
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+
+    synapse.run_media_sync_cleanup(container, media_config)
+
+    assert container.exec.call_count == 2
+    calls = [call[0][0] for call in container.exec.call_args_list]
+    assert (
+        " ".join(calls[0]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "update --homeserver-config-path /data/homeserver.yaml /test/media/store 1d"
+    )
+    assert (
+        " ".join(calls[1]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "upload /test/media/store synapse-media-bucket --delete --storage-class STANDARD "
+        "--endpoint-url https:/example.com --prefix media"
+    )
+
+
+def test_run_media_sync_cleanup_failure(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should fail and raise exception.
+    """
+    container = MagicMock(spec=ops.Container)
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+    container.exec.return_value.wait_output.side_effect = ops.pebble.ExecError(
+        ["cmd"], 1, "stderr", "stdout"
+    )
+
+    with pytest.raises(synapse.WorkloadError, match="media_sync_cleanup failed, verify the logs"):
+        synapse.run_media_sync_cleanup(container, media_config)
+
+    container.exec.assert_called()

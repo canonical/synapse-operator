@@ -22,6 +22,12 @@ options:
     default: false
     description: |
       Configures whether to enable e-mail notifications. Requires SMTP integration.
+  enable_media_sync_cleanup:
+    type: boolean
+    default: false
+    description: |
+      When enabled, uploads media to S3 and removes local copies after a successful backup.
+      Requires S3 integration to be configured.
   enable_password_config:
     type: boolean
     default: true
@@ -35,6 +41,13 @@ options:
     description: |
       When disabled, blocks searching local and remote room lists for local and
       remote users by always returning an empty list for all queries.
+  experimental_alive_check:
+    type: string
+    description: Comma separated list of period,threshold and timeout for Synapse
+      pebble alive check. Refer to https://github.com/canonical/pebble/#layer-specification
+      to more details about allowed values.
+      This is an experimental feature and may be removed in future releases.
+    default: "2m,5,20s"
   federation_domain_whitelist:
     type: string
     description: Comma separated list of domains to be allowed to federate.
@@ -78,13 +91,6 @@ options:
     description: |
       The public-facing base URL that clients use to access this Homeserver.
       Defaults to https://<server_name>/.
-  experimental_alive_check:
-    type: string
-    description: Comma separated list of period,threshold and timeout for Synapse
-      pebble alive check. Refer to https://github.com/canonical/pebble/#layer-specification
-      to more details about allowed values.
-      This is an experimental feature and may be removed in future releases.
-    default: "2m,5,20s"
   rc_joins_remote_burst_count:
     type: int
     description: Allows for ratelimiting number of remote rooms a user can join
@@ -122,3 +128,10 @@ options:
       setting instance_map and stream writers. This configuration should be used
       in case of unrecoverable broken units and takes the form of
       worker0,worker1
+  oidc_subject_claim:
+    type: string
+    default: user.email
+    description: |
+      For advanced use only! Only relevant if synapse is related to an oauth provider.
+      Configure the subject claim that is used to map upstream provider users to local
+      MAS users.  

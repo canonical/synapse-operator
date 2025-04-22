@@ -4,25 +4,6 @@
 """Synapse package is used to interact with Synapse instance."""
 
 # Exporting methods to be used for another modules
-from .api import (  # noqa: F401
-    ADD_USER_ROOM_URL,
-    CREATE_ROOM_URL,
-    DEACTIVATE_ACCOUNT_URL,
-    LIST_ROOMS_URL,
-    LIST_USERS_URL,
-    LOGIN_URL,
-    REGISTER_URL,
-    SYNAPSE_PORT,
-    SYNAPSE_URL,
-    SYNAPSE_VERSION_REGEX,
-    VERSION_URL,
-    APIError,
-    get_room_id,
-    get_version,
-    is_token_valid,
-    make_room_admin,
-    override_rate_limit,
-)
 from .workload import (  # noqa: F401
     CHECK_ALIVE_NAME,
     CHECK_NGINX_READY_NAME,
@@ -43,7 +24,9 @@ from .workload import (  # noqa: F401
     SYNAPSE_NGINX_PORT,
     SYNAPSE_NGINX_SERVICE_NAME,
     SYNAPSE_PEER_RELATION_NAME,
+    SYNAPSE_PORT,
     SYNAPSE_SERVICE_NAME,
+    SYNAPSE_URL,
     SYNAPSE_USER,
     SYNAPSE_WORKER_CONFIG_PATH,
     ExecResult,
@@ -56,6 +39,7 @@ from .workload import (  # noqa: F401
     get_environment,
     get_media_store_path,
     get_registration_shared_secret,
+    run_media_sync_cleanup,
     validate_config,
 )
 from .workload_configuration import (  # noqa: F401
