@@ -16,7 +16,7 @@ jobs:
       trivy-image-config: "trivy.yaml"
       juju-channel: 3.4/stable
       channel: 1.28-strict/stable
-      modules: '["test_charm", "test_nginx", "test_s3", "test_scaling", "test_matrix_auth"]'
+      modules: '["test_charm", "test_nginx", "test_s3", "test_scaling", "test_matrix_auth", "test_ingress"]'
   allure-report:
     if: ${{ (success() || failure()) && github.event_name == 'schedule' }}
     needs:
