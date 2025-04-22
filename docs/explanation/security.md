@@ -97,7 +97,9 @@ Running Synapse with one or more weakness that can be exploited by attackers.
 
 ### Unencrypted traffic
 
+<!-- vale Canonical.400-Enforce-inclusive-terms = NO -->
 When HTTPS is not enabled, data exchanged between Synapse and its clients — including authentication tokens, registration secrets, and personal information — is transmitted in plain text. This makes it vulnerable to interception, tampering, and impersonation through [man-in-the-middle (MitM)](https://www.sciencedirect.com/topics/computer-science/man-in-the-middle-attack) attacks.
+<!-- vale Canonical.400-Enforce-inclusive-terms = YES -->
 
 #### Best practices
 
