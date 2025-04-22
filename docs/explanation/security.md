@@ -103,4 +103,4 @@ When HTTPS is not enabled, data exchanged between Synapse and its clients — in
 
 - Always enable HTTPS:
 
-  Configure Synapse to use HTTPS for all clients communication. The Synapse charm supports ingress integration, allowing HTTPS to be enabled when integrating with charms such as [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) and [traefik](https://charmhub.io/traefik-k8s).
+  Configure Synapse to use HTTPS for all clients communication. The Synapse charm supports ingress integration, allowing HTTPS to be enabled when integrating with charms such as [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator) and [traefik-k8s](https://charmhub.io/traefik-k8s).
