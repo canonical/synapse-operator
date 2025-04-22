@@ -1,4 +1,4 @@
-# Understanding how the Synapse charm uses cryptography
+# Cryptography overview
 
 This document explains why and how cryptography is used in the integration between Synapse and a [matrix_auth](https://charmhub.io/synapse/libraries/matrix_auth) charm provider. The focus is on securing sensitive data exchanged during the setup of matrix-based services such as IRC bridges and Maubot plugins.
 
