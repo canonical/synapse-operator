@@ -28,7 +28,7 @@ async def traefik_application_fixture(model: Model):
     )
     status: FullStatus = await traefik.model.get_status([traefik.name])
     application = typing.cast(Application, status.applications[traefik.name])
-    unit_status: UnitStatus = next(iter(traefik.units.values()))
+    unit_status: UnitStatus = next(iter(application.units.values()))
     assert unit_status.public_address, "Invalid unit address"
     address = (
         unit_status.public_address
