@@ -56,7 +56,10 @@ async def test_synapse_is_up(
         )
         assert response.status_code == 200
         openid_configuration = response.json()
-        assert openid_configuration.get("issuer") == f"{charm_config.get("public_baseurl")}/auth/"
+        assert (
+            openid_configuration.get("issuer")
+            == f"{charm_config["public_baseurl"].get("value")}/auth/"
+        )
 
 
 async def test_synapse_validate_configuration(synapse_app: Application):
