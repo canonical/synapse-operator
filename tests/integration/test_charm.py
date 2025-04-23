@@ -58,7 +58,7 @@ async def test_synapse_is_up(
         openid_configuration = response.json()
         assert (
             openid_configuration.get("issuer")
-            == f"{charm_config["public_baseurl"].get("value")}/auth/"
+            == f"{charm_config['public_baseurl'].get('value')}/auth/"
         )
 
 
