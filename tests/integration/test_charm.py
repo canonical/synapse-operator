@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 async def test_synapse_is_up(
     synapse_app: Application,
-    server_name: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -36,6 +35,7 @@ async def test_synapse_is_up(
     act: send a request to the Synapse application managed by the Synapse charm.
     assert: the Synapse application should return a correct response.
     """
+    charm_config = await synapse_app.get_config()
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = requests.get(
             f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
@@ -56,7 +56,7 @@ async def test_synapse_is_up(
         )
         assert response.status_code == 200
         openid_configuration = response.json()
-        assert openid_configuration.get("issuer") == f"https://{server_name}/auth/"
+        assert openid_configuration.get("issuer") == f"{charm_config.get("public_baseurl")}/auth/"
 
 
 async def test_synapse_validate_configuration(synapse_app: Application):
