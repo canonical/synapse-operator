@@ -102,6 +102,7 @@ async def synapse_app_fixture(
     synapse_charm: str,
     postgresql_app: Application,
     pytestconfig: Config,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """Build and deploy the Synapse charm."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
@@ -122,6 +123,8 @@ async def synapse_app_fixture(
         status=typing.cast(str, BlockedStatus.name),
         idle_period=5,
     )
+    synapse_ip = (await get_unit_ips(app.name))[0]
+    app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
 
     async with ops_test.fast_forward():
         await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app.name}")
