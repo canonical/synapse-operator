@@ -219,6 +219,25 @@ def _get_synapse_config(container: ops.model.Container) -> dict:
         raise PebbleServiceError(str(exc)) from exc
 
 
+def _get_mas_config(container: ops.model.Container) -> dict:
+    """Get the current MAS configuration.
+
+    Args:
+        container: Synapse container.
+
+    Returns:
+        dict: MAS configuration.
+
+    Raises:
+        PebbleServiceError: if something goes wrong while interacting with Pebble.
+    """
+    try:
+        config = container.pull(MAS_CONFIGURATION_PATH).read()
+        return yaml.safe_load(config)
+    except ops.pebble.PathError as exc:
+        raise PebbleServiceError(str(exc)) from exc
+
+
 def _push_synapse_config(
     container: ops.model.Container,
     current_synapse_config: dict,
@@ -317,7 +336,16 @@ def reconcile(  # noqa: C901
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        restart_mas(container, rendered_mas_configuration, charm_state)
+
+        existing_mas_config = _get_mas_config(container=container)
+        mas_config_has_changed = DeepDiff(
+            existing_mas_config,
+            rendered_mas_configuration,
+            ignore_order=True,
+            ignore_string_case=True,
+        )
+        if mas_config_has_changed:
+            restart_mas(container, rendered_mas_configuration, charm_state)
 
         if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
             # Configurations set via environment variables:
@@ -402,7 +430,7 @@ def reconcile(  # noqa: C901
             ignore_string_case=True,
         )
 
-        if config_has_changed:
+        if config_has_changed or mas_config_has_changed:
             logging.info("Configuration has changed, Synapse will be restarted.")
             logging.debug("The change is: %s", config_has_changed)
             # Push worker configuration
