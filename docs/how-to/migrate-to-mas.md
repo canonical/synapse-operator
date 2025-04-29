@@ -6,6 +6,8 @@ This document will cover the migration path for a synapse charm on the `1/edge` 
 
 > **_NOTE:_** The existing synapse charm is deployed with the name `server`.
 
+> **IMPORTANT**: It is extremely important that the Synapse version is the same on both the old synapse charm and the new charm to avoid any problems with database schemas.
+
 ## Prepare the new synapse charm
 ### Deploy the 2/edge channel on the same model
 We will deploy the new synapse charm with the name `server-mas`. We will use the same configuration as the existing synapse charm.
@@ -95,6 +97,14 @@ PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator postgres -c "cre
 
 
 ## Migrate users to MAS
+### Update token for Draupnir
+If the old synapse charm has moderation enabled, we need to modify the corresponding access token so that it does not get ignored by `syn2mas`.
+
+Run the following SQL command on the old synapse charm's database:
+```
+PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator server "update access_tokens set device_id='<device-id>' where token='<mjolnir-access-token>';"
+```
+
 ### Perform user migration to MAS database
 
 The following commands assume that you are in the `synapse` container of the `server-mas` application.
