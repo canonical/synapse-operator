@@ -100,15 +100,17 @@ PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator postgres -c "cre
 ### Update token for Draupnir
 If the old synapse charm has moderation enabled, we need to modify the corresponding access token so that it does not get ignored by `syn2mas`.
 
-Run the following SQL command on the old synapse charm's database:
+Run the following SQL command on the old synapse charm's database, replacing `<mjolnir-access-token>` with the access token that mjolnir is using, and `<device-id>` with a device ID you choose ( Ideally the ID of one of your active devices ):
 ```
 PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator server "update access_tokens set device_id='<device-id>' where token='<mjolnir-access-token>';"
 ```
 
+> **_NOTE:_**: The `<device-id>` must exist in the `devices` table.
+
 ### Perform user migration to MAS database
 
 The following commands assume that you are in the `synapse` container of the `server-mas` application.
-> **Note**: If a proxy is present, then all commands in this section must be prefixed with `HTTP_PROXY=<proxy_address> HTTPS_PROXY=<proxy_address>`
+> **_Note_**: If a proxy is present, then all commands in this section must be prefixed with `HTTP_PROXY=<proxy_address> HTTPS_PROXY=<proxy_address>`
 
 First install the necessary packages:
 ```
