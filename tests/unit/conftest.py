@@ -17,7 +17,7 @@ from ops.pebble import ExecError
 from ops.testing import Harness
 
 import synapse
-from auth.mas import MAS_EXECUTABLE_PATH, MAS_CONFIGURATION_PATH
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 from charm import SynapseCharm
 from s3_parameters import S3Parameters
 
