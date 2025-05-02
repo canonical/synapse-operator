@@ -340,7 +340,7 @@ def reconcile(  # noqa: C901
         existing_mas_config = _get_mas_config(container=container)
         mas_config_has_changed = DeepDiff(
             existing_mas_config,
-            rendered_mas_configuration,
+            yaml.safe_load(rendered_mas_configuration),
             ignore_order=True,
             ignore_string_case=True,
         )

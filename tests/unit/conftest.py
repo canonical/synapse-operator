@@ -17,7 +17,7 @@ from ops.pebble import ExecError
 from ops.testing import Harness
 
 import synapse
-from auth.mas import MAS_EXECUTABLE_PATH
+from auth.mas import MAS_EXECUTABLE_PATH, MAS_CONFIGURATION_PATH
 from charm import SynapseCharm
 from s3_parameters import S3Parameters
 
@@ -139,6 +139,13 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     synapse_container.make_dir("/data", make_parents=True)
     synapse_container.push(f"/data/{TEST_SERVER_NAME}.signing.key", "123")
+    synapse_container.make_dir("/mas", make_parents=True)
+    synapse_container.push(
+        MAS_CONFIGURATION_PATH,
+        yaml.safe_dump(
+            {"http": {"listeners": [{"name": "web", "binds": [{"address": "[::]:8081"}]}]}}
+        ),
+    )
     # unused-variable disabled to pass constants values to inner function
     command_path = synapse.SYNAPSE_COMMAND_PATH
     command_migrate_config = synapse.COMMAND_MIGRATE_CONFIG
