@@ -235,6 +235,9 @@ def _get_mas_config(container: ops.model.Container) -> dict:
         config = container.pull(MAS_CONFIGURATION_PATH).read()
         return yaml.safe_load(config)
     except ops.pebble.PathError as exc:
+        # If the MAS config has not been created, we return an empty dict to trigger a replan
+        if exc.kind == "not-found":
+            return {}
         raise PebbleServiceError(str(exc)) from exc
 
 
