@@ -23,8 +23,10 @@ use the deactivate-account [API](https://element-hq.github.io/synapse/latest/adm
 
 
 ```
-$ curl -XPOST   -d '{"type":"m.login.password", "user":"myadmin", "password":"xxx"}' https://chat.myserver.com/_matrix/client/r0/login
-# get the token
-$ curl -XPOST 'https://chat.myserver.com/_synapse/admin/v1/deactivate/%40joe123%3Amyserver.com?access_token=...'
-{"id_server_unbind_result":"success"}
+curl -XPOST   -d '{"type":"m.login.password", "user":"myadmin", "password":"xxx"}' https://chat.myserver.com/_matrix/client/r0/login
 ```
+Get the token:
+```
+curl -XPOST 'https://chat.myserver.com/_synapse/admin/v1/deactivate/%40joe123%3Amyserver.com?access_token=...'
+```
+If successful, the terminal output `{"id_server_unbind_result":"success"}`.
