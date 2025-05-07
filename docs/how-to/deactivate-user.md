@@ -18,7 +18,7 @@ juju run synapse/0 anonymize-user username=joe123
 ```
 
 
-If you prefer not to mark the user as erased and only deactivate them, you can
+If you prefer to only deactivate the user and not mark them as erased, you can
 use the deactivate-account [API](https://element-hq.github.io/synapse/latest/admin_api/user_admin_api.html#deactivate-account) call instead:
 
 
