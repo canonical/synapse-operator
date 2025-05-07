@@ -11,9 +11,7 @@ Keep in mind that using this action will also:
 - Remove the user's avatar URL.
 - Mark the user as erased.
 
-You can trigger the action with a command like the following example:
-
-The user is `@joe123:myserver.com`.
+You can trigger the action with a command like in the following example where the user is `@joe123:myserver.com`:
 
 ```
 juju run synapse/0 anonymize-user username=joe123
