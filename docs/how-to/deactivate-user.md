@@ -7,9 +7,9 @@ used to deactivate a user.
 
 Keep in mind that using this action will also:
 
-- Remove the user's display name
-- Remove the user's avatar URL
-- Mark the user as erased
+- Remove the user's display name.
+- Remove the user's avatar URL.
+- Mark the user as erased.
 
 You can trigger the action with a command like the following example:
 
