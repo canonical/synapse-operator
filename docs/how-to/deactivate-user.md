@@ -1,6 +1,8 @@
 # How to deactivate a user
 
-**Note:** This document applies only to Synapse channels `1/stable` and `1/edge`.
+[note]
+This document applies only to Synapse channels `1/stable` and `1/edge`.
+[/note]
 
 The Synapse charm provides an action called `anonymize-user`, which can also be
 used to deactivate a user.
