@@ -31,4 +31,4 @@ Get the token:
 ```
 curl -XPOST 'https://chat.myserver.com/_synapse/admin/v1/deactivate/%40joe123%3Amyserver.com?access_token=...'
 ```
-If successful, the terminal output `{"id_server_unbind_result":"success"}`.
+If successful, the terminal will output `{"id_server_unbind_result":"success"}`.
