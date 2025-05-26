@@ -1,5 +1,9 @@
 # Changelog
 
+### 2025-04-16
+
+- Set room_list_publication_rules as allowing by default. This was changed to blocking starting from Synapse [1.126.0](https://github.com/element-hq/synapse/blob/develop/docs/upgrade.md#room-list-publication-rules-change) version.
+
 ### 2025-03-27
 
 - Add a new configuration, enable_media_sync_cleanup. When enabled, and if S3

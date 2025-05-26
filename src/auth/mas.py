@@ -272,10 +272,6 @@ def generate_synapse_msc3861_config(
     """
     mas_context = mas_configuration.mas_context
     mas_prefix = mas_configuration.mas_prefix
-    # We explicitly set the oauth2 endpoints using MAS local address
-    # This is to avoid problems with TLS self-signed certificates
-    # when the charm is behind an https ingress
-    mas_local_address = f"http://localhost:8081{mas_prefix}"
     # MAS public address is used when redirecting the client to MAS for login
     mas_public_address = f"{synapse_configuration.public_baseurl}{mas_prefix}"
     return {
@@ -286,13 +282,6 @@ def generate_synapse_msc3861_config(
         "client_secret": mas_context.synapse_oidc_client_secret,
         "admin_token": mas_context.synapse_shared_secret,
         "account_management_url": f"{mas_public_address}account",
-        "issuer_metadata": {
-            "authorization_endpoint": f"{mas_local_address}authorize",
-            "token_endpoint": f"{mas_local_address}oauth2/token",
-            "jwks_uri": f"{mas_local_address}oauth2/keys.json",
-            "registration_endpoint": f"{mas_local_address}oauth2/registration",
-            "introspection_endpoint": f"{mas_local_address}oauth2/introspect",
-        },
     }
 
 
