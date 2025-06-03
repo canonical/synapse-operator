@@ -1,10 +1,11 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for Synapse charm integration tests."""
 
 
 import json
+import re
 import typing
 from secrets import token_hex
 
@@ -15,12 +16,14 @@ from botocore.config import Config as BotoConfig
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
-from ops.model import ActiveStatus
+from juju.unit import Unit
+from ops.model import ActiveStatus, BlockedStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 from tests.conftest import SYNAPSE_IMAGE_PARAM
-from tests.integration.helpers import get_access_token, register_user
+from tests.integration.helpers import register_user
 
 # caused by pytest fixtures, mark does not work in fixtures
 # pylint: disable=too-many-arguments, unused-argument
@@ -93,14 +96,13 @@ def synapse_app_charmhub_name_fixture() -> str:
 async def synapse_app_fixture(
     ops_test: OpsTest,
     synapse_app_name: str,
-    synapse_app_charmhub_name: str,
     synapse_image: str,
     model: Model,
     server_name: str,
     synapse_charm: str,
     postgresql_app: Application,
-    postgresql_app_name: str,
     pytestconfig: Config,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """Build and deploy the Synapse charm."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
@@ -113,14 +115,30 @@ async def synapse_app_fixture(
         f"./{synapse_charm}",
         resources=resources,
         application_name=synapse_app_name,
-        series="jammy",
         config={"server_name": server_name},
     )
+
+    await model.wait_for_idle(
+        apps=[synapse_app_name],
+        status=typing.cast(str, BlockedStatus.name),
+        idle_period=5,
+    )
+    synapse_ip = (await get_unit_ips(app.name))[0]
+    await app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
+
     async with ops_test.fast_forward():
-        await model.wait_for_idle(raise_on_blocked=True, status=ACTIVE_STATUS_NAME)
-        if postgresql_app is not None:
-            await model.relate(f"{synapse_app_name}:database", f"{postgresql_app_name}")
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+        await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app.name}")
+        await model.wait_for_idle(
+            apps=[synapse_app_name, postgresql_app.name],
+            status=ACTIVE_STATUS_NAME,
+            idle_period=5,
+        )
+        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app.name}")
+        await model.wait_for_idle(
+            apps=[synapse_app_name, postgresql_app.name],
+            status=ACTIVE_STATUS_NAME,
+            idle_period=5,
+        )
     return app
 
 
@@ -131,7 +149,6 @@ async def synapse_charmhub_app_fixture(
     server_name: str,
     synapse_app_charmhub_name: str,
     postgresql_app: Application,
-    postgresql_app_name: str,
     synapse_charm: str,
 ):
     """Deploy synapse from Charmhub."""
@@ -140,16 +157,22 @@ async def synapse_charmhub_app_fixture(
             "synapse",
             application_name=synapse_app_charmhub_name,
             trust=True,
-            channel="latest/edge",
+            channel="2/edge",
             series="jammy",
             config={"server_name": server_name},
         )
         await model.wait_for_idle(
-            apps=[synapse_app_charmhub_name, postgresql_app_name],
+            apps=[postgresql_app.name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
-        await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app_name}")
+        await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{postgresql_app.name}")
+        await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app.name}")
+        await model.wait_for_idle(
+            apps=[synapse_app_charmhub_name, postgresql_app.name],
+            status=ACTIVE_STATUS_NAME,
+            idle_period=5,
+        )
         await model.wait_for_idle(idle_period=5)
     return app
 
@@ -233,7 +256,9 @@ async def postgresql_app_fixture(
         async with ops_test.fast_forward():
             await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
             await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    yield model.applications.get(postgresql_app_name)
+    postgresql_application = model.applications.get(postgresql_app_name)
+    assert postgresql_application, "Synapse requires postgresql to be deployed"
+    yield postgresql_application
 
 
 @pytest.fixture(scope="module", name="user_username")
@@ -242,30 +267,42 @@ def user_username_fixture() -> typing.Generator[str, None, None]:
     yield token_hex(16)
 
 
-@pytest_asyncio.fixture(scope="module", name="user_password")
-async def user_password_fixture(synapse_app: Application, user_username: str) -> str:
+@pytest_asyncio.fixture(scope="module", name="user")
+async def user_fixture(synapse_app: Application, user_username: str) -> tuple[str, str]:
     """Register a user and return the new password.
 
     Returns:
         The new user password
     """
-    return await register_user(synapse_app, user_username)
+    return (user_username, await register_user(synapse_app, user_username))
 
 
 @pytest_asyncio.fixture(scope="module", name="access_token")
 async def access_token_fixture(
-    user_username: str,
-    user_password: str,
+    user: tuple[str, str],
     synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ) -> str:
     """Return the access token after login with the username and password.
 
     Returns:
         The access token
     """
-    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    return get_access_token(synapse_ip, user_username, user_password)
+    username, _ = user
+    pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
+    generate_token_cmd = (
+        f"{pebble_exec_cmd} {MAS_EXECUTABLE_PATH} -c {MAS_CONFIGURATION_PATH}"
+        " manage issue-compatibility-token"
+        f" --yes-i-want-to-grant-synapse-admin-privileges {username}"
+    )
+    unit: Unit = synapse_app.units[0]
+    action = await unit.run(generate_token_cmd)
+    await action.wait()
+    assert action.results["return-code"] == 0
+
+    parsing_regex = r"Compatibility token issued: (?P<token>mct_.+) compat_access_token\.id"
+    parsed_output = re.search(parsing_regex, action.results["stderr"])
+    assert parsed_output is not None and parsed_output["token"]
+    return parsed_output["token"]
 
 
 @pytest.fixture(scope="module", name="localstack_address")

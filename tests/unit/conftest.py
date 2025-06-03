@@ -1,9 +1,7 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """pytest fixtures for the unit test."""
-
-# pylint: disable=too-few-public-methods, protected-access
 
 import time
 import typing
@@ -19,6 +17,7 @@ from ops.pebble import ExecError
 from ops.testing import Harness
 
 import synapse
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 from charm import SynapseCharm
 from s3_parameters import S3Parameters
 
@@ -117,13 +116,22 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 @pytest.fixture(name="harness")
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
-    monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr("charm.SynapseCharm._set_workload_version", MagicMock(return_value=None))
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
+    # Assume that MAS is working properly
+    monkeypatch.setattr(
+        "state.mas.MASConfiguration.from_charm", MagicMock(return_value=MagicMock())
+    )
+    monkeypatch.setattr("charm.generate_oauth_client_config", MagicMock(return_value=None))
+    monkeypatch.setattr("pebble._push_mas_config", MagicMock())
+    monkeypatch.setattr("charm.generate_mas_config", MagicMock(return_value=""))
+    monkeypatch.setattr("charm.generate_synapse_msc3861_config", MagicMock(return_value={}))
+
     harness = Harness(SynapseCharm)
     # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
     harness.add_network("10.0.0.10")
     harness.update_config({"server_name": TEST_SERVER_NAME})
+    harness.add_relation("mas-database", "postgresql-k8s")
     harness.set_model_name("testmodel")  # needed for testing Traefik
     synapse_container: ops.Container = harness.model.unit.get_container(
         synapse.SYNAPSE_CONTAINER_NAME
@@ -131,9 +139,16 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     synapse_container.make_dir("/data", make_parents=True)
     synapse_container.push(f"/data/{TEST_SERVER_NAME}.signing.key", "123")
+    synapse_container.make_dir("/mas", make_parents=True)
+    synapse_container.push(
+        MAS_CONFIGURATION_PATH,
+        yaml.safe_dump(
+            {"http": {"listeners": [{"name": "web", "binds": [{"address": "[::]:8081"}]}]}}
+        ),
+    )
     # unused-variable disabled to pass constants values to inner function
-    command_path = synapse.SYNAPSE_COMMAND_PATH  # pylint: disable=unused-variable
-    command_migrate_config = synapse.COMMAND_MIGRATE_CONFIG  # pylint: disable=unused-variable
+    command_path = synapse.SYNAPSE_COMMAND_PATH
+    command_migrate_config = synapse.COMMAND_MIGRATE_CONFIG
     exit_code = 0
     if hasattr(request, "param"):
         exit_code = request.param
@@ -192,22 +207,13 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
         executable="rm",
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
+    harness.register_command_handler(  # type: ignore # pylint: disable=no-member
+        container=synapse_container,
+        executable=MAS_EXECUTABLE_PATH,
+        handler=lambda _: synapse.ExecResult(0, "", ""),
+    )
     yield harness
     harness.cleanup()
-
-
-@pytest.fixture(name="saml_configured")
-def saml_configured_fixture(harness: Harness) -> Harness:
-    """Harness fixture with saml relation configured"""
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    saml_relation_data = {
-        "entity_id": "https://login.staging.ubuntu.com",
-        "metadata_url": "https://login.staging.ubuntu.com/saml/metadata",
-    }
-    harness.add_relation("saml", "saml-integrator", app_data=saml_relation_data)
-    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.set_leader(True)
-    return harness
 
 
 @pytest.fixture(name="smtp_configured")
@@ -334,16 +340,3 @@ def config_content_fixture() -> dict:
         bind_addresses: ['::']
     """
     return yaml.safe_load(config_content)
-
-
-@pytest.fixture(name="mocked_synapse_calls")
-def mocked_synapse_calls_fixture(monkeypatch):
-    """Mock synapse calls functions."""
-    monkeypatch.setattr(
-        synapse.workload, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(
-        synapse.workload, "_get_configuration_field", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(synapse.api, "register_user", MagicMock(return_value="access_token"))
-    monkeypatch.setattr(synapse, "create_management_room", MagicMock(return_value=token_hex(16)))

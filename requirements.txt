@@ -1,9 +1,11 @@
-boto3 ==1.35.71
-cosl ==0.0.45
-deepdiff ==8.0.1
-jinja2 ==3.1.4
+boto3 ==1.38.17
+cosl ==0.1.0
+cryptography ==44.0.3
+jinja2 ==3.1.6
+deepdiff ==8.5.0
 jsonschema ==4.23.0
-ops ==2.17.1
-pydantic ==2.10.2
+ops ==2.21.1
 psycopg2-binary ==2.9.10
+pydantic ==2.11.4
+python-ulid ==3.0.0
 requests ==2.32.3

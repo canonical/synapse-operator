@@ -1,9 +1,9 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse workload unit tests."""
 
-# pylint: disable=protected-access, too-many-lines, duplicate-code
+# pylint: disable=duplicate-code
 
 
 import io
@@ -13,16 +13,15 @@ from unittest.mock import MagicMock, Mock
 
 import ops
 import pytest
+import requests
 import yaml
 from ops.testing import Harness
 from pydantic.v1 import ValidationError
 
 import synapse
-from charm import SynapseCharm
-from charm_state import CharmState, SynapseConfig
-from charm_types import SMTPConfiguration
-
-from .conftest import TEST_SERVER_NAME
+from charm import query_workload_version
+from charm_types import MediaConfiguration, SMTPConfiguration
+from state.charm_state import CharmState, SynapseConfig
 
 
 def test_allow_public_rooms_over_federation_sucess(config_content: dict[str, typing.Any]):
@@ -251,7 +250,6 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
         content,
         CharmState(  # pylint: disable=duplicate-code
             datasource=None,
-            saml_config=None,
             smtp_config=None,
             media_config=None,
             redis_config=None,
@@ -303,212 +301,39 @@ def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
         synapse.validate_config(container_mock)
 
 
-def test_enable_metrics_success(config_content: dict[str, typing.Any]):
+def test_add_default_configurations_success(config_content: dict[str, typing.Any]):
     """
     arrange: set mock container with file.
     act: change the configuration file.
-    assert: new configuration file is pushed and metrics are enabled.
+    assert: new configuration file is pushed and default configs are enabled.
     """
     content = config_content
 
-    synapse.enable_metrics(content)
+    synapse.add_default_configurations(content)
 
     expected_config_content = {
         "listeners": [
             {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            {"port": 9000, "type": "metrics", "bind_addresses": ["::"]},
+            {"type": "metrics", "port": 9000, "bind_addresses": ["::"]},
+            {
+                "type": "http",
+                "port": 8035,
+                "bind_addresses": ["::"],
+                "resources": [{"names": ["replication"]}],
+            },
         ],
         "enable_metrics": True,
-    }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_forgotten_room_success(config_content: dict[str, typing.Any]):
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: new configuration file is pushed and forgotten_room_retention_period is enabled.
-    """
-    content = config_content
-
-    synapse.enable_forgotten_room_retention(content)
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-        ],
+        "delete_stale_devices_after": "1y",
         "forgotten_room_retention_period": "28d",
+        "media_retention": {
+            "local_media_lifetime": "28d",
+            "remote_media_lifetime": "14d",
+        },
+        "serve_server_wellknown": True,
+        "room_list_publication_rules": [{"action": "allow"}],
     }
+
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_saml_success():
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: new configuration file is pushed and SAML is enabled.
-    """
-    # This test was given as an example in this comment by Ben Hoyt.
-    # https://github.com/canonical/synapse-operator/pull/19#discussion_r1302486670
-    # Arrange: set up harness and container filesystem
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("saml", "saml-integrator")
-    harness.add_relation_unit(relation_id, "saml-integrator/0")
-    metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    harness.update_relation_data(
-        relation_id,
-        "saml-integrator",
-        {
-            "entity_id": "https://login.staging.ubuntu.com",
-            "metadata_url": metadata_url,
-        },
-    )
-    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.begin()
-    current_config = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-      x_forwarded: false
-"""
-
-    config = yaml.safe_load(current_config)
-
-    synapse.enable_saml(config, harness.charm.build_charm_state())
-
-    # Assert: ensure config file was written correctly
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
-        ],
-        "saml2_enabled": True,
-        "saml2_config": {
-            "sp_config": {
-                "metadata": {"remote": [{"url": metadata_url}]},
-                "service": {
-                    "sp": {
-                        "entityId": TEST_SERVER_NAME,
-                        "allow_unsolicited": True,
-                    }
-                },
-                "allow_unknown_attributes": True,
-                "attribute_map_dir": "/usr/local/attributemaps",
-            },
-            "user_mapping_provider": {
-                "config": {
-                    "grandfathered_mxid_source_attribute": "uid",
-                    "mxid_source_attribute": "uid",
-                    "mxid_mapping": "dotreplace",
-                }
-            },
-        },
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_saml_success_no_ubuntu_url():
-    """
-    arrange: set configuration and saml-integrator relation without ubuntu.com
-        in metadata_url.
-    act: enable saml.
-    assert: SAML configuration is created as expected.
-    """
-    harness = Harness(SynapseCharm)
-    harness.update_config({"server_name": TEST_SERVER_NAME, "public_baseurl": TEST_SERVER_NAME})
-    relation_id = harness.add_relation("saml", "saml-integrator")
-    harness.add_relation_unit(relation_id, "saml-integrator/0")
-    metadata_url = "https://login.staging.com/saml/metadata"
-    harness.update_relation_data(
-        relation_id,
-        "saml-integrator",
-        {
-            "entity_id": "https://login.staging.com",
-            "metadata_url": metadata_url,
-        },
-    )
-    harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
-    harness.begin()
-    current_config = """
-listeners:
-    - type: http
-      port: 8080
-      bind_addresses:
-        - "::"
-      x_forwarded: false
-"""
-
-    config = yaml.safe_load(current_config)
-
-    synapse.enable_saml(config, harness.charm.build_charm_state())
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "x_forwarded": True, "port": 8080, "bind_addresses": ["::"]}
-        ],
-        "saml2_enabled": True,
-        "saml2_config": {
-            "sp_config": {
-                "metadata": {"remote": [{"url": metadata_url}]},
-                "service": {
-                    "sp": {
-                        "entityId": TEST_SERVER_NAME,
-                        "allow_unsolicited": True,
-                    }
-                },
-                "allow_unknown_attributes": True,
-            },
-            "user_mapping_provider": {
-                "config": {
-                    "grandfathered_mxid_source_attribute": "uid",
-                    "mxid_source_attribute": "uid",
-                    "mxid_mapping": "dotreplace",
-                }
-            },
-        },
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
-
-
-def test_get_mjolnir_config_success():
-    """
-    arrange: set access token and room id parameters.
-    act: call _get_mjolnir_config.
-    assert: config returns as expected.
-    """
-    access_token = token_hex(16)
-    room_id = token_hex(16)
-
-    config = synapse.workload._get_mjolnir_config(access_token=access_token, room_id=room_id)
-
-    assert config["accessToken"] == access_token
-    assert config["managementRoom"] == room_id
-
-
-def test_generate_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: set container, access token and room id parameters.
-    act: call generate_mjolnir_config.
-    assert: file is pushed as expected.
-    """
-    access_token = token_hex(16)
-    room_id = token_hex(16)
-    push_mock = MagicMock()
-    container_mock = MagicMock()
-    monkeypatch.setattr(container_mock, "push", push_mock)
-
-    synapse.generate_mjolnir_config(
-        container=container_mock, access_token=access_token, room_id=room_id
-    )
-
-    expected_config = synapse.workload._get_mjolnir_config(
-        access_token=access_token, room_id=room_id
-    )
-    push_mock.assert_called_once_with(
-        synapse.MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
-    )
 
 
 SMTP_CONFIGURATION = SMTPConfiguration(
@@ -536,7 +361,6 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         media_config=None,
         redis_config=None,
@@ -564,47 +388,6 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
         },
     }
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.Any]):
-    """
-    arrange: set mock container with file.
-    act: call enable_serve_server_wellknown.
-    assert: new configuration file is pushed and serve_server_wellknown is enabled.
-    """
-    content = config_content
-
-    synapse.enable_serve_server_wellknown(content)
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-        ],
-        "serve_server_wellknown": True,
-    }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
-
-
-def test_disable_password_config_success():
-    """
-    arrange: set mock container with file.
-    act: call disable_password_config.
-    assert: new configuration file is pushed and password_config is disabled.
-    """
-    config_content = """
-    password_config:
-        enabled: true
-    """
-    config = yaml.safe_load(config_content)
-
-    synapse.disable_password_config(config)
-
-    expected_config_content = {
-        "password_config": {
-            "enabled": False,
-        },
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_get_registration_shared_secret_success(monkeypatch: pytest.MonkeyPatch):
@@ -713,7 +496,6 @@ def test_block_non_admin_invites(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**block_non_admin_invites)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
@@ -749,7 +531,6 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
@@ -863,7 +644,6 @@ def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
     synapse_config = SynapseConfig(**invite_checker_policy_rooms)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
@@ -906,7 +686,6 @@ def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing
     synapse_config = SynapseConfig(**invite_checker_blocklist_allowlist_url)  # type: ignore[arg-type] # noqa: E501
     charm_state = CharmState(
         datasource=None,
-        saml_config=None,
         smtp_config=SMTP_CONFIGURATION,
         redis_config=None,
         synapse_config=synapse_config,
@@ -930,3 +709,191 @@ def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing
     }
 
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
+
+
+def test_generate_moderation_config():
+    """
+    arrange: set mock container with file.
+    act: update invite_checker_blocklist_allowlist_url config.
+    assert: new configuration file is pushed and invite_checker_blocklist_allowlist_url is enabled.
+    """
+    base_config = {
+        "server_name": "example.com",
+        "public_baseurl": "https://example.com",
+        "moderation_room_alias": "moderation",
+    }
+    synapse_config = SynapseConfig(**base_config)  # type: ignore[arg-type] # noqa: E501
+    charm_state = CharmState(
+        datasource=None,
+        smtp_config=SMTP_CONFIGURATION,
+        redis_config=None,
+        synapse_config=synapse_config,
+        media_config=None,
+        instance_map_config=None,
+        registration_secrets=None,
+        moderation_token="abc",  # nosec
+    )
+
+    mock_container = MagicMock()
+    synapse.generate_moderation_config(mock_container, charm_state)
+
+    assert mock_container.push.called
+    args, _ = mock_container.push.call_args
+    assert (
+        args[1]
+        == """accessToken: abc
+automaticallyRedactForReasons:
+- spam
+- advertising
+backgroundDelayMS: 500
+dataPath: /data/storage
+displayReports: true
+fasterMembershipChecks: false
+health:
+  healthz:
+    address: 0.0.0.0
+    enabled: true
+    endpoint: /healthz
+    healthyStatus: 200
+    port: 7777
+    unhealthyStatus: 418
+  sentry: null
+homeserverUrl: http://localhost:8080
+logLevel: INFO
+managementRoom: '#moderation:example.com'
+noop: false
+pollReports: false
+protectAllJoinedRooms: false
+rawHomeserverUrl: http://localhost:8080
+syncOnStartup: true
+verboseLogging: false
+verifyPermissionsOnStartup: true
+web:
+  abuseReporting:
+    enabled: true
+  address: 0.0.0.0
+  enabled: true
+  port: 9999
+"""
+    )
+
+
+@pytest.mark.parametrize(
+    "mock_response_data, expected_version",
+    [
+        pytest.param(
+            {"server_version": "1.7.0"},
+            "1.7.0",
+            id="valid version",
+        ),
+        pytest.param(
+            {"server_version": "invalid_version"},
+            "-",
+            id="invalid version",
+        ),
+        pytest.param(
+            {"error": "failed"},
+            "-",
+            id="invalid response",
+        ),
+    ],
+)
+def test_query_workload_version(mock_response_data, expected_version, monkeypatch):
+    """
+    arrange: Mock the requests.get to return a custom response containing the server version.
+    act: Run query_workload_version.
+    assert: The function returns the correct version if the server version
+        is valid, or defaults to '-' if the version is invalid.
+    """
+    mock_response = MagicMock()
+    mock_response.json.return_value = mock_response_data
+    mock_response.status_code = 200
+
+    def mock_get(url, timeout):  # noqa: DCO010  # pylint: disable=unused-argument
+        return mock_response
+
+    monkeypatch.setattr("requests.get", mock_get)
+
+    version = query_workload_version("127.0.0.1")
+
+    assert version == expected_version
+
+
+def test_query_workload_version_timeout(monkeypatch):
+    """
+    arrange: Mock requests.get to raise a Timeout exception.
+    act: Run query_workload_version.
+    assert: The function should handle the timeout and return '-'.
+    """
+
+    def mock_get_timeout(url, timeout):  # noqa: DCO010
+        raise requests.exceptions.Timeout("Request timed out")
+
+    monkeypatch.setattr("requests.get", mock_get_timeout)
+
+    version = query_workload_version("127.0.0.1")
+
+    assert version == "-"
+
+
+def test_media_sync_cleanup_success(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should be run with expected parameters.
+    """
+    container = MagicMock(spec=ops.Container)
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
+    mock_exec = MagicMock()
+    mock_exec.wait_output.return_value = ("Success", "")
+    container.exec.return_value = mock_exec
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+
+    synapse.run_media_sync_cleanup(container, media_config)
+
+    assert container.exec.call_count == 2
+    calls = [call[0][0] for call in container.exec.call_args_list]
+    assert (
+        " ".join(calls[0]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "update --homeserver-config-path /data/homeserver.yaml /test/media/store 1d"
+    )
+    assert (
+        " ".join(calls[1]) == "/usr/local/bin/s3_media_upload --no-progress "
+        "upload /test/media/store synapse-media-bucket --delete --storage-class STANDARD "
+        "--endpoint-url https:/example.com --prefix media"
+    )
+
+
+def test_run_media_sync_cleanup_failure(monkeypatch):
+    """
+    arrange: Mock container and charm_state.
+    act: Run run_media_sync_cleanup.
+    assert: The commands should fail and raise exception.
+    """
+    container = MagicMock(spec=ops.Container)
+    # test-secret is not a valid password
+    media_config = MediaConfiguration(  # nosec
+        access_key_id="access_key",
+        secret_access_key="test-secret",
+        bucket="synapse-media-bucket",
+        region_name="eu-west-1",
+        endpoint_url="https:/example.com",
+        prefix="media",
+    )
+    monkeypatch.setattr(synapse.workload, "get_media_store_path", lambda x: "/test/media/store")
+    container.exec.return_value.wait_output.side_effect = ops.pebble.ExecError(
+        ["cmd"], 1, "stderr", "stdout"
+    )
+
+    with pytest.raises(synapse.WorkloadError, match="media_sync_cleanup failed, verify the logs"):
+        synapse.run_media_sync_cleanup(container, media_config)
+
+    container.exec.assert_called()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Charm for Synapse on kubernetes."""
@@ -11,32 +11,38 @@ import re
 import typing
 
 import ops
+import requests
+from charms.hydra.v0.oauth import OAuthRequirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
-from ops.charm import ActionEvent, RelationDepartedEvent
+from ops.charm import ActionEvent, RelationChangedEvent, RelationDepartedEvent
 
 import actions
 import pebble
 import synapse
-from admin_access_token import AdminAccessTokenService
+from auth.mas import (
+    generate_mas_config,
+    generate_oauth_client_config,
+    generate_synapse_msc3861_config,
+)
 from backup_observer import BackupObserver
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
-from database_observer import DatabaseObserver
+from database_observer import DatabaseObserver, SynapseDatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
-from mjolnir import Mjolnir
 from observability import Observability
 from redis_observer import RedisObserver
-from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
-from user import User
+from state.charm_state import CharmState
+from state.mas import MAS_DATABASE_INTEGRATION_NAME, MAS_DATABASE_NAME, MASConfiguration
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
 MAIN_UNIT_ID = "main_unit_id"
 INGRESS_INTEGRATION_NAME = "ingress"
+OAUTH_INTEGRATION_NAME = "oauth"
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -61,11 +67,14 @@ class SynapseCharm(CharmBaseWithState):
         self._backup = BackupObserver(self)
         self._matrix_auth = MatrixAuthObserver(self)
         self._media = MediaObserver(self)
-        self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
-        self._saml = SAMLObserver(self)
+        self._database = SynapseDatabaseObserver(
+            self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME, database_name=self.app.name
+        )
+        self._mas_database = DatabaseObserver(
+            self, relation_name=MAS_DATABASE_INTEGRATION_NAME, database_name=MAS_DATABASE_NAME
+        )
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
-        self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
         # Ingress Integrator charm config.
@@ -80,8 +89,15 @@ class SynapseCharm(CharmBaseWithState):
             relation_name=INGRESS_INTEGRATION_NAME,
             port=synapse.SYNAPSE_NGINX_PORT,
         )
+        self._oauth = OAuthRequirer(self)
         self._observability = Observability(self)
-        self._mjolnir = Mjolnir(self, token_service=self.token_service)
+
+        # Actions
+        self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+        self.framework.observe(self.on.verify_user_email_action, self._on_verify_user_email_action)
+        self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
+
+        # Events
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
@@ -92,11 +108,39 @@ class SynapseCharm(CharmBaseWithState):
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
         )
         self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
-        self.framework.observe(self.on.register_user_action, self._on_register_user_action)
+        self.framework.observe(self._oauth.on.oauth_info_changed, self._on_config_changed)
+        self.framework.observe(self._oauth.on.oauth_info_removed, self._on_config_changed)
+        self.framework.observe(self._oauth.on.invalid_client_config, self._on_config_changed)
         self.framework.observe(
-            self.on.promote_user_admin_action, self._on_promote_user_admin_action
+            self.on[OAUTH_INTEGRATION_NAME].relation_changed, self._on_oauth_relation_changed
         )
-        self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
+
+    def _on_register_user_action(self, event: ActionEvent) -> None:
+        """Register user and report action result.
+
+        Args:
+            event: Event triggering the register user instance action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        actions.register_user_action(container, event)
+
+    def _on_verify_user_email_action(self, event: ActionEvent) -> None:
+        """Register user and report action result.
+
+        Args:
+            event: Event triggering the register user instance action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        actions.verify_user_email_action(container, event)
+
+    def _on_anonymize_user_action(self, event: ActionEvent) -> None:
+        """Anonymize user and report action result.
+
+        Args:
+            event: Event triggering the anonymize user action.
+        """
+        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
+        actions.anonymize_user_action(container, event)
 
     def build_charm_state(self) -> CharmState:
         """Build charm state.
@@ -107,7 +151,6 @@ class SynapseCharm(CharmBaseWithState):
         return CharmState.from_charm(
             charm=self,
             datasource=self._database.get_relation_as_datasource(),
-            saml_config=self._saml.get_relation_as_saml_conf(),
             smtp_config=self._smtp.get_relation_as_smtp_conf(),
             media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
@@ -186,14 +229,20 @@ class SynapseCharm(CharmBaseWithState):
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
 
-    def reconcile(self, charm_state: CharmState) -> None:
+    def reconcile(self, charm_state: CharmState, mas_configuration: MASConfiguration) -> None:
         """Reconcile Synapse configuration with charm state.
 
         This is the main entry for changes that require a restart.
 
         Args:
             charm_state: Instance of CharmState
+            mas_configuration: Charm state component to configure MAS
         """
+        logger.debug("Found %d peer unit(s).", self.peer_units_total())
+        if charm_state.redis_config is None and self.peer_units_total() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            return
         if self.get_main_unit() is None and self.unit.is_leader():
             logging.debug("Change_config is setting main unit.")
             self.set_main_unit(self.unit.name)
@@ -202,6 +251,22 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
+
+        oauth_provider_info = None
+        if self._oauth.is_client_created():
+            oauth_provider_info = self._oauth.get_provider_info()
+
+        rendered_mas_configuration = generate_mas_config(
+            mas_configuration,
+            charm_state.synapse_config,
+            oauth_provider_info,
+            charm_state.smtp_config,
+            self.get_main_unit_address(),
+        )
+        synapse_msc3861_configuration = generate_synapse_msc3861_config(
+            mas_configuration, charm_state.synapse_config
+        )
+
         try:
             # check signing key
             signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
@@ -211,10 +276,14 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
-
             # reconcile configuration
             pebble.reconcile(
-                charm_state, container, is_main=self.is_main(), unit_number=self.get_unit_number()
+                charm_state,
+                rendered_mas_configuration,
+                synapse_msc3861_configuration,
+                container,
+                is_main=self.is_main(),
+                unit_number=self.get_unit_number(),
             )
 
             # create new signing key if needed
@@ -235,11 +304,6 @@ class SynapseCharm(CharmBaseWithState):
 
     def _set_unit_status(self) -> None:
         """Set unit status depending on Synapse and NGINX state."""
-        # This method contains a similar check that the one in mjolnir.py for Synapse
-        # container and service. Until a refactoring is done for a different way of checking
-        # and setting the unit status in a hollistic way, both checks will be in place.
-        # pylint: disable=R0801
-
         # If the unit is in a blocked state, do not change it, as it
         # was set by a problem or error with the configuration
         if isinstance(self.unit.status, ops.BlockedStatus):
@@ -273,36 +337,29 @@ class SynapseCharm(CharmBaseWithState):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
-        try:
-            synapse_version = synapse.get_version(self.get_main_unit_address())
-            self.unit.set_workload_version(synapse_version)
-        except synapse.APIError as exc:
-            logger.debug("Cannot set workload version at this time: %s", exc)
+        synapse_version = query_workload_version(self.get_main_unit_address())
+        self.unit.set_workload_version(synapse_version)
 
-    @inject_charm_state
-    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle changed configuration.
+    @validate_charm_state
+    def _on_config_changed(self, _: ops.HookEvent) -> None:
+        """Handle changed configuration."""
+        charm_state = self.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(self)
 
-        Args:
-            charm_state: The charm state.
-        """
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
         logger.debug("_on_config_changed emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
         self._set_workload_version()
 
-    @inject_charm_state
-    def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_relation_departed(self, event: RelationDepartedEvent) -> None:
         """Handle Synapse peer relation departed event.
 
         Args:
             event: relation departed event.
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(self)
+
         if event.departing_unit == self.unit:
             # there is no action for the departing unit
             return
@@ -316,7 +373,7 @@ class SynapseCharm(CharmBaseWithState):
         # Call change_config to restart unit. By design,every change in the
         # number of workers requires restart.
         logger.debug("_on_relation_departed emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
     def peer_units_total(self) -> int:
         """Get peer units total.
@@ -326,21 +383,15 @@ class SynapseCharm(CharmBaseWithState):
         """
         return self.app.planned_units()
 
-    @inject_charm_state
-    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle synapse pebble ready event.
+    @validate_charm_state
+    def _on_synapse_pebble_ready(self, _: ops.HookEvent) -> None:
+        """Handle synapse pebble ready event."""
+        charm_state = self.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(self)
 
-        Args:
-            charm_state: The charm state.
-        """
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
         self.unit.status = ops.ActiveStatus()
         logger.debug("_on_synapse_pebble_ready emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
     def get_main_unit(self) -> typing.Optional[str]:
         """Get main unit.
@@ -434,8 +485,8 @@ class SynapseCharm(CharmBaseWithState):
                 del peer_relation[0].data[self.app]["secret-signing-id"]
         return None
 
-    @inject_charm_state
-    def _on_leader_elected(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_leader_elected(self, _: ops.HookEvent) -> None:
         """Handle Synapse leader elected event.
 
         This event handler will reconcile Synapse configuration after the following
@@ -444,10 +495,10 @@ class SynapseCharm(CharmBaseWithState):
         - When the leader, for any reason, has changed so the leader unit will be the main.
         Once the peer data (main_unit_id) is changed, other units will emit reconcile and be
         properly configured.
-
-        Args:
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(self)
+
         # assuming that this event will be fired only at the setup phase
         # check if main is already set if not, this unit will be the main
         if not self.unit.is_leader():
@@ -459,10 +510,10 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.set_main_unit(self.unit.name)
         logger.debug("_on_leader_elected emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
-    @inject_charm_state
-    def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+    @validate_charm_state
+    def _on_relation_changed(self, _: ops.HookEvent) -> None:
         """Handle Synapse peer relation changed event.
 
         This event handler will reconcile Synapse configuration and NGINX after the following
@@ -472,96 +523,58 @@ class SynapseCharm(CharmBaseWithState):
         must be restarted by design.
         - Main unit has changed. The instance_map, stream_writers and NGINX configuration should be
         updated and all remaining units restarted.
-
-        Args:
-            charm_state: The charm state.
         """
+        charm_state = self.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(self)
+
         logger.debug("_on_relation_changed emitting reconcile")
-        self.reconcile(charm_state)
+        self.reconcile(charm_state, mas_configuration)
 
-    def _on_register_user_action(self, event: ActionEvent) -> None:
-        """Register user and report action result.
+    def _on_oauth_relation_changed(self, _: RelationChangedEvent) -> None:
+        """Handle oauth_relation_changed event."""
+        charm_state = self.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(self)
+        oauth_client_config = generate_oauth_client_config(
+            mas_configuration, charm_state.synapse_config
+        )
+        self._oauth.update_client_config(oauth_client_config)
+        self.reconcile(charm_state, mas_configuration)
 
-        Args:
-            event: Event triggering the register user instance action.
-        """
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-        try:
-            user = actions.register_user(
-                container=container, username=event.params["username"], admin=event.params["admin"]
-            )
-        except actions.RegisterUserError as exc:
-            event.fail(str(exc))
-            return
-        results = {"register-user": True, "user-password": user.password}
-        event.set_results(results)
 
-    @inject_charm_state
-    def _on_promote_user_admin_action(self, event: ActionEvent, charm_state: CharmState) -> None:
-        """Promote user admin and report action result.
+def query_workload_version(main_unit_address: str) -> str:
+    """Query the version of Synapse server from the specified main unit address.
 
-        Args:
-            event: Event triggering the promote user admin action.
-            charm_state: The charm state.
-        """
-        results = {
-            "promote-user-admin": False,
-        }
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Failed to connect to the container")
-            return
-        try:
-            admin_access_token = self.token_service.get(container)
-            if not admin_access_token:
-                event.fail("Failed to get admin access token")
-                return
-            username = event.params["username"]
-            server = charm_state.synapse_config.server_name
-            user = User(username=username, admin=True)
-            synapse.promote_user_admin(
-                user=user, server=server, admin_access_token=admin_access_token
-            )
-            results["promote-user-admin"] = True
-        except synapse.APIError as exc:
-            event.fail(str(exc))
-            return
-        event.set_results(results)
+    In case of an error, it logs the error and returns a default value ('-').
 
-    @inject_charm_state
-    def _on_anonymize_user_action(self, event: ActionEvent, charm_state: CharmState) -> None:
-        """Anonymize user and report action result.
+    Args:
+        main_unit_address (str): The address of the main unit hosting the Synapse server.
 
-        Args:
-            event: Event triggering the anonymize user action.
-            charm_state: The charm state.
-        """
-        results = {
-            "anonymize-user": False,
-        }
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            event.fail("Container not yet ready. Try again later")
-            return
-        try:
-            admin_access_token = self.token_service.get(container)
-            if not admin_access_token:
-                event.fail("Failed to get admin access token")
-                return
-            username = event.params["username"]
-            server = charm_state.synapse_config.server_name
-            user = User(username=username, admin=False)
-            synapse.deactivate_user(
-                user=user, server=server, admin_access_token=admin_access_token
-            )
-            results["anonymize-user"] = True
-        except synapse.APIError:
-            event.fail("Failed to anonymize the user. Check if the user is created and active.")
-            return
-        event.set_results(results)
+    Returns:
+        str: The version of the Synapse server or a default value ('-') if an error occurs.
+    """
+    synapse_version = "-"
+    try:
+        res = requests.get(
+            url=f"http://{main_unit_address}:8008/_synapse/admin/v1/server_version", timeout=5
+        )
+        server_version = res.json()["server_version"]
+        version_match = re.search(r"(\d+\.\d+\.\d+(?:\w+)?)\s?", server_version)
+        if version_match:
+            synapse_version = version_match.group(1)
+    except (requests.exceptions.JSONDecodeError, KeyError, TypeError) as exc:
+        logger.exception("Failed to decode version: %r. Received: %s", exc, res.text)
+    except requests.exceptions.RequestException as exc:
+        logger.exception(
+            "Request error while querying version from %s: %r", main_unit_address, exc
+        )
+    # Getting broad exception to guarantee that won't affect the charm
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.exception(
+            "Unexpected error occurred while querying version from %s: %r",
+            main_unit_address,
+            exc,
+        )
+    return synapse_version
 
 
 if __name__ == "__main__":  # pragma: nocover

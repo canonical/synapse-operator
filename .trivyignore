@@ -1,14 +1,4 @@
 # Vulnerabilites related to: Pebble, Node.JS and gosu
-CVE-2021-39293
-CVE-2021-41771
-CVE-2021-41772
-CVE-2021-44716
-CVE-2022-23772
-CVE-2022-23806
-CVE-2022-24675
-CVE-2022-24921
-CVE-2022-25883
-CVE-2022-27664
 CVE-2022-28131
 CVE-2022-28327
 CVE-2022-2879
@@ -47,6 +37,11 @@ CVE-2024-29415
 CVE-2024-34156
 CVE-2024-21538
 CVE-2024-24788
-# This should be removed once the following PR is merged.
-# https://github.com/element-hq/synapse/pull/17955
-CVE-2024-52804
+# Fix ongoing:
+# https://github.com/element-hq/synapse/pull/17985
+CVE-2024-53981
+# This should be removed once pebble releases a new version.
+# https://github.com/canonical/pebble/commit/0c134f8e0d80f4bd8f42011279c8f0737b59a673
+CVE-2024-45338
+# node.js tar-fs vulnerability
+CVE-2024-12905

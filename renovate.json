@@ -3,6 +3,12 @@
   "extends": [
     "config:base"
   ],
+  "prBodyNotes": [
+        "---",
+		"### Pre-merge checks for Synapse or MAS workloads",
+        "- [ ] The Release Notes do not describe any breaking changes.",
+        "- [ ] The [Upgrade document](https://github.com/element-hq/synapse/blob/develop/docs/upgrade.md) does not describe any breaking changes."
+  ],
   "regexManagers": [
     {
       "fileMatch": ["(^|/)rockcraft.yaml$"],
@@ -17,9 +23,18 @@
       "fileMatch": ["(^|/)rockcraft.yaml$"],
       "description": "Update Synapse workload",
       "matchStringsStrategy": "any",
-      "matchStrings": ["source-tag: (?<currentValue>.+)"],
+      "matchStrings": ["source:.*synapse.*\n.*source-type: git.*\n.*source-tag: (?<currentValue>.+)"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "element-hq/synapse",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "fileMatch": ["(^|/)rockcraft.yaml$"],
+      "description": "Update MAS workload",
+      "matchStringsStrategy": "any",
+      "matchStrings": ["source:.*matrix-authentication-service.*\n.*source-type: git.*\n.*source-tag: (?<currentValue>.+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "element-hq/matrix-authentication-service",
       "versioningTemplate": "semver-coerced"
     }
 

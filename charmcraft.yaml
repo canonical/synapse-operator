@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # This file configures Charmcraft.
@@ -15,6 +15,8 @@ bases:
 charm-libs:
   - lib: traefik_k8s.ingress
     version: "2"
+  - lib: hydra.oauth
+    version: "0"
 parts:
   charm:
     build-packages:
@@ -29,3 +31,4 @@ parts:
       craftctl default
     charm-binary-python-packages:
     - psycopg2-binary
+    - cryptography
