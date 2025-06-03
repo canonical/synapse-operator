@@ -48,3 +48,5 @@ CVE-2024-12905
 # setuptools and tornado - Should be removed once synapse is bumped to 1.131.0 ( current latest version is 1.130 )
 CVE-2025-47273
 CVE-2025-47287
+# second node.js tar-fs vulnerability
+CVE-2025-48387
