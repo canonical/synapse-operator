@@ -1,5 +1,9 @@
 # Changelog
 
+### 2025-05-09
+
+- Add safemode option to Draupnir configuration and increase backgroundDelayMS to 1000.
+
 ### 2025-04-16
 
 - Set room_list_publication_rules as allowing by default. This was changed to blocking starting from Synapse [1.126.0](https://github.com/element-hq/synapse/blob/develop/docs/upgrade.md#room-list-publication-rules-change) version.
