@@ -22,6 +22,7 @@ parts:
     build-packages:
       - libpq-dev
       - libssl-dev
+      - libffi-dev
       - pkg-config
     build-snaps:
       - rustup
