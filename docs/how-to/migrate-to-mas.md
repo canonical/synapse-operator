@@ -6,6 +6,8 @@ This document will cover the migration path for a synapse charm on the `1/edge` 
 
 > **_NOTE:_** The existing synapse charm is deployed with the name `server`.
 
+> **IMPORTANT**: It is extremely important that the Synapse version is the same on both the old synapse charm and the new charm to avoid any problems with database schemas.
+
 ## Prepare the new synapse charm
 ### Deploy the 2/edge channel on the same model
 We will deploy the new synapse charm with the name `server-mas`. We will use the same configuration as the existing synapse charm.
@@ -69,49 +71,54 @@ juju run synapse/leader restore-backup backup-id=<backup-id>
 ```
 
 ## Synapse database migration
-Stop all services on the new and the existing synapse charms:
+Scale both synapse charms to 0 unit:
 ```
-juju ssh --container synapse server-mas/0 "pebble stop synapse; pebble stop synapse-mas; pebble stop stats-exporter"
-juju ssh --container synapse server/0 "pebble stop synapse; pebble stop stats-exporter"
+juju scale-application server-mas 0
+juju scale-application server 0
 ```
 
-Connect the new synapse charm to the database:
+Run `juju status` and save the IP address of the postgresql charm leader unit to an environment variable `DB_HOST`:
 ```
-juju ssh --container synapse server-mas/0 bash
+juju status
+export DB_HOST="<ip-of-the-postgresql-leader-unit>"
 ```
+
+Get the password of the postgresql charm, then save the password to an environment variables `PGPASSWORD`:
+```
+juju run postgresql-k8s/leader get-password
+export PGPASSWORD=<output-of-the-above-command>
+```
+
+Copy the original synapse charm database:
+```
+PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator postgres -c 'drop database "server-mas";'
+PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator postgres -c "create database \"server-mas\" with template server;"
+```
+
+
+## Migrate users to MAS
+### Update token for Draupnir
+If the old synapse charm has moderation enabled, we need to modify the corresponding access token so that it does not get ignored by `syn2mas`.
+
+Run the following SQL command on the old synapse charm's database, replacing `<mjolnir-access-token>` with the access token that mjolnir is using, and `<device-id>` with a device ID you choose ( Ideally the ID of one of your active devices ):
+```
+PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator server "update access_tokens set device_id='<device-id>' where token='<mjolnir-access-token>';"
+```
+
+> **_NOTE:_**: The `<device-id>` must exist in the `devices` table.
+
+### Perform user migration to MAS database
 
 The following commands assume that you are in the `synapse` container of the `server-mas` application.
+> **_Note_**: If a proxy is present, then all commands in this section must be prefixed with `HTTP_PROXY=<proxy_address> HTTPS_PROXY=<proxy_address>`
+
+First install the necessary packages:
 ```
 apt update
 apt install wget postgresql-client -y
 wget https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
 ```
 
-Copy the original synapse charm database:
-```
-DB_HOST=$(yq e '.database.args.host' /data/homeserver.yaml)
-DB_PORT=$(yq e '.database.args.port' /data/homeserver.yaml)
-DB_PASSWORD=$(yq e '.database.args.password' /data/homeserver.yaml)
-DB_USER=$(yq e '.database.args.user' /data/homeserver.yaml)
-PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres -c 'drop database "server-mas";'
-PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres -c "create database \"server-mas\" with template server owner $DB_USER;"
-```
-
-In case where postgres gives you an error saying "ERROR:  source database "synapse" is being accessed by other users", drop all connections from the database:
-
-First log in to the database:
-```
-PGPASSWORD=$DB_PASSWORD psql --host $DB_HOST --username $DB_USER --port $DB_PORT postgres
-```
-
-Then run this SQL query to drop all connection from the relevant database ( `<database_name>` ):
-```
-SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity 
-WHERE pg_stat_activity.datname = '<database_name>' AND pid <> pg_backend_pid();
-```
-
-## Migrate users to MAS
-### Perform user migration to MAS database
 Run the `migrate` command with the `--dryRun` flag to check that there are no errors:
 ```
 OAUTH2_PROVIDER_ID=$(yq e '.upstream_oauth2.providers[0].id' /mas/config.yaml)
