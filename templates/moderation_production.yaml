@@ -9,7 +9,13 @@ automaticallyRedactForReasons:
 - "spam"
 - "advertising"
 protectAllJoinedRooms: false
-backgroundDelayMS: 500
+backgroundDelayMS: 1000
+safeMode:
+# The option for entering safe mode when Draupnir fails to start up.
+# - "RecoveryOnly" will only start the bot in safe mode when there are recovery options available. This is the default.
+# - "Never" will never start the bot in safe mode when Draupnir fails to start normally.
+# - "Always" will always start the bot in safe mode when Draupnir fails to start normally.
+  bootOption: Always
 health:
     healthz:
         enabled: true
