@@ -745,7 +745,7 @@ def test_generate_moderation_config():
 automaticallyRedactForReasons:
 - spam
 - advertising
-backgroundDelayMS: 500
+backgroundDelayMS: 1000
 dataPath: /data/storage
 displayReports: true
 fasterMembershipChecks: false
@@ -765,6 +765,8 @@ noop: false
 pollReports: false
 protectAllJoinedRooms: false
 rawHomeserverUrl: http://localhost:8080
+safeMode:
+  bootOption: Always
 syncOnStartup: true
 verboseLogging: false
 verifyPermissionsOnStartup: true
