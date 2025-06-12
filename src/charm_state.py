@@ -174,6 +174,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         public_baseurl: public_baseurl config.
         publish_rooms_allowlist: publish_rooms_allowlist config.
         experimental_alive_check: experimental_alive_check config.
+        experimental_extract_background_tasks: experimental_extract_background_tasks.
         rc_joins_remote_burst_count: rc_join burst_count config.
         rc_joins_remote_per_second: rc_join per_second config.
         report_stats: report_stats config.
@@ -189,6 +190,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     enable_password_config: bool = True
     enable_room_list_search: bool = True
     experimental_alive_check: str | None = Field(None)
+    experimental_extract_background_tasks: bool = False
     federation_domain_whitelist: str | None = Field(None)
     invite_checker_blocklist_allowlist_url: str | None = Field(None)
     invite_checker_policy_rooms: str | None = Field(None)

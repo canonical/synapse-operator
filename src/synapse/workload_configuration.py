@@ -129,6 +129,29 @@ def enable_instance_map(current_yaml: dict, charm_state: CharmState) -> None:
     current_yaml["instance_map"] = charm_state.instance_map_config
 
 
+def enable_background_tasks_worker(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to run_background_tasks_on config.
+
+    Get workers from instance_map and use the first one. The instance_map in state
+    already consider the workers_ignore_list configuration.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+    """
+    if not charm_state.instance_map_config:
+        logging.error("background_tasks_worker was called but no instance_map, skipping")
+        return
+    workers = [w for w in charm_state.instance_map_config.keys() if w.startswith("worker")]
+    workers.sort()
+    if not workers:
+        logging.error(
+            "background_tasks_worker was called but no workers defined in instance_map, skipping"
+        )
+        return
+    current_yaml["run_background_tasks_on"] = workers[0]
+
+
 def enable_ip_range_whitelist(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable ip_range_whitelist.
 
