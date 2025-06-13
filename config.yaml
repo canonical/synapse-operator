@@ -80,6 +80,11 @@ options:
       to more details about allowed values.
       This is an experimental feature and may be removed in future releases.
     default: "2m,5,20s"
+  experimental_extract_background_tasks:
+    type: boolean
+    description: Allows running background tasks in the first available worker
+      defined in the instance_map configuration.
+    default: false
   rc_joins_remote_burst_count:
     type: int
     description: Allows for ratelimiting number of remote rooms a user can join
