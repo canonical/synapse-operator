@@ -1,5 +1,3 @@
-# Synapse Operator
-
 A Juju charm deploying and managing [Synapse](https://github.com/matrix-org/synapse) on Kubernetes. Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
 
 This charm simplifies initial deployment and "day N" operations of Synapse on Kubernetes, such as integration with SSO, access to S3 for redundant file storage and more. It allows for deployment on
@@ -9,12 +7,15 @@ As such, the charm makes it easy for those looking to take control of their own 
 
 For DevOps or SRE teams this charm will make operating Synapse simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing of changes.
 
-## In this documentation
+## Project and community
 
-| | |
-|--|--|
-|  [Tutorials](https://charmhub.io/synapse/docs/tutorial-getting-started)</br>  Get started - a hands-on introduction to using the charm for new users </br> |  [How-to guides](https://charmhub.io/synapse/docs/how-to-configure-smtp) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/synapse/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/synapse/docs/explanation-charm-architecture) </br> Concepts - discussion and clarification of key topics  |
+Synapse is an open-source project that welcomes community contributions, suggestions, fixes and constructive feedback.
+
+* [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
+* [Join the Discourse forum](https://discourse.charmhub.io/tag/synapse)
+* [Discuss on the Matrix chat service](https://chat.charmhub.io/charmhub/channels/charm-dev)
+* Contribute and report bugs to [the Synapse operator](https://github.com/canonical/synapse-operator)
+* Check the [release notes](https://github.com/canonical/synapse-operator/releases)
 
 ## Contributing to this documentation
 
@@ -22,27 +23,18 @@ Documentation is an important part of this project, and we take the same open-so
 
 If there’s a particular area of documentation that you’d like to see that’s missing, please [file a bug](https://github.com/canonical/synapse-operator/issues).
 
-## Project and community
-
-Synapse is an open-source project that welcomes community contributions, suggestions, fixes and constructive feedback.
-
-* [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
-* [Join the Discourse forum](https://discourse.charmhub.io/tag/synapse)
-* [Discuss on the Matrix chat service](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-* Contribute and report bugs to [the Synapse operator](https://github.com/canonical/synapse-operator)
-* Check the [release notes](https://github.com/canonical/synapse-operator/releases)
-
 # Contents
 
 1. [Tutorial](tutorial)
   1. [Getting Started](tutorial/getting-started.md)
 1. [How to](how-to)
   1. [Configure SMTP](how-to/configure-smtp.md)
-  2. [Contribute](how-to/contribute.md)
-  3. [Deactivate a user](how-to/deactivate-user.md)
-  4. [Backup and Restore](how-to/backup-and-restore.md)
+  1. [Backup and Restore](how-to/backup-and-restore.md)
+  1. [Contribute](how-to/contribute.md)
+  1. [How to horizontally scale](how-to/horizontally-scale.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
-  2. [Integrations](reference/integrations.md)
+  1. [External access](reference/external-access.md)
+  1. [Integrations](reference/integrations.md)
 1. [Explanation](explanation)
   1. [Charm architecture](explanation/charm-architecture.md)
