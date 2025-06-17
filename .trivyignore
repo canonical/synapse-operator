@@ -50,3 +50,5 @@ CVE-2025-47273
 CVE-2025-47287
 # second node.js tar-fs vulnerability
 CVE-2025-48387
+# pebble binary
+CVE-2025-22874
