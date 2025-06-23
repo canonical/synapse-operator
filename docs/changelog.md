@@ -1,5 +1,9 @@
 # Changelog
 
+### 2025-06-23
+
+- Add experimental_extract_background_tasks configuration.
+
 ### 2025-05-09
 
 - Add safemode option to Draupnir configuration and increase backgroundDelayMS to 1000.
