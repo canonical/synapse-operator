@@ -3,6 +3,7 @@
   "extends": [
     "config:base"
   ],
+  "baseBranches": ["2/main", "/^track\\/.*/"],
   "prBodyNotes": [
         "---",
 		"### Pre-merge checks for Synapse or MAS workloads",
