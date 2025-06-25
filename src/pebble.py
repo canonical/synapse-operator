@@ -376,10 +376,13 @@ def reconcile(  # noqa: C901
                 current_synapse_config, charm_state=charm_state
             )
         if charm_state.instance_map_config is not None:
-            logger.debug("pebble.change_config: Enabling instance_map")
             synapse.enable_instance_map(current_synapse_config, charm_state=charm_state)
-            logger.debug("pebble.change_config: Enabling stream_writers")
             synapse.enable_stream_writers(current_synapse_config, charm_state=charm_state)
+            if charm_state.synapse_config.experimental_extract_background_tasks:
+                logger.debug("pebble.change_config: Enabling run_background_tasks_on")
+                synapse.enable_background_tasks_worker(
+                    current_synapse_config, charm_state=charm_state
+                )
             # the main unit will have an additional layer for running federation sender worker
             if is_main:
                 logging.info("pebble.change_config: Adding Federation Sender layer")
