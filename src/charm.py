@@ -122,7 +122,7 @@ class SynapseCharm(CharmBaseWithState):
         Returns:
             bool: true if is the main unit.
         """
-        return self.get_main_unit() == self.unit.name
+        return "/0" in self.unit.name
 
     def get_unit_number(self, unit_name: str = "") -> str:
         """Get unit number from unit name.
@@ -195,9 +195,6 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             charm_state: Instance of CharmState
         """
-        if self.get_main_unit() is None and self.unit.is_leader():
-            logging.debug("Change_config is setting main unit.")
-            self.set_main_unit(self.unit.name)
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
@@ -307,13 +304,6 @@ class SynapseCharm(CharmBaseWithState):
         if event.departing_unit == self.unit:
             # there is no action for the departing unit
             return
-        if (
-            event.departing_unit
-            and event.departing_unit.name == self.get_main_unit()
-            and self.unit.is_leader()
-        ):
-            # Main is gone so I'm the leader and will be the new main
-            self.set_main_unit(self.unit.name)
         # Call change_config to restart unit. By design,every change in the
         # number of workers requires restart.
         logger.debug("_on_relation_departed emitting reconcile")
@@ -347,16 +337,9 @@ class SynapseCharm(CharmBaseWithState):
         """Get main unit.
 
         Returns:
-            main unit if main unit exists in peer relation data.
+            unit number 0.
         """
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if not peer_relation:
-            logger.error(
-                "Failed to get main unit: no peer relation %s found",
-                synapse.SYNAPSE_PEER_RELATION_NAME,
-            )
-            return None
-        return peer_relation[0].data[self.app].get(MAIN_UNIT_ID)
+        return f"{self.app.name}/0"
 
     def get_main_unit_address(self) -> str:
         """Get main unit address. If main unit is None, use unit name.
@@ -369,22 +352,6 @@ class SynapseCharm(CharmBaseWithState):
             main_unit_name = self.unit.name
         main_unit_formatted = main_unit_name.replace("/", "-")
         return f"{main_unit_formatted}.{self.app.name}-endpoints"
-
-    def set_main_unit(self, unit: str) -> None:
-        """Create/Renew an admin access token and put it in the peer relation.
-
-        Args:
-            unit: Unit to be the main.
-        """
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if not peer_relation:
-            logger.error(
-                "Failed to get main unit: no peer relation %s found",
-                synapse.SYNAPSE_PEER_RELATION_NAME,
-            )
-        else:
-            logging.info("Setting main unit to be %s", unit)
-            peer_relation[0].data[self.app].update({MAIN_UNIT_ID: unit})
 
     def set_signing_key(self, signing_key: str) -> None:
         """Create secret with signing key content.
@@ -458,7 +425,6 @@ class SynapseCharm(CharmBaseWithState):
             self.get_main_unit(),
             self.unit.name,
         )
-        self.set_main_unit(self.unit.name)
         logger.debug("_on_leader_elected emitting reconcile")
         self.reconcile(charm_state)
 

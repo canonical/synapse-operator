@@ -87,23 +87,13 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
         # This check is the same done in get_main_unit. It should be refactored
         # to a place where both Charm and Mjolnir can get it.
-        peer_relation = self._charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if peer_relation:
-            logger.debug(
-                "Peer relation found, checking if is main unit before configuring Mjolnir"
-            )
-            # The default is self._charm.unit.name to make tests that use Harness.begin() work.
-            # When not using begin_with_initial_hooks, the peer relation data is not created.
-            main_unit_id = (
-                peer_relation[0].data[self._charm.app].get("main_unit_id", self._charm.unit.name)
-            )
-            if not self._charm.unit.name == main_unit_id:
-                if mjolnir_service:
-                    logger.info("This is not the main unit, stopping Mjolnir")
-                    container.stop(MJOLNIR_SERVICE_NAME)
-                else:
-                    logger.info("This is not the main unit, skipping Mjolnir configuration")
-                return
+        if "/0" not in self.get_charm().unit.name:
+            if mjolnir_service:
+                logger.info("This is not the main unit, stopping Mjolnir")
+                container.stop(MJOLNIR_SERVICE_NAME)
+            else:
+                logger.info("This is not the main unit, skipping Mjolnir configuration")
+            return
         if mjolnir_service:
             mjolnir_not_active = [
                 service for service in mjolnir_service.values() if not service.is_running()
