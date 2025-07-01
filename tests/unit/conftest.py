@@ -67,13 +67,48 @@ def base_state_fixture(tmp_path: Path):
 def postgresql_relation_fixture():
     """Postgresql relation fixture."""
     relation_data = {
-        "database": "maubot",
+        "database": "synapse",
         "endpoints": "postgresql-k8s-primary.local:5432",
         "password": token_hex(16),
         "username": "user1",
     }
     yield testing.Relation(
-        endpoint="postgresql",
+        endpoint="database",
         interface="postgresql_client",
         remote_app_data=relation_data,
     )
+
+
+@pytest.fixture(name="redis_relation")
+def redis_relation_fixture():
+    """Redis relation fixture."""
+    relation_data = {
+        "hostname": "redis-k8s-primary.local",
+        "port": "1010",
+    }
+    yield testing.Relation(
+        endpoint="redis",
+        interface="redis",
+        remote_units_data={1: relation_data},
+    )
+
+
+@pytest.fixture(name="peers_relation")
+def peers_relation_fixture():
+    """Peers relation fixture."""
+    yield testing.PeerRelation(
+        endpoint="synapse-peers",
+        interface="synapse-instance",
+        peers_data={0: {}, 1: {}, 2: {}},
+    )
+
+
+@pytest.fixture(name="multiple_units_base_state")
+def multiple_units_base_state_fixture(
+    base_state: dict, postgresql_relation, redis_relation, peers_relation
+):
+    """Multiple units fixture."""
+    base_state["planned_units"] = 3
+    base_state["leader"] = False
+    base_state["relations"] = [postgresql_relation, redis_relation, peers_relation]
+    yield base_state

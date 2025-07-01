@@ -44,10 +44,11 @@ def test_config_changed_enable_mjolnir(base_state: dict, monkeypatch: MonkeyPatc
     state = testing.State(**base_state)
     context = testing.Context(charm_type=SynapseCharm)
 
-    admin_token = "syt_AjfVef2_L33JNpafeif_0feKJfeaf0CQpoZk"
-    membership_room_id = "!zpGCCHhtJqXSVwqinv:test.synapse"
-    room_id = "!zpGCCHhtJqXSVwqinv:test.synapse"
-    user_token = "syt_AjfVef2_L33JNpafeif_0feKJfeaf0CQpoZk"
+    # added nosec because these are not hardcoded passwords
+    admin_token = "syt_AjfVef2_L33JNpafeif_0feKJfeaf0CQpoZk"  # nosec
+    membership_room_id = "!zpGCCHhtJqXSVwqinv:test.synapse"  # nosec
+    room_id = "!zpGCCHhtJqXSVwqinv:test.synapse"  # nosec
+    user_token = "syt_AjfVef2_L33JNpafeif_0feKJfeaf0CQpoZk"  # nosec
 
     user_mock = User(username="Test", admin=True)
     user_mock.access_token = user_token
@@ -61,7 +62,6 @@ def test_config_changed_enable_mjolnir(base_state: dict, monkeypatch: MonkeyPatc
 
     monkeypatch.setattr("charm.SynapseCharm.manage_signing_key", MagicMock())
     monkeypatch.setattr(pebble, "reconcile", MagicMock())
-    monkeypatch.setattr(pebble, "replan_mjolnir", MagicMock())
     monkeypatch.setattr(mjolnir.Mjolnir, "_admin_access_token", property(lambda self: admin_token))
     monkeypatch.setattr(mjolnir.Mjolnir, "get_membership_room_id", get_membership_room_id_mock)
     monkeypatch.setattr(synapse, "create_user", create_user_mock)
@@ -89,3 +89,49 @@ def test_config_changed_enable_mjolnir(base_state: dict, monkeypatch: MonkeyPatc
     override_rate_limit_mock.assert_called_once()
     replan_mjolnir_mock.assert_called_once()
     assert out.unit_status == testing.ActiveStatus()
+
+
+def test_config_changed_multiple_units_no_redis(base_state: dict, monkeypatch: MonkeyPatch):
+    """
+    arrange: prepare synapse state.
+    act: run config_changed.
+    assert: charm is blocked.
+    """
+    base_state["planned_units"] = 3
+    base_state["leader"] = False
+    state = testing.State(**base_state)
+    context = testing.Context(
+        charm_type=SynapseCharm,
+    )
+    monkeypatch.setattr("charm.SynapseCharm.manage_signing_key", MagicMock())
+    monkeypatch.setattr(pebble, "reconcile", MagicMock())
+
+    out = context.run(context.on.config_changed(), state)
+
+    assert out.unit_status == testing.BlockedStatus("Redis integration is required.")
+
+
+def test_config_changed_multiple_units_with_redis(
+    multiple_units_base_state: dict, monkeypatch: MonkeyPatch
+):
+    """
+    arrange: prepare synapse state.
+    act: run config_changed.
+    assert: charm is blocked.
+    """
+    state = testing.State(**multiple_units_base_state)
+    context = testing.Context(
+        charm_type=SynapseCharm,
+    )
+    monkeypatch.setattr("charm.SynapseCharm.manage_signing_key", MagicMock())
+    monkeypatch.setattr(pebble, "reconcile", MagicMock())
+
+    with context(context.on.config_changed(), state) as manager:
+        out = manager.run()
+        assert manager.charm._instance_map() == {
+            "federationsender1": {"host": "synapse-0.synapse-endpoints", "port": 8034},
+            "main": {"host": "synapse-0.synapse-endpoints", "port": 8035},
+            "worker1": {"host": "synapse-1.synapse-endpoints", "port": 8034},
+            "worker2": {"host": "synapse-2.synapse-endpoints", "port": 8034},
+        }
+        assert out.unit_status == testing.ActiveStatus()
