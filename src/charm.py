@@ -7,7 +7,6 @@
 
 
 import logging
-import re
 import typing
 
 import ops
@@ -35,8 +34,8 @@ from user import User
 
 logger = logging.getLogger(__name__)
 
-MAIN_UNIT_ID = "main_unit_id"
 INGRESS_INTEGRATION_NAME = "ingress"
+MAIN_UNIT_ID = 0
 
 
 class SynapseCharm(CharmBaseWithState):
@@ -84,7 +83,6 @@ class SynapseCharm(CharmBaseWithState):
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.upgrade_charm, self._on_config_changed)
-        self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed,
             self._on_relation_departed,
@@ -116,76 +114,44 @@ class SynapseCharm(CharmBaseWithState):
             instance_map_config=self.instance_map(),
         )
 
-    def is_main(self) -> bool:
-        """Verify if this unit is the main.
-
-        Returns:
-            bool: true if is the main unit.
-        """
-        return "/0" in self.unit.name
-
-    def get_unit_number(self, unit_name: str = "") -> str:
-        """Get unit number from unit name.
+    @inject_charm_state
+    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle changed configuration.
 
         Args:
-            unit_name: unit name or address. E.g.: synapse/0 or synapse-0.synapse-endpoints.
-
-        Returns:
-            Unit number. E.g.: 0
+            charm_state: The charm state.
         """
-        if not unit_name:
-            unit_name = self.unit.name
-        unit_part = unit_name.split(".")[0]
-        index = unit_part.rfind("/")  # synapse/0 pattern
-        if index == -1:
-            index = unit_part.rfind("-")  # synapse-0 pattern
-        begin = index + 1
-        unit_id = unit_part[begin:]
-        logger.debug("Unit id from %s is %s", unit_name, unit_id)
-        return unit_id
+        self.reconcile(charm_state)
 
-    def instance_map(self) -> typing.Optional[typing.Dict]:
-        """Build instance_map config.
+    @inject_charm_state
+    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle synapse pebble ready event.
 
-        Returns:
-            Instance map configuration as a dict or None if there is only one unit.
+        Args:
+            charm_state: The charm state.
         """
-        if self.peer_units_total() == 1:
-            logger.debug("Only 1 unit found, skipping instance_map.")
-            return None
-        unit_name = self.unit.name.replace("/", "-")
-        app_name = self.app.name
-        addresses = [f"{unit_name}.{app_name}-endpoints"]
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if peer_relation:
-            relation = peer_relation[0]
-            # relation.units will contain the units after the relation-joined event.
-            # since a relation-changed is emitted for every relation-joined event,
-            # the relation-changed handler will reconcile the configuration and
-            # instance_map will be properly set.
-            for u in relation.units:
-                # <unit-name>.<app-name>-endpoints.<model-name>.svc.cluster.local
-                unit_name = u.name.replace("/", "-")
-                address = f"{unit_name}.{app_name}-endpoints"
-                addresses.append(address)
-        logger.debug("addresses values are: %s", str(addresses))
-        instance_map = {
-            "main": {"host": self.get_main_unit_address(), "port": 8035},
-            "federationsender1": {"host": self.get_main_unit_address(), "port": 8034},
-        }
-        for address in addresses:
-            match = re.search(r"-(\d+)", address)
-            # A Juju unit name is s always named on the
-            # pattern <application>/<unit ID>, where <application> is the name
-            # of the application and the <unit ID> is its ID number.
-            # https://juju.is/docs/juju/unit
-            if address == self.get_main_unit_address():
-                continue
-            unit_number = match.group(1)  # type: ignore[union-attr]
-            instance_name = f"worker{unit_number}"
-            instance_map[instance_name] = {"host": address, "port": 8034}
-        logger.debug("instance_map is: %s", str(instance_map))
-        return instance_map
+        self.reconcile(charm_state)
+
+    @inject_charm_state
+    def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
+        """Handle Synapse peer relation departed event.
+
+        Args:
+            event: relation departed event.
+            charm_state: The charm state.
+        """
+        if event.departing_unit == self.unit:
+            return
+        self.reconcile(charm_state)
+
+    @inject_charm_state
+    def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Handle Synapse peer relation changed event.
+
+        Args:
+            charm_state: The charm state.
+        """
+        self.reconcile(charm_state)
 
     def reconcile(self, charm_state: CharmState) -> None:
         """Reconcile Synapse configuration with charm state.
@@ -198,6 +164,10 @@ class SynapseCharm(CharmBaseWithState):
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            return
+        if charm_state.redis_config is None and self.app.planned_units() > 1:
+            logger.debug("More than 1 peer unit found. Redis is required.")
+            self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
         try:
@@ -225,11 +195,133 @@ class SynapseCharm(CharmBaseWithState):
             # update matrix-auth integration with configuration data
             if self.unit.is_leader():
                 self._matrix_auth.update_matrix_auth_integration(charm_state)
+
+            # set app status with workload version
+            synapse_version = synapse.get_version(self.get_unit_address(MAIN_UNIT_ID))
+            self.unit.set_workload_version(synapse_version)
+
+            # enable Mjolnir
+            if self.is_main():
+                self._mjolnir.enable_mjolnir(charm_state)
+        except synapse.APIError as exc:
+            logger.debug("Cannot set workload version at this time: %s", exc)
         except (pebble.PebbleServiceError, FileNotFoundError) as exc:
             self.model.unit.status = ops.BlockedStatus(str(exc))
             return
-        pebble.restart_nginx(container, self.get_main_unit_address())
+        pebble.restart_nginx(container, self.get_unit_address(MAIN_UNIT_ID))
         self._set_unit_status()
+
+    def peers(self) -> typing.Optional[ops.Relation]:
+        """Get peer relation.
+
+        Returns:
+            Synapse peer relation.
+        """
+        return self.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
+
+    def get_signing_key(self) -> typing.Optional[str]:
+        """Get signing key from secret.
+
+        Returns:
+            Signing key as string or None if not found.
+        """
+        peer_relation = self.peers()
+        if not peer_relation:
+            logger.error(
+                "Failed to get signing key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return None
+        secret_id = peer_relation.data[self.app].get("secret-signing-id")
+        if secret_id:
+            try:
+                secret = self.model.get_secret(id=secret_id)
+                logging.debug(secret.get_content().get("secret-signing-key"))
+                return secret.get_content().get("secret-signing-key")
+            except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
+                logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
+                del peer_relation.data[self.app]["secret-signing-id"]
+        return None
+
+    def is_main(self) -> bool:
+        """Verify if this unit is the main.
+
+        Returns:
+            bool: true if is the main unit.
+        """
+        return f"/{MAIN_UNIT_ID}" in self.unit.name
+
+    def get_unit_address(self, unit_id: int) -> str:
+        """Get unit address.
+
+        Args:
+            unit_id: number as 0 in synapse/0.
+
+        Returns:
+            unit address as unit-0.synapse-endpoints.
+        """
+        return f"{self.app.name}-{unit_id}.{self.app.name}-endpoints"
+
+    def get_unit_number(self) -> str:
+        """Get unit number.
+
+        Returns:
+            unit number as 0 in synapse/0.
+        """
+        return self.unit.name.split("/")[1]
+
+    def set_signing_key(self, signing_key: str) -> None:
+        """Create secret with signing key content.
+
+        Args:
+            signing_key: signing key as string.
+        """
+        peer_relation = self.peers()
+        if not peer_relation:
+            logger.error(
+                "Failed to set signing key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return
+
+        if signing_key == self.get_signing_key():
+            logger.info("Received signing key but there is no change, skipping")
+            return
+        if self.unit.is_leader():
+            logger.debug("Adding signing key to secret: %s", signing_key)
+            secret = self.app.add_secret({"secret-signing-key": signing_key})
+            peer_relation.data[self.app].update({"secret-signing-id": typing.cast(str, secret.id)})
+
+    def instance_map(self) -> typing.Optional[typing.Dict]:
+        """Create instance_map configuration.
+
+        Returns:
+            Instance map configuration as a dict or None if there is only one unit.
+        """
+        peer_relation = self.peers()
+        if not peer_relation or len(peer_relation.units) <= 1:
+            logger.debug("One unit in peer relation, skipping instance_map configuration")
+            return None
+        instance_map = {}
+        for unit_id in range(len(peer_relation.units)):
+            if unit_id == MAIN_UNIT_ID:
+                instance_map["main"] = {
+                    "host": self.get_unit_address(MAIN_UNIT_ID),
+                    "port": 8035,
+                }
+                instance_map["federationsender1"] = {
+                    "host": self.get_unit_address(MAIN_UNIT_ID),
+                    "port": 8034,
+                }
+                continue
+
+            instance_name = f"worker{unit_id}"
+            address = self.get_unit_address(unit_id)
+            instance_map[instance_name] = {
+                "host": address,
+                "port": 8034,
+            }
+        return instance_map
 
     def _set_unit_status(self) -> None:
         """Set unit status depending on Synapse and NGINX state."""
@@ -264,187 +356,6 @@ class SynapseCharm(CharmBaseWithState):
             return
         # All checks passed, the unit is active
         self.model.unit.status = ops.ActiveStatus()
-
-    def _set_workload_version(self) -> None:
-        """Set workload version with Synapse version."""
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        try:
-            synapse_version = synapse.get_version(self.get_main_unit_address())
-            self.unit.set_workload_version(synapse_version)
-        except synapse.APIError as exc:
-            logger.debug("Cannot set workload version at this time: %s", exc)
-
-    @inject_charm_state
-    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle changed configuration.
-
-        Args:
-            charm_state: The charm state.
-        """
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
-        logger.debug("_on_config_changed emitting reconcile")
-        self.reconcile(charm_state)
-        self._set_workload_version()
-
-    @inject_charm_state
-    def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
-        """Handle Synapse peer relation departed event.
-
-        Args:
-            event: relation departed event.
-            charm_state: The charm state.
-        """
-        if event.departing_unit == self.unit:
-            # there is no action for the departing unit
-            return
-        # Call change_config to restart unit. By design,every change in the
-        # number of workers requires restart.
-        logger.debug("_on_relation_departed emitting reconcile")
-        self.reconcile(charm_state)
-
-    def peer_units_total(self) -> int:
-        """Get peer units total.
-
-        Returns:
-            total of units in peer relation or None if there is no peer relation.
-        """
-        return self.app.planned_units()
-
-    @inject_charm_state
-    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle synapse pebble ready event.
-
-        Args:
-            charm_state: The charm state.
-        """
-        logger.debug("Found %d peer unit(s).", self.peer_units_total())
-        if charm_state.redis_config is None and self.peer_units_total() > 1:
-            logger.debug("More than 1 peer unit found. Redis is required.")
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
-            return
-        self.unit.status = ops.ActiveStatus()
-        logger.debug("_on_synapse_pebble_ready emitting reconcile")
-        self.reconcile(charm_state)
-
-    def get_main_unit(self) -> typing.Optional[str]:
-        """Get main unit.
-
-        Returns:
-            unit number 0.
-        """
-        return f"{self.app.name}/0"
-
-    def get_main_unit_address(self) -> str:
-        """Get main unit address. If main unit is None, use unit name.
-
-        Returns:
-            main unit address as unit-0.synapse-endpoints.
-        """
-        main_unit_name = self.get_main_unit()
-        if main_unit_name is None:
-            main_unit_name = self.unit.name
-        main_unit_formatted = main_unit_name.replace("/", "-")
-        return f"{main_unit_formatted}.{self.app.name}-endpoints"
-
-    def set_signing_key(self, signing_key: str) -> None:
-        """Create secret with signing key content.
-
-        Args:
-            signing_key: signing key as string.
-        """
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if not peer_relation:
-            logger.error(
-                "Failed to set signing key: no peer relation %s found",
-                synapse.SYNAPSE_PEER_RELATION_NAME,
-            )
-            return
-
-        if signing_key == self.get_signing_key():
-            logger.info("Received signing key but there is no change, skipping")
-            return
-        if self.unit.is_leader():
-            logger.debug("Adding signing key to secret: %s", signing_key)
-            secret = self.app.add_secret({"secret-signing-key": signing_key})
-            peer_relation[0].data[self.app].update(
-                {"secret-signing-id": typing.cast(str, secret.id)}
-            )
-
-    def get_signing_key(self) -> typing.Optional[str]:
-        """Get signing key from secret.
-
-        Returns:
-            Signing key as string or None if not found.
-        """
-        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if not peer_relation:
-            logger.error(
-                "Failed to get signing key: no peer relation %s found",
-                synapse.SYNAPSE_PEER_RELATION_NAME,
-            )
-            return None
-
-        secret_id = peer_relation[0].data[self.app].get("secret-signing-id")
-        if secret_id:
-            try:
-                secret = self.model.get_secret(id=secret_id)
-                logging.debug(secret.get_content().get("secret-signing-key"))
-                return secret.get_content().get("secret-signing-key")
-            except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
-                logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
-                del peer_relation[0].data[self.app]["secret-signing-id"]
-        return None
-
-    @inject_charm_state
-    def _on_leader_elected(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle Synapse leader elected event.
-
-        This event handler will reconcile Synapse configuration after the following
-        scenarios:
-        - When the charm is deployed so the leader will be the main unit.
-        - When the leader, for any reason, has changed so the leader unit will be the main.
-        Once the peer data (main_unit_id) is changed, other units will emit reconcile and be
-        properly configured.
-
-        Args:
-            charm_state: The charm state.
-        """
-        # assuming that this event will be fired only at the setup phase
-        # check if main is already set if not, this unit will be the main
-        if not self.unit.is_leader():
-            return
-        logging.debug(
-            "_on_leader_elected received, main_unit is %s and will be set to %s",
-            self.get_main_unit(),
-            self.unit.name,
-        )
-        logger.debug("_on_leader_elected emitting reconcile")
-        self.reconcile(charm_state)
-
-    @inject_charm_state
-    def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle Synapse peer relation changed event.
-
-        This event handler will reconcile Synapse configuration and NGINX after the following
-        scenarios:
-        - A new unit joined the peer relation. A relation-changed event is emitted after a
-        relation-joined event. The instance_map and stream_writers should be updated also workers
-        must be restarted by design.
-        - Main unit has changed. The instance_map, stream_writers and NGINX configuration should be
-        updated and all remaining units restarted.
-
-        Args:
-            charm_state: The charm state.
-        """
-        logger.debug("_on_relation_changed emitting reconcile")
-        self.reconcile(charm_state)
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
         """Register user and report action result.
