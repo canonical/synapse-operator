@@ -79,7 +79,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             room_name=synapse.MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
         )
 
-    def enable_mjolnir(self, charm_state: CharmState) -> None:
+    def enable(self, charm_state: CharmState) -> None:
         """Enable mjolnir service.
 
         The required steps to enable Mjolnir are:
