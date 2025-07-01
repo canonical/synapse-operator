@@ -180,55 +180,65 @@ class SynapseCharm(CharmBaseWithState):
             self._matrix_auth.update_matrix_auth_integration(charm_state)
         self._set_unit_status()
 
-    def manage_signing_key(self, charm_state: CharmState, container: ops.Container) -> None:
-        """Handle signing key secret pull and push.
+    def _signing_key_path(self, charm_state: CharmState) -> str:
+        """Get signing key path.
 
         Args:
             charm_state: charm state.
-            container: container.
         """
-        signing_key_path = f"/data/{charm_state.synapse_config.server_name}.signing.key"
-        signing_key_from_secret = self.get_signing_key()
-        if signing_key_from_secret:
-            logger.debug("Signing key secret was found, pushing it to the container")
-            container.push(
-                signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
-            )
-        if self._is_main() and not signing_key_from_secret:
-            logger.debug("Signing key secret not found, creating secret")
-            with container.pull(signing_key_path) as f:
-                signing_key = f.read()
-                self.set_signing_key(signing_key.rstrip())
+        return f"/data/{charm_state.synapse_config.server_name}.signing.key"
 
-    def get_signing_key(self) -> typing.Optional[str]:
-        """Get signing key from secret.
+    def _get_signing_key_secret_content(self) -> typing.Optional[str]:
+        """Get signing key secret content.
 
         Returns:
-            Signing key as string or None if not found.
+            Content as string.
         """
+        content = None
         peer_relation = self._peers()
         if not peer_relation:
             logger.error(
                 "Failed to get signing key: no peer relation %s found",
                 synapse.SYNAPSE_PEER_RELATION_NAME,
             )
-            return None
+            return content
         secret_id = peer_relation.data[self.app].get("secret-signing-id")
         if secret_id:
             try:
                 secret = self.model.get_secret(id=secret_id)
                 logging.debug(secret.get_content().get("secret-signing-key"))
-                return secret.get_content().get("secret-signing-key")
+                content = secret.get_content().get("secret-signing-key")
             except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
                 logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
                 del peer_relation.data[self.app]["secret-signing-id"]
-        return None
+        return content
 
-    def set_signing_key(self, signing_key: str) -> None:
+    def write_signing_key_to_container(
+        self, charm_state: CharmState, container: ops.Container
+    ) -> None:
+        """Get signing key from secret.
+
+        Args:
+            charm_state: charm state.
+            container: container.
+        """
+        content = self._get_signing_key_secret_content()
+        if content:
+            container.push(
+                self._signing_key_path(charm_state),
+                content,
+                make_dirs=True,
+                encoding="utf-8",
+            )
+
+    def set_signing_key_from_container(
+        self, charm_state: CharmState, container: ops.Container
+    ) -> None:
         """Create secret with signing key content.
 
         Args:
-            signing_key: signing key as string.
+            charm_state: charm state.
+            container: container.
         """
         peer_relation = self._peers()
         if not peer_relation:
@@ -237,8 +247,11 @@ class SynapseCharm(CharmBaseWithState):
                 synapse.SYNAPSE_PEER_RELATION_NAME,
             )
             return
-
-        if signing_key == self.get_signing_key():
+        signing_key = ""
+        with container.pull(self._signing_key_path(charm_state)) as f:
+            signing_key = f.read()
+            signing_key = signing_key.rstrip()
+        if signing_key == self._get_signing_key_secret_content():
             logger.info("Received signing key but there is no change, skipping")
             return
         if self.unit.is_leader():
@@ -250,13 +263,14 @@ class SynapseCharm(CharmBaseWithState):
         self, charm_state: CharmState, container: ops.Container
     ) -> None:
         """Configure and start pebble layers."""
-        self.manage_signing_key(charm_state, container)
+        self.write_signing_key_to_container(charm_state, container)
         pebble.reconcile(
             charm_state, container, is_main=self._is_main(), unit_number=self._get_unit_number()
         )
         if self._is_main() and charm_state.synapse_config.enable_mjolnir:
             self._mjolnir.enable(charm_state)
         pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
+        self.set_signing_key_from_container(charm_state, container)
 
     def _is_redis_required(self, charm_state: CharmState) -> bool:
         """Check if Redis configuration should be required.

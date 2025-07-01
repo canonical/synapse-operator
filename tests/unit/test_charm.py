@@ -60,7 +60,9 @@ def test_config_changed_enable_mjolnir(base_state: dict, monkeypatch: MonkeyPatc
     override_rate_limit_mock = MagicMock()
     replan_mjolnir_mock = MagicMock()
 
-    monkeypatch.setattr("charm.SynapseCharm.manage_signing_key", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm._get_signing_key_secret_content", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm.set_signing_key_from_container", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm.write_signing_key_to_container", MagicMock())
     monkeypatch.setattr(pebble, "reconcile", MagicMock())
     monkeypatch.setattr(mjolnir.Mjolnir, "_admin_access_token", property(lambda self: admin_token))
     monkeypatch.setattr(mjolnir.Mjolnir, "get_membership_room_id", get_membership_room_id_mock)
@@ -103,7 +105,9 @@ def test_config_changed_multiple_units_no_redis(base_state: dict, monkeypatch: M
     context = testing.Context(
         charm_type=SynapseCharm,
     )
-    monkeypatch.setattr("charm.SynapseCharm.manage_signing_key", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm._get_signing_key_secret_content", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm.set_signing_key_from_container", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm.write_signing_key_to_container", MagicMock())
     monkeypatch.setattr(pebble, "reconcile", MagicMock())
 
     out = context.run(context.on.config_changed(), state)
@@ -123,7 +127,9 @@ def test_config_changed_multiple_units_with_redis(
     context = testing.Context(
         charm_type=SynapseCharm,
     )
-    monkeypatch.setattr("charm.SynapseCharm.manage_signing_key", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm._get_signing_key_secret_content", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm.set_signing_key_from_container", MagicMock())
+    monkeypatch.setattr("charm.SynapseCharm.write_signing_key_to_container", MagicMock())
     monkeypatch.setattr(pebble, "reconcile", MagicMock())
 
     with context(context.on.config_changed(), state) as manager:
