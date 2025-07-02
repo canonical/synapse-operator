@@ -17,7 +17,7 @@ from ops import main
 from ops.charm import ActionEvent, RelationDepartedEvent
 
 import actions
-import pebble
+import helpers
 import synapse
 from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
@@ -35,7 +35,6 @@ from user import User
 logger = logging.getLogger(__name__)
 
 INGRESS_INTEGRATION_NAME = "ingress"
-MAIN_UNIT_ID = 0
 SYNAPSE_VERSION = "1.132.0"
 
 
@@ -113,7 +112,7 @@ class SynapseCharm(CharmBaseWithState):
             media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
             registration_secrets=self._matrix_auth.get_requirer_registration_secrets(),
-            instance_map_config=self._instance_map(),
+            instance_map_config=helpers.create_instance_map(self),
         )
 
     @inject_charm_state
@@ -167,184 +166,16 @@ class SynapseCharm(CharmBaseWithState):
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
-        if self._is_redis_required(charm_state):
+        if helpers.is_redis_required(self, charm_state):
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
         self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
-        try:
-            self._configure_and_start_services(charm_state, container)
-        except (pebble.PebbleServiceError, FileNotFoundError) as exc:
-            self.model.unit.status = ops.BlockedStatus(str(exc))
-            return
+        helpers.configure_and_start_services(self, charm_state, container)
+        if helpers.is_mjolnir_enabled(self, charm_state):
+            self._mjolnir.enable(charm_state)
         if self.unit.is_leader():
             self._matrix_auth.update_matrix_auth_integration(charm_state)
         self._set_unit_status()
-
-    def _signing_key_path(self, charm_state: CharmState) -> str:
-        """Get signing key path.
-
-        Args:
-            charm_state: charm state.
-        """
-        return f"/data/{charm_state.synapse_config.server_name}.signing.key"
-
-    def _get_signing_key_secret_content(self) -> typing.Optional[str]:
-        """Get signing key secret content.
-
-        Returns:
-            Content as string.
-        """
-        content = None
-        peer_relation = self._peers()
-        if not peer_relation:
-            logger.error(
-                "Failed to get signing key: no peer relation %s found",
-                synapse.SYNAPSE_PEER_RELATION_NAME,
-            )
-            return content
-        secret_id = peer_relation.data[self.app].get("secret-signing-id")
-        if secret_id:
-            try:
-                secret = self.model.get_secret(id=secret_id)
-                logging.debug(secret.get_content().get("secret-signing-key"))
-                content = secret.get_content().get("secret-signing-key")
-            except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
-                logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
-                del peer_relation.data[self.app]["secret-signing-id"]
-        return content
-
-    def write_signing_key_to_container(
-        self, charm_state: CharmState, container: ops.Container
-    ) -> None:
-        """Get signing key from secret.
-
-        Args:
-            charm_state: charm state.
-            container: container.
-        """
-        content = self._get_signing_key_secret_content()
-        if content:
-            container.push(
-                self._signing_key_path(charm_state),
-                content,
-                make_dirs=True,
-                encoding="utf-8",
-            )
-
-    def set_signing_key_from_container(
-        self, charm_state: CharmState, container: ops.Container
-    ) -> None:
-        """Create secret with signing key content.
-
-        Args:
-            charm_state: charm state.
-            container: container.
-        """
-        peer_relation = self._peers()
-        if not peer_relation:
-            logger.error(
-                "Failed to set signing key: no peer relation %s found",
-                synapse.SYNAPSE_PEER_RELATION_NAME,
-            )
-            return
-        signing_key = ""
-        with container.pull(self._signing_key_path(charm_state)) as f:
-            signing_key = f.read()
-            signing_key = signing_key.rstrip()
-        if signing_key == self._get_signing_key_secret_content():
-            logger.info("Received signing key but there is no change, skipping")
-            return
-        if self.unit.is_leader():
-            logger.debug("Adding signing key to secret: %s", signing_key)
-            secret = self.app.add_secret({"secret-signing-key": signing_key})
-            peer_relation.data[self.app].update({"secret-signing-id": typing.cast(str, secret.id)})
-
-    def _configure_and_start_services(
-        self, charm_state: CharmState, container: ops.Container
-    ) -> None:
-        """Configure and start pebble layers."""
-        self.write_signing_key_to_container(charm_state, container)
-        pebble.reconcile(
-            charm_state, container, is_main=self._is_main(), unit_number=self._get_unit_number()
-        )
-        if self._is_main() and charm_state.synapse_config.enable_mjolnir:
-            self._mjolnir.enable(charm_state)
-        pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
-        self.set_signing_key_from_container(charm_state, container)
-
-    def _is_redis_required(self, charm_state: CharmState) -> bool:
-        """Check if Redis configuration should be required.
-
-        Return:
-            True if more than 1 unit is found.
-        """
-        return charm_state.redis_config is None and self.app.planned_units() > 1
-
-    def _peers(self) -> typing.Optional[ops.Relation]:
-        """Get peer relation.
-
-        Returns:
-            Synapse peer relation.
-        """
-        return self.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
-
-    def _is_main(self) -> bool:
-        """Verify if this unit is the main.
-
-        Returns:
-            bool: true if is the main unit.
-        """
-        return f"/{MAIN_UNIT_ID}" in self.unit.name
-
-    def _get_unit_address(self, unit_id: int) -> str:
-        """Get unit address.
-
-        Args:
-            unit_id: number as 0 in synapse/0.
-
-        Returns:
-            unit address as unit-0.synapse-endpoints.
-        """
-        return f"{self.app.name}-{unit_id}.{self.app.name}-endpoints"
-
-    def _get_unit_number(self) -> str:
-        """Get unit number.
-
-        Returns:
-            unit number as 0 in synapse/0.
-        """
-        return self.unit.name.split("/")[1]
-
-    def _instance_map(self) -> typing.Optional[typing.Dict]:
-        """Create instance_map configuration.
-
-        Returns:
-            Instance map configuration as a dict or None if there is only one unit.
-        """
-        peer_relation = self._peers()
-        if not peer_relation or len(peer_relation.units) <= 1:
-            logger.debug("One unit in peer relation, skipping instance_map configuration")
-            return None
-        instance_map = {}
-        for unit_id in range(len(peer_relation.units)):
-            if unit_id == MAIN_UNIT_ID:
-                instance_map["main"] = {
-                    "host": self._get_unit_address(MAIN_UNIT_ID),
-                    "port": 8035,
-                }
-                instance_map["federationsender1"] = {
-                    "host": self._get_unit_address(MAIN_UNIT_ID),
-                    "port": 8034,
-                }
-                continue
-
-            instance_name = f"worker{unit_id}"
-            address = self._get_unit_address(unit_id)
-            instance_map[instance_name] = {
-                "host": address,
-                "port": 8034,
-            }
-        return instance_map
 
     def _set_unit_status(self) -> None:
         """Set unit status depending on Synapse and NGINX state."""

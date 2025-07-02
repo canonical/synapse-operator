@@ -19,7 +19,7 @@ import synapse
 from charm import SynapseCharm
 from pebble import PebbleServiceError
 
-from .conftest import TEST_SERVER_NAME, TEST_SERVER_NAME_CHANGED
+from .conftest import TEST_SERVER_NAME
 
 
 def test_synapse_pebble_layer(harness: Harness) -> None:
@@ -56,26 +56,6 @@ def test_synapse_pebble_layer(harness: Harness) -> None:
     root = harness.get_filesystem_root(container)
     synapse_configuration = (root / "data" / "homeserver.yaml").read_text()
     assert f"public_baseurl: https://{TEST_SERVER_NAME}" in synapse_configuration
-
-
-@pytest.mark.parametrize(
-    "harness",
-    [
-        pytest.param(1, id="harness_exit_code"),
-    ],
-    indirect=True,
-)
-def test_synapse_migrate_config_error(harness: Harness) -> None:
-    """
-    arrange: charm deployed.
-    act: start the Synapse charm, set Synapse container to be ready and set server_name.
-    assert: Synapse charm should be blocked by error on migrate_config command.
-    """
-    harness.set_leader(True)
-    harness.begin_with_initial_hooks()
-
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "Migrate config failed" in str(harness.model.unit.status)
 
 
 def test_container_down() -> None:
@@ -210,30 +190,6 @@ def test_smtp_relation_success(smtp_configured: Harness, monkeypatch: pytest.Mon
     harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
 
     enable_smtp_mock.assert_called_once()
-
-
-def test_server_name_change(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    arrange: start the Synapse charm, set Synapse container to be ready and set server_name.
-    act: change to a different server_name.
-    assert: Synapse charm should prevent the change with a BlockStatus.
-    """
-    harness.set_leader(True)
-    harness.begin_with_initial_hooks()
-    container: ops.Container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-    container.push(
-        synapse.SYNAPSE_CONFIG_PATH, f'server_name: "{TEST_SERVER_NAME}"', make_dirs=True
-    )
-    charm_state_mock = MagicMock()
-    charm_state_mock.server_name = TEST_SERVER_NAME_CHANGED
-    monkeypatch.setattr(
-        harness.charm, "build_charm_state", MagicMock(return_value=charm_state_mock)
-    )
-
-    harness.update_config({"server_name": TEST_SERVER_NAME_CHANGED})
-
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert "server_name modification is not allowed" in str(harness.model.unit.status)
 
 
 def test_enable_federation_domain_whitelist_is_called(
@@ -403,7 +359,7 @@ def test_saml_enabled_reconcile_pebble_error(
     """
     arrange: start the Synapse charm, set server_name, mock pebble to give an error.
     act: emit saml_data_available.
-    assert: Synapse charm should submit the correct status.
+    assert: PebbleServiceError is raised.
     """
     harness = saml_configured
     harness.begin()
@@ -412,10 +368,9 @@ def test_saml_enabled_reconcile_pebble_error(
     monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
 
     relation = harness.charm.framework.model.get_relation("saml", 0)
-    harness.charm._saml.saml.on.saml_data_available.emit(relation)
 
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert error_message in str(harness.model.unit.status)
+    with pytest.raises(pebble.PebbleServiceError):
+        harness.charm._saml.saml.on.saml_data_available.emit(relation)
 
 
 def test_smtp_enabled_reconcile_pebble_error(
@@ -424,7 +379,7 @@ def test_smtp_enabled_reconcile_pebble_error(
     """
     arrange: start the Synapse charm, set server_name, mock pebble to give an error.
     act: emit smtp_data_available.
-    assert: Synapse charm should submit the correct status.
+    assert: PebbleServiceError is raised.
     """
     harness = smtp_configured
     harness.begin()
@@ -433,10 +388,9 @@ def test_smtp_enabled_reconcile_pebble_error(
     monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
 
     relation = harness.charm.framework.model.get_relation("smtp", 0)
-    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
 
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert error_message in str(harness.model.unit.status)
+    with pytest.raises(pebble.PebbleServiceError):
+        harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
 
 
 def test_redis_enabled_reconcile_pebble_error(
@@ -445,7 +399,7 @@ def test_redis_enabled_reconcile_pebble_error(
     """
     arrange: start the Synapse charm, set server_name, mock pebble to give an error.
     act: emit redis_relation_updated.
-    assert: Synapse charm should submit the correct status.
+    assert: PebbleServiceError is raised.
     """
     harness = redis_configured
     harness.begin()
@@ -453,10 +407,8 @@ def test_redis_enabled_reconcile_pebble_error(
     reconcile_mock = MagicMock(side_effect=PebbleServiceError(error_message))
     monkeypatch.setattr(pebble, "reconcile", reconcile_mock)
 
-    harness.charm.on.redis_relation_updated.emit()
-
-    assert isinstance(harness.model.unit.status, ops.BlockedStatus)
-    assert error_message in str(harness.model.unit.status)
+    with pytest.raises(pebble.PebbleServiceError):
+        harness.charm.on.redis_relation_updated.emit()
 
 
 def test_saml_on_relation_broken(

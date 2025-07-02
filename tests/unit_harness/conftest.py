@@ -23,7 +23,6 @@ from charm import SynapseCharm
 from s3_parameters import S3Parameters
 
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
-TEST_SERVER_NAME_CHANGED = "pebble-layer-1.synapse.com"
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):

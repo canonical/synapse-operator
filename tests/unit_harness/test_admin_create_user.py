@@ -19,7 +19,6 @@ def test_create_user_success(harness: Harness, mocked_synapse_calls):
     assert: user is created successfully and the access token is generated.
     """
     # pylint: disable=unused-argument
-    harness.begin_with_initial_hooks()
     container = harness.model.unit.containers["synapse"]
     username = "test_user"
     admin = True
