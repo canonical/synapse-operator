@@ -177,9 +177,6 @@ def _check_server_name(container: ops.Container, charm_state: CharmState) -> Non
         configured_server_name is not None
         and configured_server_name != charm_state.synapse_config.server_name
     ):
-        print("oi")
-        print(configured_server_name)
-        print(charm_state.synapse_config.server_name)
         msg = (
             f"server_name {charm_state.synapse_config.server_name} is different from the existing "
             f"one {configured_server_name}. Please revert the config."
