@@ -121,31 +121,33 @@ def create_instance_map(charm: ops.CharmBase) -> typing.Optional[typing.Dict]:
         Instance map configuration as a dict or None if there is only one unit.
     """
     if not multiple_planned_units(charm):
-        logger.debug("One unit in peer relation, skipping instance_map configuration")
+        logger.debug("Only one unit is planned; skipping instance_map configuration.")
         return None
+
+    instance_map = {
+        "main": {
+            "host": get_unit_address(charm, MAIN_UNIT_ID),
+            "port": 8035,
+        },
+        "federationsender1": {
+            "host": get_unit_address(charm, MAIN_UNIT_ID),
+            "port": 8034,
+        },
+    }
+
     peers = peer_relation(charm)
     if not peers:
-        logger.debug("No peer relation found, skipping instance_map configuration")
-        return None
-    instance_map = {}
+        return instance_map
+
     for unit_id in range(len(peers.units)):
         if unit_id == MAIN_UNIT_ID:
-            instance_map["main"] = {
-                "host": get_unit_address(charm, MAIN_UNIT_ID),
-                "port": 8035,
-            }
-            instance_map["federationsender1"] = {
-                "host": get_unit_address(charm, MAIN_UNIT_ID),
-                "port": 8034,
-            }
             continue
-
         instance_name = f"worker{unit_id}"
-        address = get_unit_address(charm, unit_id)
         instance_map[instance_name] = {
-            "host": address,
+            "host": get_unit_address(charm, unit_id),
             "port": 8034,
         }
+
     return instance_map
 
 
