@@ -31,7 +31,7 @@ def is_redis_required(charm: ops.CharmBase, charm_state: CharmState) -> bool:
     Return:
         True if more than 1 unit is found.
     """
-    return charm_state.redis_config is None and charm.app.planned_units() > 1
+    return charm_state.redis_config is None and multiple_planned_units(charm)
 
 
 def is_mjolnir_enabled(charm: ops.CharmBase, charm_state: CharmState) -> bool:
@@ -47,6 +47,18 @@ def is_mjolnir_enabled(charm: ops.CharmBase, charm_state: CharmState) -> bool:
     return is_main(charm) and charm_state.synapse_config.enable_mjolnir
 
 
+def multiple_planned_units(charm: ops.CharmBase) -> bool:
+    """Check if there is more than one unit planned.
+
+    Args:
+        charm: charm instance.
+
+    Returns:
+        True for more than one planned unit.
+    """
+    return charm.app.planned_units() >= 2
+
+
 def peer_relation(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:
     """Get peer relation.
 
@@ -56,9 +68,6 @@ def peer_relation(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:
     Returns:
         Synapse peer relation.
     """
-    # We check for planned_units first since is more consistent.
-    if charm.app.planned_units() == 1:
-        return None
     peer_relations = charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
     if not peer_relations:
         return None
@@ -111,9 +120,12 @@ def create_instance_map(charm: ops.CharmBase) -> typing.Optional[typing.Dict]:
     Returns:
         Instance map configuration as a dict or None if there is only one unit.
     """
+    if not multiple_planned_units(charm):
+        logger.debug("One unit in peer relation, skipping instance_map configuration")
+        return None
     peers = peer_relation(charm)
     if not peers:
-        logger.debug("One unit in peer relation, skipping instance_map configuration")
+        logger.debug("No peer relation found, skipping instance_map configuration")
         return None
     instance_map = {}
     for unit_id in range(len(peers.units)):
