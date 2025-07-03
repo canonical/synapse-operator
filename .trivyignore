@@ -52,3 +52,5 @@ CVE-2025-47287
 CVE-2025-48387
 # pebble binary
 CVE-2025-22874
+# Pillow python pkg
+CVE-2025-48379
