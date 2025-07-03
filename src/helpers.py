@@ -47,7 +47,7 @@ def is_mjolnir_enabled(charm: ops.CharmBase, charm_state: CharmState) -> bool:
     return is_main(charm) and charm_state.synapse_config.enable_mjolnir
 
 
-def peers(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:
+def peer_relation(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:
     """Get peer relation.
 
     Args:
@@ -56,7 +56,10 @@ def peers(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:
     Returns:
         Synapse peer relation.
     """
-    return charm.model.get_relation(synapse.SYNAPSE_PEER_RELATION_NAME)
+    peer_relations = charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+    if not peer_relations:
+        return None
+    return peer_relations[0]
 
 
 def is_main(charm: ops.CharmBase) -> bool:
@@ -105,12 +108,13 @@ def create_instance_map(charm: ops.CharmBase) -> typing.Optional[typing.Dict]:
     Returns:
         Instance map configuration as a dict or None if there is only one unit.
     """
-    peer_relation = peers(charm)
-    if not peer_relation or len(peer_relation.units) <= 1:
+    peers = peer_relation(charm)
+    if not peers or len(peers.units) <= 1:
         logger.debug("One unit in peer relation, skipping instance_map configuration")
         return None
     instance_map = {}
-    for unit_id in range(len(peer_relation.units)):
+    logging.debug("Found %d units in the peer relation", len(peers.units))
+    for unit_id in range(len(peers.units)):
         if unit_id == MAIN_UNIT_ID:
             instance_map["main"] = {
                 "host": get_unit_address(charm, MAIN_UNIT_ID),
@@ -141,9 +145,9 @@ def configure_and_start_services(
         charm_state: charm state.
         container: charm container.
     """
-    signing_key.write_to_container(peers(charm), charm, charm_state, container)
+    signing_key.write_to_container(peer_relation(charm), charm, charm_state, container)
     pebble.reconcile(
         charm_state, container, is_main=is_main(charm), unit_number=get_unit_number(charm)
     )
     pebble.restart_nginx(container, get_unit_address(charm, MAIN_UNIT_ID))
-    signing_key.write_to_secret(peers(charm), charm, charm_state, container)
+    signing_key.write_to_secret(peer_relation(charm), charm, charm_state, container)
