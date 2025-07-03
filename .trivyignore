@@ -69,3 +69,5 @@ CVE-2025-47273
 CVE-2025-47287
 # Pebble vulnerability
 CVE-2025-22874
+# Pillow python pkg
+CVE-2025-48379
