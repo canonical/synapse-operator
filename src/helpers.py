@@ -56,6 +56,9 @@ def peer_relation(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:
     Returns:
         Synapse peer relation.
     """
+    # We check for planned_units first since is more consistent.
+    if charm.app.planned_units() == 1:
+        return None
     peer_relations = charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
     if not peer_relations:
         return None
@@ -109,11 +112,10 @@ def create_instance_map(charm: ops.CharmBase) -> typing.Optional[typing.Dict]:
         Instance map configuration as a dict or None if there is only one unit.
     """
     peers = peer_relation(charm)
-    if not peers or len(peers.units) <= 1:
+    if not peers:
         logger.debug("One unit in peer relation, skipping instance_map configuration")
         return None
     instance_map = {}
-    logging.debug("Found %d units in the peer relation", len(peers.units))
     for unit_id in range(len(peers.units)):
         if unit_id == MAIN_UNIT_ID:
             instance_map["main"] = {
