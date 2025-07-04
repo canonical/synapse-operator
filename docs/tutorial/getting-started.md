@@ -128,7 +128,9 @@ Create a user by running the following command:
 juju run-action synapse/0 register-user username=alice password=<secure-password> admin=no
 ```
 
-## Access the synapse via the element desktop client
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
+## Access Synapse via the Element desktop client
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 Follow the [instructions](https://element.io/download) to
 install Element Desktop.
