@@ -50,7 +50,7 @@ juju ssh --container synapse server-mas "cat /mas/config.yaml | grep 'id:'"
 The MAS redirect URL will be formatted like `<public_baseurl>/auth/upstream/callback/<provider_id>`. We can now go back to the OIDC client configuration on the IdP and add the redirect URL to the allowlist. 
 
 ## Back up the existing synapse charm and restore on the new synapse charm
-### Back up and restore using the s3-integrator charm
+### Back up and restore using the `s3-integrator` charm
 To migrate everything persisted in the Synapse's `/data` directory, we will use the `s3-integrator` charm. For more information please look at the ["Back up and Restore"](https://charmhub.io/synapse/docs/how-to-backup-and-restore) section of the charm's documentation. First we deploy the `s3-integrator` charm and configure it with the credentials for the target S3 bucket:
 ```
 juju deploy s3-integrator --channel edge
