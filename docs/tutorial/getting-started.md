@@ -29,7 +29,9 @@ your usual work, create a new model using the following command.
 juju add-model synapse-tutorial
 ```
 
-## Deploy the synapse charm
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
+## Deploy the Synapse charm
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 Synapse requires connections to PostgreSQL. Deploy both charm applications.
 
 ### Deploy and integrate the charms
