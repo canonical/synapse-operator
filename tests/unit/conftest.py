@@ -20,14 +20,24 @@ def base_state_fixture(tmp_path: Path):
             """
         server_name: "test.synapse"
         listeners:
+          - port: 8008
+            tls: false
+            type: http
+            x_forwarded: true
+            bind_addresses: ['::1', '127.0.0.1']
+            resources:
+              - names: [client, federation]
+                compress: false
+        signing_key_path: "/data/SERVERNAME.signing.key"
         """
         ),
         encoding="utf-8",
     )
+
     pebble_layer = pebble.Layer(
         {
             "summary": "Synapse layer",
-            "description": "pebble config layer for maubot",
+            "description": "pebble config layer for synapse",
             "services": {
                 "synapse": {},
             },
@@ -48,6 +58,10 @@ def base_state_fixture(tmp_path: Path):
                     ),
                     testing.Exec(
                         command_prefix=["mkdir"],
+                        return_code=0,
+                    ),
+                    testing.Exec(
+                        command_prefix=["/usr/bin/python3"],
                         return_code=0,
                     ),
                 },
