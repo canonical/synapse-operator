@@ -52,7 +52,6 @@ def get_signing_key_secret_content(
     if secret_id:
         try:
             secret = charm.model.get_secret(id=secret_id)
-            logging.debug(secret.get_content().get("secret-signing-key"))
             content = secret.get_content().get("secret-signing-key")
         except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
             logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
@@ -112,6 +111,5 @@ def write_to_secret(
         logger.info("Received signing key but there is no change, skipping")
         return
     if charm.unit.is_leader():
-        logger.debug("Adding signing key to secret: %s", signing_key)
         secret = charm.app.add_secret({"secret-signing-key": signing_key})
         peer_relation.data[charm.app].update({"secret-signing-id": typing.cast(str, secret.id)})
