@@ -54,7 +54,7 @@ class RedisObserver(Object):
         try:
             if self.redis.relation_data:
                 redis_hostname = str(self.redis.relation_data.get("hostname"))
-                redis_port = int(self.redis.relation_data.get("port"))
+                redis_port = int(self.redis.relation_data.get("port", "6379"))
                 logger.debug(
                     "Got redis connection details from relation %s:%s", redis_hostname, redis_port
                 )
