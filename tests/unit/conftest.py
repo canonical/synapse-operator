@@ -113,7 +113,6 @@ def peers_relation_fixture():
     yield testing.PeerRelation(
         endpoint="synapse-peers",
         interface="synapse-instance",
-        peers_data={0: {}, 1: {}, 2: {}},
     )
 
 
