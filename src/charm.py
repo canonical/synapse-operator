@@ -35,7 +35,7 @@ from user import User
 logger = logging.getLogger(__name__)
 
 INGRESS_INTEGRATION_NAME = "ingress"
-SYNAPSE_VERSION = "1.132.0"
+SYNAPSE_VERSION = "1.133.0"
 
 
 class SynapseCharm(CharmBaseWithState):
