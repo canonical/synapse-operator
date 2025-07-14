@@ -54,12 +54,12 @@ class RedisObserver(Object):
         try:
             if self.redis.relation_data:
                 redis_hostname = str(self.redis.relation_data.get("hostname"))
-                redis_port = int(self.redis.relation_data.get("port"))
+                redis_port = int(self.redis.relation_data.get("port", "6379"))
                 logger.debug(
                     "Got redis connection details from relation %s:%s", redis_hostname, redis_port
                 )
                 redis_config = RedisConfiguration(host=redis_hostname, port=redis_port)
-        except (ValueError, TypeError) as exc:
+        except (KeyError, ValueError, TypeError) as exc:
             # the relation databag is empty at that point.
             logger.exception("Failed to get Redis relation data: %s", str(exc))
             return None
