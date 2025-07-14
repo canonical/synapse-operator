@@ -358,7 +358,7 @@ async def s3_integrator_app_backup_fixture(
     s3_integrator_app = await model.deploy(
         "s3-integrator",
         application_name=s3_integrator_app_name,
-        channel="latest/edge",
+        channel="1/edge",
         config=s3_backup_configuration,
     )
     await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
@@ -442,7 +442,7 @@ async def s3_integrator_app_media_fixture(
     s3_integrator_app = await model.deploy(
         "s3-integrator",
         application_name=s3_integrator_app_name,
-        channel="latest/edge",
+        channel="1/edge",
         config=s3_media_configuration,
     )
     await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
