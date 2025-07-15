@@ -16,7 +16,7 @@ jobs:
     name: Test Terraform with Juju
     runs-on: ubuntu-latest
     env:
-      WORKING_DIR: 'terraform/test'
+      WORKING_DIR: 'terraform/tests'
     steps:
     - uses: actions/checkout@v4
     - uses: charmed-kubernetes/actions-operator@main
