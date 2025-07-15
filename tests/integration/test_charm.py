@@ -190,13 +190,12 @@ async def test_synapse_enable_smtp(
         status=ACTIVE_STATUS_NAME,
     )
 
-<<<<<<< HEAD
-=======
+
     pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
     dump_mas_config_cmd = (
         f"{pebble_exec_cmd} {MAS_EXECUTABLE_PATH} -c {MAS_CONFIGURATION_PATH} config dump"
     )
->>>>>>> origin/2/main
+
     unit: Unit = synapse_app.units[0]
     action = await unit.run(DUMP_MAS_CONFIG)
     await action.wait()
