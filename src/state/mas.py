@@ -52,6 +52,7 @@ class MASContext(BaseModel):
         synapse_oidc_client_id: OIDC client ID used by synapse
         synapse_oidc_client_secret: OIDC client secret used by synapse
         upstream_oidc_provider_id: ULID to identify the upstream oidc provider
+        oidc_subject_claim: The configured OIDC subject claim
     """
 
     encryption_key: str = Field(min_length=64, max_length=64)
@@ -61,6 +62,7 @@ class MASContext(BaseModel):
     synapse_oidc_client_id: str = Field()
     synapse_oidc_client_secret: str = Field(min_length=32, max_length=32)
     upstream_oidc_provider_id: str = Field()
+    oidc_subject_claim: str = Field(min_length=1)
 
 
 class SigningKey(typing.NamedTuple):
@@ -147,8 +149,6 @@ class MASConfiguration:
         datasource = charm._mas_database.get_relation_as_datasource()  # type: ignore
         validate_datasource(datasource)
 
-        logger.info("Datasource validated: %s", datasource)
-
         try:
             secret = charm.model.get_secret(label=MAS_CONTEXT_LABEL)
             mas_context_secret = secret.get_content()
@@ -183,6 +183,7 @@ class MASConfiguration:
                 synapse_oidc_client_id=mas_context_secret["synapse-oidc-client-id"],
                 synapse_oidc_client_secret=mas_context_secret["synapse-oidc-client-secret"],
                 upstream_oidc_provider_id=mas_context_secret["upstream-oidc-provider-id"],
+                oidc_subject_claim=typing.cast(str, charm.config.get("oidc_subject_claim")),
             )
         except ValidationError as exc:
             logger.exception("Error validating MAS context.")

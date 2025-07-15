@@ -56,16 +56,20 @@ class SynapseConfig(BaseModel):
         block_non_admin_invites: block_non_admin_invites config.
         enable_email_notifs: enable_email_notifs config.
         enable_password_config: enable_password_config config.
+        enable_media_sync_cleanup: enable_media_sync_cleanup config.
         enable_room_list_search: enable_room_list_search config.
         federation_domain_whitelist: federation_domain_whitelist config.
         invite_checker_blocklist_allowlist_url: invite_checker_blocklist_allowlist_url config.
         invite_checker_policy_rooms: invite_checker_policy_rooms config.
         ip_range_whitelist: ip_range_whitelist config.
         limit_remote_rooms_complexity: limit_remote_rooms_complexity config.
+        moderation_access_token_secret_id: moderation_access_token_secret_id config.
+        moderation_room_alias: moderation_room_alias config.
         notif_from: defines the "From" address to use when sending emails.
         public_baseurl: public_baseurl config.
         publish_rooms_allowlist: publish_rooms_allowlist config.
         experimental_alive_check: experimental_alive_check config.
+        experimental_extract_background_tasks: experimental_extract_background_tasks.
         rc_joins_remote_burst_count: rc_join burst_count config.
         rc_joins_remote_per_second: rc_join per_second config.
         report_stats: report_stats config.
@@ -78,13 +82,17 @@ class SynapseConfig(BaseModel):
     block_non_admin_invites: bool = False
     enable_email_notifs: bool = False
     enable_password_config: bool = True
+    enable_media_sync_cleanup: bool = False
     enable_room_list_search: bool = True
     experimental_alive_check: str | None = Field(None)
+    experimental_extract_background_tasks: bool = False
     federation_domain_whitelist: str | None = Field(None)
     invite_checker_blocklist_allowlist_url: str | None = Field(None)
     invite_checker_policy_rooms: str | None = Field(None)
     ip_range_whitelist: str | None = Field(None, regex=r"^[\.:,/\d]+\d+(?:,[:,\d]+)*$")
     limit_remote_rooms_complexity: float | None = Field(None)
+    moderation_access_token_secret_id: str | None = Field(None)
+    moderation_room_alias: str | None = Field(None)
     public_baseurl: str = Field(..., min_length=2)
     publish_rooms_allowlist: str | None = Field(None)
     rc_joins_remote_burst_count: int | None = Field(None)
@@ -232,7 +240,7 @@ class SynapseConfig(BaseModel):
 
 
 @dataclasses.dataclass(frozen=True)
-class CharmState:
+class CharmState:  # pylint: disable=too-many-instance-attributes
     """State of the Charm.
 
     Attributes:
@@ -244,6 +252,8 @@ class CharmState:
         proxy: proxy information.
         instance_map_config: Instance map configuration with main and worker addresses.
         registration_secrets: Registration secrets received via matrix-auth integration.
+        moderation_token: Token extracted from secret id provided via
+            moderation_access_token_secret_id.
     """
 
     synapse_config: SynapseConfig
@@ -253,6 +263,7 @@ class CharmState:
     redis_config: typing.Optional[RedisConfiguration]
     instance_map_config: typing.Optional[typing.Dict]
     registration_secrets: typing.Optional[typing.List]
+    moderation_token: typing.Optional[str] = None
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -333,6 +344,10 @@ class CharmState:
                         logger.warning(
                             "Worker %s in workers_ignore_list not found in instance_map", worker
                         )
+            # get secret content from moderation_access_token_secret_id
+            moderation_token = get_moderation_token(
+                charm, valid_synapse_config.moderation_access_token_secret_id
+            )
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())
@@ -347,4 +362,32 @@ class CharmState:
             redis_config=redis_config,
             instance_map_config=instance_map_config,
             registration_secrets=registration_secrets,
+            moderation_token=moderation_token,
         )
+
+
+def get_moderation_token(
+    charm: ops.CharmBase, secret_id: typing.Optional[str]
+) -> typing.Optional[str]:
+    """Retrieve the moderation access token from a secret.
+
+    Args:
+        charm (ops.CharmBase): The charm instance, used to access the model secrets.
+        secret_id (Optional[str]): The ID of the secret storing the moderation token.
+
+    Returns:
+        Optional[str]: The moderation access token if found, otherwise None.
+    """
+    if not secret_id:
+        return None
+
+    try:
+        moderation_secret: ops.Secret = charm.model.get_secret(id=secret_id)
+        moderation_secret_content = moderation_secret.get_content()
+        return moderation_secret_content.get("matrix-access-token", None)
+    except ops.SecretNotFoundError:
+        logger.warning("Moderation secret id %s not found", secret_id)
+    except ops.ModelError as e:
+        logger.warning("Unable to access the secret: %s", e)
+
+    return None

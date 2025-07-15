@@ -17,6 +17,7 @@ from ops.pebble import ExecError
 from ops.testing import Harness
 
 import synapse
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 from charm import SynapseCharm
 from s3_parameters import S3Parameters
 
@@ -115,7 +116,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
 @pytest.fixture(name="harness")
 def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
-    monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr("charm.SynapseCharm._set_workload_version", MagicMock(return_value=None))
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     # Assume that MAS is working properly
     monkeypatch.setattr(
@@ -138,6 +139,13 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     harness.set_can_connect(synapse.SYNAPSE_CONTAINER_NAME, True)
     synapse_container.make_dir("/data", make_parents=True)
     synapse_container.push(f"/data/{TEST_SERVER_NAME}.signing.key", "123")
+    synapse_container.make_dir("/mas", make_parents=True)
+    synapse_container.push(
+        MAS_CONFIGURATION_PATH,
+        yaml.safe_dump(
+            {"http": {"listeners": [{"name": "web", "binds": [{"address": "[::]:8081"}]}]}}
+        ),
+    )
     # unused-variable disabled to pass constants values to inner function
     command_path = synapse.SYNAPSE_COMMAND_PATH
     command_migrate_config = synapse.COMMAND_MIGRATE_CONFIG
@@ -201,7 +209,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     )
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
         container=synapse_container,
-        executable="/usr/bin/mas-cli",
+        executable=MAS_EXECUTABLE_PATH,
         handler=lambda _: synapse.ExecResult(0, "", ""),
     )
     yield harness
@@ -332,16 +340,3 @@ def config_content_fixture() -> dict:
         bind_addresses: ['::']
     """
     return yaml.safe_load(config_content)
-
-
-@pytest.fixture(name="mocked_synapse_calls")
-def mocked_synapse_calls_fixture(monkeypatch):
-    """Mock synapse calls functions."""
-    monkeypatch.setattr(
-        synapse.workload, "get_registration_shared_secret", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(
-        synapse.workload, "_get_configuration_field", MagicMock(return_value="shared_secret")
-    )
-    monkeypatch.setattr(synapse.api, "register_user", MagicMock(return_value="access_token"))
-    monkeypatch.setattr(synapse, "create_management_room", MagicMock(return_value=token_hex(16)))

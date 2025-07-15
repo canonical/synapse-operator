@@ -3,6 +3,13 @@
   "extends": [
     "config:base"
   ],
+  "baseBranches": ["2/main", "/^track\\/.*/"],
+  "prBodyNotes": [
+        "---",
+		"### Pre-merge checks for Synapse or MAS workloads",
+        "- [ ] The Release Notes do not describe any breaking changes.",
+        "- [ ] The [Upgrade document](https://github.com/element-hq/synapse/blob/develop/docs/upgrade.md) does not describe any breaking changes."
+  ],
   "regexManagers": [
     {
       "fileMatch": ["(^|/)rockcraft.yaml$"],

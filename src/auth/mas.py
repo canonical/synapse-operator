@@ -18,25 +18,9 @@ logger = logging.getLogger()
 
 MAS_TEMPLATE_FILE_NAME = "mas_config.yaml.j2"
 MAS_SERVICE_NAME = "synapse-mas"
-MAS_EXECUTABLE_PATH = "/usr/bin/mas-cli"
+MAS_EXECUTABLE_PATH = "/mas-cli"
 MAS_WORKING_DIR = "/mas"
 MAS_CONFIGURATION_PATH = f"{MAS_WORKING_DIR}/config.yaml"
-
-MAS_PEBBLE_LAYER = ops.pebble.LayerDict(
-    {
-        "summary": "Matrix Authentication Service layer",
-        "description": "pebble config layer for MAS",
-        "services": {
-            MAS_SERVICE_NAME: {
-                "override": "replace",
-                "summary": "Matrix Authentication Service",
-                "startup": "enabled",
-                "command": f"{MAS_EXECUTABLE_PATH} server -c {MAS_CONFIGURATION_PATH}",
-                "working-dir": MAS_WORKING_DIR,
-            }
-        },
-    }
-)
 
 MAS_AUTHORIZATION_GRANT = ["authorization_code"]
 MAS_OIDC_SCOPE = "openid profile email"
@@ -143,7 +127,7 @@ def register_user(
         "--yes",
         username,
         "--password",
-        f"'{password}'",
+        str(password),
     ]
     if is_admin:
         command.append("--admin")
@@ -259,6 +243,7 @@ def generate_mas_config(
         "oauth_provider_info": oauth_provider_info,
         "mas_oidc_scope": MAS_OIDC_SCOPE,
         "smtp_configuration": smtp_configuration,
+        "oidc_subject_claim": f'"{{{{ {mas_context.oidc_subject_claim} }}}}"',
     }
     env = Environment(
         loader=FileSystemLoader("./templates"),
@@ -287,10 +272,6 @@ def generate_synapse_msc3861_config(
     """
     mas_context = mas_configuration.mas_context
     mas_prefix = mas_configuration.mas_prefix
-    # We explicitly set the oauth2 endpoints using MAS local address
-    # This is to avoid problems with TLS self-signed certificates
-    # when the charm is behind an https ingress
-    mas_local_address = f"http://localhost:8081{mas_prefix}"
     # MAS public address is used when redirecting the client to MAS for login
     mas_public_address = f"{synapse_configuration.public_baseurl}{mas_prefix}"
     return {
@@ -301,13 +282,6 @@ def generate_synapse_msc3861_config(
         "client_secret": mas_context.synapse_oidc_client_secret,
         "admin_token": mas_context.synapse_shared_secret,
         "account_management_url": f"{mas_public_address}account",
-        "issuer_metadata": {
-            "authorization_endpoint": f"{mas_local_address}authorize",
-            "token_endpoint": f"{mas_local_address}oauth2/token",
-            "jwks_uri": f"{mas_local_address}oauth2/keys.json",
-            "registration_endpoint": f"{mas_local_address}oauth2/registration",
-            "introspection_endpoint": f"{mas_local_address}oauth2/introspect",
-        },
     }
 
 

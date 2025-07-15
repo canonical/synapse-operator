@@ -1,0 +1,41 @@
+dataPath: "/data/storage"
+verboseLogging: false
+logLevel: "INFO"
+syncOnStartup: true
+verifyPermissionsOnStartup: true
+noop: false
+fasterMembershipChecks: false
+automaticallyRedactForReasons:
+- "spam"
+- "advertising"
+protectAllJoinedRooms: false
+backgroundDelayMS: 1000
+safeMode:
+# The option for entering safe mode when Draupnir fails to start up.
+# - "RecoveryOnly" will only start the bot in safe mode when there are recovery options available. This is the default.
+# - "Never" will never start the bot in safe mode when Draupnir fails to start normally.
+# - "Always" will always start the bot in safe mode when Draupnir fails to start normally.
+  bootOption: Always
+health:
+    healthz:
+        enabled: true
+        port: 7777
+        address: "0.0.0.0"
+        endpoint: "/healthz"
+        healthyStatus: 200
+        unhealthyStatus: 418
+    sentry:
+pollReports: false
+displayReports: true
+web:
+  enabled: true
+  port: 9999
+  address: "0.0.0.0"
+  # A web API designed to intercept Matrix API
+  # POST /_matrix/client/r0/rooms/{roomId}/report/{eventId}
+  # and display readable abuse reports in the moderation room.
+  #
+  # If you wish to take advantage of this feature, you will need
+  # to configure a reverse proxy, see e.g. test/nginx.conf
+  abuseReporting:
+    enabled: true

@@ -13,7 +13,7 @@ platforms:
 environment: &mas-source
   source: https://github.com/element-hq/matrix-authentication-service
   source-type: git
-  source-tag: v0.14.1
+  source-tag: v0.18.0
 parts:
   scripts:
     plugin: dump
@@ -107,12 +107,13 @@ parts:
       - xmlsec1
     stage-snaps:
       - aws-cli
+      - draupnir/latest/edge
+      - mas-cli/latest/edge
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git
-    source-tag: v1.126.0
+    source-tag: v1.133.0
     build-environment:
-      - RUST_VERSION: "1.76.0"
       - POETRY_VERSION: "1.7.1"
     override-build: |
       craftctl default
@@ -121,8 +122,8 @@ parts:
       export PATH=/cargo/bin:/rust/bin:$PATH
       export CARGO_NET_GIT_FETCH_WITH_CLI=false
       mkdir -p /rust /cargo /synapse /install
-      curl -m 30 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain=$RUST_VERSION --profile minimal
-      /rust/toolchains/$RUST_VERSION-x86_64-unknown-linux-gnu/bin/rustc -V > $CRAFT_PART_INSTALL/rust-version
+      curl -m 30 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal
+      /rust/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc -V > $CRAFT_PART_INSTALL/rust-version
       #
       # install synapse requirements
       pip3 install --break-system-packages --root-user-action=ignore "poetry==$POETRY_VERSION"
@@ -146,7 +147,7 @@ parts:
       git clone https://github.com/nbuechner/synapse-invite-checker.git
       cd synapse-invite-checker
       git checkout ab6c8b78d78c4cbf31e1a30981ae45c09285b34a
-      pip3 install --break-system-packages --prefix="/install" --no-warn-script-location -U .
+      pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location -U .
       cd ..
       #
       # install synapse
@@ -179,6 +180,7 @@ parts:
       - git
     override-stage: |
       patch -f -u ./start.py -i srv/patches/start.patch
+      patch -f -u ./usr/local/bin/s3_media_upload -i srv/patches/s3_media_upload.patch
   mas-templates:
     plugin: dump
     <<: *mas-source
@@ -205,27 +207,3 @@ parts:
       cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets
     stage:
       - mas/share/*
-  mas-cli:
-    plugin: rust
-    rust-channel: stable
-    rust-cargo-parameters:
-      - "--features dist"
-      - "--no-default-features"
-    <<: *mas-source
-    build-snaps:
-      - go/1.22/stable
-    override-build: |
-      # Build the open-policy-agent binary
-      # We build it here instead of in a separate part because opa is only needed during MAS build
-      git clone --depth 1 --branch v0.70.0 https://github.com/open-policy-agent/opa.git
-      (cd opa; make build; chmod +x opa_linux_amd64; mv opa_linux_amd64 /usr/local/bin/opa)
-      (cd policies; make)
-      mkdir -p $CRAFT_PART_INSTALL/mas/share
-      cp policies/policy.wasm $CRAFT_PART_INSTALL/mas/share/policy.wasm
-
-      craftctl default
-    organize:
-      "mas-cli": usr/bin/mas-cli
-    stage:
-      - usr/bin/mas-cli
-      - mas/share/policy.wasm

@@ -21,7 +21,7 @@ from ops.model import ActiveStatus, BlockedStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
-from auth.mas import MAS_CONFIGURATION_PATH
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 from tests.conftest import SYNAPSE_IMAGE_PARAM
 from tests.integration.helpers import register_user
 
@@ -104,6 +104,7 @@ async def synapse_app_fixture(
     synapse_charm: str,
     postgresql_app: Application,
     pytestconfig: Config,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """Build and deploy the Synapse charm."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
@@ -124,6 +125,8 @@ async def synapse_app_fixture(
         status=typing.cast(str, BlockedStatus.name),
         idle_period=5,
     )
+    synapse_ip = (await get_unit_ips(app.name))[0]
+    await app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
 
     async with ops_test.fast_forward():
         await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app.name}")
@@ -289,8 +292,9 @@ async def access_token_fixture(
     username, _ = user
     pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
     generate_token_cmd = (
-        f"{pebble_exec_cmd} mas-cli -c {MAS_CONFIGURATION_PATH} manage issue-compatibility-token "
-        f"--yes-i-want-to-grant-synapse-admin-privileges {username}"
+        f"{pebble_exec_cmd} {MAS_EXECUTABLE_PATH} -c {MAS_CONFIGURATION_PATH}"
+        " manage issue-compatibility-token"
+        f" --yes-i-want-to-grant-synapse-admin-privileges {username}"
     )
     unit: Unit = synapse_app.units[0]
     action = await unit.run(generate_token_cmd)
@@ -394,7 +398,7 @@ async def s3_integrator_app_backup_fixture(
     s3_integrator_app = await model.deploy(
         "s3-integrator",
         application_name=s3_integrator_app_name,
-        channel="latest/edge",
+        channel="1/edge",
         config=s3_backup_configuration,
     )
     await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
@@ -478,7 +482,7 @@ async def s3_integrator_app_media_fixture(
     s3_integrator_app = await model.deploy(
         "s3-integrator",
         application_name=s3_integrator_app_name,
-        channel="latest/edge",
+        channel="1/edge",
         config=s3_media_configuration,
     )
     await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")

@@ -12,8 +12,9 @@ from pathlib import Path
 import ops
 import yaml
 from jinja2 import Environment, FileSystemLoader
-from ops.pebble import ExecError, PathError
+from ops.pebble import APIError, ExecError, PathError
 
+from charm_types import MediaConfiguration
 from state.charm_state import CharmState
 
 SYNAPSE_CONFIG_DIR = "/data"
@@ -22,6 +23,7 @@ CHECK_ALIVE_NAME = "synapse-alive"
 CHECK_NGINX_READY_NAME = "synapse-nginx-ready"
 CHECK_READY_NAME = "synapse-ready"
 COMMAND_MIGRATE_CONFIG = "migrate_config"
+MODERATION_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/config/production.yaml"
 SYNAPSE_EXPORTER_PORT = "9000"
 STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
@@ -32,11 +34,14 @@ SYNAPSE_DATA_DIR = "/data"
 SYNAPSE_DEFAULT_MEDIA_STORE_PATH = "/media_store"
 SYNAPSE_FEDERATION_SENDER_SERVICE_NAME = "synapse-federation-sender"
 SYNAPSE_GROUP = "synapse"
+SYNAPSE_MEDIA_SYNC_CLEANUP_LOG = f"{SYNAPSE_CONFIG_DIR}/media_sync_cleanup.log"
 SYNAPSE_NGINX_PORT = 8080
 SYNAPSE_NGINX_SERVICE_NAME = "synapse-nginx"
 SYNAPSE_PEER_RELATION_NAME = "synapse-peers"
+SYNAPSE_PORT = 8008
 SYNAPSE_SERVICE_NAME = "synapse"
 SYNAPSE_USER = "synapse"
+SYNAPSE_URL = f"http://localhost:{SYNAPSE_PORT}"
 SYNAPSE_WORKER_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/worker.yaml"
 SYNAPSE_DB_RELATION_NAME = "database"
 
@@ -65,10 +70,6 @@ class CommandMigrateConfigError(WorkloadError):
 
 class ServerNameModifiedError(WorkloadError):
     """Exception raised while checking configuration file."""
-
-
-class EnableMetricsError(WorkloadError):
-    """Exception raised when something goes wrong while enabling metrics."""
 
 
 class EnableSMTPError(WorkloadError):
@@ -366,3 +367,89 @@ def create_registration_secrets_files(container: ops.Container, charm_state: Cha
     if charm_state.registration_secrets:
         for registration_secret in charm_state.registration_secrets:
             registration_secret.file_path.write_text(registration_secret.value, encoding="utf-8")
+
+
+def generate_moderation_config(container: ops.Container, charm_state: CharmState) -> None:
+    """Generate moderation configuration.
+
+    Args:
+        container: Container of the charm.
+        charm_state: Instance of CharmState.
+    """
+    with open("templates/moderation_production.yaml", encoding="utf-8") as moderation_config_file:
+        config = yaml.safe_load(moderation_config_file)
+        config["homeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
+        config["rawHomeserverUrl"] = f"http://localhost:{SYNAPSE_NGINX_PORT}"
+        config["accessToken"] = str(charm_state.moderation_token)
+        room_alias = charm_state.synapse_config.moderation_room_alias
+        config["managementRoom"] = f"#{room_alias}:{charm_state.synapse_config.server_name}"
+        container.push(MODERATION_CONFIG_PATH, yaml.safe_dump(config), make_dirs=True)
+
+
+def run_media_sync_cleanup(container: ops.Container, media_config: MediaConfiguration) -> None:
+    """Run s3_media_upload command and clean media directory locally.
+
+    Args:
+        container: Container of the charm.
+        media_config: Instance of MediaConfiguration.
+
+    Raises:
+        WorkloadError: if one of the commands fail.
+    """
+    if not media_config:
+        logger.warning("media_sync_cleanup started but no media integration was found, skipping")
+        return
+    media_store_path = get_media_store_path(container)
+    s3_media_upload_path = "/usr/local/bin/s3_media_upload"
+    commands = [
+        [
+            s3_media_upload_path,
+            "--no-progress",
+            "update",
+            "--homeserver-config-path",
+            SYNAPSE_CONFIG_PATH,
+            media_store_path,
+            "1d",
+        ],
+        [
+            s3_media_upload_path,
+            "--no-progress",
+            "upload",
+            media_store_path,
+            media_config["bucket"],
+            "--delete",
+            "--storage-class",
+            "STANDARD",
+            "--endpoint-url",
+            media_config["endpoint_url"],
+            "--prefix",
+            media_config["prefix"],
+        ],
+    ]
+
+    try:
+        environment = {
+            "AWS_ACCESS_KEY_ID": media_config["access_key_id"],
+            "AWS_SECRET_ACCESS_KEY": media_config["secret_access_key"],
+            "AWS_DEFAULT_REGION": media_config["region_name"],
+        }
+        for command in commands:
+            logger.info("media_sync_cleanup executing: %s", " ".join(command))
+
+            exec_process = container.exec(
+                command,
+                user=SYNAPSE_USER,
+                group=SYNAPSE_GROUP,
+                working_dir=SYNAPSE_CONFIG_DIR,
+                environment=environment,
+            )
+            stdout, stderr = exec_process.wait_output()
+            logger.info("media_sync_cleanup output: %s", stdout.strip())
+            if stderr:
+                logger.warning("media_sync_cleanup errors: %s", stderr.strip())
+
+        logger.info("media_sync_cleanup completed successfully.")
+
+    except (APIError, ops.pebble.ExecError) as exc:
+        logger.error("media_sync_cleanup failed: %s", str(exc))
+        raise WorkloadError("media_sync_cleanup failed, verify the logs") from exc

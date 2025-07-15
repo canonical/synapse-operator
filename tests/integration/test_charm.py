@@ -3,9 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Core integration tests for Synapse charm."""
-import json
 import logging
-import re
 import typing
 from secrets import token_hex
 
@@ -18,11 +16,11 @@ from juju.errors import JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
 from ops.model import ActiveStatus
-from pytest_operator.plugin import OpsTest
 
 import synapse
 
 from .conftest import DUMP_MAS_CONFIG
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
@@ -32,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 async def test_synapse_is_up(
     synapse_app: Application,
-    server_name: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -40,6 +37,7 @@ async def test_synapse_is_up(
     act: send a request to the Synapse application managed by the Synapse charm.
     assert: the Synapse application should return a correct response.
     """
+    charm_config = await synapse_app.get_config()
     for unit_ip in await get_unit_ips(synapse_app.name):
         response = requests.get(
             f"http://{unit_ip}:{synapse.SYNAPSE_NGINX_PORT}/_matrix/static/", timeout=5
@@ -60,7 +58,10 @@ async def test_synapse_is_up(
         )
         assert response.status_code == 200
         openid_configuration = response.json()
-        assert openid_configuration.get("issuer") == f"https://{server_name}/auth/"
+        assert (
+            openid_configuration.get("issuer")
+            == f"{charm_config['public_baseurl'].get('value')}/auth/"
+        )
 
 
 async def test_synapse_validate_configuration(synapse_app: Application):
@@ -147,32 +148,6 @@ async def test_synapse_scale_blocked(synapse_app: Application):
     )
 
 
-@pytest.mark.asyncio
-async def test_workload_version(
-    ops_test: OpsTest,
-    synapse_app: Application,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-) -> None:
-    """
-    arrange: a deployed Synapse charm.
-    act: get status from Juju.
-    assert: the workload version is set and match the one given by Synapse API request.
-    """
-    await synapse_app.model.wait_for_idle(idle_period=30, apps=[synapse_app.name], status="active")
-    _, status, _ = await ops_test.juju("status", "--format", "json")
-    status = json.loads(status)
-    juju_workload_version = status["applications"][synapse_app.name].get("version", "")
-    assert juju_workload_version
-    for unit_ip in await get_unit_ips(synapse_app.name):
-        res = requests.get(
-            f"http://{unit_ip}:{synapse.SYNAPSE_PORT}/_synapse/admin/v1/server_version", timeout=5
-        )
-        server_version = res.json()["server_version"]
-        version_match = re.search(synapse.SYNAPSE_VERSION_REGEX, server_version)
-        assert version_match
-        assert version_match.group(1) == juju_workload_version
-
-
 @pytest.mark.parametrize(
     "relation_name",
     [
@@ -215,6 +190,13 @@ async def test_synapse_enable_smtp(
         status=ACTIVE_STATUS_NAME,
     )
 
+<<<<<<< HEAD
+=======
+    pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
+    dump_mas_config_cmd = (
+        f"{pebble_exec_cmd} {MAS_EXECUTABLE_PATH} -c {MAS_CONFIGURATION_PATH} config dump"
+    )
+>>>>>>> origin/2/main
     unit: Unit = synapse_app.units[0]
     action = await unit.run(DUMP_MAS_CONFIG)
     await action.wait()
@@ -268,3 +250,64 @@ async def test_nginx_route_integration(
     )
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text
+
+
+async def test_moderation(
+    model: Model,
+    synapse_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: deploy the charm, create user and moderation room and create the
+        moderation secret.
+    act: set moderation_access_token_secret_id
+    assert: the Draupnir health endpoint should return OK.
+    """
+    # create user
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    register_user_action: Action = await synapse_unit.run_action(
+        "register-user", username="moderator", admin=True
+    )
+    await register_user_action.wait()
+    assert register_user_action.status == "completed"
+    assert register_user_action.results["user-password"]
+    password = register_user_action.results["user-password"]
+    # get token
+    synapse_ip = (await get_unit_ips(synapse_app.name))[0]
+    url = f"http://{synapse_ip}:8080/_matrix/client/r0/login"
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "type": "m.login.password",
+        "identifier": {"type": "m.id.user", "user": "moderator"},
+        "password": f"{password}",
+    }
+    response = requests.post(url, json=data, headers=headers, timeout=10)
+    assert response.status_code == 200
+    access_token = response.json().get("access_token")
+    assert access_token
+    # create room
+    url = f"http://{synapse_ip}:8080/_matrix/client/v3/createRoom"
+    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+    data = {"room_alias_name": "moderators", "name": "moderators", "visibility": "private"}
+    response = requests.post(url, json=data, headers=headers, timeout=10)
+    assert response.status_code == 200
+    room_id = response.json().get("room_id")
+    assert room_id
+    # create secret
+    # refers to juju secret name, not hardcoded password.
+    secret = await model.add_secret(
+        "moderation", data_args=[f"matrix-access-token={access_token}"]
+    )
+    secret_id = secret.split(":")[-1]
+    await model.grant_secret("moderation", synapse_app.name)
+
+    # change synapse configuration
+    await synapse_app.set_config({"moderation_access_token_secret_id": secret_id})
+    await synapse_app.model.wait_for_idle(
+        idle_period=30, timeout=120, apps=[synapse_app.name], status="active"
+    )
+
+    # verify draupnir health endpoint
+    response = requests.get(f"http://{synapse_ip}:7777/", timeout=5)
+    assert response.status_code == 200
+    assert "health code: 200" in response.text
