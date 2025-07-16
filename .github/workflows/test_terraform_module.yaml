@@ -47,7 +47,7 @@ jobs:
     - run: terraform show tfplan
       working-directory: ${{env.WORKING_DIR}}
     - run: |
-        juju add-model test
+        juju add-model prod-chat-example
         set -e  # Exit on error
         terraform test || { echo "Terraform test failed"; exit 1; }
       working-directory: ${{env.WORKING_DIR}}

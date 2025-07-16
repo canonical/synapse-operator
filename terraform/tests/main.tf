@@ -29,9 +29,9 @@ module "synapse" {
   app_name = "synapse"
   channel  = var.channel
   config = {
-    server_name = "test"
+    server_name = "chat.example.com"
   }
-  model       = "test"
+  model       = "prod-chat-example"
   revision    = var.revision
   constraints = "arch=amd64"
 }
