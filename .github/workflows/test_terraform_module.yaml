@@ -18,7 +18,7 @@ jobs:
     env:
       WORKING_DIR: 'terraform/tests'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@@v4.2.2
     - uses: charmed-kubernetes/actions-operator@main
       with:
         provider: "microk8s"
@@ -39,7 +39,7 @@ jobs:
           juju show-controller $(echo $CONTROLLER|tr -d '"') | yq '.[$CONTROLLER]'.details.\"ca-cert\"|tr -d '"'
           echo EOF
         } >> "$GITHUB_ENV"
-    - uses: hashicorp/setup-terraform@v3
+    - uses: hashicorp/setup-terraform@v3.1.2
     - run: terraform init
       working-directory: ${{env.WORKING_DIR}}
     - run: terraform plan -out=tfplan
