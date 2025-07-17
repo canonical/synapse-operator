@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 variables {
-  channel  = "2/edge"
+  channel = "2/edge"
   # renovate: depName="synapse"
   revision = 734
 }
