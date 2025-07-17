@@ -3,6 +3,7 @@
 
 variables {
   channel  = "2/edge"
+  # renovate: depName="synapse"
   revision = 734
 }
 
