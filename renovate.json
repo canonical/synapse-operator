@@ -48,7 +48,7 @@
       "versioningTemplate": "semver-coerced"
     },
     {
-      "fileMatch": ["^.*main.tftest.hcl$"],
+      "fileMatch": ["(^|/)main.tftest.hcl$"],
       "matchStrings": ["# renovate: depName=\"(?<packageName>[^\"]+)\"\\s*\\n\\s*(?<fieldName>[a-zA-Z0-9_]+)\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
       "versioningTemplate": "semver-coerced",
       "datasourceTemplate": "custom.charmhub",
