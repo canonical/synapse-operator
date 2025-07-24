@@ -4,7 +4,7 @@
 variables {
   channel = "2/edge"
   # renovate: depName="synapse"
-  revision = 734
+  revision = 731
 }
 
 run "basic_deploy" {
