@@ -13,7 +13,7 @@
   "customManagers": [
         {
             "customType": "regex",
-            "fileMatch": [
+            "managerFilePatterns": [
                 "main.tftest.hcl"
             ],
             "matchStrings": [
