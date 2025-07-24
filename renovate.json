@@ -14,7 +14,7 @@
         {
             "customType": "regex",
             "managerFilePatterns": [
-                "main.tftest.hcl"
+                "^.*main.tftest.hcl$"
             ],
             "matchStrings": [
   "#\\s*renovate:\\s*depName=\"(?<packageName>[^\"]+)\"[\\r\\n]+\\s*(?<fieldName>[a-zA-Z0-9_]+)\\s*=\\s*(?<currentValue>\\S+)"
