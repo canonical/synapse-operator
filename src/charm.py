@@ -58,7 +58,6 @@ class SynapseCharm(CharmBaseWithState):
             args: class arguments.
         """
         super().__init__(*args)
-        self.unit.set_workload_version(SYNAPSE_VERSION)
         self._backup = BackupObserver(self)
         self._matrix_auth = MatrixAuthObserver(self)
         self._media = MediaObserver(self)
@@ -163,6 +162,7 @@ class SynapseCharm(CharmBaseWithState):
         Args:
             charm_state: Instance of CharmState
         """
+        self.unit.set_workload_version(SYNAPSE_VERSION)
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
