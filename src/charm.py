@@ -14,7 +14,7 @@ from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
-from ops.charm import ActionEvent, RelationDepartedEvent
+from ops.charm import ActionEvent
 
 import actions
 import helpers
@@ -82,16 +82,16 @@ class SynapseCharm(CharmBaseWithState):
         )
         self._observability = Observability(self)
         self._mjolnir = Mjolnir(self, token_service=self.token_service)
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.upgrade_charm, self._on_config_changed)
+        self.framework.observe(self.on.config_changed, self._trigger_reconcile)
+        self.framework.observe(self.on.upgrade_charm, self._trigger_reconcile)
         self.framework.observe(
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_departed,
-            self._on_relation_departed,
+            self._trigger_reconcile,
         )
         self.framework.observe(
-            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._on_relation_changed
+            self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._trigger_reconcile
         )
-        self.framework.observe(self.on.synapse_pebble_ready, self._on_synapse_pebble_ready)
+        self.framework.observe(self.on.synapse_pebble_ready, self._trigger_reconcile)
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
@@ -116,42 +116,15 @@ class SynapseCharm(CharmBaseWithState):
         )
 
     @inject_charm_state
-    def _on_config_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle changed configuration.
+    def _trigger_reconcile(self, event: ops.HookEvent, charm_state: CharmState) -> None:
+        """Trigger or not reconcile based on events observed by the charm.
 
         Args:
-            charm_state: The charm state.
+            event: event triggers reconcile.
+            charm_state: charm state.
         """
-        self.reconcile(charm_state)
-
-    @inject_charm_state
-    def _on_synapse_pebble_ready(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle synapse pebble ready event.
-
-        Args:
-            charm_state: The charm state.
-        """
-        self.reconcile(charm_state)
-
-    @inject_charm_state
-    def _on_relation_departed(self, event: RelationDepartedEvent, charm_state: CharmState) -> None:
-        """Handle Synapse peer relation departed event.
-
-        Args:
-            event: relation departed event.
-            charm_state: The charm state.
-        """
-        if event.departing_unit == self.unit:
+        if isinstance(event, ops.RelationDepartedEvent) and event.departing_unit == self.unit:
             return
-        self.reconcile(charm_state)
-
-    @inject_charm_state
-    def _on_relation_changed(self, _: ops.HookEvent, charm_state: CharmState) -> None:
-        """Handle Synapse peer relation changed event.
-
-        Args:
-            charm_state: The charm state.
-        """
         self.reconcile(charm_state)
 
     def reconcile(self, charm_state: CharmState) -> None:
