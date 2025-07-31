@@ -22,6 +22,14 @@ MJOLNIR_SERVICE_NAME = "mjolnir"
 USERNAME = "moderator"
 
 
+class MjolnirEnableError(Exception):
+    """Exception when enabling Mjolnir fails."""
+
+
+class MjolnirModeratorsNotFoundError(Exception):
+    """Exception when the moderators room is not found or cannot be verified."""
+
+
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
     """A class representing the Mjolnir plugin for Synapse application.
 
@@ -96,30 +104,31 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
 
         Args:
             charm_state: Instance of CharmState.
+
+        Raises:
+            MjolnirEnableError: Mjolnir or requirements fail.
+            MjolnirModeratorsNotFoundError: moderators room is not found or cannot be verified.
         """
         if not self._admin_access_token:
-            self._charm.unit.status = ops.MaintenanceStatus(
-                "Failed to get admin access token. Please, check the logs."
+            raise MjolnirEnableError(
+                "Mjolnir: failed to get admin access token. Please, check the logs."
             )
-            return
         try:
             if self.get_membership_room_id(self._admin_access_token) is None:
-                status = ops.BlockedStatus(
+                raise MjolnirModeratorsNotFoundError(
                     f"{synapse.MJOLNIR_MEMBERSHIP_ROOM} not found. Disable Mjolnir."
                 )
-                self._charm.unit.status = status
-                return
         except synapse.APIError as exc:
             logger.exception(
                 "Failed to check for membership_room. Mjolnir will not be configured: %r",
                 exc,
             )
-            return
+            raise MjolnirModeratorsNotFoundError(
+                f"Failed to find {synapse.MJOLNIR_MEMBERSHIP_ROOM}. Disable Mjolnir."
+            ) from exc
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        self._charm.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
+            raise MjolnirEnableError("Mjolnir: waiting for Synapse pebble")
         mjolnir_user = synapse.create_user(
             container,
             USERNAME,
@@ -153,4 +162,3 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             charm_state=charm_state,
         )
         pebble.replan_mjolnir(container)
-        self._charm.model.unit.status = ops.ActiveStatus()

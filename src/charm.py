@@ -25,7 +25,7 @@ from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
-from mjolnir import Mjolnir
+from mjolnir import Mjolnir, MjolnirEnableError, MjolnirModeratorsNotFoundError
 from observability import Observability
 from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
@@ -127,7 +127,8 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.reconcile(charm_state)
 
-    def reconcile(
+    # Too complex for now.
+    def reconcile(  # noqa: C901
         self, charm_state: CharmState, maintenance_status: str = "Configuring Synapse"
     ) -> None:
         """Reconcile Synapse configuration with charm state.
@@ -153,11 +154,16 @@ class SynapseCharm(CharmBaseWithState):
 
         helpers.configure_and_start_services(self, charm_state, container)
 
-        if helpers.is_mjolnir_enabled(self, charm_state):
-            self._mjolnir.enable(charm_state)
-
         if self.unit.is_leader():
             self._matrix_auth.update_matrix_auth_integration(charm_state)
+
+        if helpers.is_mjolnir_enabled(self, charm_state):
+            try:
+                self._mjolnir.enable(charm_state)
+            except MjolnirEnableError as e:
+                self.model.unit.status = ops.MaintenanceStatus(str(e))
+            except MjolnirModeratorsNotFoundError as e:
+                self.unit.status = ops.BlockedStatus(str(e))
 
         if not self._is_service_running(container, synapse.SYNAPSE_SERVICE_NAME):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
@@ -165,6 +171,10 @@ class SynapseCharm(CharmBaseWithState):
 
         if not self._is_service_running(container, synapse.SYNAPSE_NGINX_SERVICE_NAME):
             self.unit.status = ops.MaintenanceStatus("Waiting for NGINX")
+            return
+
+        if isinstance(self.unit.status, ops.BlockedStatus):
+            # Preserve error state set elsewhere
             return
 
         self.unit.status = ops.ActiveStatus()
