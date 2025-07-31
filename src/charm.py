@@ -174,7 +174,8 @@ class SynapseCharm(CharmBaseWithState):
             return
 
         if isinstance(self.unit.status, ops.BlockedStatus):
-            # Preserve error state set elsewhere
+            # Preserve BlockedStatus from backup/media observers (e.g., S3 config errors).
+            # This should be refactored.
             return
 
         self.unit.status = ops.ActiveStatus()
