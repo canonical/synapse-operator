@@ -35,6 +35,7 @@ from user import User
 logger = logging.getLogger(__name__)
 
 INGRESS_INTEGRATION_NAME = "ingress"
+# This constant is updated by Renovate.
 SYNAPSE_VERSION = "1.133.0"
 
 
