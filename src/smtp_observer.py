@@ -6,7 +6,6 @@
 import logging
 from typing import Optional
 
-import ops
 from charms.smtp_integrator.v0.smtp import (
     AuthType,
     SmtpDataAvailableEvent,
@@ -62,9 +61,8 @@ class SMTPObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        self.model.unit.status = ops.MaintenanceStatus("Preparing the SMTP integration")
         logger.debug("_on_smtp_relation_data_available emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        self.get_charm().reconcile(charm_state, "Preparing the SMTP integration")
 
     def get_relation_as_smtp_conf(self) -> Optional[SMTPConfiguration]:
         """Get SMTP data from relation.

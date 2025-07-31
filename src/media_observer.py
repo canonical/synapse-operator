@@ -62,9 +62,8 @@ class MediaObserver(Object):
             self._charm.unit.status = ops.BlockedStatus(S3_INVALID_CONFIGURATION)
             return
 
-        self.model.unit.status = ops.MaintenanceStatus("Preparing the Media integration")
         logger.debug("_on_s3_credentials_changed emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        self.get_charm().reconcile(charm_state, "Preparing the Media integration")
 
     def get_relation_as_media_conf(self) -> Optional[MediaConfiguration]:
         """Get Media data from relation.

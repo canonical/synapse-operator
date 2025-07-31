@@ -6,7 +6,6 @@
 import logging
 import typing
 
-import ops
 from charms.saml_integrator.v0.saml import SamlDataAvailableEvent, SamlRequires
 from ops.charm import RelationBrokenEvent
 from ops.framework import Object
@@ -51,9 +50,8 @@ class SAMLObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        self.model.unit.status = ops.MaintenanceStatus("Preparing the SAML integration")
         logger.debug("_on_saml_data_available emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        self.get_charm().reconcile(charm_state, "Preparing the SAML integration")
 
     @inject_charm_state
     def _on_relation_broken(self, _: RelationBrokenEvent, charm_state: CharmState) -> None:
@@ -62,9 +60,8 @@ class SAMLObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        self.model.unit.status = ops.MaintenanceStatus("Reloading homeserver configuration")
         logger.debug("_on_relation_broken emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        self.get_charm().reconcile(charm_state, "Reloading SAML configuration")
 
     def get_relation_as_saml_conf(self) -> typing.Optional[SAMLConfiguration]:
         """Get SAML data from relation.

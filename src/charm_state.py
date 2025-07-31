@@ -50,11 +50,14 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         return self
 
     @abstractmethod
-    def reconcile(self, charm_state: "CharmState") -> None:
+    def reconcile(
+        self, charm_state: "CharmState", maintenance_status: str = "Configuring Synapse"
+    ) -> None:
         """Reconcile Synapse configuration.
 
         Args:
             charm_state: The charm state.
+            maintenance_status: message to display during the reconcile.
         """
 
 

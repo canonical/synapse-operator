@@ -42,11 +42,12 @@ class SimpleCharm(CharmBaseWithState):
             registration_secrets=None,
         )
 
-    def reconcile(self, charm_state) -> None:
+    def reconcile(self, charm_state, maintenance_status: str = "Configuring Synapse") -> None:
         """Reconcile configuration.
 
         Args:
             charm_state: The charm state.
+            maintenance_status: msg.
         """
 
 

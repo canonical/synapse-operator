@@ -127,40 +127,37 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.reconcile(charm_state)
 
-    def reconcile(self, charm_state: CharmState) -> None:
+    def reconcile(
+        self, charm_state: CharmState, maintenance_status: str = "Configuring Synapse"
+    ) -> None:
         """Reconcile Synapse configuration with charm state.
 
         This is the main entry for changes that require a restart.
 
         Args:
-            charm_state: Instance of CharmState
+            charm_state: Instance of CharmState.
+            maintenance_status: message to display during the reconcile.
         """
         self.unit.set_workload_version(SYNAPSE_VERSION)
+
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
+
         if helpers.is_redis_required(self, charm_state):
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
-        self.model.unit.status = ops.MaintenanceStatus("Configuring Synapse")
+
+        self.model.unit.status = ops.MaintenanceStatus(maintenance_status)
+
         helpers.configure_and_start_services(self, charm_state, container)
+
         if helpers.is_mjolnir_enabled(self, charm_state):
             self._mjolnir.enable(charm_state)
+
         if self.unit.is_leader():
             self._matrix_auth.update_matrix_auth_integration(charm_state)
-        self._set_unit_status()
-
-    def _set_unit_status(self) -> None:
-        """Set unit status depending on Synapse and NGINX state."""
-        if isinstance(self.unit.status, ops.BlockedStatus):
-            # Preserve error state set elsewhere
-            return
-
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
 
         if not self._is_service_running(container, synapse.SYNAPSE_SERVICE_NAME):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
