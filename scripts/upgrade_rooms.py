@@ -125,8 +125,8 @@ def get_current_user(admin_access_token: str, server_url: str) -> str:
     return whoami_result.get("user_id", "")
 
 
-def print_public_rooms(admin_access_token: str, server_url: str, limit: int = 30) -> None:
-    """Print public rooms.
+def get_public_rooms(admin_access_token: str, server_url: str, limit: int = 30) -> list:
+    """Get public rooms.
 
     Args:
         admin_access_token (str): admin token.
@@ -135,6 +135,9 @@ def print_public_rooms(admin_access_token: str, server_url: str, limit: int = 30
 
     Raises:
         SynapseServerError: error in Synapse server.
+
+    Returns:
+        list of public rooms.
     """
     headers = get_headers(admin_access_token)
     url = f"{server_url}/_matrix/client/r0/publicRooms?limit={limit}"
@@ -148,12 +151,7 @@ def print_public_rooms(admin_access_token: str, server_url: str, limit: int = 30
     public_rooms = data.get("chunk", [])
     total = data.get("total_room_count_estimate", len(public_rooms))
     print(f"Total public rooms (limit {limit}): {total}")
-
-    for room in public_rooms:
-        name = room.get("name", "")
-        room_id = room.get("room_id", "")
-        num_joined = room.get("num_joined_members", 0)
-        print(f"{name};{room_id};{num_joined}")
+    return public_rooms
 
 
 def is_room_version_missing(admin_access_token: str, server_url: str, version: str) -> bool:
@@ -185,6 +183,52 @@ def is_room_version_missing(admin_access_token: str, server_url: str, version: s
         logger.error("Room version %s not found. Available versions: %s", version, versions)
         return True
     return False
+
+
+def upgrade_room(admin_access_token: str, server_url: str, room_id: str, new_version: str) -> None:
+    """Upgrade a Matrix room to a new version.
+
+    Args:
+        admin_access_token (str): Admin access token.
+        server_url (str): Matrix server URL (e.g., https://matrix.example.org).
+        room_id (str): The ID of the room to upgrade.
+        new_version (str): The new version to upgrade the room to.
+
+    Raises:
+        SynapseServerError: If the upgrade fails.
+    """
+    headers = get_headers(admin_access_token)
+    url = f"{server_url}/_matrix/client/v3/rooms/{room_id}/upgrade"
+    body = {"new_version": new_version}
+
+    try:
+        response = make_request("POST", url, headers, json=body)
+    except SynapseServerError as exc:
+        logger.error("Request failed while upgrading room %s.", room_id)
+        raise SynapseServerError("Failed to upgrade the room.") from exc
+
+    if response.status_code == 200:
+        replacement_room = response.json().get("replacement_room")
+        logger.info(
+            "Room %s successfully upgraded to %s. Replacement: %s",
+            room_id,
+            new_version,
+            replacement_room,
+        )
+
+    elif response.status_code == 400:
+        error = response.json()
+        logger.error("Unsupported room version: %s", error.get("error"))
+        raise SynapseServerError(error.get("error", "Unsupported room version"))
+
+    elif response.status_code == 403:
+        error = response.json()
+        logger.error("Forbidden to upgrade room: %s", error.get("error"))
+        raise SynapseServerError(error.get("error", "You cannot upgrade this room"))
+
+    else:
+        logger.error("Unexpected error upgrading room: HTTP %d", response.status_code)
+        raise SynapseServerError(f"Unexpected error: HTTP {response.status_code}")
 
 
 def main() -> None:
@@ -235,11 +279,24 @@ def main() -> None:
 
     logger.info("Room version %s is supported by the server.", version)
 
+    public_rooms = get_public_rooms(admin_access_token, server_url, limit=args.limit)
     if args.dry_run:
         logger.info("[DRY-RUN] Listing up to %d public rooms from %s", args.limit, server_url)
-        print_public_rooms(admin_access_token, server_url, limit=args.limit)
+        for room in public_rooms:
+            name = room.get("name", "")
+            room_id = room.get("room_id", "")
+            num_joined = room.get("num_joined_members", 0)
+            print(f"{name};{room_id};{num_joined}")
         return
-    print("end")
+
+    if args.room_id:
+        logger.info("room-id is set, upgrading %s", args.room_id)
+        upgrade_room(admin_access_token, server_url, args.room_id, version)
+        return
+
+    for room in public_rooms:
+        room_id = room.get("room_id", "")
+        upgrade_room(admin_access_token, server_url, args.room_id, version)
 
 
 if __name__ == "__main__":
