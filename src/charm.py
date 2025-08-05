@@ -25,7 +25,12 @@ from charm_state import CharmBaseWithState, CharmState, inject_charm_state
 from database_observer import DatabaseObserver
 from matrix_auth_observer import MatrixAuthObserver
 from media_observer import MediaObserver
-from mjolnir import Mjolnir, MjolnirEnableError, MjolnirModeratorsNotFoundError
+from mjolnir import (
+    MJOLNIR_SERVICE_NAME,
+    Mjolnir,
+    MjolnirEnableError,
+    MjolnirModeratorsNotFoundError,
+)
 from observability import Observability
 from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
@@ -165,6 +170,17 @@ class SynapseCharm(CharmBaseWithState):
             except MjolnirModeratorsNotFoundError as e:
                 self.unit.status = ops.BlockedStatus(str(e))
 
+        self._set_unit_with_service_status(container, charm_state)
+
+    def _set_unit_with_service_status(
+        self, container: ops.Container, charm_state: CharmState
+    ) -> None:
+        """Set unit status message after checking services.
+
+        Args:
+            container: workload container.
+            charm_state: Instance of CharmState.
+        """
         if not self._is_service_running(container, synapse.SYNAPSE_SERVICE_NAME):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
             return
@@ -176,6 +192,12 @@ class SynapseCharm(CharmBaseWithState):
         if isinstance(self.unit.status, ops.BlockedStatus):
             # Preserve BlockedStatus from backup/media observers (e.g., S3 config errors).
             # This should be refactored.
+            return
+
+        if helpers.is_mjolnir_enabled(self, charm_state) and not self._is_service_running(
+            container, MJOLNIR_SERVICE_NAME
+        ):
+            self.unit.status = ops.MaintenanceStatus("Waiting for Mjolnir")
             return
 
         self.unit.status = ops.ActiveStatus()
