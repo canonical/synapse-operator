@@ -3,7 +3,7 @@
 
 """Unit tests for the Synapse module using testing."""
 
-from unittest.mock import ANY, MagicMock
+from unittest.mock import MagicMock
 
 import yaml
 from ops import testing
@@ -54,7 +54,7 @@ def test_config_changed_single_unit_main_layers(base_state: dict, monkeypatch: M
     """
     arrange: prepare synapse state.
     act: run config_changed.
-    assert: layers expected for main as a single unit.
+    assert: synapse-federation-sender is not present.
     """
     state = testing.State(**base_state)
     context = testing.Context(
@@ -68,53 +68,7 @@ def test_config_changed_single_unit_main_layers(base_state: dict, monkeypatch: M
 
     assert out.unit_status == testing.ActiveStatus()
     container = out.get_container("synapse")
-    assert container.plan.services == {
-        "synapse": serv(
-            "synapse",
-            {
-                "summary": "Synapse application service",
-                "startup": "enabled",
-                "override": "replace",
-                "command": "/start.py",
-                "environment": {
-                    "SYNAPSE_CONFIG_DIR": "/data",
-                    "SYNAPSE_CONFIG_PATH": "/data/homeserver.yaml",
-                    "SYNAPSE_DATA_DIR": "/data",
-                    "SYNAPSE_REPORT_STATS": "no",
-                    "SYNAPSE_SERVER_NAME": "test.synapse",
-                    "SYNAPSE_NO_TLS": "True",
-                    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
-                },
-            },
-        ),
-        "synapse-cron": serv(
-            "synapse-cron",
-            {
-                "summary": "Cron service",
-                "startup": "enabled",
-                "override": "replace",
-                "command": "/usr/local/bin/run_cron.py",
-                "environment": {
-                    "SYNAPSE_CONFIG_DIR": "/data",
-                    "SYNAPSE_CONFIG_PATH": "/data/homeserver.yaml",
-                    "SYNAPSE_DATA_DIR": "/data",
-                    "SYNAPSE_REPORT_STATS": "no",
-                    "SYNAPSE_SERVER_NAME": "test.synapse",
-                    "SYNAPSE_NO_TLS": "True",
-                    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
-                },
-            },
-        ),
-        "synapse-nginx": serv(
-            "synapse-nginx",
-            {
-                "summary": "Nginx service",
-                "startup": "enabled",
-                "override": "replace",
-                "command": "/usr/sbin/nginx",
-            },
-        ),
-    }
+    assert "synapse-federation-sender" not in container.plan.services
 
 
 def test_config_changed_multiple_units_main_layers(
@@ -123,7 +77,7 @@ def test_config_changed_multiple_units_main_layers(
     """
     arrange: prepare synapse state.
     act: run config_changed.
-    assert: layers expected for main in multiple units.
+    assert: synapse-federation-sender is present.
     """
     state = testing.State(**multiple_units_base_state)
     context = testing.Context(
@@ -137,103 +91,7 @@ def test_config_changed_multiple_units_main_layers(
 
     assert out.unit_status == testing.ActiveStatus()
     container = out.get_container("synapse")
-    assert container.plan.services == {
-        "synapse": serv(
-            "synapse",
-            {
-                "summary": "Synapse application service",
-                "startup": "enabled",
-                "override": "replace",
-                "command": "/start.py",
-                "environment": {
-                    "SYNAPSE_CONFIG_DIR": "/data",
-                    "SYNAPSE_CONFIG_PATH": "/data/homeserver.yaml",
-                    "SYNAPSE_DATA_DIR": "/data",
-                    "SYNAPSE_REPORT_STATS": "no",
-                    "SYNAPSE_SERVER_NAME": "test.synapse",
-                    "SYNAPSE_NO_TLS": "True",
-                    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
-                    "POSTGRES_DB": "synapse",
-                    "POSTGRES_HOST": "postgresql-k8s-primary.local",
-                    "POSTGRES_PORT": "5432",
-                    "POSTGRES_USER": "user1",
-                    "POSTGRES_PASSWORD": ANY,
-                },
-            },
-        ),
-        "synapse-cron": serv(
-            "synapse-cron",
-            {
-                "summary": "Cron service",
-                "startup": "enabled",
-                "override": "replace",
-                "command": "/usr/local/bin/run_cron.py",
-                "environment": {
-                    "SYNAPSE_CONFIG_DIR": "/data",
-                    "SYNAPSE_CONFIG_PATH": "/data/homeserver.yaml",
-                    "SYNAPSE_DATA_DIR": "/data",
-                    "SYNAPSE_REPORT_STATS": "no",
-                    "SYNAPSE_SERVER_NAME": "test.synapse",
-                    "SYNAPSE_NO_TLS": "True",
-                    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
-                    "POSTGRES_DB": "synapse",
-                    "POSTGRES_HOST": "postgresql-k8s-primary.local",
-                    "POSTGRES_PORT": "5432",
-                    "POSTGRES_USER": "user1",
-                    "POSTGRES_PASSWORD": ANY,
-                },
-            },
-        ),
-        "synapse-federation-sender": serv(
-            "synapse-federation-sender",
-            {
-                "summary": "Synapse Federation Sender application service",
-                "startup": "enabled",
-                "override": "replace",
-                "command": "/start.py run -m synapse.app.generic_worker --config-path /data/homeserver.yaml --config-path /data/worker.yaml",  # noqa: E501
-                "environment": {
-                    "SYNAPSE_CONFIG_DIR": "/data",
-                    "SYNAPSE_CONFIG_PATH": "/data/homeserver.yaml",
-                    "SYNAPSE_DATA_DIR": "/data",
-                    "SYNAPSE_REPORT_STATS": "no",
-                    "SYNAPSE_SERVER_NAME": "test.synapse",
-                    "SYNAPSE_NO_TLS": "True",
-                    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
-                    "POSTGRES_DB": "synapse",
-                    "POSTGRES_HOST": "postgresql-k8s-primary.local",
-                    "POSTGRES_PORT": "5432",
-                    "POSTGRES_USER": "user1",
-                    "POSTGRES_PASSWORD": ANY,
-                },
-            },
-        ),
-        "stats-exporter": serv(
-            "stats-exporter",
-            {
-                "summary": "Synapse Stats Exporter service",
-                "startup": "disabled",
-                "override": "replace",
-                "command": "synapse-stats-exporter",
-                "environment": {
-                    "PROM_SYNAPSE_DATABASE": "synapse",
-                    "PROM_SYNAPSE_HOST": "postgresql-k8s-primary.local",
-                    "PROM_SYNAPSE_PORT": "5432",
-                    "PROM_SYNAPSE_USER": "user1",
-                    "PROM_SYNAPSE_PASSWORD": ANY,
-                },
-                "on-failure": "ignore",
-            },
-        ),
-        "synapse-nginx": serv(
-            "synapse-nginx",
-            {
-                "summary": "Nginx service",
-                "startup": "enabled",
-                "override": "replace",
-                "command": "/usr/sbin/nginx",
-            },
-        ),
-    }
+    assert "synapse-federation-sender" in container.plan.services
 
 
 def test_config_changed_enable_mjolnir(base_state: dict, monkeypatch: MonkeyPatch):

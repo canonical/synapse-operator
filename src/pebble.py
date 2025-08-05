@@ -17,7 +17,7 @@ from deepdiff import DeepDiff
 from ops.pebble import Check
 
 import synapse
-from charm_state import CharmState
+from charm_state import CALLBACK_SCRIPT_FILENAME, CharmState
 
 logger = logging.getLogger(__name__)
 
@@ -422,6 +422,11 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
             f"--config-path {synapse.SYNAPSE_WORKER_CONFIG_PATH}"
         )
 
+    callback_synapse = CALLBACK_SCRIPT_FILENAME.format(service_name=synapse.SYNAPSE_SERVICE_NAME)
+    callback_nginx = CALLBACK_SCRIPT_FILENAME.format(
+        service_name=synapse.SYNAPSE_NGINX_SERVICE_NAME
+    )
+    callback_mjolnir = CALLBACK_SCRIPT_FILENAME.format(service_name=synapse.MJOLNIR_SERVICE_NAME)
     layer = {
         "summary": "Synapse layer",
         "description": "pebble config layer for Synapse",
@@ -432,7 +437,19 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
                 "startup": "enabled",
                 "command": command,
                 "environment": synapse.get_environment(charm_state),
-            }
+            },
+            f"{synapse.SYNAPSE_SERVICE_NAME}-charm-callback": {
+                "override": "replace",
+                "command": f"bash {callback_synapse}",
+            },
+            f"{synapse.SYNAPSE_NGINX_SERVICE_NAME}-charm-callback": {
+                "override": "replace",
+                "command": f"bash {callback_nginx}",
+            },
+            f"{synapse.MJOLNIR_SERVICE_NAME}-charm-callback": {
+                "override": "replace",
+                "command": f"bash {callback_mjolnir}",
+            },
         },
         "checks": {
             synapse.CHECK_ALIVE_NAME: check_synapse_alive(charm_state),

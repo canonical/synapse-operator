@@ -33,6 +33,8 @@ from charm_types import (
 
 logger = logging.getLogger(__name__)
 
+CALLBACK_SCRIPT_FILENAME = "/data/{service_name}-charm-callback.sh"
+
 
 class CharmBaseWithState(ops.CharmBase, ABC):
     """CharmBase than can build a CharmState."""
