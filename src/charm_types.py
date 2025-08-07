@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Type definitions for the Synapse charm."""
@@ -26,19 +26,6 @@ class DatasourcePostgreSQL(typing.TypedDict):
     host: str
     port: str
     db: str
-
-
-@dataclass(frozen=True)
-class SAMLConfiguration(typing.TypedDict):
-    """A named tuple representing a SAML configuration.
-
-    Attributes:
-        entity_id: SAML entity ID.
-        metadata_url: URL to the metadata.
-    """
-
-    entity_id: str
-    metadata_url: str
 
 
 @dataclass(frozen=True)

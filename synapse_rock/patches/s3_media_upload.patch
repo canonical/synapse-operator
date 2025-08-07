@@ -1,0 +1,8 @@
+--- /tmp/s3_media_upload.orig	2025-03-31 20:06:56.544641017 +0000
++++ /usr/local/bin/s3_media_upload	2025-03-31 20:07:03.904661103 +0000
+@@ -1,4 +1,4 @@
+-#!/root/parts/synapse/install/usr/bin/python3
++#!/usr/bin/python3
+ import argparse
+ import datetime
+ import os

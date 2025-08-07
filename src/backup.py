@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Provides backup functionality for Synapse."""
@@ -68,8 +68,6 @@ class S3Backup(NamedTuple):
 class S3Client:
     """S3 Client Wrapper around boto3 library."""
 
-    # New methods will be needed to at least list, check and delete backups
-    # pylint: disable=too-few-public-methods
     def __init__(self, s3_parameters: S3Parameters):
         """Initialize the S3 client.
 

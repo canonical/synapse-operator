@@ -20,7 +20,7 @@ this process by using a [Multipass](https://multipass.run/) VM as outlined in th
 VM IP in steps that assume you're running locally. To get the IP address of the
 Multipass instance run ```multipass info my-juju-vm```.
 
-## Set up a Tutorial Model
+## Set up a tutorial model
 
 To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model using the following command.
@@ -29,7 +29,9 @@ your usual work, create a new model using the following command.
 juju add-model synapse-tutorial
 ```
 
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 ## Deploy the Synapse charm
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 Synapse requires connections to PostgreSQL. Deploy both charm applications.
 
 ### Deploy and integrate the charms
@@ -79,7 +81,7 @@ deploy the Traefik charm and integrate Synapse with it.
 juju deploy traefik-k8s --trust
 ```
 
-Configure `external_hostname` as the same set for Synapse and the routing_mode:
+Configure `external_hostname` as the same set for Synapse and the `routing_mode`:
 ```
 juju config traefik-k8s external_hostname=juju.local
 juju config traefik-k8s routing_mode=subdomain
@@ -126,7 +128,9 @@ Create a user by running the following command:
 juju run-action synapse/0 register-user username=alice password=<secure-password> admin=no
 ```
 
-## Access via Element Desktop
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
+## Access Synapse via the Element desktop client
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 Follow the [instructions](https://element.io/download) to
 install Element Desktop.
@@ -137,7 +141,7 @@ Open it and click on “Sign in”. Then click on “Edit” to provide which se
 Now, you can fill in the username and password fields accordingly to the action
 output. Then you should see a welcome page and it's ready to chat.
 
-## Clean up the Environment
+## Clean up the environment
 
 Well done! You've successfully completed the Synapse tutorial. To remove the
 model environment you created during this tutorial, use the following command.

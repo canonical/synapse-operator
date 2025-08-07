@@ -3,7 +3,7 @@
 [![Promote charm](https://github.com/canonical/synapse-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/synapse-operator/actions/workflows/promote_charm.yaml)
 [![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
 
-# Synapse Operator
+# Synapse operator
 
 A Juju charm deploying and managing Synapse on Kubernetes. Synapse is a drop in
 replacement for other chat servers like Mattermost and Slack.
@@ -29,6 +29,8 @@ To begin, refer to the [Getting Started](https://charmhub.io/synapse/docs/tutori
 tutorial for step-by-step instructions.
 
 ### Basic operations
+
+This section describe basic operations used by operators to manage the synapse charm.
 
 #### Configure a server name
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """User class."""
@@ -9,8 +9,7 @@ import logging
 import secrets
 import string
 
-# pydantic is causing this no-name-in-module problem
-from pydantic.v1 import (  # pylint: disable=no-name-in-module,import-error
+from pydantic.v1 import (
     BaseModel,
     Field,
     validator,
@@ -57,10 +56,7 @@ class User(BaseModel):
         self.password = _generate_password()
 
     @validator("username")
-    #  pylint don't quite understand that this is a classmethod using Pydantic
-    def username_must_not_be_empty(  # pylint: disable=no-self-argument, invalid-name
-        cls: "User", v: str
-    ) -> str:
+    def username_must_not_be_empty(cls: "User", v: str) -> str:  # pylint: disable=no-self-argument
         """Check if username is empty.
 
         Args:

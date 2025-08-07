@@ -55,14 +55,12 @@ below. The following commands can then be used to run the tests:
 * `tox -e unit`: Runs the unit tests.
 * `tox -e integration`: Runs the integration tests.
 
-### Generating src docs for every commit
+### Changelog
 
-Run the following command:
+Please ensure that any new feature, fix, or significant change is documented by
+adding an entry to the `docs/changelog.md` file.
 
-```bash
-echo -e "tox -e src-docs\ngit add src-docs\n" >> .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
+To learn more about changelog best practices, visit [Keep a Changelog](https://keepachangelog.com/).
 
 ## Build charm
 
