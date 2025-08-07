@@ -3,7 +3,8 @@
 
 """Upgrade rooms script."""
 
-# pylint: disable=duplicate-code, line-too-long, too-many-branches, too-many-statements
+# pylint: disable=duplicate-code, line-too-long, too-many-branches
+# pylint: disable=too-many-statements, too-many-locals
 
 import argparse
 import logging
@@ -285,13 +286,18 @@ def main() -> None:  # noqa: C901
         logger.error("ADMIN_ACCESS_TOKEN environment variable not set.")
         sys.exit(1)
 
+    homeserver = os.environ.get("HOMESERVER")
+    if not homeserver:
+        logger.error("HOMESERVER environment variable not set.")
+        sys.exit(1)
+
     server_url = args.server_url
 
     current_user = get_current_user(admin_access_token, server_url)
     if not current_user:
         raise SynapseWhoAmIError("No user_id returned by Who Am I endpoint.")
 
-    logger.info("Currently logged in user %s", current_user)
+    logger.info("Currently logged in %s with user %s", homeserver, current_user)
 
     version = args.version
     if is_room_version_missing(admin_access_token, server_url, version):
@@ -309,7 +315,7 @@ def main() -> None:  # noqa: C901
             room_id = room.get("room_id", "")
             num_joined = room.get("num_joined_members", 0)
             error = ""
-            if ":ubuntu.com" not in room_id:
+            if homeserver not in room_id:
                 continue
             try:
                 room_version = get_room_version(admin_access_token, server_url, room_id)
