@@ -340,8 +340,8 @@ def main() -> None:  # noqa: C901
         room_id = room.get("room_id", "")
         try:
             current_room_version = get_room_version(admin_access_token, server_url, room_id)
-            if current_room_version == args.version:
-                logger.warning("%s - room already is version %s, no action", room_id, args.version)
+            if current_room_version == version:
+                logger.warning("%s - room already is version %s, no action", room_id, version)
                 continue
             logger.info("%s - upgrading", room_id)
             upgrade_room(admin_access_token, server_url, room_id, version)
