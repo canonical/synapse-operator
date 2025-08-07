@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Synapse charm scaling unit tests."""
@@ -133,11 +133,14 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
 
 def test_scaling_instance_map_configured(harness: Harness) -> None:
     """
-    arrange: charm deployed, integrated with Redis, one more unit in peer relation
-        and set as leader.
+    arrange: charm deployed, experimental_extract_background_tasks is true,
+        charm is integrated with Redis, one more unit in peer relation and
+        set as leader.
     act: emit config-changed event.
-    assert: Synapse charm is configured with instance_map.
+    assert: Synapse charm is configured with instance_map and
+        run_background_tasks_on with worker1.
     """
+    harness.update_config({"experimental_extract_background_tasks": True})
     rel_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
     harness.add_relation_unit(rel_id, "synapse/1")
     harness.begin_with_initial_hooks()
@@ -163,6 +166,8 @@ def test_scaling_instance_map_configured(harness: Harness) -> None:
                 "port": 8034,
             },
         }
+        assert "run_background_tasks_on" in content
+        assert content["run_background_tasks_on"] == "worker1"
     worker_config_path = root / synapse.SYNAPSE_WORKER_CONFIG_PATH[1:]
     with open(worker_config_path, encoding="utf-8") as config_file:
         content = yaml.safe_load(config_file)

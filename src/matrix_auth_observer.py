@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """The Matrix Auth relation observer."""
@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, NamedTuple, Optional
 
 import ops
-from charms.synapse.v0.matrix_auth import (
+from charms.synapse.v1.matrix_auth import (
     MatrixAuthProviderData,
     MatrixAuthProvides,
     MatrixAuthRequirerData,
@@ -17,7 +17,9 @@ from charms.synapse.v0.matrix_auth import (
 from ops.framework import Object
 
 import synapse
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
+from state.charm_state import CharmState
+from state.mas import MASConfiguration
+from state.validation import CharmBaseWithState, validate_charm_state
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +58,10 @@ class MatrixAuthObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        for relation in list(self._charm.model.relations["matrix-auth"]):
-            if not relation.units:
-                return
+        matrix_auth_relations = list(self._charm.model.relations["matrix-auth"])
+        logger.info("%d matrix-auth relations found", len(matrix_auth_relations))
+        for relation in matrix_auth_relations:
             provider_data = self._get_matrix_auth_provider_data(charm_state)
-            if self._matrix_auth_relation_updated(relation, provider_data):
-                return
             self.matrix_auth.update_relation_data(relation, provider_data)
 
     def get_requirer_registration_secrets(self) -> Optional[List]:
@@ -112,57 +112,26 @@ class MatrixAuthObserver(Object):
         Returns:
             MatrixAuthConfiguration instance.
         """
-        # future refactor victim: this is repeated with saml
-        homeserver = (
-            charm_state.synapse_config.public_baseurl
-            if charm_state.synapse_config.public_baseurl is not None
-            else f"https://{charm_state.synapse_config.server_name}"
-        )
+        homeserver = charm_state.synapse_config.public_baseurl
         # assuming that shared secret is always found
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         shared_secret = synapse.get_registration_shared_secret(container=container)
         return MatrixAuthProviderData(homeserver=homeserver, shared_secret=shared_secret)
 
-    def _matrix_auth_relation_updated(
-        self, relation: ops.Relation, provider_data: MatrixAuthProviderData
-    ) -> bool:
-        """Compare current information with the one in the relation.
-
-        This check is done to prevent triggering relation-changed.
-
-        Args:
-            relation: The matrix-auth relation.
-            provider_data: current Synapse configuration as MatrixAuthProviderData.
-
-        Returns:
-            True if current configuration and relation data are the same.
-        """
-        relation_homeserver = relation.data[self._charm.app].get("homeserver", "")
-        relation_shared_secret = relation.data[self._charm.app].get("shared_secret", "")
-        if (
-            provider_data.homeserver != relation_homeserver
-            or provider_data.shared_secret != relation_shared_secret
-        ):
-            logger.info("matrix-auth relation ID %s is outdated and will be updated", relation.id)
-            return False
-        return True
-
-    @inject_charm_state
-    def _on_matrix_auth_relation_changed(self, _: ops.EventBase, charm_state: CharmState) -> None:
-        """Handle matrix-auth request received event.
-
-        Args:
-            charm_state: The charm state.
-        """
+    @validate_charm_state
+    def _on_matrix_auth_relation_changed(self, _: ops.EventBase) -> None:
+        """Handle matrix-auth request received event."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(charm)
         logger.debug("_on_matrix_auth_relation_changed emitting reconcile")
-        self._charm.reconcile(charm_state)
+        self._charm.reconcile(charm_state, mas_configuration)
 
-    @inject_charm_state
-    def _on_matrix_auth_relation_departed(self, _: ops.EventBase, charm_state: CharmState) -> None:
-        """Handle matrix-auth relation departed event.
-
-        Args:
-            charm_state: The charm state.
-        """
+    @validate_charm_state
+    def _on_matrix_auth_relation_departed(self, _: ops.EventBase) -> None:
+        """Handle matrix-auth relation departed event."""
+        charm = self.get_charm()
+        charm_state = charm.build_charm_state()
+        mas_configuration = MASConfiguration.from_charm(charm)
         logger.debug("_on_matrix_auth_relation_departed emitting reconcile")
-        self._charm.reconcile(charm_state)
+        self._charm.reconcile(charm_state, mas_configuration)

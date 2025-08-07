@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm needing the s3_backup_bucket fixture."""
-import io
 import logging
 import typing
 from secrets import token_hex
@@ -18,7 +17,7 @@ from juju.unit import Unit
 from ops.model import ActiveStatus
 
 # caused by pytest fixtures
-# pylint: disable=too-many-arguments, duplicate-code, unsupported-membership-test
+# pylint: disable=too-many-arguments, duplicate-code
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
@@ -275,15 +274,19 @@ async def test_synapse_enable_media(  # pylint: disable=too-many-positional-argu
     )
 
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
-    headers = {"Authorization": f"Bearer {access_token}"}
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/octet-stream",
+    }
     media_file = "test_media_file.txt"
 
     # boto_s3_media_client.create_bucket(Bucket=s3_media_configuration["bucket"])
     # Upload media file
     response = requests.post(
-        f"http://{synapse_ip}:8080/_matrix/media/v3/upload?filename={media_file}",
+        f"http://{synapse_ip}:8080/_matrix/media/v3/upload",
         headers=headers,
-        files={"file": (media_file, io.BytesIO(b""))},
+        params={"filename": media_file},
+        data=b"",
         timeout=5,
     )
     assert response.status_code == 200
@@ -294,3 +297,58 @@ async def test_synapse_enable_media(  # pylint: disable=too-many-positional-argu
     key = f"/medialocal_content/{media_id[:2]}/{media_id[2:4]}/{media_id[4:]}"
     s3objresp = boto_s3_media_client.get_object(Bucket=bucket_name, Key=key)
     assert s3objresp["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+@pytest.mark.s3
+@pytest.mark.usefixtures("s3_backup_bucket")
+@pytest.mark.usefixtures("s3_media_bucket")
+async def test_synapse_create_backup_correct_media_sync_cleanup(  # noqa: E501 pylint: disable=too-many-positional-arguments
+    model: Model,
+    synapse_app: Application,
+    s3_integrator_app_backup: Application,
+    s3_backup_configuration: dict,
+    boto_s3_client: typing.Any,
+    s3_integrator_app_media: Application,
+):
+    """
+    arrange: Synapse App deployed and related with s3-integrator together with media.
+        enable_media_sync_cleanup and backup_passphrase set.
+    act: Run create-backup action
+    assert: Correct response from the action that includes the backup-id.
+       An encrypted object was created in S3 with the correct name.
+    """
+    await model.add_relation(f"{s3_integrator_app_media.name}", f"{synapse_app.name}:media")
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_media.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    await model.add_relation(s3_integrator_app_backup.name, f"{synapse_app.name}:backup")
+    passphrase = token_hex(16)
+    await synapse_app.set_config(
+        {"backup_passphrase": passphrase, "enable_media_sync_cleanup": "true"}
+    )
+    await model.wait_for_idle(
+        idle_period=30,
+        apps=[synapse_app.name, s3_integrator_app_backup.name],
+        status=ACTIVE_STATUS_NAME,
+    )
+
+    synapse_unit: Unit = next(iter(synapse_app.units))
+    backup_action: Action = await synapse_unit.run_action("create-backup")
+    await backup_action.wait()
+
+    assert backup_action.status == "completed"
+    assert backup_action.results["media-sync-cleanup-result"] == "correct"
+    assert "backup-id" in backup_action.results
+    bucket_name = s3_backup_configuration["bucket"]
+    path = s3_backup_configuration["path"].strip("/")
+    object_key = f"{path}/{backup_action.results['backup-id']}"
+    s3objresp = boto_s3_client.get_object(Bucket=bucket_name, Key=object_key)
+    objbuf = s3objresp["Body"].read()
+    # GnuPG 2.2.x and earlier outputs "GPG symmetrically encrypted data (AES256 cipher)"
+    assert (
+        "PGP symmetric key encrypted data - AES with 256-bit key salted & iterated - SHA512"
+        in magic.from_buffer(objbuf)
+    )
