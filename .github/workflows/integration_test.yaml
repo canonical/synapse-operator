@@ -9,7 +9,7 @@ jobs:
     outputs:
       run_tests: ${{ steps.set-output.outputs.run_tests }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: tj-actions/changed-files@v46.0.5
         id: changed-files
