@@ -34,8 +34,9 @@ jobs:
         id: image_url
         run: |
           # IMAGE_URL=ghcr.io/${{ github.repository }}:$(date +%s)-${GITHUB_SHA:0:7}
-          # echo "ghcr_image_url=$IMAGE_URL" >> $GITHUB_OUTPUT
-          echo "image_url=ghcr.io/canonical/synapse-operator:1755116210-af837ee" >> $GITHUB_OUTPUT
+          IMAGE_URL=ghcr.io/canonical/synapse-operator:1755116210-af837ee
+          echo "ghcr_image_url=$IMAGE_URL" >> $GITHUB_OUTPUT
+          echo "image_url=$IMAGE_URL" >> $GITHUB_OUTPUT
       - name: Push Rock to GHCR
         if: false
         run: |
