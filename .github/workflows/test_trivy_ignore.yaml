@@ -69,12 +69,12 @@ jobs:
                       | select(.Status == "ignored") 
                       | .Finding.VulnerabilityID' \
               | sort -u)
-            all_cves = $(trivy image "$ROCK_IMAGE" \
+
+            all_cves=$(trivy image "$ROCK_IMAGE" \
             --severity "CRITICAL,HIGH" \
             --show-suppressed \
             -q -f json \
-            | jq -r '.Results[].Vulnerabilities[].VulnerabilityID')
-            echo $all_cves > all_cves.txt
+            | jq -r '.Results[].Vulnerabilities // [] | .[].VulnerabilityID') > all_cves.txt
 
             # Loop through .trivyignore and check if each CVE is still ignored
             line=0
