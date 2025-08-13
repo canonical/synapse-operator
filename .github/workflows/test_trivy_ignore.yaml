@@ -52,7 +52,7 @@ jobs:
       - name: Run trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-            | sh -s -- -b /usr/local/bin v0.46.0
+            | sh -s -- -b /usr/local/bin
 
           if [ -f ".trivyignore" ]; then
             # Get ignored CVEs from Trivy
