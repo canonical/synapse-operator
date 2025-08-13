@@ -55,3 +55,5 @@ CVE-2025-48387
 CVE-2025-22874
 # Pillow python pkg
 CVE-2025-48379
+# stdlib
+CVE-2025-47907
