@@ -11,12 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      rock-file: ${{ steps.build-snap.outputs.rock }}
+      rock-image-url: ${{ steps.image_url.outputs.ghcr_image_url }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v5
 
       - name: Setup LXD
         uses: canonical/setup-lxd@main
@@ -53,6 +51,8 @@ jobs:
      runs-on: ubuntu-latest
      name: Check unused entries in .trivyignore
      steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
       - name: Run trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
@@ -61,7 +61,7 @@ jobs:
           if [ -f ".trivyignore" ]; then
             # Get ignored CVEs from Trivy
             ignored_cves=$(trivy image "$ROCK_IMAGE" \
-              --severity "${{ inputs.trivy-severity-config }}" \
+              --severity "CRITICAL,HIGH" \
               --show-suppressed \
               -q -f json \
               | jq -r '.Results[].ExperimentalModifiedFindings[]? 
@@ -98,5 +98,5 @@ jobs:
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-          ROCK_IMAGE: "${{ github.event.inputs.rock_image }}"
+          ROCK_IMAGE: "${{ needs.build.outputs.rock-image-url }}"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
