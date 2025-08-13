@@ -23,25 +23,19 @@ jobs:
         run: |
           # rockcraft
           sudo snap install rockcraft --classic
-
       - name: Build rock
         run: |
           cd synapse_rock
           rockcraft pack --verbose
-      - name: Upload built rock job artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: synapse_rock_amd64
-          path: "synapse_*.rock"
       - name: Set image URL
         id: image_url
         run: |
           IMAGE_URL=ghcr.io/${{ github.repository }}:$(date +%s)-${GITHUB_SHA:0:7}
           echo "ghcr_image_url=$IMAGE_URL" >> $GITHUB_OUTPUT
           echo "image_url=$IMAGE_URL" >> $GITHUB_OUTPUT
-
       - name: Push Rock to GHCR
         run: |
+          cd synapse_rock
           rockcraft.skopeo --insecure-policy copy \
             oci-archive:$(ls *.rock) \
             docker://${{ steps.image_url.outputs.ghcr_image_url }} \
