@@ -71,7 +71,6 @@ jobs:
               line=$(( line + 1 ))
               [[ "$CVE" =~ ^#.*$ || -z "$CVE" ]] && continue
               if ! grep -q -F "$CVE" <<< "$ignored_cves"; then
-                echo "::notice file=.trivyignore,line=${line}::$CVE not present anymore, can be safely removed."
                 echo "$CVE" >> unused_cves.txt
               fi
             done < .trivyignore
@@ -86,7 +85,7 @@ jobs:
                 cat unused_cves.txt | sed 's/^/- /'
               } > pr_comment.md
 
-              gh pr comment "$GITHUB_REF_NAME" --body-file pr_comment.md || true
+              gh pr comment ${{ github.event.number }} --repo ${{ github.repository }} --body-file pr_comment.md || true
             fi
           else
             echo "::warning::File .trivyignore not found."
