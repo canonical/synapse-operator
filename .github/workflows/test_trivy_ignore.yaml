@@ -64,6 +64,12 @@ jobs:
                       | select(.Status == "ignored") 
                       | .Finding.VulnerabilityID' \
               | sort -u)
+            all_cves = $(trivy image "$ROCK_IMAGE" \
+            --severity "CRITICAL,HIGH" \
+            --show-suppressed \
+            -q -f json \
+            | jq -r '.Results[].Vulnerabilities[].VulnerabilityID)
+            echo $all_cves > all_cves.txt
 
             # Loop through .trivyignore and check if each CVE is still ignored
             line=0
@@ -78,6 +84,8 @@ jobs:
             # If unused CVEs found, post PR comment
             if [ -s unused_cves.txt ]; then
               {
+                echo "### CVEs"
+                cat all_cves.txt | sed 's/^/- /'
                 echo "### 🧹 Unused entries in .trivyignore"
                 echo ""
                 echo "The following CVEs are in \`.trivyignore\` but not ignored by Trivy anymore:"
