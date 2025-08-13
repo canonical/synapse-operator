@@ -22,7 +22,7 @@ jobs:
       - name: Install required dependencies
         run: |
           # rockcraft
-          sudo snap install rockcraft --classic --dangerous
+          sudo snap install rockcraft --classic
 
       - name: Build rock
         run: |
