@@ -1,0 +1,102 @@
+name: Test trivy ignore
+
+on:
+  workflow_call:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Rock
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      rock-file: ${{ steps.build-snap.outputs.rock }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup LXD
+        uses: canonical/setup-lxd@main
+
+      - name: Install required dependencies
+        run: |
+          # rockcraft
+          sudo snap install rockcraft --classic --edge
+
+      - name: Build rock
+        run: |
+          cd synapse_rock
+          rockcraft pack --verbose
+      - name: Upload built rock job artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: synapse_rock_amd64
+          path: "synapse_*.rock"
+      - name: Set image URL
+        id: image_url
+        run: |
+          IMAGE_URL=ghcr.io/${{ github.repository }}:$(date +%s)-${GITHUB_SHA:0:7}
+          echo "ghcr_image_url=$IMAGE_URL" >> $GITHUB_OUTPUT
+          echo "image_url=$IMAGE_URL" >> $GITHUB_OUTPUT
+
+      - name: Push Rock to GHCR
+        run: |
+          rockcraft.skopeo --insecure-policy copy \
+            oci-archive:$(ls *.rock) \
+            docker://${{ steps.image_url.outputs.ghcr_image_url }} \
+            --dest-creds "canonical:${{ secrets.GITHUB_TOKEN }}"
+
+  test:
+     runs-on: ubuntu-latest
+     name: Check unused entries in .trivyignore
+     steps:
+      - name: Run trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin v0.46.0
+
+          if [ -f ".trivyignore" ]; then
+            # Get ignored CVEs from Trivy
+            ignored_cves=$(trivy image "$ROCK_IMAGE" \
+              --severity "${{ inputs.trivy-severity-config }}" \
+              --show-suppressed \
+              -q -f json \
+              | jq -r '.Results[].ExperimentalModifiedFindings[]? 
+                      | select(.Status == "ignored") 
+                      | .Finding.VulnerabilityID' \
+              | sort -u)
+
+            # Loop through .trivyignore and check if each CVE is still ignored
+            line=0
+            while read -r CVE; do
+              line=$(( line + 1 ))
+              [[ "$CVE" =~ ^#.*$ || -z "$CVE" ]] && continue
+              if ! grep -q -F "$CVE" <<< "$ignored_cves"; then
+                echo "::notice file=.trivyignore,line=${line}::$CVE not present anymore, can be safely removed."
+                echo "$CVE" >> unused_cves.txt
+              fi
+            done < .trivyignore
+
+            # If unused CVEs found, post PR comment
+            if [ -s unused_cves.txt ]; then
+              {
+                echo "### 🧹 Unused entries in .trivyignore"
+                echo ""
+                echo "The following CVEs are in \`.trivyignore\` but not ignored by Trivy anymore:"
+                echo ""
+                cat unused_cves.txt | sed 's/^/- /'
+              } > pr_comment.md
+
+              gh pr comment "$GITHUB_REF_NAME" --body-file pr_comment.md || true
+            fi
+          else
+            echo "::warning::File .trivyignore not found."
+          fi
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          ROCK_IMAGE: "${{ github.event.inputs.rock_image }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
