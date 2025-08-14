@@ -69,7 +69,7 @@ jobs:
                       | select(.Status == "ignored") 
                       | .Finding.VulnerabilityID' \
               | sort -u)
-
+            echo $ignored_cves > ignored_cves.txt
             all_cves=$(trivy image "$ROCK_IMAGE" \
             --severity "CRITICAL,HIGH" \
             --show-suppressed \
@@ -91,6 +91,7 @@ jobs:
               {
                 echo "### CVEs"
                 cat all_cves.txt | sed 's/^/- /'
+                cat ignored_cves.txt | sed 's/^/- /'
                 echo "### 🧹 Unused entries in .trivyignore"
                 echo ""
                 echo "The following CVEs are in \`.trivyignore\` but not ignored by Trivy anymore:"
