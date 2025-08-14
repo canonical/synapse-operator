@@ -64,11 +64,6 @@
       "pinDigests": true
     },
     {
-      "matchFiles": ["rockcraft.yaml"],
-      "matchUpdateTypes": ["major", "minor", "patch"],
-      "enabled": false
-    },
-    {
       "matchDatasources": [
           "custom.charmhub"
       ],
@@ -79,6 +74,15 @@
       "matchDatasources": ["terraform-provider"],
       "matchPackageNames": ["juju/juju"],
       "enabled": true
+    },
+	{
+      "matchPackageNames": ["boto3"],
+      "matchUpdateTypes": ["patch"],
+	  "enabled": false
+    },
+	{
+      "matchDatasources": ["github-releases"],
+      "labels": ["workload-update"]
     }
   ]
 }
