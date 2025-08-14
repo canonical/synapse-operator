@@ -2,12 +2,32 @@ name: Integration tests
 
 on:
   pull_request:
-  schedule:
-    # Trigger at 6:00 AM and 6:00 PM UTC
-    - cron: "0 6,18 * * *"
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      run_tests: ${{ steps.set-output.outputs.run_tests }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: tj-actions/changed-files@v46.0.5
+        id: changed-files
+
+      - name: Set output if non-terraform files changed
+        id: set-output
+        run: |
+          echo "run_tests=false" >> "$GITHUB_OUTPUT"
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            if [[ "$file" != terraform/* ]]; then
+              echo "run_tests=true" >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done
+
   integration-tests:
+    if: needs.check-changes.outputs.run_tests == 'true'
+    needs: check-changes
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
@@ -17,8 +37,3 @@ jobs:
       juju-channel: 3.4/stable
       channel: 1.28-strict/stable
       modules: '["test_charm", "test_nginx", "test_s3", "test_scaling", "test_matrix_auth"]'
-  allure-report:
-    if: ${{ (success() || failure()) && github.event_name == 'schedule' }}
-    needs:
-      - integration-tests
-    uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

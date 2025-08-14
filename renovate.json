@@ -10,6 +10,15 @@
         "- [ ] The Release Notes do not describe any breaking changes.",
         "- [ ] The [Upgrade document](https://github.com/element-hq/synapse/blob/develop/docs/upgrade.md) does not describe any breaking changes."
   ],
+    "customDatasources": {
+        "charmhub": {
+            "defaultRegistryUrlTemplate": "https://api.charmhub.io/v2/charms/info/{{packageName}}?fields=channel-map",
+            "format": "json",
+            "transformTemplates": [
+                "{\"releases\": [{\"version\": $string($$.(`channel-map`[channel.risk = 'edge' and channel.track = '2' and channel.base.architecture = 'amd64' and channel.base.channel = '22.04'].revision.revision))}]}"
+            ]
+        }
+    },
   "regexManagers": [
     {
       "fileMatch": ["(^|/)rockcraft.yaml$"],
@@ -37,8 +46,14 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "element-hq/matrix-authentication-service",
       "versioningTemplate": "semver-coerced"
+    },
+    {
+      "fileMatch": ["(^|/)main.tftest.hcl$"],
+      "matchStrings": ["# renovate: depName=\"(?<packageName>[^\"]+)\"\\s*\\n\\s*(?<fieldName>[a-zA-Z0-9_]+)\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "versioningTemplate": "semver-coerced",
+      "datasourceTemplate": "custom.charmhub",
+      "matchStringsStrategy": "recursive"
     }
-
   ],
   "packageRules": [
     {
@@ -52,6 +67,18 @@
       "matchFiles": ["rockcraft.yaml"],
       "matchUpdateTypes": ["major", "minor", "patch"],
       "enabled": false
+    },
+    {
+      "matchDatasources": [
+          "custom.charmhub"
+      ],
+      "automerge": true,
+      "enabled": true
+    },
+    {
+      "matchDatasources": ["terraform-provider"],
+      "matchPackageNames": ["juju/juju"],
+      "enabled": true
     }
   ]
 }
