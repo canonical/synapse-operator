@@ -2,8 +2,8 @@
 # nodejs
 CVE-2024-21538
 CVE-2025-7783
-CVE-2022-46175
-CVE-2024-52798
+# CVE-2022-46175 claims that can be removed
+# CVE-2024-52798 claims that can be removed
 # pebble
 CVE-2025-47907
 # gosu
@@ -12,4 +12,4 @@ CVE-2024-24788
 CVE-2024-34156
 CVE-2025-47907
 # test
-CVE-2021-39293
+# CVE-2021-39293  claims that can be removed
