@@ -230,10 +230,10 @@ class SynapseCharm(CharmBaseWithState):
         signing_key.write_to_container(self.peer_relation, self, charm_state, container)
         unit_number = self.unit.name.split("/")[1]
         pebble.reconcile(charm_state, container, is_main=self.is_main, unit_number=unit_number)
-        pebble.restart_nginx(container, self.get_unit_address(MAIN_UNIT_ID))
+        pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
         signing_key.write_to_secret(self.peer_relation, self, charm_state, container)
 
-    def get_unit_address(self, unit_id: int) -> str:
+    def _get_unit_address(self, unit_id: int) -> str:
         """Get unit address.
 
         Args:
@@ -257,11 +257,11 @@ class SynapseCharm(CharmBaseWithState):
 
         instance_map = {
             "main": {
-                "host": self.get_unit_address(MAIN_UNIT_ID),
+                "host": self._get_unit_address(MAIN_UNIT_ID),
                 "port": 8035,
             },
             "federationsender1": {
-                "host": self.get_unit_address(MAIN_UNIT_ID),
+                "host": self._get_unit_address(MAIN_UNIT_ID),
                 "port": 8034,
             },
         }
@@ -271,7 +271,7 @@ class SynapseCharm(CharmBaseWithState):
                 continue
             instance_name = f"worker{unit_id}"
             instance_map[instance_name] = {
-                "host": self.get_unit_address(unit_id),
+                "host": self._get_unit_address(unit_id),
                 "port": 8034,
             }
 
