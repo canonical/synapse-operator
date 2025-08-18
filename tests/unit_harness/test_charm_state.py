@@ -41,6 +41,7 @@ class SimpleCharm(CharmBaseWithState):
             instance_map_config=None,
             registration_secrets=None,
             redis_required=None,
+            mjolnir_enabled=None,
         )
 
     def reconcile(self, charm_state, maintenance_status: str = "Configuring Synapse") -> None:

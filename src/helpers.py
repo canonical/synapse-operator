@@ -14,24 +14,9 @@ import ops
 import pebble
 import signing_key
 import synapse
-from charm_state import CharmState
+from charm_state import MAIN_UNIT_ID, CharmState
 
 logger = logging.getLogger(__name__)
-
-MAIN_UNIT_ID = 0
-
-
-def is_mjolnir_enabled(charm: ops.CharmBase, charm_state: CharmState) -> bool:
-    """Check if Mjolnir should be enabled.
-
-    Args:
-        charm: charm instance.
-        charm_state: charm state.
-
-    Return:
-        True if is main and config is enabled.
-    """
-    return is_main(charm) and charm_state.synapse_config.enable_mjolnir
 
 
 def peer_relation(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:

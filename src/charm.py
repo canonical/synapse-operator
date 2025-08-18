@@ -180,7 +180,7 @@ class SynapseCharm(CharmBaseWithState):
         if self.unit.is_leader():
             self._matrix_auth.update_matrix_auth_integration(charm_state)
 
-        if helpers.is_mjolnir_enabled(self, charm_state):
+        if charm_state.mjolnir_enabled:
             try:
                 self._mjolnir.enable(charm_state)
             except MjolnirEnableError as e:

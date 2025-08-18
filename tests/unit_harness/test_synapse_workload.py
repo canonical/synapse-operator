@@ -259,6 +259,7 @@ def test_enable_trusted_key_servers_no_action(config_content: dict[str, typing.A
             instance_map_config=None,
             registration_secrets=None,
             redis_required=None,
+            mjolnir_enabled=None,
         ),
     )
 
@@ -545,6 +546,7 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
         synapse_config=synapse_config,
         registration_secrets=None,
         redis_required=None,
+        mjolnir_enabled=None,
     )
 
     synapse.enable_smtp(config_content, charm_state)
@@ -723,6 +725,7 @@ def test_block_non_admin_invites(config_content: dict[str, typing.Any]):
         instance_map_config=None,
         registration_secrets=None,
         redis_required=None,
+        mjolnir_enabled=None,
     )
 
     synapse.block_non_admin_invites(config_content, charm_state)
@@ -760,6 +763,7 @@ def test_publish_rooms_allowlist_success(config_content: dict[str, typing.Any]):
         instance_map_config=None,
         registration_secrets=None,
         redis_required=None,
+        mjolnir_enabled=None,
     )
 
     synapse.enable_room_list_publication_rules(config_content, charm_state)
@@ -875,6 +879,7 @@ def test_invite_checker_policy_rooms(config_content: dict[str, typing.Any]):
         instance_map_config=None,
         registration_secrets=None,
         redis_required=None,
+        mjolnir_enabled=None,
     )
 
     synapse.enable_synapse_invite_checker(config_content, charm_state)
@@ -919,6 +924,7 @@ def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing
         instance_map_config=None,
         registration_secrets=None,
         redis_required=None,
+        mjolnir_enabled=None,
     )
 
     synapse.enable_synapse_invite_checker(config_content, charm_state)

@@ -34,6 +34,7 @@ from charm_types import (
 logger = logging.getLogger(__name__)
 
 CALLBACK_SCRIPT_FILENAME = "/data/{service_name}-charm-callback.sh"
+MAIN_UNIT_ID = 0
 
 
 class CharmBaseWithState(ops.CharmBase, ABC):
@@ -362,6 +363,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         instance_map_config: Instance map configuration with main and worker addresses.
         registration_secrets: Registration secrets received via matrix-auth integration.
         redis_required: charm requires redis integration.
+        mjolnir_enabled: mjolnir must be enabled.
     """
 
     synapse_config: SynapseConfig
@@ -373,6 +375,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     instance_map_config: typing.Optional[typing.Dict]
     registration_secrets: typing.Optional[typing.List]
     redis_required: typing.Optional[bool]
+    mjolnir_enabled: typing.Optional[bool]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -458,6 +461,9 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                         )
             planned_units = charm.app.planned_units()
             redis_required = redis_config is None and planned_units > 1
+            mjolnir_enabled = (
+                f"/{MAIN_UNIT_ID}" in charm.unit.name and valid_synapse_config.enable_mjolnir
+            )
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())
@@ -474,4 +480,5 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             instance_map_config=instance_map_config,
             registration_secrets=registration_secrets,
             redis_required=redis_required,
+            mjolnir_enabled=mjolnir_enabled,
         )
