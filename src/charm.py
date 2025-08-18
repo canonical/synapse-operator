@@ -58,6 +58,7 @@ class SynapseCharm(CharmBaseWithState):
     Attrs:
         on: listen to Redis events.
         peer_relation: charm peer relation.
+        is_main: if is main unit or not.
     """
 
     # This class has several instance attributes like observers and libraries.
@@ -147,6 +148,15 @@ class SynapseCharm(CharmBaseWithState):
             return None
         return peer_relations[0]
 
+    @property
+    def is_main(self) -> bool:
+        """Check if this is the main unit.
+
+        Returns:
+            True if is main unit.
+        """
+        return f"/{MAIN_UNIT_ID}" in self.unit.name
+
     @inject_charm_state
     def _trigger_reconcile(self, event: ops.HookEvent, charm_state: CharmState) -> None:
         """Trigger or not reconcile based on events observed by the charm.
@@ -218,9 +228,8 @@ class SynapseCharm(CharmBaseWithState):
             container: charm container.
         """
         signing_key.write_to_container(self.peer_relation, self, charm_state, container)
-        is_main = f"/{MAIN_UNIT_ID}" in self.unit.name
         unit_number = self.unit.name.split("/")[1]
-        pebble.reconcile(charm_state, container, is_main=is_main, unit_number=unit_number)
+        pebble.reconcile(charm_state, container, is_main=self.is_main, unit_number=unit_number)
         pebble.restart_nginx(container, self.get_unit_address(MAIN_UNIT_ID))
         signing_key.write_to_secret(self.peer_relation, self, charm_state, container)
 
