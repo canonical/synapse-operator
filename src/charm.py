@@ -19,12 +19,14 @@ from ops import main
 from ops.charm import ActionEvent
 
 import actions
-import helpers
+import pebble
+import signing_key
 import synapse
 from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import (
     CALLBACK_SCRIPT_FILENAME,
+    MAIN_UNIT_ID,
     CharmBaseWithState,
     CharmState,
     inject_charm_state,
@@ -55,6 +57,7 @@ class SynapseCharm(CharmBaseWithState):
 
     Attrs:
         on: listen to Redis events.
+        peer_relation: charm peer relation.
     """
 
     # This class has several instance attributes like observers and libraries.
@@ -126,8 +129,23 @@ class SynapseCharm(CharmBaseWithState):
             media_config=self._media.get_relation_as_media_conf(),
             redis_config=self._redis.get_relation_as_redis_conf(),
             registration_secrets=self._matrix_auth.get_requirer_registration_secrets(),
-            instance_map_config=helpers.create_instance_map(self),
+            instance_map_config=self.create_instance_map(),
         )
+
+    @property
+    def peer_relation(self) -> typing.Optional[ops.Relation]:
+        """Get peer relation.
+
+        Args:
+            charm: charm instance.
+
+        Returns:
+            Synapse peer relation.
+        """
+        peer_relations = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relations:
+            return None
+        return peer_relations[0]
 
     @inject_charm_state
     def _trigger_reconcile(self, event: ops.HookEvent, charm_state: CharmState) -> None:
@@ -175,7 +193,7 @@ class SynapseCharm(CharmBaseWithState):
 
         self.model.unit.status = ops.MaintenanceStatus(maintenance_status)
 
-        helpers.configure_and_start_services(self, charm_state, container)
+        self.configure_and_start_services(charm_state, container)
 
         if self.unit.is_leader():
             self._matrix_auth.update_matrix_auth_integration(charm_state)
@@ -189,6 +207,66 @@ class SynapseCharm(CharmBaseWithState):
                 self.unit.status = ops.BlockedStatus(str(e))
 
         self._set_unit_with_service_status()
+
+    def configure_and_start_services(
+        self, charm_state: CharmState, container: ops.Container
+    ) -> None:
+        """Configure and start pebble layers.
+
+        Args:
+            charm_state: charm state.
+            container: charm container.
+        """
+        signing_key.write_to_container(self.peer_relation, self, charm_state, container)
+        is_main = f"/{MAIN_UNIT_ID}" in self.unit.name
+        unit_number = self.unit.name.split("/")[1]
+        pebble.reconcile(charm_state, container, is_main=is_main, unit_number=unit_number)
+        pebble.restart_nginx(container, self.get_unit_address(MAIN_UNIT_ID))
+        signing_key.write_to_secret(self.peer_relation, self, charm_state, container)
+
+    def get_unit_address(self, unit_id: int) -> str:
+        """Get unit address.
+
+        Args:
+            unit_id: number as 0 in synapse/0.
+
+        Returns:
+            unit address as unit-0.synapse-endpoints.
+        """
+        return f"{self.app.name}-{unit_id}.{self.app.name}-endpoints"
+
+    def create_instance_map(self) -> typing.Optional[typing.Dict]:
+        """Create instance_map configuration.
+
+        Returns:
+            Instance map configuration as a dict or None if there is only one unit.
+        """
+        planned_units = self.app.planned_units()
+        if planned_units == 1:
+            logger.debug("Only one unit is planned; skipping instance_map configuration.")
+            return None
+
+        instance_map = {
+            "main": {
+                "host": self.get_unit_address(MAIN_UNIT_ID),
+                "port": 8035,
+            },
+            "federationsender1": {
+                "host": self.get_unit_address(MAIN_UNIT_ID),
+                "port": 8034,
+            },
+        }
+
+        for unit_id in range(planned_units):
+            if unit_id == MAIN_UNIT_ID:
+                continue
+            instance_name = f"worker{unit_id}"
+            instance_map[instance_name] = {
+                "host": self.get_unit_address(unit_id),
+                "port": 8034,
+            }
+
+        return instance_map
 
     def _set_unit_with_service_status(self) -> None:
         """Set unit status message after checking services."""
