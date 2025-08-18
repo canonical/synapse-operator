@@ -32,7 +32,7 @@ def signing_key_path(charm_state: CharmState) -> str:
 
 
 def get_signing_key_secret_content(
-    peer_relation: typing.Optional[ops.Relation], charm: ops.CharmBase
+    peer_relation: ops.Relation, charm: ops.CharmBase
 ) -> typing.Optional[str]:
     """Get signing key secret content.
 
@@ -44,12 +44,6 @@ def get_signing_key_secret_content(
         Content as string.
     """
     content = None
-    if not peer_relation:
-        logger.error(
-            "Failed to get signing key: no peer relation %s found",
-            synapse.SYNAPSE_PEER_RELATION_NAME,
-        )
-        return content
     secret_id = peer_relation.data[charm.app].get("secret-signing-id")
     if secret_id:
         try:
@@ -62,7 +56,7 @@ def get_signing_key_secret_content(
 
 
 def get_signing_key_secret_label(
-    peer_relation: typing.Optional[ops.Relation], charm: ops.CharmBase
+    peer_relation: ops.Relation, charm: ops.CharmBase
 ) -> typing.Optional[str]:
     """Get signing key secret label.
 
@@ -74,12 +68,6 @@ def get_signing_key_secret_label(
         label as string.
     """
     label = None
-    if not peer_relation:
-        logger.error(
-            "Failed to get signing key: no peer relation %s found",
-            synapse.SYNAPSE_PEER_RELATION_NAME,
-        )
-        return label
     secret_id = peer_relation.data[charm.app].get("secret-signing-id")
     if secret_id:
         try:
@@ -91,7 +79,7 @@ def get_signing_key_secret_label(
 
 
 def write_to_container(
-    peer_relation: typing.Optional[ops.Relation],
+    peer_relation: ops.Relation,
     charm: ops.CharmBase,
     charm_state: CharmState,
     container: ops.Container,
@@ -115,7 +103,7 @@ def write_to_container(
 
 
 def write_to_secret(
-    peer_relation: typing.Optional[ops.Relation],
+    peer_relation: ops.Relation,
     charm: ops.CharmBase,
     charm_state: CharmState,
     container: ops.Container,
@@ -128,12 +116,6 @@ def write_to_secret(
         charm_state: charm state.
         container: container.
     """
-    if not peer_relation:
-        logger.error(
-            "Failed to set signing key: no peer relation %s found",
-            synapse.SYNAPSE_PEER_RELATION_NAME,
-        )
-        return
     signing_key = ""
     with container.pull(signing_key_path(charm_state)) as f:
         signing_key = f.read()
