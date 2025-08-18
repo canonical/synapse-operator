@@ -16,6 +16,8 @@ from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
 
+SIGNING_KEY_SECRET_LABEL = "synapse-signing-key"
+
 
 def signing_key_path(charm_state: CharmState) -> str:
     """Get signing key path.
@@ -57,6 +59,35 @@ def get_signing_key_secret_content(
             logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
             del peer_relation.data[charm.app]["secret-signing-id"]
     return content
+
+
+def get_signing_key_secret_label(
+    peer_relation: typing.Optional[ops.Relation], charm: ops.CharmBase
+) -> typing.Optional[str]:
+    """Get signing key secret label.
+
+    Args:
+        peer_relation: synapse peer relation.
+        charm: charm instance.
+
+    Returns:
+        label as string.
+    """
+    label = None
+    if not peer_relation:
+        logger.error(
+            "Failed to get signing key: no peer relation %s found",
+            synapse.SYNAPSE_PEER_RELATION_NAME,
+        )
+        return label
+    secret_id = peer_relation.data[charm.app].get("secret-signing-id")
+    if secret_id:
+        try:
+            secret = charm.model.get_secret(id=secret_id)
+            return secret.label
+        except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
+            logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
+    return label
 
 
 def write_to_container(
@@ -107,9 +138,14 @@ def write_to_secret(
     with container.pull(signing_key_path(charm_state)) as f:
         signing_key = f.read()
         signing_key = signing_key.rstrip()
-    if signing_key == get_signing_key_secret_content(peer_relation, charm):
+    label = get_signing_key_secret_label(peer_relation, charm)
+    if label == SIGNING_KEY_SECRET_LABEL and signing_key == get_signing_key_secret_content(
+        peer_relation, charm
+    ):
         logger.info("Received signing key but there is no change, skipping")
         return
     if charm.unit.is_leader():
-        secret = charm.app.add_secret({"secret-signing-key": signing_key})
+        secret = charm.app.add_secret(
+            {"secret-signing-key": signing_key}, label=SIGNING_KEY_SECRET_LABEL
+        )
         peer_relation.data[charm.app].update({"secret-signing-id": typing.cast(str, secret.id)})
