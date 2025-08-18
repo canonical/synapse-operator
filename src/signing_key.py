@@ -26,7 +26,7 @@ def signing_key_path(charm_state: CharmState) -> str:
     Returns:
         signing key path as string.
     """
-    return f"/data/{charm_state.synapse_config.server_name}.signing.key"
+    return f"{synapse.SYNAPSE_CONFIG_DIR}/{charm_state.synapse_config.server_name}.signing.key"
 
 
 def get_signing_key_secret_content(
