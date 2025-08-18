@@ -31,7 +31,8 @@ def is_redis_required(charm: ops.CharmBase, charm_state: CharmState) -> bool:
     Return:
         True if more than 1 unit is found.
     """
-    return charm_state.redis_config is None and planned_units(charm) > 1
+    planned_units = charm.app.planned_units()
+    return charm_state.redis_config is None and planned_units > 1
 
 
 def is_mjolnir_enabled(charm: ops.CharmBase, charm_state: CharmState) -> bool:
@@ -45,18 +46,6 @@ def is_mjolnir_enabled(charm: ops.CharmBase, charm_state: CharmState) -> bool:
         True if is main and config is enabled.
     """
     return is_main(charm) and charm_state.synapse_config.enable_mjolnir
-
-
-def planned_units(charm: ops.CharmBase) -> int:
-    """Get number of planned units.
-
-    Args:
-        charm: charm instance.
-
-    Returns:
-        Number of planned units.
-    """
-    return charm.app.planned_units()
 
 
 def peer_relation(charm: ops.CharmBase) -> typing.Optional[ops.Relation]:
@@ -120,7 +109,8 @@ def create_instance_map(charm: ops.CharmBase) -> typing.Optional[typing.Dict]:
     Returns:
         Instance map configuration as a dict or None if there is only one unit.
     """
-    if planned_units(charm) == 1:
+    planned_units = charm.app.planned_units()
+    if planned_units == 1:
         logger.debug("Only one unit is planned; skipping instance_map configuration.")
         return None
 
@@ -135,7 +125,7 @@ def create_instance_map(charm: ops.CharmBase) -> typing.Optional[typing.Dict]:
         },
     }
 
-    for unit_id in range(planned_units(charm)):
+    for unit_id in range(planned_units):
         if unit_id == MAIN_UNIT_ID:
             continue
         instance_name = f"worker{unit_id}"
