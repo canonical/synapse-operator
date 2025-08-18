@@ -330,7 +330,7 @@ class SynapseCharm(CharmBaseWithState):
         )
         script = textwrap.dedent(
             f"""\
-            while :; do
+            while true; do
                 if /charm/bin/pebble services {service_name}|grep active; then
                     pebble notify canonical.com/synapse/status
                     pebble stop {service_name}-charm-callback
