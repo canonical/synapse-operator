@@ -169,7 +169,7 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
 
-        if helpers.is_redis_required(self, charm_state):
+        if charm_state.redis_required:
             self.unit.status = ops.BlockedStatus("Redis integration is required.")
             return
 

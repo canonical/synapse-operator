@@ -21,20 +21,6 @@ logger = logging.getLogger(__name__)
 MAIN_UNIT_ID = 0
 
 
-def is_redis_required(charm: ops.CharmBase, charm_state: CharmState) -> bool:
-    """Check if Redis configuration should be required.
-
-    Args:
-        charm: charm instance.
-        charm_state: charm state.
-
-    Return:
-        True if more than 1 unit is found.
-    """
-    planned_units = charm.app.planned_units()
-    return charm_state.redis_config is None and planned_units > 1
-
-
 def is_mjolnir_enabled(charm: ops.CharmBase, charm_state: CharmState) -> bool:
     """Check if Mjolnir should be enabled.
 
