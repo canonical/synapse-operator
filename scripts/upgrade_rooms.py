@@ -357,7 +357,7 @@ def main() -> None:  # noqa: C901
             while True:
                 user_input = (
                     input(
-                        f"{room_id} - failed, action required. What do you want to do? [r]etry / [s]kip / [f]inish: "  # noqa: E501
+                        f"{room_id} - failed, action required. What do you want to do? [r]etry / [s]kip / [f]inish: "  # noqa: E501 W505
                     )
                     .strip()
                     .lower()
