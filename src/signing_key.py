@@ -108,25 +108,23 @@ def write_to_secret(
     new_content = {"secret-signing-key": signing_key}
 
     existing_secret = get_signing_key_secret(peer_relation, charm)
-
-    if (
-        existing_secret
-        and existing_secret.label == SIGNING_KEY_SECRET_LABEL
-        and signing_key == existing_secret.get_content().get(SIGNING_KEY_SECRET_CONTENT_ID)
+    if existing_secret and signing_key == existing_secret.get_content().get(
+        SIGNING_KEY_SECRET_CONTENT_ID
     ):
         logger.info("Received signing key but there is no change, skipping")
         return
 
-    if existing_secret and existing_secret.label:
+    if existing_secret:
         # the existing secret already has label but has different content
         # so we must only update it
         try:
             existing_secret.set_content(new_content)
+            existing_secret.set_info(label=SIGNING_KEY_SECRET_LABEL)
             logger.info("Signing key secret was updated, id: %d", existing_secret.id)
             return
         except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
             logger.exception("Failed to get secret id %s: %s", existing_secret, str(exc))
-    # secret not found or no label
+    # secret not found
     # so we create a new one
     new_secret = charm.app.add_secret(new_content, label=SIGNING_KEY_SECRET_LABEL)
     peer_relation.data[charm.app].update({SIGNING_KEY_PEER_ID: typing.cast(str, new_secret.id)})
