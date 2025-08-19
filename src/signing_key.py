@@ -123,6 +123,7 @@ def write_to_secret(
         try:
             existing_secret.set_content(new_content)
             logger.info("Signing key secret was updated, id: %d", existing_secret.id)
+            return
         except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
             logger.exception("Failed to get secret id %s: %s", existing_secret, str(exc))
     # secret not found or no label
