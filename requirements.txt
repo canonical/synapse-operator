@@ -3,7 +3,7 @@ cosl ==1.1.0
 cryptography ==45.0.6
 jinja2 ==3.1.6
 deepdiff ==8.6.0
-jsonschema ==4.25.0
+jsonschema ==4.25.1
 ops ==3.1.0
 psycopg2-binary ==2.9.10
 pydantic ==2.11.7
