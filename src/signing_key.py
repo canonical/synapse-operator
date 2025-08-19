@@ -17,8 +17,8 @@ from charm_state import CharmState
 logger = logging.getLogger(__name__)
 
 # No sensitive data
-SIGNING_KEY_SECRET_LABEL = "synapse-signing-key" # nosec
-SIGNING_KEY_SECRET_CONTENT_ID = "secret-signing-key" # nosec
+SIGNING_KEY_SECRET_LABEL = "synapse-signing-key"  # nosec
+SIGNING_KEY_SECRET_CONTENT_ID = "secret-signing-key"  # nosec
 SIGNING_KEY_PEER_ID = "secret-signing-id"
 
 
