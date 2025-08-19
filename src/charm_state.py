@@ -33,7 +33,6 @@ from charm_types import (
 
 logger = logging.getLogger(__name__)
 
-CALLBACK_SCRIPT_FILENAME = "/data/{service_name}-charm-callback.sh"
 MAIN_UNIT_ID = 0
 
 

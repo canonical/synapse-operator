@@ -7,8 +7,6 @@
 
 
 import logging
-import pathlib
-import textwrap
 import typing
 
 import ops
@@ -25,7 +23,6 @@ import synapse
 from admin_access_token import AdminAccessTokenService
 from backup_observer import BackupObserver
 from charm_state import (
-    CALLBACK_SCRIPT_FILENAME,
     MAIN_UNIT_ID,
     CharmBaseWithState,
     CharmState,
@@ -107,9 +104,6 @@ class SynapseCharm(CharmBaseWithState):
             self.on[synapse.SYNAPSE_PEER_RELATION_NAME].relation_changed, self._trigger_reconcile
         )
         self.framework.observe(self.on.synapse_pebble_ready, self._trigger_reconcile)
-        self.framework.observe(
-            self.on["synapse"].pebble_custom_notice, self._on_pebble_custom_notice
-        )
         self.framework.observe(self.on.register_user_action, self._on_register_user_action)
         self.framework.observe(
             self.on.promote_user_admin_action, self._on_promote_user_admin_action
@@ -168,15 +162,6 @@ class SynapseCharm(CharmBaseWithState):
         if isinstance(event, ops.RelationDepartedEvent) and event.departing_unit == self.unit:
             return
         self.reconcile(charm_state)
-
-    def _on_pebble_custom_notice(self, event: ops.PebbleCustomNoticeEvent) -> None:
-        """Handle pebble custom notice event.
-
-        Args:
-            event: Pebble custom notice event.
-        """
-        if event.notice.key.startswith("canonical.com/synapse/status"):
-            self._set_unit_with_service_status()
 
     # Too complex for now.
     def reconcile(  # noqa: C901
@@ -288,14 +273,10 @@ class SynapseCharm(CharmBaseWithState):
 
         if not self._is_service_running(container, synapse.SYNAPSE_SERVICE_NAME):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
-            self._install_callback_script(synapse.SYNAPSE_SERVICE_NAME)
-            container.start(f"{synapse.SYNAPSE_SERVICE_NAME}-charm-callback")
             return
 
         if not self._is_service_running(container, synapse.SYNAPSE_NGINX_SERVICE_NAME):
             self.unit.status = ops.MaintenanceStatus("Waiting for NGINX")
-            self._install_callback_script(synapse.SYNAPSE_NGINX_SERVICE_NAME)
-            container.start(f"{synapse.SYNAPSE_NGINX_SERVICE_NAME}-charm-callback")
             return
 
         if isinstance(self.unit.status, ops.BlockedStatus):
@@ -313,38 +294,9 @@ class SynapseCharm(CharmBaseWithState):
             logger.info("mjolnir not found, skipping")
         if check_mjolnir and not self._is_service_running(container, synapse.MJOLNIR_SERVICE_NAME):
             self.unit.status = ops.MaintenanceStatus("Waiting for Mjolnir")
-            self._install_callback_script(synapse.MJOLNIR_SERVICE_NAME)
-            container.start(f"{synapse.MJOLNIR_SERVICE_NAME}-charm-callback")
             return
 
         self.unit.status = ops.ActiveStatus()
-
-    def _install_callback_script(self, service_name: str) -> None:
-        """Install platform startup callback script for noticing the charm on start.
-
-        Args:
-            service_name: service name to check status.
-        """
-        callback_script_path = pathlib.Path(
-            CALLBACK_SCRIPT_FILENAME.format(service_name=service_name)
-        )
-        script = textwrap.dedent(
-            f"""\
-            while true; do
-                if /charm/bin/pebble services {service_name}|grep active; then
-                    pebble notify canonical.com/synapse/status
-                    pebble stop {service_name}-charm-callback
-                    break
-                else
-                    sleep 5
-                fi
-            done
-            """
-        )
-        # assuming that can_connect was already checked
-        container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        container.make_dir(callback_script_path.parent, make_parents=True)
-        container.push(callback_script_path, script, encoding="utf-8")
 
     def _is_service_running(self, container: ops.Container, service_name: str) -> bool:
         """Check if all instances of a service are running.
