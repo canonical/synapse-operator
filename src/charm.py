@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 INGRESS_INTEGRATION_NAME = "ingress"
 # This constant is updated by Renovate.
-SYNAPSE_VERSION = "1.134.0"
+SYNAPSE_VERSION = "1.136.0"
 
 
 class SynapseCharm(CharmBaseWithState):
