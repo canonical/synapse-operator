@@ -17,6 +17,7 @@ from ops import main
 from ops.charm import ActionEvent
 
 import actions
+import macaroon_key
 import pebble
 import signing_key
 import synapse
@@ -214,11 +215,13 @@ class SynapseCharm(CharmBaseWithState):
         """
         if self.peer_relation:
             signing_key.write_to_container(self.peer_relation, self, charm_state, container)
+            macaroon_key.write_to_container(self.peer_relation, self, charm_state, container)
         unit_number = self.unit.name.split("/")[1]
         pebble.reconcile(charm_state, container, is_main=self.is_main, unit_number=unit_number)
         pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
         if self.peer_relation:
             signing_key.write_to_secret(self.peer_relation, self, charm_state, container)
+            macaroon_key.write_to_secret(self.peer_relation, self, charm_state, container)
 
     def _get_unit_address(self, unit_id: int) -> str:
         """Get unit address.
