@@ -1,0 +1,18 @@
+name: Tests
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+    branches:
+      - 'track/1'
+
+jobs:
+  unit-tests:
+    uses: canonical/operator-workflows/.github/workflows/test.yaml@main
+    secrets: inherit
+    with:
+      self-hosted-runner: false
+      self-hosted-runner-label: "edge"
+      vale-style-check: false
