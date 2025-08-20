@@ -179,7 +179,7 @@ class SynapseCharm(CharmBaseWithState):
 
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
+            self.unit.status = ops.MaintenanceStatus("Waiting for container")
             return
 
         if charm_state.redis_required:
@@ -271,41 +271,20 @@ class SynapseCharm(CharmBaseWithState):
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
             return
 
-        if not self._is_service_running(container, synapse.SYNAPSE_SERVICE_NAME):
-            self.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
-            return
-
-        if not self._is_service_running(container, synapse.SYNAPSE_NGINX_SERVICE_NAME):
-            self.unit.status = ops.MaintenanceStatus("Waiting for NGINX")
-            return
-
         if isinstance(self.unit.status, ops.BlockedStatus):
             # Preserve BlockedStatus from backup/media observers (e.g., S3 config errors).
             # This should be refactored.
             return
 
-        check_mjolnir = False
         try:
-            service = container.get_services(synapse.MJOLNIR_SERVICE_NAME)
-            if service:
-                check_mjolnir = True
+            service = container.get_service(synapse.MJOLNIR_SERVICE_NAME)
+            if service and not service.is_running():
+                self.unit.status = ops.MaintenanceStatus("Waiting for Mjolnir")
         except ops.ModelError:
             # ModelError is raised if service not found
             logger.info("mjolnir not found, skipping")
-        if check_mjolnir and not self._is_service_running(container, synapse.MJOLNIR_SERVICE_NAME):
-            self.unit.status = ops.MaintenanceStatus("Waiting for Mjolnir")
-            return
 
         self.unit.status = ops.ActiveStatus()
-
-    def _is_service_running(self, container: ops.Container, service_name: str) -> bool:
-        """Check if all instances of a service are running.
-
-        Returns:
-            True if all services are running.
-        """
-        services = container.get_services(service_name)
-        return bool(services) and all(service.is_running() for service in services.values())
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
         """Register user and report action result.

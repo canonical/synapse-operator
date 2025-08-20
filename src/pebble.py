@@ -51,7 +51,6 @@ def check_synapse_alive(charm_state: CharmState) -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_ALIVE_NAME)
     check.override = "replace"
-    check.level = "alive"
     check.tcp = {"port": synapse.SYNAPSE_PORT}
     experimental_alive_check = charm_state.synapse_config.experimental_alive_check
     if experimental_alive_check:
@@ -70,7 +69,6 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
-    check.level = "ready"
     check.timeout = "20s"
     check.period = "2m"
     check.threshold = 5
@@ -108,7 +106,6 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_NGINX_READY_NAME)
     check.override = "replace"
-    check.level = "ready"
     check.http = {"url": f"http://localhost:{synapse.SYNAPSE_NGINX_PORT}/health"}
     return check.to_dict()
 
@@ -121,7 +118,6 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_MJOLNIR_READY_NAME)
     check.override = "replace"
-    check.level = "ready"
     check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
     check.timeout = "10s"
     check.threshold = 5
