@@ -22,7 +22,7 @@ juju integrate synapse:backup s3-integrator
 _Interface_: pgsql
 
 _Supported charms_: [`postgresql-k8s`](https://charmhub.io/postgresql-k8s),
-[postgresql](https://charmhub.io/postgresql)
+[`postgresql`](https://charmhub.io/postgresql)
 
 Database integration is a required relation for the Synapse charm to supply
 structured data
@@ -37,7 +37,7 @@ juju integrate synapse postgresql-k8s:db
 
 _Interface_: grafana-dashboard
 
-_Supported charms_: [grafana-k8s](https://charmhub.io/grafana-k8s)
+_Supported charms_: [`grafana-k8s`](https://charmhub.io/grafana-k8s)
 
 Grafana-dashboard relation enables quick dashboard access already tailored to
 fit the needs of operators to monitor the charm. The template for the Grafana
@@ -61,11 +61,11 @@ juju integrate synapse grafana-dashboard`
 
 _Interface_: ingress
 
-_Supported charms_: [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator),
+_Supported charms_: [`nginx-ingress-integrator`](https://charmhub.io/nginx-ingress-integrator),
 [traefik](https://charmhub.io/traefik-k8s)
 
-Ingress manages external http/https access to services in a kubernetes cluster.
-Note that the kubernetes cluster must already have an nginx ingress controller
+Ingress manages external http/https access to services in a Kubernetes cluster.
+Note that the Kubernetes cluster must already have an NGINX ingress controller
 already deployed. Documentation to enable ingress in MicroK8s can be found in
 [Addon: Ingress](https://microk8s.io/docs/addon-ingress).
 
@@ -78,7 +78,7 @@ juju integrate synapse nginx-ingress-integrator
 
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape-v0)
 
-_Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)
+_Supported charms_: [`prometheus-k8s`](https://charmhub.io/prometheus-k8s)
 
 Metrics-endpoint relation allows scraping the `/metrics` endpoint provided by
 Synapse. The metrics are exposed in the [open metrics format](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#data-model) and will only be scraped by Prometheus once the
@@ -93,10 +93,10 @@ juju integrate synapse prometheus-k8s
 
 _Interface_: redis
 
-_Supported charms_: [redis-k8s](https://charmhub.io/redis-k8s)
+_Supported charms_: [`redis-k8s`](https://charmhub.io/redis-k8s)
 
 Integrating Synapse with Redis is required by horizontal scaling the charm.
-If the integration is not present, the charm will be blocked.
+If the relation is not present, the charm will be blocked.
 
 See more information in [Scaling synapse via workers](https://matrix-org.github.io/synapse/latest/workers.html) in documentation repository for Synapse.
 
@@ -109,10 +109,10 @@ juju integrate synapse redis-k8s
 
 _Interface_: smtp
 
-_Supported charms_: [smtp-integrator](https://charmhub.io/smtp-integrator/)
+_Supported charms_: [`smtp-integrator`](https://charmhub.io/smtp-integrator/)
 
 Integrating Synapse with SMTP Integrator provides SMTP configuration details so
-a smtp server can be used in Synapse.
+a SMTP server can be used in Synapse.
 
 Example `smtp` integrate command: 
 ```
