@@ -39,7 +39,7 @@ source .tox/unit/bin/activate
 
 ### Testing
 
-Note that the [Synapse](synapse_rock/rockcraft.yaml) image need to be built and
+Note that the [Synapse](https://github.com/canonical/synapse-operator/blob/2/main/synapse_rock/rockcraft.yaml) image need to be built and
 pushed to microk8s for the tests to run. It should be tagged as
 `localhost:32000/synapse:latest`so that Kubernetes knows how to pull them
 from the MicroK8s repository. Note that the MicroK8s registry needs to be

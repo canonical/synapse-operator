@@ -53,7 +53,7 @@ Synapse may become unavailable, preventing users from accessing the service.
 
 - Keep clients updated:
 
-  Synapse performance can be degraded by certain client behaviors, as noted in [Element issue #27867](https://github.com/vector-im/element-web/issues/27867). For example, some clients continuously query `/keys/query` for inactive users, leading to
+  Synapse performance can be degraded by certain client behaviors, as noted in [Element issue #27867](https://github.com/element-hq/element-web/issues/27867). For example, some clients continuously query `/keys/query` for inactive users, leading to
   performance issues. Keeping clients updated helps avoid known performance problems.
 
 - Ensure sufficient resources:

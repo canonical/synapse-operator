@@ -181,17 +181,17 @@ number of users.
 
 ## Integrations
 
-See [Integrations](https://charmhub.io/synapse/docs/reference/integrations).
+See [Integrations](https://charmhub.io/synapse/docs/reference-integrations).
 
 ## Charm code overview
 
 The `src/charm.py` is the default entry point for a charm and has the
 `SynapseOperatorCharm` Python class which inherits from the `CharmBase`.
 
-CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops)
+CharmBase is the base class from which all Charms are formed, defined by [Ops](https://documentation.ubuntu.com/ops/latest/)
 (Python framework for developing charms).
 
-See more information in [Charm](https://juju.is/docs/sdk/constructs#heading--charm).
+See more information in [Charm](https://documentation.ubuntu.com/juju/3.6/reference/charm/).
 
 The `__init__` method guarantees that the charm observes all events relevant to
 its operation and handles them.
