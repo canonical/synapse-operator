@@ -1,6 +1,6 @@
 # Integrations
 
-### backup
+### `backup`
 
 _Interface_: s3
 
@@ -12,28 +12,28 @@ indicated in the S3 compatible object storage provider configuration provided by
 The Synapse charm will back up the media files, signing keys and sqlite database file if applicable.
 If Synapse database integration is used, the Synapse charm will not back up the related database.
 
-Example backup integrate command: 
+Example `backup` integrate command: 
 ```
 juju integrate synapse:backup s3-integrator
 ```
 
-### db
+### `db`
 
 _Interface_: pgsql
 
-_Supported charms_: [postgresql-k8s](https://charmhub.io/postgresql-k8s),
+_Supported charms_: [`postgresql-k8s`](https://charmhub.io/postgresql-k8s),
 [postgresql](https://charmhub.io/postgresql)
 
 Database integration is a required relation for the Synapse charm to supply
 structured data
 storage for Synapse.
 
-Example db integrate command: 
+Example `db` integrate command: 
 ```
 juju integrate synapse postgresql-k8s:db
 ```
 
-### grafana-dashboard
+### `grafana-dashboard`
 
 _Interface_: grafana-dashboard
 
@@ -57,7 +57,7 @@ Grafana-dashboard integrate command:
 juju integrate synapse grafana-dashboard`
 ```
 
-### ingress
+### `ingress`
 
 _Interface_: ingress
 
@@ -69,12 +69,12 @@ Note that the kubernetes cluster must already have an nginx ingress controller
 already deployed. Documentation to enable ingress in MicroK8s can be found in
 [Addon: Ingress](https://microk8s.io/docs/addon-ingress).
 
-Example ingress integrate command: 
+Example `ingress` integrate command: 
 ```
 juju integrate synapse nginx-ingress-integrator
 ```
 
-### metrics-endpoint
+### `metrics-endpoint`
 
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape-v0)
 
@@ -84,12 +84,12 @@ Metrics-endpoint relation allows scraping the `/metrics` endpoint provided by
 Synapse. The metrics are exposed in the [open metrics format](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#data-model) and will only be scraped by Prometheus once the
 relation becomes active. For more information about the metrics exposed, refer to ["How to monitor Synapse metrics using Prometheus"](https://github.com/matrix-org/synapse/blob/master/docs/metrics-howto.md).
 
-Metrics-endpoint integrate command: 
+Example `metrics-endpoint` integrate command: 
 ```
 juju integrate synapse prometheus-k8s
 ```
 
-### redis
+### `redis`
 
 _Interface_: redis
 
@@ -100,12 +100,12 @@ If the integration is not present, the charm will be blocked.
 
 See more information in [Scaling synapse via workers](https://matrix-org.github.io/synapse/latest/workers.html) in documentation repository for Synapse.
 
-Example redis integrate command: 
+Example `redis` integrate command: 
 ```
 juju integrate synapse redis-k8s
 ```
 
-### smtp
+### `smtp`
 
 _Interface_: smtp
 
@@ -114,7 +114,7 @@ _Supported charms_: [smtp-integrator](https://charmhub.io/smtp-integrator/)
 Integrating Synapse with SMTP Integrator provides SMTP configuration details so
 a smtp server can be used in Synapse.
 
-Example smtp integrate command: 
+Example `smtp` integrate command: 
 ```
 juju integrate synapse smtp-integrator:smtp
 ```

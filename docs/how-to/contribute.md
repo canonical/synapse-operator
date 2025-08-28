@@ -21,8 +21,6 @@ examines
 - Please help us out in ensuring easy to review branches by rebasing your pull
 request branch onto the `main` branch. This also avoids merge commits and
 creates a linear Git commit history.
-- Please generate src documentation for every commit. See the section below for
-more details.
 
 ## Developing
 
@@ -105,6 +103,6 @@ juju configure synapse server_name=mychat.test.com
 
 Read more about `server_name` in [Configuring Synapse](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#server_name).
 
-## Canonical Contributor Agreement
+## Canonical contributor agreement
 
 Canonical welcomes contributions to the Synapse Operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.

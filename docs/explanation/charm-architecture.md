@@ -47,19 +47,19 @@ UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
 
 The Synapse charm deploys a container named `synapse` with the following Pebble layers configured:
 
-1. synapse: This layer is present on all units. It contains the Synapse application service and is started with different commands depending on whether the unit is the leader or not.
+1. `synapse`: This layer is present on all units. It contains the Synapse application service and is started with different commands depending on whether the unit is the leader or not.
 
-2. synapse-cron: Installs a cron script that helps clean up empty directories within Synapse's media content storage locations. These directories can accumulate and consume inodes and disk space, and the cron job ensures they are purged.
+2. `synapse-cron`: Installs a cron script that helps clean up empty directories within Synapse's media content storage locations. These directories can accumulate and consume index nodes and disk space, and the cron job ensures they are purged.
 
-3. synapse-nginx: Configures NGINX to efficiently serve static resources and acts as the entry point for all web traffic to the pod.
+3. `synapse-nginx`: Configures NGINX to efficiently serve static resources and acts as the entry point for all web traffic to the pod.
 
-4. synapse-federation-sender: Runs a Synapse worker instance responsible for sending federation requests. By offloading this task from the main unit, the layer helps improve the performance of the main unit. Only the main unit runs this layer.
+4. `synapse-federation-sender`: Runs a Synapse worker instance responsible for sending federation requests. By offloading this task from the main unit, the layer helps improve the performance of the main unit. Only the main unit runs this layer.
 
-5. stats-exporter: A Prometheus exporter that collects statistical metrics from the Synapse database. Like the synapse-federation-sender, this layer runs only on the main unit.
+5. `stats-exporter`: A Prometheus exporter that collects statistical metrics from the Synapse database. Like the synapse-federation-sender, this layer runs only on the main unit.
 
-6. synapse-mas: Configures the Matrix Authentication Service (MAS) on the unit.
+6. `synapse-mas`: Configures the Matrix Authentication Service (MAS) on the unit.
 
-7. mjolnir: Matrix moderation bot tool. This layer runs only on the main unit.
+7. `mjolnir`: Matrix moderation bot tool. This layer runs only on the main unit.
 
 ### Scaling behavior
 
@@ -153,7 +153,9 @@ This is done by publishing a resource to Charmhub as described in the
 Configuration files for the container can be found in the respective
 directory that define the rock, see the section above.
 
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 ### NGINX
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 NGINX is configured as a Pebble Layer and is the entry point for all web traffic
 to the pod (on port `8080`). Serves static files directly and forwards

@@ -1,5 +1,7 @@
-homeserver
-OIDC
 allowlist
-MAS
+Draupnir
 fatals
+homeserver
+MAS
+OIDC
+Synapse

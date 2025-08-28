@@ -1,4 +1,4 @@
-# Synapse Operator
+# Synapse operator
 
 A Juju charm deploying and managing [Synapse](https://github.com/matrix-org/synapse) on Kubernetes. Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
 
