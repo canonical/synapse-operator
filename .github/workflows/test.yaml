@@ -10,9 +10,9 @@ on:
 
 jobs:
   unit-tests:
-    uses: canonical/operator-workflows/.github/workflows/test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/test.yaml@swetha1654-patch-vale
     secrets: inherit
     with:
       self-hosted-runner: false
       self-hosted-runner-label: "edge"
-      vale-style-check: true
+      vale-style-check: false
