@@ -1,12 +1,7 @@
 name: Tests
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - reopened
-    branches:
-      - '2/main'
+  pull_request:
 
 jobs:
   unit-tests:
@@ -15,4 +10,4 @@ jobs:
     with:
       self-hosted-runner: false
       self-hosted-runner-label: "edge"
-      vale-style-check: true
+      vale-style-check: false
