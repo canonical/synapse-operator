@@ -200,7 +200,7 @@ class SynapseCharm(CharmBaseWithState):
             except MjolnirModeratorsNotFoundError as e:
                 self.unit.status = ops.BlockedStatus(str(e))
 
-        self._set_unit_with_service_status()
+        self._set_unit_with_service_status(charm_state)
 
     def configure_and_start_services(
         self, charm_state: CharmState, container: ops.Container
@@ -212,7 +212,14 @@ class SynapseCharm(CharmBaseWithState):
             container: charm container.
         """
         if self.peer_relation:
-            signing_key.write_to_container(self.peer_relation, self, charm_state, container)
+            try:
+                signing_key.write_to_container(self.peer_relation, self, charm_state, container)
+            except signing_key.SigningKeyWriteError:
+                # only changes the status instead of letting the charm in error
+                # since the secret might be created in next events/steps
+                self.model.unit.status = ops.MaintenanceStatus(
+                    "Signing key secret not found, check the logs"
+                )
         unit_number = self.unit.name.split("/")[1]
         pebble.reconcile(charm_state, container, is_main=self.is_main, unit_number=unit_number)
         pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
@@ -263,8 +270,12 @@ class SynapseCharm(CharmBaseWithState):
 
         return instance_map
 
-    def _set_unit_with_service_status(self) -> None:
-        """Set unit status message after checking services."""
+    def _set_unit_with_service_status(self, charm_state: CharmState) -> None:
+        """Set unit status message after checking services.
+
+        Args:
+            charm_state: charm state.
+        """
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
             self.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
@@ -273,6 +284,14 @@ class SynapseCharm(CharmBaseWithState):
         if isinstance(self.unit.status, ops.BlockedStatus):
             # Preserve BlockedStatus from backup/media observers (e.g., S3 config errors).
             # This should be refactored.
+            return
+
+        if self.peer_relation and not signing_key.is_secret_container_equal(
+            self.peer_relation, self, charm_state, container
+        ):
+            self.unit.status = ops.MaintenanceStatus(
+                "Signing key secret content is different from the file"
+            )
             return
 
         try:

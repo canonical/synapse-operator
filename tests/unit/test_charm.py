@@ -60,6 +60,7 @@ def test_config_changed_single_unit_main_layers(base_state: dict, monkeypatch: M
     context = testing.Context(
         charm_type=SynapseCharm,
     )
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())
@@ -83,6 +84,7 @@ def test_config_changed_multiple_units_main_layers(
     context = testing.Context(
         charm_type=SynapseCharm,
     )
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())
@@ -120,6 +122,7 @@ def test_config_changed_enable_mjolnir(base_state: dict, monkeypatch: MonkeyPatc
     generate_config_mock = MagicMock()
     override_rate_limit_mock = MagicMock()
 
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())
@@ -181,6 +184,7 @@ def test_config_changed_enable_mjolnir_failed(base_state: dict, monkeypatch: Mon
     user_mock = User(username="Test", admin=True)
     user_mock.access_token = user_token
     get_membership_room_id_mock = MagicMock(return_value=None)
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())
@@ -206,6 +210,7 @@ def test_config_changed_multiple_units_no_redis(base_state: dict, monkeypatch: M
     context = testing.Context(
         charm_type=SynapseCharm,
     )
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())
@@ -228,6 +233,7 @@ def test_config_changed_multiple_units_with_redis(
     context = testing.Context(
         charm_type=SynapseCharm,
     )
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())
@@ -257,6 +263,7 @@ def test_config_changed_workers_ignore_list(
     context = testing.Context(
         charm_type=SynapseCharm,
     )
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())
@@ -293,6 +300,7 @@ def test_config_changed_experimental_extract_background_tasks(
     context = testing.Context(
         charm_type=SynapseCharm,
     )
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", MagicMock(return_value=True))
     monkeypatch.setattr(signing_key, "get_signing_key_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_secret", MagicMock())
     monkeypatch.setattr(signing_key, "write_to_container", MagicMock())

@@ -22,6 +22,10 @@ SIGNING_KEY_SECRET_CONTENT_ID = "secret-signing-key"  # nosec
 SIGNING_KEY_PEER_ID = "secret-signing-id"
 
 
+class SigningKeyWriteError(Exception):
+    """Error during signing key write to container."""
+
+
 def signing_key_path(charm_state: CharmState) -> str:
     """Get signing key path.
 
@@ -71,17 +75,58 @@ def write_to_container(
         charm: charm instance.
         charm_state: charm state.
         container: container.
+
+    Raises:
+        SigningKeyWriteError: in case of error writing the secret to the container.
     """
     secret = get_signing_key_secret(peer_relation, charm)
-    if secret:
-        content = secret.get_content().get(SIGNING_KEY_SECRET_CONTENT_ID)
-        if content:
-            container.push(
-                signing_key_path(charm_state),
-                content,
-                make_dirs=True,
-                encoding="utf-8",
-            )
+    if not secret:
+        logger.warning("Signing key secret not found")
+        raise SigningKeyWriteError("Signing key secret not found.")
+
+    content = secret.get_content().get(SIGNING_KEY_SECRET_CONTENT_ID)
+    if not content:
+        logger.error("Signing key secret content not found")
+        raise SigningKeyWriteError(
+            f"Signing key secret content with ID {SIGNING_KEY_SECRET_CONTENT_ID}  not found."
+        )
+
+    container.push(
+        signing_key_path(charm_state),
+        content,
+        make_dirs=True,
+        encoding="utf-8",
+    )
+
+
+def is_secret_container_equal(
+    peer_relation: ops.Relation,
+    charm: ops.CharmBase,
+    charm_state: CharmState,
+    container: ops.Container,
+) -> bool:
+    """Check if secret and file in the container have the same content.
+
+    Args:
+        peer_relation: synapse peer relation.
+        charm: charm instance.
+        charm_state: charm state.
+        container: container.
+
+    Returns:
+        if secret and file in container has the same content or not.
+    """
+    signing_key = ""
+    with container.pull(signing_key_path(charm_state)) as f:
+        signing_key = f.read()
+        signing_key = signing_key.rstrip()
+
+    existing_secret = get_signing_key_secret(peer_relation, charm)
+    if existing_secret and signing_key == existing_secret.get_content().get(
+        SIGNING_KEY_SECRET_CONTENT_ID
+    ):
+        return True
+    return False
 
 
 def write_to_secret(

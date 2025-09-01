@@ -18,6 +18,7 @@ from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.pebble import ExecError
 from ops.testing import Harness
 
+import signing_key
 import synapse
 from charm import SynapseCharm
 from s3_parameters import S3Parameters
@@ -118,6 +119,7 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
     """Ops testing framework harness fixture."""
     monkeypatch.setattr(synapse, "get_version", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(synapse, "create_admin_user", lambda *_args, **_kwargs: "")
+    monkeypatch.setattr(signing_key, "is_secret_container_equal", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: "")
     harness = Harness(SynapseCharm)
     # Necessary for traefik-k8s.v2.ingress library as it calls binding.network.bind_address
