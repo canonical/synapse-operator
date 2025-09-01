@@ -8,6 +8,7 @@ on:
     branches:
       - '2/main'
 
+
 jobs:
   unit-tests:
     uses: canonical/operator-workflows/.github/workflows/test.yaml@swetha1654-patch-vale
@@ -16,3 +17,4 @@ jobs:
       self-hosted-runner: false
       self-hosted-runner-label: "edge"
       vale-style-check: false
+
