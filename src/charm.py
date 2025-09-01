@@ -163,8 +163,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.reconcile(charm_state)
 
-    # Too complex for now.
-    def reconcile(  # noqa: C901
+    def reconcile(
         self, charm_state: CharmState, maintenance_status: str = "Configuring Synapse"
     ) -> None:
         """Reconcile Synapse configuration with charm state.
