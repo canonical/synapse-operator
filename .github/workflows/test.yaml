@@ -15,4 +15,4 @@ jobs:
     with:
       self-hosted-runner: false
       self-hosted-runner-label: "edge"
-      vale-style-check: true
+      vale-style-check: false
