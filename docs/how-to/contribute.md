@@ -21,8 +21,6 @@ examines
 - Please help us out in ensuring easy to review branches by rebasing your pull
 request branch onto the `main` branch. This also avoids merge commits and
 creates a linear Git commit history.
-- Please generate src documentation for every commit. See the section below for
-more details.
 
 ## Developing
 
@@ -41,7 +39,7 @@ source .tox/unit/bin/activate
 
 ### Testing
 
-Note that the [Synapse](synapse_rock/rockcraft.yaml) image need to be built and
+Note that the [Synapse](https://github.com/canonical/synapse-operator/blob/2/main/synapse_rock/rockcraft.yaml) image need to be built and
 pushed to microk8s for the tests to run. It should be tagged as
 `localhost:32000/synapse:latest`so that Kubernetes knows how to pull them
 from the MicroK8s repository. Note that the MicroK8s registry needs to be
@@ -105,6 +103,6 @@ juju configure synapse server_name=mychat.test.com
 
 Read more about `server_name` in [Configuring Synapse](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#server_name).
 
-## Canonical Contributor Agreement
+## Canonical contributor agreement
 
 Canonical welcomes contributions to the Synapse Operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
