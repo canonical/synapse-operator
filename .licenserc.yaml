@@ -39,4 +39,5 @@ header:
     - 'synapse_rock/cron/**/*.py'
     - 'synapse_rock/scripts/**/*.py'
     - 'synapse_rock/patches/**'
+    - '.lycheeignore'
   comment: on-failure

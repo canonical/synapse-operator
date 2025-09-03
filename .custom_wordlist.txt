@@ -1,5 +1,0 @@
-homeserver
-OIDC
-allowlist
-MAS
-fatals

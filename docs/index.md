@@ -1,4 +1,4 @@
-# Synapse Operator
+# Synapse operator
 
 A Juju charm deploying and managing [Synapse](https://github.com/matrix-org/synapse) on Kubernetes. Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
 
@@ -27,7 +27,7 @@ If there’s a particular area of documentation that you’d like to see that’
 Synapse is an open-source project that welcomes community contributions, suggestions, fixes and constructive feedback.
 
 * [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
-* [Join the Discourse forum](https://discourse.charmhub.io/tag/synapse)
+* [Join the Discourse forum](https://discourse.charmhub.io)
 * [Discuss on the Matrix chat service](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 * Contribute and report bugs to [the Synapse operator](https://github.com/canonical/synapse-operator)
 * Check the [release notes](https://github.com/canonical/synapse-operator/releases)
