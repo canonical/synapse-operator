@@ -75,6 +75,4 @@ class RedisObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        self.model.unit.status = ops.MaintenanceStatus("Preparing the Redis integration")
-        logger.debug("_on_redis_relation_updated emitting reconcile")
         self.get_charm().reconcile(charm_state)

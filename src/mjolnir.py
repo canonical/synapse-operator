@@ -14,12 +14,20 @@ import ops
 import pebble
 import synapse
 from admin_access_token import AdminAccessTokenService
-from charm_state import CharmBaseWithState, CharmState, inject_charm_state
+from charm_state import CharmBaseWithState, CharmState
 
 logger = logging.getLogger(__name__)
 
 MJOLNIR_SERVICE_NAME = "mjolnir"
 USERNAME = "moderator"
+
+
+class MjolnirEnableError(Exception):
+    """Exception when enabling Mjolnir fails."""
+
+
+class MjolnirModeratorsNotFoundError(Exception):
+    """Exception when the moderators room is not found or cannot be verified."""
 
 
 class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
@@ -40,7 +48,6 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         super().__init__(charm, "mjolnir")
         self._charm = charm
         self._token_service = token_service
-        self.framework.observe(charm.on.collect_unit_status, self._on_collect_status)
 
     def get_charm(self) -> CharmBaseWithState:
         """Return the current charm.
@@ -67,94 +74,6 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             return None
         return access_token
 
-    # Ignoring complexity warning for now
-    @inject_charm_state
-    def _on_collect_status(  # noqa: C901
-        self, event: ops.CollectStatusEvent, charm_state: CharmState
-    ) -> None:
-        """Collect status event handler.
-
-        Args:
-            event: Collect status event.
-            charm_state: The charm state.
-        """
-        if not charm_state.synapse_config.enable_mjolnir:
-            return
-        container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
-        if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        mjolnir_service = container.get_services(MJOLNIR_SERVICE_NAME)
-        # This check is the same done in get_main_unit. It should be refactored
-        # to a place where both Charm and Mjolnir can get it.
-        peer_relation = self._charm.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
-        if peer_relation:
-            logger.debug(
-                "Peer relation found, checking if is main unit before configuring Mjolnir"
-            )
-            # The default is self._charm.unit.name to make tests that use Harness.begin() work.
-            # When not using begin_with_initial_hooks, the peer relation data is not created.
-            main_unit_id = (
-                peer_relation[0].data[self._charm.app].get("main_unit_id", self._charm.unit.name)
-            )
-            if not self._charm.unit.name == main_unit_id:
-                if mjolnir_service:
-                    logger.info("This is not the main unit, stopping Mjolnir")
-                    container.stop(MJOLNIR_SERVICE_NAME)
-                else:
-                    logger.info("This is not the main unit, skipping Mjolnir configuration")
-                return
-        if mjolnir_service:
-            mjolnir_not_active = [
-                service for service in mjolnir_service.values() if not service.is_running()
-            ]
-            if mjolnir_not_active:
-                logger.debug(
-                    "%s service already exists but is not running, restarting",
-                    MJOLNIR_SERVICE_NAME,
-                )
-                container.restart(MJOLNIR_SERVICE_NAME)
-            logger.debug("%s service already exists and running, skipping", MJOLNIR_SERVICE_NAME)
-            return
-        synapse_service = container.get_services(synapse.SYNAPSE_SERVICE_NAME)
-        synapse_not_active = [
-            service for service in synapse_service.values() if not service.is_running()
-        ]
-        if not synapse_service or synapse_not_active:
-            # The get_membership_room_id does a call to Synapse API in order to get the
-            # membership room id. This only works if Synapse is running so that's why
-            # the service status is checked here.
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse")
-            return
-        if not self._admin_access_token:
-            self._charm.unit.status = ops.MaintenanceStatus(
-                "Failed to get admin access token. Please, check the logs."
-            )
-            return
-        try:
-            if self.get_membership_room_id(self._admin_access_token) is None:
-                status = ops.BlockedStatus(
-                    f"{synapse.MJOLNIR_MEMBERSHIP_ROOM} not found and "
-                    "is required by Mjolnir. Please, check the logs."
-                )
-                interval = self._charm.model.config.get("update-status-hook-interval", "")
-                logger.error(
-                    "The Mjolnir configuration will be done in %s after the room %s is created."
-                    "This interval is set in update-status-hook-interval model config.",
-                    interval,
-                    synapse.MJOLNIR_MEMBERSHIP_ROOM,
-                )
-                event.add_status(status)
-                return
-        except synapse.APIError as exc:
-            logger.exception(
-                "Failed to check for membership_room. Mjolnir will not be configured: %r",
-                exc,
-            )
-            return
-        self.enable_mjolnir(charm_state, self._admin_access_token)
-        event.add_status(ops.ActiveStatus())
-
     def get_membership_room_id(self, admin_access_token: str) -> typing.Optional[str]:
         """Check if membership room exists.
 
@@ -168,7 +87,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             room_name=synapse.MJOLNIR_MEMBERSHIP_ROOM, admin_access_token=admin_access_token
         )
 
-    def enable_mjolnir(self, charm_state: CharmState, admin_access_token: str) -> None:
+    def enable(self, charm_state: CharmState) -> None:
         """Enable mjolnir service.
 
         The required steps to enable Mjolnir are:
@@ -185,18 +104,36 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
 
         Args:
             charm_state: Instance of CharmState.
-            admin_access_token: not empty admin access token.
+
+        Raises:
+            MjolnirEnableError: Mjolnir or requirements fail.
+            MjolnirModeratorsNotFoundError: moderators room is not found or cannot be verified.
         """
+        if not self._admin_access_token:
+            raise MjolnirEnableError(
+                "Mjolnir: failed to get admin access token. Please, check the logs."
+            )
+        try:
+            if self.get_membership_room_id(self._admin_access_token) is None:
+                raise MjolnirModeratorsNotFoundError(
+                    f"{synapse.MJOLNIR_MEMBERSHIP_ROOM} not found. Disable Mjolnir."
+                )
+        except synapse.APIError as exc:
+            logger.exception(
+                "Failed to check for membership_room. Mjolnir will not be configured: %r",
+                exc,
+            )
+            raise MjolnirModeratorsNotFoundError(
+                f"Failed to find {synapse.MJOLNIR_MEMBERSHIP_ROOM}. Disable Mjolnir."
+            ) from exc
         container = self._charm.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
-            self._charm.unit.status = ops.MaintenanceStatus("Waiting for Synapse pebble")
-            return
-        self._charm.model.unit.status = ops.MaintenanceStatus("Configuring Mjolnir")
+            raise MjolnirEnableError("Mjolnir: waiting for Synapse pebble")
         mjolnir_user = synapse.create_user(
             container,
             USERNAME,
             True,
-            admin_access_token,
+            self._admin_access_token,
             str(charm_state.synapse_config.server_name),
         )
         if mjolnir_user is None:
@@ -204,16 +141,16 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
             return
         mjolnir_access_token = mjolnir_user.access_token
         room_id = synapse.get_room_id(
-            room_name=synapse.MJOLNIR_MANAGEMENT_ROOM, admin_access_token=admin_access_token
+            room_name=synapse.MJOLNIR_MANAGEMENT_ROOM, admin_access_token=self._admin_access_token
         )
         if room_id is None:
             logger.info("Room %s not found, creating", synapse.MJOLNIR_MANAGEMENT_ROOM)
-            room_id = synapse.create_management_room(admin_access_token=admin_access_token)
+            room_id = synapse.create_management_room(admin_access_token=self._admin_access_token)
         # Add the Mjolnir user to the management room
         synapse.make_room_admin(
             user=mjolnir_user,
             server=str(charm_state.synapse_config.server_name),
-            admin_access_token=admin_access_token,
+            admin_access_token=self._admin_access_token,
             room_id=room_id,
         )
         synapse.generate_mjolnir_config(
@@ -221,8 +158,7 @@ class Mjolnir(ops.Object):  # pylint: disable=too-few-public-methods
         )
         synapse.override_rate_limit(
             user=mjolnir_user,
-            admin_access_token=admin_access_token,
+            admin_access_token=self._admin_access_token,
             charm_state=charm_state,
         )
         pebble.replan_mjolnir(container)
-        self._charm.model.unit.status = ops.ActiveStatus()

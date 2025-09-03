@@ -33,6 +33,8 @@ from charm_types import (
 
 logger = logging.getLogger(__name__)
 
+MAIN_UNIT_ID = 0
+
 
 class CharmBaseWithState(ops.CharmBase, ABC):
     """CharmBase than can build a CharmState."""
@@ -50,11 +52,14 @@ class CharmBaseWithState(ops.CharmBase, ABC):
         return self
 
     @abstractmethod
-    def reconcile(self, charm_state: "CharmState") -> None:
+    def reconcile(
+        self, charm_state: "CharmState", maintenance_status: str = "Configuring Synapse"
+    ) -> None:
         """Reconcile Synapse configuration.
 
         Args:
             charm_state: The charm state.
+            maintenance_status: message to display during the reconcile.
         """
 
 
@@ -356,6 +361,8 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         proxy: proxy information.
         instance_map_config: Instance map configuration with main and worker addresses.
         registration_secrets: Registration secrets received via matrix-auth integration.
+        redis_required: charm requires redis integration.
+        mjolnir_enabled: mjolnir must be enabled.
     """
 
     synapse_config: SynapseConfig
@@ -366,6 +373,8 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     redis_config: typing.Optional[RedisConfiguration]
     instance_map_config: typing.Optional[typing.Dict]
     registration_secrets: typing.Optional[typing.List]
+    redis_required: typing.Optional[bool]
+    mjolnir_enabled: typing.Optional[bool]
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -449,6 +458,11 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                         logger.warning(
                             "Worker %s in workers_ignore_list not found in instance_map", worker
                         )
+            planned_units = charm.app.planned_units()
+            redis_required = redis_config is None and planned_units > 1
+            mjolnir_enabled = (
+                f"/{MAIN_UNIT_ID}" in charm.unit.name and valid_synapse_config.enable_mjolnir
+            )
         except ValidationError as exc:
             error_fields = set(
                 itertools.chain.from_iterable(error["loc"] for error in exc.errors())
@@ -464,4 +478,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             redis_config=redis_config,
             instance_map_config=instance_map_config,
             registration_secrets=registration_secrets,
+            redis_required=redis_required,
+            mjolnir_enabled=mjolnir_enabled,
         )

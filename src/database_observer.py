@@ -8,7 +8,6 @@
 import logging
 import typing
 
-import ops
 from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
     DatabaseEndpointsChangedEvent,
@@ -61,7 +60,6 @@ class DatabaseObserver(Object):
         Args:
             charm_state: The charm state.
         """
-        self.model.unit.status = ops.MaintenanceStatus("Preparing the database")
         # In case of psycopg2.Error, Juju will set ErrorStatus
         # See discussion here:
         # https://github.com/canonical/synapse-operator/pull/13#discussion_r1253285244
@@ -70,7 +68,7 @@ class DatabaseObserver(Object):
         if self.database.relation_name == synapse.SYNAPSE_DB_RELATION_NAME:
             db_client.prepare()
         logger.debug("_on_database_created emitting reconcile")
-        self.get_charm().reconcile(charm_state)
+        self.get_charm().reconcile(charm_state, "Preparing the database")
 
     @inject_charm_state
     def _on_endpoints_changed(

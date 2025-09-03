@@ -207,8 +207,7 @@ async def nginx_integrator_app_fixture(
             "nginx-ingress-integrator",
             application_name=nginx_integrator_app_name,
             trust=True,
-            channel="latest/stable",
-            revision=121,
+            channel="latest/edge",
         )
         # The nginx-ingress-integrator charm goes into "waiting" when waiting for relation
         await model.wait_for_idle(
