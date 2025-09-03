@@ -1,5 +1,5 @@
 *       @Thanhphan1147 @amandahla  @DeeKay3 @srbouffard @nrobinaubertin
 docs/*	@erinecon
 docs/changelog.md @Thanhphan1147 @amandahla  @DeeKay3 @srbouffard @nrobinaubertin
-requirements.txt	@canonical/is-charms
-.trivyignore	@canonical/is-charms
+requirements.txt	@canonical/platform-engineering
+.trivyignore	@canonical/platform-engineering
