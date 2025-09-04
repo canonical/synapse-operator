@@ -12,13 +12,49 @@ from charm_state import CharmState
 
 from .workload import (
     SYNAPSE_EXPORTER_PORT,
-    EnableMetricsError,
     EnableSAMLError,
     EnableSMTPError,
     WorkloadError,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def add_default_configurations(current_yaml: dict) -> None:
+    """Set default configurations.
+
+    Args:
+        current_yaml: current configuration.
+
+    Raises:
+        WorkloadError: something went wrong enabling configuration.
+    """
+    try:
+        metric_listener = {
+            "port": int(SYNAPSE_EXPORTER_PORT),
+            "type": "metrics",
+            "bind_addresses": ["::"],
+        }
+        current_yaml["listeners"].extend([metric_listener])
+        current_yaml["enable_metrics"] = True
+        current_yaml["forgotten_room_retention_period"] = "28d"
+        current_yaml["media_retention"] = {
+            "remote_media_lifetime": "14d",
+            "local_media_lifetime": "28d",
+        }
+        current_yaml["delete_stale_devices_after"] = "1y"
+        current_yaml["serve_server_wellknown"] = True
+        resources = {"names": ["replication"]}
+        replication_listener = {
+            "port": 8035,
+            "type": "http",
+            "bind_addresses": ["::"],
+            "resources": [resources],
+        }
+        current_yaml["listeners"].extend([replication_listener])
+        current_yaml["room_list_publication_rules"] = [{"action": "allow"}]
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
 
 
 def _create_tuple_from_string_list(string_list: str) -> tuple[str, ...]:
@@ -108,15 +144,6 @@ def enable_federation_sender(current_yaml: dict) -> None:
     """
     current_yaml["send_federation"] = True
     current_yaml["federation_sender_instances"] = ["federationsender1"]
-
-
-def enable_forgotten_room_retention(current_yaml: dict) -> None:
-    """Change the Synapse configuration to enable forgotten_room_retention_period.
-
-    Args:
-        current_yaml: current configuration.
-    """
-    current_yaml["forgotten_room_retention_period"] = "28d"
 
 
 def enable_instance_map(current_yaml: dict, charm_state: CharmState) -> None:
@@ -222,39 +249,6 @@ def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
-def enable_media_retention(current_yaml: dict) -> None:
-    """Change the Synapse configuration to enable media retention.
-
-    Args:
-        current_yaml: current configuration.
-    """
-    current_yaml["media_retention"] = {
-        "remote_media_lifetime": "14d",
-        "local_media_lifetime": "28d",
-    }
-
-
-def enable_metrics(current_yaml: dict) -> None:
-    """Change the Synapse configuration to enable metrics.
-
-    Args:
-    current_yaml: current configuration.
-
-    Raises:
-        EnableMetricsError: something went wrong enabling metrics.
-    """
-    try:
-        metric_listener = {
-            "port": int(SYNAPSE_EXPORTER_PORT),
-            "type": "metrics",
-            "bind_addresses": ["::"],
-        }
-        current_yaml["listeners"].extend([metric_listener])
-        current_yaml["enable_metrics"] = True
-    except KeyError as exc:
-        raise EnableMetricsError(str(exc)) from exc
-
-
 def enable_rc_joins_remote_rate(current_yaml: dict, charm_state: CharmState) -> None:
     """Enable rc_joins remote rate.
 
@@ -315,28 +309,6 @@ def enable_registration_secrets(current_yaml: dict, charm_state: CharmState) -> 
             str(registration_secret.file_path)
             for registration_secret in charm_state.registration_secrets
         ]
-    except KeyError as exc:
-        raise WorkloadError(str(exc)) from exc
-
-
-def enable_replication(current_yaml: dict) -> None:
-    """Change the Synapse configuration to enable replication.
-
-    Args:
-        current_yaml: current configuration.
-
-    Raises:
-        WorkloadError: something went wrong enabling replication.
-    """
-    try:
-        resources = {"names": ["replication"]}
-        replication_listener = {
-            "port": 8035,
-            "type": "http",
-            "bind_addresses": ["::"],
-            "resources": [resources],
-        }
-        current_yaml["listeners"].extend([replication_listener])
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 
@@ -482,15 +454,6 @@ def enable_saml(current_yaml: dict, charm_state: CharmState) -> None:
         raise EnableSAMLError(str(exc)) from exc
 
 
-def enable_serve_server_wellknown(current_yaml: dict) -> None:
-    """Change the Synapse configuration to enable server wellknown file.
-
-    Args:
-        current_yaml: current configuration.
-    """
-    current_yaml["serve_server_wellknown"] = True
-
-
 def enable_smtp(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable SMTP.
 
@@ -526,15 +489,6 @@ def enable_smtp(current_yaml: dict, charm_state: CharmState) -> None:
         ]
     except KeyError as exc:
         raise EnableSMTPError(str(exc)) from exc
-
-
-def enable_stale_devices_deletion(current_yaml: dict) -> None:
-    """Change the Synapse configuration to delete stale devices.
-
-    Args:
-        current_yaml: current configuration.
-    """
-    current_yaml["delete_stale_devices_after"] = "1y"
 
 
 def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
