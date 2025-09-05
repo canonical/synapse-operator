@@ -305,45 +305,6 @@ def test_validate_config_error(monkeypatch: pytest.MonkeyPatch):
         synapse.validate_config(container_mock)
 
 
-def test_enable_metrics_success(config_content: dict[str, typing.Any]):
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: new configuration file is pushed and metrics are enabled.
-    """
-    content = config_content
-
-    synapse.enable_metrics(content)
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-            {"port": 9000, "type": "metrics", "bind_addresses": ["::"]},
-        ],
-        "enable_metrics": True,
-    }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_forgotten_room_success(config_content: dict[str, typing.Any]):
-    """
-    arrange: set mock container with file.
-    act: change the configuration file.
-    assert: new configuration file is pushed and forgotten_room_retention_period is enabled.
-    """
-    content = config_content
-
-    synapse.enable_forgotten_room_retention(content)
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-        ],
-        "forgotten_room_retention_period": "28d",
-    }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
-
-
 def test_enable_saml_success():
     """
     arrange: set mock container with file.
@@ -568,25 +529,6 @@ def test_enable_smtp_success(config_content: dict[str, typing.Any]):
         },
     }
     assert yaml.safe_dump(config_content) == yaml.safe_dump(expected_config_content)
-
-
-def test_enable_serve_server_wellknown_success(config_content: dict[str, typing.Any]):
-    """
-    arrange: set mock container with file.
-    act: call enable_serve_server_wellknown.
-    assert: new configuration file is pushed and serve_server_wellknown is enabled.
-    """
-    content = config_content
-
-    synapse.enable_serve_server_wellknown(content)
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-        ],
-        "serve_server_wellknown": True,
-    }
-    assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
 def test_disable_password_config_success():

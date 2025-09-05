@@ -301,17 +301,12 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
 
+        synapse.add_default_configurations(current_synapse_config)
         synapse.set_public_baseurl(current_synapse_config, charm_state)
         if charm_state.synapse_config.block_non_admin_invites:
             logger.debug("pebble.change_config: Enabling Block non admin invites")
             synapse.block_non_admin_invites(current_synapse_config, charm_state=charm_state)
-        synapse.enable_metrics(current_synapse_config)
-        synapse.enable_forgotten_room_retention(current_synapse_config)
-        synapse.enable_media_retention(current_synapse_config)
-        synapse.enable_stale_devices_deletion(current_synapse_config)
         synapse.enable_rc_joins_remote_rate(current_synapse_config, charm_state=charm_state)
-        synapse.enable_serve_server_wellknown(current_synapse_config)
-        synapse.enable_replication(current_synapse_config)
         if (
             charm_state.synapse_config.invite_checker_policy_rooms
             or charm_state.synapse_config.invite_checker_blocklist_allowlist_url
