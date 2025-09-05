@@ -114,6 +114,9 @@ def write_to_secret(
     if existing_secret and macaroon_key == existing_secret.get_content().get(
         MACAROON_KEY_SECRET_CONTENT_ID
     ):
+        if existing_secret.label != MACAROON_KEY_SECRET_LABEL:
+            logger.info("Macaroon key secret label was updated, id: %s", existing_secret.id)
+            existing_secret.set_info(label=MACAROON_KEY_SECRET_LABEL)
         logger.info("Received macaroon key but there is no change, skipping")
         return
 
@@ -123,7 +126,7 @@ def write_to_secret(
         try:
             existing_secret.set_content(new_content)
             existing_secret.set_info(label=MACAROON_KEY_SECRET_LABEL)
-            logger.info("Macaroon key secret was updated, id: %d", existing_secret.id)
+            logger.info("Macaroon key secret was updated, id: %s", existing_secret.id)
             return
         except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
             logger.exception("Failed to get macaroon secret id %s: %s", existing_secret, str(exc))
