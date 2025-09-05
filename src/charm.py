@@ -17,6 +17,7 @@ from ops import main
 from ops.charm import ActionEvent
 
 import actions
+import macaroon_key
 import pebble
 import signing_key
 import synapse
@@ -214,6 +215,7 @@ class SynapseCharm(CharmBaseWithState):
         if self.peer_relation:
             try:
                 signing_key.write_to_container(self.peer_relation, self, charm_state, container)
+                macaroon_key.write_to_container(self.peer_relation, self, charm_state, container)
             except signing_key.SigningKeyWriteError:
                 # only changes the status instead of letting the charm in error
                 # since the secret might be created in next events/steps
@@ -225,6 +227,7 @@ class SynapseCharm(CharmBaseWithState):
         pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
         if self.peer_relation:
             signing_key.write_to_secret(self.peer_relation, self, charm_state, container)
+            macaroon_key.write_to_secret(self.peer_relation, self, charm_state, container)
 
     def _get_unit_address(self, unit_id: int) -> str:
         """Get unit address.
