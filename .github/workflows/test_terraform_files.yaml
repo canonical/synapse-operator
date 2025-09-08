@@ -19,7 +19,7 @@ jobs:
       WORKING_DIR: 'terraform'
     steps:
       - name: Check out code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5.0.0
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -29,7 +29,7 @@ jobs:
         working-directory: ${{env.WORKING_DIR}}
 
       - name: Setup Tflint
-        uses: terraform-linters/setup-tflint@v4.1.1
+        uses: terraform-linters/setup-tflint@v5.0.0
         with:
           tflint_wrapper_enabled: true
 

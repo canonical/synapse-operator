@@ -69,5 +69,5 @@ juju run synapse/0 promote-user-admin username=alice
 
 ## Project and community
 * [Issues](https://github.com/canonical/synapse-operator/issues)
-* [Contributing](https://charmhub.io/synapse/docs/contributing)
+* [Contributing](CONTRIBUTING.md)
 * [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)

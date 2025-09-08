@@ -1,57 +1,11 @@
-# Vulnerabilites related to: Pebble, Node.JS and gosu
-CVE-2022-28131
-CVE-2022-28327
-CVE-2022-2879
-CVE-2022-2880
-CVE-2022-29804
-CVE-2022-30580
-CVE-2022-30630
-CVE-2022-30631
-CVE-2022-30632
-CVE-2022-30633
-CVE-2022-30634
-CVE-2022-30635
-CVE-2022-32189
-CVE-2022-41715
-CVE-2022-41716
-CVE-2022-41720
-CVE-2022-41722
-CVE-2022-41723
-CVE-2022-41724
-CVE-2022-41725
-CVE-2022-46175
-CVE-2023-24534
-CVE-2023-24536
-CVE-2023-24537
-CVE-2023-24538
-CVE-2023-24539
-CVE-2023-24540
-CVE-2023-29400
-CVE-2023-29403
-CVE-2023-39325
-CVE-2023-45283
-CVE-2023-45287
-CVE-2023-45288
-CVE-2024-24790
-CVE-2024-29415
-CVE-2024-34156
+# Add CVEs here to be ignored by Trivy if needed
+# nodejs
 CVE-2024-21538
-CVE-2024-24788
 CVE-2025-7783
-# Fix ongoing:
-# https://github.com/element-hq/synapse/pull/17985
-CVE-2024-53981
-# This should be removed once pebble releases a new version.
-# https://github.com/canonical/pebble/commit/0c134f8e0d80f4bd8f42011279c8f0737b59a673
-CVE-2024-45338
-# node.js tar-fs vulnerability
-CVE-2024-12905
-# setuptools and tornado - Should be removed once synapse is bumped to 1.131.0 ( current latest version is 1.130 )
-CVE-2025-47273
-CVE-2025-47287
-# second node.js tar-fs vulnerability
-CVE-2025-48387
-# pebble binary
-CVE-2025-22874
-# Pillow python pkg
-CVE-2025-48379
+# pebble
+CVE-2025-47907
+# gosu
+CVE-2024-24790
+CVE-2024-24788
+CVE-2024-34156
+CVE-2025-47907

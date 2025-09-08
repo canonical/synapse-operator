@@ -77,19 +77,19 @@ juju scale-application server-mas 0
 juju scale-application server 0
 ```
 
-Run `juju status` and save the IP address of the postgresql charm leader unit to an environment variable `DB_HOST`:
+Run `juju status` and save the IP address of the PostgreSQL charm leader unit to an environment variable `DB_HOST`:
 ```
 juju status
 export DB_HOST="<ip-of-the-postgresql-leader-unit>"
 ```
 
-Get the password of the postgresql charm, then save the password to an environment variables `PGPASSWORD`:
+Get the password of the PostgreSQL charm, then save the password to an environment variables `PGPASSWORD`:
 ```
 juju run postgresql-k8s/leader get-password
 export PGPASSWORD=<output-of-the-above-command>
 ```
 
-Copy the original synapse charm database:
+Copy the original Synapse charm database:
 ```
 PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator postgres -c 'drop database "server-mas";'
 PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator postgres -c "create database \"server-mas\" with template server;"
@@ -100,7 +100,7 @@ PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator postgres -c "cre
 ### Update token for Draupnir
 If the old synapse charm has moderation enabled, we need to modify the corresponding access token so that it does not get ignored by `syn2mas`.
 
-Run the following SQL command on the old synapse charm's database, replacing `<mjolnir-access-token>` with the access token that mjolnir is using, and `<device-id>` with a device ID you choose ( Ideally the ID of one of your active devices ):
+Run the following SQL command on the old synapse charm's database, replacing `<mjolnir-access-token>` with the access token that Mjolnir is using, and `<device-id>` with a device ID you choose ( Ideally the ID of one of your active devices ):
 ```
 PGPASSWORD=$PGPASSWORD psql --host $DB_HOST --username operator server "update access_tokens set device_id='<device-id>' where token='<mjolnir-access-token>';"
 ```
@@ -130,7 +130,7 @@ npx --yes @vector-im/syn2mas \
     --dryRun
 ```
 
-You should see the 0 fatals and 0 warnings in the command output:
+You should see the zero fatals and zero warnings in the command output:
 ```
 [INFO] migrate - Completed migration dry-run of x users with 0 fatals and 0 warnings:
 ```
