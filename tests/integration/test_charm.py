@@ -376,8 +376,10 @@ async def test_synapse_enable_mjolnir(
     await synapse_app.model.wait_for_idle(
         idle_period=30, timeout=120, apps=[synapse_app.name], status="blocked"
     )
+    await synapse_app.set_config({"enable_mjolnir": "false"})
     synapse_ip = (await get_unit_ips(synapse_app.name))[0]
     create_moderators_room(synapse_ip, access_token)
+    await synapse_app.set_config({"enable_mjolnir": "true"})
     async with ops_test.fast_forward():
         # using fast_forward otherwise would wait for model config update-status-hook-interval
         await synapse_app.model.wait_for_idle(

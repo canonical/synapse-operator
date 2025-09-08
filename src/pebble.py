@@ -51,7 +51,6 @@ def check_synapse_alive(charm_state: CharmState) -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_ALIVE_NAME)
     check.override = "replace"
-    check.level = "alive"
     check.tcp = {"port": synapse.SYNAPSE_PORT}
     experimental_alive_check = charm_state.synapse_config.experimental_alive_check
     if experimental_alive_check:
@@ -70,7 +69,6 @@ def check_synapse_ready() -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_READY_NAME)
     check.override = "replace"
-    check.level = "ready"
     check.timeout = "20s"
     check.period = "2m"
     check.threshold = 5
@@ -108,7 +106,6 @@ def check_nginx_ready() -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_NGINX_READY_NAME)
     check.override = "replace"
-    check.level = "ready"
     check.http = {"url": f"http://localhost:{synapse.SYNAPSE_NGINX_PORT}/health"}
     return check.to_dict()
 
@@ -121,7 +118,6 @@ def check_mjolnir_ready() -> ops.pebble.CheckDict:
     """
     check = Check(synapse.CHECK_MJOLNIR_READY_NAME)
     check.override = "replace"
-    check.level = "ready"
     check.http = {"url": f"http://localhost:{synapse.MJOLNIR_HEALTH_PORT}/healthz"}
     check.timeout = "10s"
     check.threshold = 5
@@ -305,17 +301,12 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         existing_synapse_config = _get_synapse_config(container)
         current_synapse_config = _get_synapse_config(container)
 
+        synapse.add_default_configurations(current_synapse_config)
         synapse.set_public_baseurl(current_synapse_config, charm_state)
         if charm_state.synapse_config.block_non_admin_invites:
             logger.debug("pebble.change_config: Enabling Block non admin invites")
             synapse.block_non_admin_invites(current_synapse_config, charm_state=charm_state)
-        synapse.enable_metrics(current_synapse_config)
-        synapse.enable_forgotten_room_retention(current_synapse_config)
-        synapse.enable_media_retention(current_synapse_config)
-        synapse.enable_stale_devices_deletion(current_synapse_config)
         synapse.enable_rc_joins_remote_rate(current_synapse_config, charm_state=charm_state)
-        synapse.enable_serve_server_wellknown(current_synapse_config)
-        synapse.enable_replication(current_synapse_config)
         if (
             charm_state.synapse_config.invite_checker_policy_rooms
             or charm_state.synapse_config.invite_checker_blocklist_allowlist_url
@@ -432,7 +423,7 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
                 "startup": "enabled",
                 "command": command,
                 "environment": synapse.get_environment(charm_state),
-            }
+            },
         },
         "checks": {
             synapse.CHECK_ALIVE_NAME: check_synapse_alive(charm_state),
@@ -440,23 +431,6 @@ def _pebble_layer(charm_state: CharmState, is_main: bool = True) -> ops.pebble.L
         },
     }
     return typing.cast(ops.pebble.LayerDict, layer)
-
-
-def _pebble_layer_without_restart(charm_state: CharmState) -> ops.pebble.LayerDict:
-    """Return a dictionary representing a Pebble layer without restart.
-
-    Args:
-        charm_state: Instance of CharmState
-
-    Returns:
-        pebble layer
-    """
-    new_layer = _pebble_layer(charm_state)
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-success"] = "ignore"
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-failure"] = "ignore"
-    ignore = {synapse.CHECK_READY_NAME: "ignore"}
-    new_layer["services"][synapse.SYNAPSE_SERVICE_NAME]["on-check-failure"] = ignore
-    return new_layer
 
 
 def _nginx_pebble_layer() -> ops.pebble.LayerDict:

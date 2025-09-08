@@ -107,7 +107,7 @@ parts:
         plugin: nil
         source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.136.0
+        source-tag: v1.137.0
         build-environment:
           - RUST_VERSION: "1.82.0"
           - POETRY_VERSION: "2.1.1"
@@ -144,7 +144,7 @@ parts:
             git clone https://github.com/nbuechner/synapse-invite-checker.git
             cd synapse-invite-checker
             git checkout ab6c8b78d78c4cbf31e1a30981ae45c09285b34a
-            pip3 install --break-system-packages --prefix="/install" --no-warn-script-location -U .
+            pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location -U .
             cd ..
             #
             # install synapse
