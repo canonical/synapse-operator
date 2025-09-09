@@ -82,7 +82,6 @@ from .workload_configuration import (  # noqa: F401
     enable_ip_range_whitelist,
     enable_limit_remote_rooms_complexity,
     enable_media,
-    enable_rc_joins_remote_rate,
     enable_redis,
     enable_registration_secrets,
     enable_room_list_publication_rules,
