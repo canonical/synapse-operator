@@ -41,6 +41,18 @@ options:
     description: |
       When disabled, blocks searching local and remote room lists for local and
       remote users by always returning an empty list for all queries.
+  experimental_alive_check:
+    type: string
+    description: Comma separated list of period,threshold and timeout for Synapse
+      pebble alive check. Refer to https://github.com/canonical/pebble/#layer-specification
+      to more details about allowed values.
+      This is an experimental feature and may be removed in future releases.
+    default: "2m,5,20s"
+  experimental_extract_background_tasks:
+    type: boolean
+    description: Allows running background tasks in the first available worker
+      defined in the instance_map configuration.
+    default: false
   federation_domain_whitelist:
     type: string
     description: Comma separated list of domains to be allowed to federate.
@@ -73,18 +85,10 @@ options:
       The public-facing base URL that clients use to access this Homeserver.
       Defaults to https://<server_name>/. Only used if there is integration with
       SAML integrator charm.
-  experimental_alive_check:
+  rate_limiting_level:
     type: string
-    description: Comma separated list of period,threshold and timeout for Synapse
-      pebble alive check. Refer to https://github.com/canonical/pebble/#layer-specification
-      to more details about allowed values.
-      This is an experimental feature and may be removed in future releases.
-    default: "2m,5,20s"
-  experimental_extract_background_tasks:
-    type: boolean
-    description: Allows running background tasks in the first available worker
-      defined in the instance_map configuration.
-    default: false
+    description: Changes rate limiting to preset levels default, permissive or unlimited.
+    default: default
   report_stats:
     description: |
       Configures whether to report statistics.

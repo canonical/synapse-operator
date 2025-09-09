@@ -91,4 +91,5 @@ from .workload_configuration import (  # noqa: F401
     enable_synapse_invite_checker,
     enable_trusted_key_servers,
     set_public_baseurl,
+    set_rate_limiting_level,
 )

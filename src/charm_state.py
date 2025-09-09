@@ -9,6 +9,7 @@ import os
 import re
 import typing
 from abc import ABC, abstractmethod
+from enum import Enum
 
 import ops
 
@@ -160,6 +161,20 @@ class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
     no_proxy: typing.Optional[str]
 
 
+class RateLimitingLevel(str, Enum):
+    """Define values for rate limiting.
+
+    Attributes:
+        DEFAULT: default.
+        PERMISSIVE: permissive.
+        UNLIMITED: unlimited.
+    """
+
+    DEFAULT = "default"
+    PERMISSIVE = "permissive"
+    UNLIMITED = "unlimited"
+
+
 class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     """Represent Synapse builtin configuration values.
 
@@ -180,6 +195,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
         publish_rooms_allowlist: publish_rooms_allowlist config.
         experimental_alive_check: experimental_alive_check config.
         experimental_extract_background_tasks: experimental_extract_background_tasks.
+        rate_limiting_level: rate_limiting_level config.
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
@@ -201,6 +217,7 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
     limit_remote_rooms_complexity: float | None = Field(None)
     public_baseurl: str = Field(..., min_length=2)
     publish_rooms_allowlist: str | None = Field(None)
+    rate_limiting_level: str = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     # notif_from should be after server_name because of how the validator is set.
@@ -341,6 +358,29 @@ class SynapseConfig(BaseModel):  # pylint: disable=too-few-public-methods
             raise ValidationError(
                 f"Invalid experimental_alive_check, threshold should be a number: {value}", cls
             ) from exc
+
+    @validator("rate_limiting_level")
+    @classmethod
+    def validate_rate_limit(cls, value: str) -> str:
+        """Check rate limit level configuration.
+
+        If invalid, set the default.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The rate limit level.
+        """
+        v_lower = value.lower()
+        try:
+            return RateLimitingLevel(v_lower)
+        except ValueError:
+            allowed = [e.value for e in RateLimitingLevel]
+            logger.error(
+                "rate_limiting_level must be one of %s, ignoring and setting as default", allowed
+            )
+            return RateLimitingLevel.DEFAULT.value
 
 
 @dataclasses.dataclass(frozen=True)

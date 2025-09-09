@@ -302,6 +302,7 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         current_synapse_config = _get_synapse_config(container)
 
         synapse.add_default_configurations(current_synapse_config)
+        synapse.set_rate_limiting_level(current_synapse_config, charm_state)
         synapse.set_public_baseurl(current_synapse_config, charm_state)
         if charm_state.synapse_config.block_non_admin_invites:
             logger.debug("pebble.change_config: Enabling Block non admin invites")
