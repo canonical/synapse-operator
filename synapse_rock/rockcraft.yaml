@@ -165,9 +165,13 @@ parts:
       rm -rf $CRAFT_PART_INSTALL/aws/dist/awscli/examples/
     overlay-packages:
       - libjemalloc2
-  ca-certs:
+  add-ca-certificates:
     plugin: nil
-    overlay-packages: [ca-certificates]
+    build-packages:
+      - ca-certificates
+    override-build: |-
+      mkdir -p $CRAFT_PART_INSTALL/etc/ssl/certs/
+      cp /etc/ssl/certs/ca-certificates.crt $CRAFT_PART_INSTALL/etc/ssl/certs/ca-certificates.crt
   patches:
     plugin: dump
     after: [synapse]
