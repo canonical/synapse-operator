@@ -1,0 +1,128 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create a backup.
+    act: Run action delete-backup with the created backup.
+    assert: In list-backups, there should be no backup.
+    ","50915","test_synapse_backup_delete","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: build and deploy the Synapse charm.
+    act: scale Synapse.
+    assert: the Synapse application is blocked since there is no Redis integration.
+    ","61559","test_synapse_scale_blocked","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: Synapse is integrated with Postgresql.
+    act:  request Synapse Stats Exporter URL.
+    assert: Synapse Stats Exporter returns as expected.
+    ","30424","test_enable_stats_exporter","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator together with media.
+        enable_media_sync_cleanup and backup_passphrase set.
+    act: Run create-backup action
+    assert: Correct response from the action that includes the backup-id.
+       An encrypted object was created in S3 with the correct name.
+    ","95194","test_synapse_create_backup_correct_media_sync_cleanup","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create two backups.
+    act: Run action list-backups
+    assert: There should be two backups, with the same keys as the ones created.
+    ","52066","test_synapse_list_backups","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. No backup_passphrase.
+    act: Run create-backup action
+    assert: The action fails because there is no passphrase.
+    ","42825","test_synapse_create_backup_no_passphrase","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: Synapse App deployed and s3-integrator deployed with bucket created.
+    act:  Assert media can be uploaded, and retrieved, from the S3 media bucket.
+    assert: The media file is uploaded to the S3 bucket, and retrieved successfully.
+    ","51262","test_synapse_enable_media","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create a backup.
+    act: Run action restore-backup
+    assert: Should not fail. Synapse should be started.
+    ","82161","test_synapse_backup_restore","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: integrate Synapse with Redis and scale 1 unit.
+    act:  get all unit IPs and do a http request via port 9000.
+    assert: collect metrics should work for all units.
+    ","120361","test_synapse_prometheus_configured","tests.integration","2025-09-18","passed","2025-09-18","","test_scaling","",""
+"
+    arrange: scale Synapse to two units and check if all units are working.
+    act:  Scale the application down to 1 unit.
+    assert: the Synapse application (remaining unit) should return a correct response.
+    ","102896","test_synapse_scaling_down","tests.integration","2025-09-18","passed","2025-09-18","","test_scaling","",""
+"
+    arrange: build and deploy the Synapse charm.
+    act: configure ip_range_whitelist with invalid IP and revert it.
+    assert: the Synapse application should be blocked and then active.
+    ","70505","test_synapse_validate_configuration","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. backup_passphrase set.
+    act: Run create-backup action
+    assert: Correct response from the action that includes the backup-id.
+       An encrypted object was created in S3 with the correct name.
+    ","47154","test_synapse_create_backup_correct","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: build and deploy the Synapse charm, create an user, get the access token and assert
+        that the user is not an admin.
+    act:  run action to anonymize user.
+    assert: the Synapse application is active and the API request returns as expected.
+    ","2040","test_anonymize_user","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: build and deploy the Synapse charm.
+    act: configure  invite_checker_policy_rooms with valid room ids.
+    assert: the Synapse application should be active after setting and
+        reverting the config.
+    ","75231","test_synapse_configure_roomids","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: deploy the Synapse charm, create offer, deploy any-charm as consumer
+        in a different model and consume offer.
+    act: integrate them via matrix-auth offer.
+    assert: Synapse set the registration file received via matrix-auth.
+    ","101923","test_synapse_cmr_matrix_auth","tests.integration","2025-09-18","passed","2025-09-18","","test_matrix_auth","",""
+"
+    arrange: build and deploy the Synapse charm, and deploy the nginx-integrator.
+    act: relate the nginx-integrator charm with the Synapse charm.
+    assert: requesting the charm through nginx-integrator should return a correct response.
+    ","67521","test_nginx_route_integration","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: Synapse App deployed and s3-integrator deployed with bucket created.
+    act:  integrate s3-integrator with Synapse.
+    assert: Synapse gets into active status.
+    ","47459","test_synapse_enable_s3_backup_integration_success","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: Synapse App deployed and s3-integrator deployed.
+    act:  integrate s3-integrator with Synapse.
+    assert: Synapse gets into blocked status because the bucket does not exist.
+    ","23305","test_synapse_enable_s3_backup_integration_no_bucket","tests.integration","2025-09-18","passed","2025-09-18","","test_s3","",""
+"
+    arrange: integrate Synapse with Redis and scale 1 unit.
+    act:  get the second unit IP address and request via ports 8080 and 8008.
+    assert: 8080 should work because goes to the main unit and 8008 should fail.
+    ","136275","test_synapse_scaling_nginx_configured","tests.integration","2025-09-18","passed","2025-09-18","","test_scaling","",""
+"
+    arrange: build and deploy the Synapse charm. Create an user and get the access token
+        Deploy, configure and integrate with Synapse the smtp-integrator charm.
+    act:  try to check if a given email address is not already associated.
+    assert: the Synapse application is active and the error returned is the one expected.
+    ","103985","test_synapse_enable_smtp[smtp]","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: build and deploy the Synapse charm.
+    act: send a request to the Synapse application managed by the Synapse charm.
+    assert: the Synapse application should return a correct response.
+    ","324","test_synapse_is_up","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: build and deploy the Synapse charm. Create an user and get the access token
+        Deploy, configure and integrate with Synapse the smtp-integrator charm.
+    act:  try to check if a given email address is not already associated.
+    assert: the Synapse application is active and the error returned is the one expected.
+    ","89458","test_synapse_enable_smtp[smtp-legacy]","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
+"
+    arrange: deploy the charm, create user and moderation room and create the
+        moderation secret.
+    act: set moderation_access_token_secret_id
+    assert: the Draupnir health endpoint should return OK.
+    ","47881","test_moderation","tests.integration","2025-09-18","passed","2025-09-18","","test_charm","",""
