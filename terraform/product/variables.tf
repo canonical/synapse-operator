@@ -5,7 +5,7 @@ variable "app_names" {
 
   validation {
     condition = length(
-      setsubtract(keys(var.integrate_offers), [
+      setsubtract(keys(var.app_names), [
         "synapse",
         "s3_integrator_backup",
         "s3_integrator_media",
@@ -183,6 +183,31 @@ variable "integrate_offers" {
   description = "Partial overrides for integrating specific offers."
   type        = map(bool)
   default     = {}
+  validation {
+    condition = length(
+      setsubtract(keys(var.integrate_offers), [
+        "postgresql",
+        "prometheus",
+        "grafana",
+        "saml_integrator"
+      ])
+    ) == 0
+
+    error_message = "The keys in var.integrate_offers must be one or more of: postgresql, prometheus, grafana, saml_integrator."
+  }
+
+  validation {
+    condition = !(
+      (contains(keys(var.enable), "local_postgresql") && contains(keys(var.integrate_offers), "postgresql"))
+      ||
+      (contains(keys(var.enable), "local_saml_integrator") && contains(keys(var.integrate_offers), "saml_integrator"))
+    )
+
+    error_message = <<EOT
+If var.enable contains "local_postgresql", you cannot set "postgresql" in var.integrate_offers.
+If var.enable contains "local_saml_integrator", you cannot set "saml_integrator" in var.integrate_offers.
+EOT
+  }
 }
 
 variable "lego_secret" {
@@ -215,7 +240,7 @@ variable "offer_urls" {
   default     = {}
   validation {
     condition = length(
-      setsubtract(keys(var.integrate_offers), [
+      setsubtract(keys(var.offer_urls), [
         "postgresql",
         "prometheus",
         "grafana",
@@ -223,21 +248,9 @@ variable "offer_urls" {
       ])
     ) == 0
 
-    error_message = "The keys in var.integrate_offers must be one or more of: postgresql, prometheus, grafana, saml_integrator."
+    error_message = "The keys in var.offer_urls must be one or more of: postgresql, prometheus, grafana, saml_integrator."
   }
 
-  validation {
-    condition = !(
-      (contains(keys(var.enable), "local_postgresql") && contains(keys(var.integrate_offers), "postgresql"))
-      ||
-      (contains(keys(var.enable), "local_saml_integrator") && contains(keys(var.integrate_offers), "saml_integrator"))
-    )
-
-    error_message = <<EOT
-If var.enable contains "local_postgresql", you cannot set "postgresql" in var.integrate_offers.
-If var.enable contains "local_saml_integrator", you cannot set "saml_integrator" in var.integrate_offers.
-EOT
-  }
 }
 
 variable "revisions" {
