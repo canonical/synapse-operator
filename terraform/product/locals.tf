@@ -1,3 +1,6 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 locals {
   app_names_defaults = {
     s3_integrator_backup = "backup-s3-integrator"
