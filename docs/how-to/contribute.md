@@ -21,6 +21,8 @@ examines
 - Please help us out in ensuring easy to review branches by rebasing your pull
 request branch onto the `main` branch. This also avoids merge commits and
 creates a linear Git commit history.
+- Please generate src documentation for every commit. See the section below for
+more details.
 
 ## Developing
 
@@ -39,7 +41,7 @@ source .tox/unit/bin/activate
 
 ### Testing
 
-Note that the [Synapse](https://github.com/canonical/synapse-operator/blob/2/main/synapse_rock/rockcraft.yaml) image need to be built and
+Note that the [Synapse](synapse_rock/rockcraft.yaml) image need to be built and
 pushed to microk8s for the tests to run. It should be tagged as
 `localhost:32000/synapse:latest`so that Kubernetes knows how to pull them
 from the MicroK8s repository. Note that the MicroK8s registry needs to be
@@ -53,12 +55,14 @@ below. The following commands can then be used to run the tests:
 * `tox -e unit`: Runs the unit tests.
 * `tox -e integration`: Runs the integration tests.
 
-### Changelog
+### Generating src docs for every commit
 
-Please ensure that any new feature, fix, or significant change is documented by
-adding an entry to the `docs/changelog.md` file.
+Run the following command:
 
-To learn more about changelog best practices, visit [Keep a Changelog](https://keepachangelog.com/).
+```bash
+echo -e "tox -e src-docs\ngit add src-docs\n" >> .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
 
 ## Build charm
 
@@ -103,6 +107,6 @@ juju configure synapse server_name=mychat.test.com
 
 Read more about `server_name` in [Configuring Synapse](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#server_name).
 
-## Canonical contributor agreement
+## Canonical Contributor Agreement
 
 Canonical welcomes contributions to the Synapse Operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.

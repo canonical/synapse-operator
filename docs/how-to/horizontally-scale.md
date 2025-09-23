@@ -57,6 +57,7 @@ juju scale-application synapse 3
 The output of `juju status --relations` should look like this now.
 
 ```
+$ juju status --relations
 Model             Controller    Cloud/Region         Version  SLA          Timestamp
 prod-synapse-k8s  ctr1          cloud1/default  3.1.8    unsupported  20:04:20Z
 

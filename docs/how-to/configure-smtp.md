@@ -3,7 +3,7 @@
 This document shows how to integrate Synapse with SMTP for sending
 emails. Synapse should be deployed beforehand.
 
-## Deploy `smtp-integrator` charm
+## Deploy smtp-integrator charm
 
 For Synapse to use SMTP, it uses the smtp-integrator charm. Replace the configuration options with your specific configuration.
 Configuring SMTP without tls or starttls or without authentication is not supported.
