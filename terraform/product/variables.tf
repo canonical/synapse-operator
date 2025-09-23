@@ -1,3 +1,6 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 variable "app_names" {
   description = "Partial overrides for application names."
   type        = map(string)
