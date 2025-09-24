@@ -107,7 +107,7 @@ parts:
         plugin: nil
         source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.137.0
+        source-tag: v1.138.0
         build-environment:
           - RUST_VERSION: "1.82.0"
           - POETRY_VERSION: "2.1.1"
@@ -164,8 +164,14 @@ parts:
             chmod 755 $CRAFT_PART_INSTALL/usr/local/attributemaps
             rm -rf $CRAFT_PART_INSTALL/aws/dist/awscli/examples/
         overlay-packages:
-            - ca-certificates
             - libjemalloc2
+    add-ca-certificates:
+      plugin: nil
+      build-packages:
+        - ca-certificates
+      override-build: |-
+        mkdir -p $CRAFT_PART_INSTALL/etc/ssl/certs/
+        cp /etc/ssl/certs/ca-certificates.crt $CRAFT_PART_INSTALL/etc/ssl/certs/ca-certificates.crt
     patches:
       plugin: dump
       after: [synapse]
