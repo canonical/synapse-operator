@@ -53,6 +53,14 @@
       "versioningTemplate": "semver-coerced",
       "datasourceTemplate": "custom.charmhub",
       "matchStringsStrategy": "recursive"
+    },
+	{
+      "fileMatch": ["(^|/)src/charm\\.py$"],
+      "description": "Update Synapse version in src/charm.py",
+      "matchStrings": ["SYNAPSE_VERSION\\s*=\\s*\"(?<currentValue>.*?)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "element-hq/synapse",
+      "versioningTemplate": "semver-coerced"
     }
   ],
   "packageRules": [

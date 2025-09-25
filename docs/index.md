@@ -1,4 +1,4 @@
-# Synapse Operator
+# Synapse operator
 
 A Juju charm deploying and managing [Synapse](https://github.com/matrix-org/synapse) on Kubernetes. Synapse is a drop in replacement for other chat servers like Mattermost and Slack.
 
@@ -27,7 +27,7 @@ If there’s a particular area of documentation that you’d like to see that’
 Synapse is an open-source project that welcomes community contributions, suggestions, fixes and constructive feedback.
 
 * [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
-* [Join the Discourse forum](https://discourse.charmhub.io/tag/synapse)
+* [Join the Discourse forum](https://discourse.charmhub.io)
 * [Discuss on the Matrix chat service](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 * Contribute and report bugs to [the Synapse operator](https://github.com/canonical/synapse-operator)
 * Check the [release notes](https://github.com/canonical/synapse-operator/releases)
@@ -38,11 +38,12 @@ Synapse is an open-source project that welcomes community contributions, suggest
   1. [Getting Started](tutorial/getting-started.md)
 1. [How to](how-to)
   1. [Configure SMTP](how-to/configure-smtp.md)
-  2. [Contribute](how-to/contribute.md)
-  3. [Deactivate a user](how-to/deactivate-user.md)
-  4. [Backup and Restore](how-to/backup-and-restore.md)
+  1. [Backup and Restore](how-to/backup-and-restore.md)
+  1. [Contribute](how-to/contribute.md)
+  1. [How to horizontally scale](how-to/horizontally-scale.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
-  2. [Integrations](reference/integrations.md)
+  1. [External access](reference/external-access.md)
+  1. [Integrations](reference/integrations.md)
 1. [Explanation](explanation)
   1. [Charm architecture](explanation/charm-architecture.md)
