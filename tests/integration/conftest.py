@@ -31,6 +31,8 @@ from tests.integration.helpers import register_user
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 WAITING_STATUS_NAME = "waiting"
+PEBBLE_EXEC = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
+DUMP_MAS_CONFIG = f"{PEBBLE_EXEC} mas-cli -c {MAS_CONFIGURATION_PATH} config dump"
 
 
 @pytest_asyncio.fixture(scope="module", name="server_name")
@@ -540,3 +542,32 @@ def s3_media_bucket_fixture(
         for c in objectsresponse["Contents"]:
             boto_s3_media_client.delete_object(Bucket=bucket_name, Key=c["Key"])
     boto_s3_media_client.delete_bucket(Bucket=bucket_name)
+
+
+@pytest.fixture(scope="module", name="mock_external_idp_config")
+def mock_external_idp_config_fixture() -> dict:
+    """Create the mock upstream idp config."""
+    issuer_url = "https://issuer.internal"
+    return {
+        "issuer_url": "https://issuer.internal",
+        "authorization_endpoint": f"{issuer_url}/oauth/authorize",
+        "userinfo_endpoint": f"{issuer_url}/oauth/userinfo",
+        "token_endpoint": f"{issuer_url}/oauth/token",
+        "introspection_endpoint": f"{issuer_url}/oauth/introspect",
+        "jwks_endpoint": f"{issuer_url}/oauth/discovery/keys",
+        "client_id": "client_id",
+        "client_secret": "client_secret",
+    }
+
+
+@pytest_asyncio.fixture(scope="function", name="oauth_external_idp_integrator")
+async def oauth_external_idp_integrator_fixture(model: Model, mock_external_idp_config):
+    """Returns a s3-integrator app configured with backup parameters."""
+    application = await model.deploy(
+        "oauth-external-idp-integrator",
+        application_name="oidc",
+        channel="latest/edge",
+        config=mock_external_idp_config,
+    )
+    await model.wait_for_idle(apps=[application.name], idle_period=30)
+    yield application
