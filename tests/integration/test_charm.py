@@ -184,7 +184,7 @@ async def test_synapse_enable_smtp(
     await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
     await model.add_relation(f"{smtp_integrator_app.name}:{relation_name}", synapse_app.name)
     await model.wait_for_idle(
-        idle_period=30,
+        idle_period=180,
         apps=[synapse_app.name, smtp_integrator_app.name],
         status=ACTIVE_STATUS_NAME,
     )
