@@ -3,6 +3,7 @@
   "extends": [
     "config:base"
   ],
+  "schedule": ["* * * * 0,6"],
   "baseBranches": ["2/main", "/^track\\/.*/"],
   "prBodyNotes": [
         "---",
