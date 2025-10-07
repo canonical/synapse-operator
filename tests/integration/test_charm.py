@@ -18,7 +18,6 @@ from juju.unit import Unit
 from ops.model import ActiveStatus
 
 import synapse
-
 from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
