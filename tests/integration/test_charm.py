@@ -19,7 +19,7 @@ from ops.model import ActiveStatus
 
 import synapse
 
-from .conftest import DUMP_MAS_CONFIG
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
@@ -189,8 +189,12 @@ async def test_synapse_enable_smtp(
         status=ACTIVE_STATUS_NAME,
     )
 
+    pebble_exec_cmd = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
+    dump_mas_config_cmd = (
+        f"{pebble_exec_cmd} {MAS_EXECUTABLE_PATH} -c {MAS_CONFIGURATION_PATH} config dump"
+    )
     unit: Unit = synapse_app.units[0]
-    action = await unit.run(DUMP_MAS_CONFIG)
+    action = await unit.run(dump_mas_config_cmd)
     await action.wait()
     assert action.results["return-code"] == 0
     mas_config = yaml.safe_load(action.results["stdout"])
