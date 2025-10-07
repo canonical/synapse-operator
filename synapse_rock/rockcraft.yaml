@@ -210,6 +210,7 @@ parts:
       (cd $CRAFT_PART_BUILD/frontend; npm ci; npm run build)
       mkdir -p $CRAFT_PART_INSTALL/mas/share/assets
       cp frontend/dist/manifest.json $CRAFT_PART_INSTALL/mas/share/manifest.json
+      rm -f frontend/dist/index.html* frontend/dist/manifest.json*
       cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets
     stage:
       - mas/share/*
