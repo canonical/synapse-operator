@@ -130,6 +130,7 @@ module "local_postgresql" {
   count           = local.enable.local_postgresql ? 1 : 0
   juju_model_name = juju_model.synapse.name
   source          = "git::https://github.com/canonical/postgresql-k8s-operator//terraform?ref=rev667&depth=1"
+  base            = "ubuntu@22.04"
   app_name        = local.app_names.local_postgresql
   channel         = local.channels.local_postgresql
   revision        = local.revisions.local_postgresql
