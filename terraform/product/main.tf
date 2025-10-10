@@ -22,7 +22,7 @@ resource "juju_model" "synapse" {
 # Modules
 
 module "synapse" {
-  source      = "git::https://github.com/canonical/synapse-operator//terraform/product?ref=rev811&depth=1"
+  source      = ".."
   app_name    = local.app_names.synapse
   channel     = local.channels.synapse
   config      = local.config_synapse
