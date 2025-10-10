@@ -125,12 +125,12 @@ module "local_saml_integrator" {
 }
 
 module "local_postgresql" {
-  count    = local.enable.local_postgresql ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "git::https://github.com/canonical/postgresql-k8s-operator//terraform?ref=rev667&depth=1"
-  channel  = local.channels.local_postgresql
-  revision = local.revisions.local_postgresql
-  config   = local.config_local_postgresql
+  count           = local.enable.local_postgresql ? 1 : 0
+  juju_model_name = juju_model.synapse.name
+  source          = "git::https://github.com/canonical/postgresql-k8s-operator//terraform?ref=rev667&depth=1"
+  channel         = local.channels.local_postgresql
+  revision        = local.revisions.local_postgresql
+  config          = local.config_local_postgresql
 }
 
 # Integrations with offers
