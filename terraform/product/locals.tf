@@ -3,9 +3,12 @@
 
 locals {
   app_names_defaults = {
-    s3_integrator_backup = "backup-s3-integrator"
-    s3_integrator_media  = "media-s3-integrator"
-    synapse              = "synapse-live"
+    s3_integrator_backup     = "backup-s3-integrator"
+    s3_integrator_media      = "media-s3-integrator"
+    synapse                  = "synapse"
+    redis_k8s                = "redis"
+    nginx_ingress_integrator = "nginx-ingress-integrator"
+    local_postgresql         = "postgresql-k8s"
   }
   app_names = merge(local.app_names_defaults, var.app_names)
 
