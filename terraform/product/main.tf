@@ -22,7 +22,7 @@ resource "juju_model" "synapse" {
 # Modules
 
 module "synapse" {
-  source      = ".."
+  source      = "./.."
   app_name    = local.app_names.synapse
   channel     = local.channels.synapse
   config      = local.config_synapse
