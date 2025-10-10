@@ -12,10 +12,13 @@ variable "app_names" {
         "synapse",
         "s3_integrator_backup",
         "s3_integrator_media",
+        "nginx_ingress_integrator",
+        "local_postgresql",
+        "redis_k8s"
       ])
     ) == 0
 
-    error_message = "The keys in var.app_names must be one or more of: synapse, s3_integrator_backup, s3_integrator_media."
+    error_message = "The keys in var.app_names must be one or more of: synapse, s3_integrator_backup, s3_integrator_media, local_postgresql, nginx_ingress_integrator and redis_k8s."
   }
 }
 
