@@ -10,5 +10,6 @@ output "applications" {
     local_saml_integrator    = local.enable.local_saml_integrator ? module.local_saml_integrator : null
     local_postgresql         = local.enable.local_postgresql ? module.local_postgresql: null
     synapse                  = module.synapse
+    maubot                   = module.maubot
   }
 }
