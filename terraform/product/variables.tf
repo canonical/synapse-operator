@@ -201,19 +201,6 @@ variable "integrate_offers" {
 
     error_message = "The keys in var.integrate_offers must be one or more of: postgresql, prometheus, grafana, saml_integrator."
   }
-
-  validation {
-    condition = !(
-      (contains(keys(var.enable), "local_postgresql") && contains(keys(var.integrate_offers), "postgresql"))
-      ||
-      (contains(keys(var.enable), "local_saml_integrator") && contains(keys(var.integrate_offers), "saml_integrator"))
-    )
-
-    error_message = <<EOT
-If var.enable contains "local_postgresql", you cannot set "postgresql" in var.integrate_offers.
-If var.enable contains "local_saml_integrator", you cannot set "saml_integrator" in var.integrate_offers.
-EOT
-  }
 }
 
 variable "lego_secret" {
