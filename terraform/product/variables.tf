@@ -141,7 +141,7 @@ variable "credentials" {
   }
   validation {
     condition = length(
-      setsubtract(keys(var.enable), [
+      setsubtract(keys(var.credentials), [
         "s3_access_key",
         "s3_secret_key",
         "lego_httpreq_username",
