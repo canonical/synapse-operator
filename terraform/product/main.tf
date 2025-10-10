@@ -120,7 +120,7 @@ module "smtp_integrator" {
 module "local_saml_integrator" {
   count    = local.enable.local_saml_integrator ? 1 : 0
   model    = juju_model.synapse.name
-  source   = "git::https://github.com/canonical/saml-integrator-operator//terraform/charm?ref=rev102&depth=1"
+  source   = "git::https://github.com/canonical/saml-integrator-operator//terraform/charm?ref=rev104&depth=1"
   channel  = local.channels.local_saml_integrator
   revision = local.revisions.local_saml_integrator
   config   = local.config_local_saml_integrator
