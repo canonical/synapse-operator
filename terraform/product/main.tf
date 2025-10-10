@@ -134,6 +134,7 @@ module "local_postgresql" {
   channel         = local.channels.local_postgresql
   revision        = local.revisions.local_postgresql
   config          = local.config_local_postgresql
+  storage_size    = "1G"
 }
 
 # Integrations with offers
