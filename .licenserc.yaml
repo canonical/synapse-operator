@@ -40,4 +40,5 @@ header:
     - 'synapse_rock/scripts/**/*.py'
     - 'synapse_rock/patches/**'
     - '.lycheeignore'
+    - 'terraform/**'
   comment: on-failure
