@@ -12,10 +12,13 @@ variable "app_names" {
         "synapse",
         "s3_integrator_backup",
         "s3_integrator_media",
+        "nginx_ingress_integrator",
+        "local_postgresql",
+        "redis_k8s"
       ])
     ) == 0
 
-    error_message = "The keys in var.app_names must be one or more of: synapse, s3_integrator_backup, s3_integrator_media."
+    error_message = "The keys in var.app_names must be one or more of: synapse, s3_integrator_backup, s3_integrator_media, local_postgresql, nginx_ingress_integrator and redis_k8s."
   }
 }
 
@@ -141,7 +144,7 @@ variable "credentials" {
   }
   validation {
     condition = length(
-      setsubtract(keys(var.enable), [
+      setsubtract(keys(var.credentials), [
         "s3_access_key",
         "s3_secret_key",
         "lego_httpreq_username",
@@ -197,19 +200,6 @@ variable "integrate_offers" {
     ) == 0
 
     error_message = "The keys in var.integrate_offers must be one or more of: postgresql, prometheus, grafana, saml_integrator."
-  }
-
-  validation {
-    condition = !(
-      (contains(keys(var.enable), "local_postgresql") && contains(keys(var.integrate_offers), "postgresql"))
-      ||
-      (contains(keys(var.enable), "local_saml_integrator") && contains(keys(var.integrate_offers), "saml_integrator"))
-    )
-
-    error_message = <<EOT
-If var.enable contains "local_postgresql", you cannot set "postgresql" in var.integrate_offers.
-If var.enable contains "local_saml_integrator", you cannot set "saml_integrator" in var.integrate_offers.
-EOT
   }
 }
 

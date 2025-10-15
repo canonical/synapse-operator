@@ -22,7 +22,7 @@ resource "juju_model" "synapse" {
 # Modules
 
 module "synapse" {
-  source      = "git::https://github.com/canonical/synapse-operator//terraform/product?ref=rev811&depth=1"
+  source      = "./.."
   app_name    = local.app_names.synapse
   channel     = local.channels.synapse
   config      = local.config_synapse
@@ -69,6 +69,7 @@ module "nginx_ingress_integrator" {
   count    = local.enable.nginx_ingress_integrator ? 1 : 0
   model    = juju_model.synapse.name
   source   = "../modules/nginx-ingress-integrator"
+  app_name = local.app_names.nginx_ingress_integrator
   channel  = local.channels.nginx_ingress_integrator
   revision = local.revisions.nginx_ingress_integrator
   config   = local.config_nginx_ingress_integrator
@@ -78,6 +79,7 @@ module "redis_k8s" {
   count    = local.enable.redis_k8s ? 1 : 0
   model    = juju_model.synapse.name
   source   = "../modules/redis-k8s"
+  app_name = local.app_names.redis_k8s
   channel  = local.channels.redis_k8s
   revision = local.revisions.redis_k8s
 }
@@ -118,19 +120,22 @@ module "smtp_integrator" {
 module "local_saml_integrator" {
   count    = local.enable.local_saml_integrator ? 1 : 0
   model    = juju_model.synapse.name
-  source   = "git::https://github.com/canonical/saml-integrator-operator//terraform/charm?ref=rev102&depth=1"
+  source   = "git::https://github.com/canonical/saml-integrator-operator//terraform/charm?ref=rev104&depth=1"
   channel  = local.channels.local_saml_integrator
   revision = local.revisions.local_saml_integrator
   config   = local.config_local_saml_integrator
 }
 
 module "local_postgresql" {
-  count    = local.enable.local_postgresql ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "git::https://github.com/canonical/postgresql-k8s-operator//terraform?ref=rev667&depth=1"
-  channel  = local.channels.local_postgresql
-  revision = local.revisions.local_postgresql
-  config   = local.config_local_postgresql
+  count           = local.enable.local_postgresql ? 1 : 0
+  juju_model_name = juju_model.synapse.name
+  source          = "git::https://github.com/canonical/postgresql-k8s-operator//terraform?ref=rev667&depth=1"
+  base            = "ubuntu@22.04"
+  app_name        = local.app_names.local_postgresql
+  channel         = local.channels.local_postgresql
+  revision        = local.revisions.local_postgresql
+  config          = local.config_local_postgresql
+  storage_size    = "1G"
 }
 
 # Integrations with offers
