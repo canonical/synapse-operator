@@ -129,18 +129,18 @@ async def synapse_app_fixture(
     await app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
 
     async with ops_test.fast_forward():
+        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app.name}")
+        await model.wait_for_idle(
+            apps=[synapse_app_name, postgresql_app.name],
+            status=ACTIVE_STATUS_NAME,
+            idle_period=5,
+        )
         await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app.name}")
         await model.wait_for_idle(
             apps=[synapse_app_name, postgresql_app.name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
             raise_on_error=False,
-        )
-        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app.name}")
-        await model.wait_for_idle(
-            apps=[synapse_app_name, postgresql_app.name],
-            status=ACTIVE_STATUS_NAME,
-            idle_period=5,
         )
     return app
 
