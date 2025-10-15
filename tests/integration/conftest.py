@@ -134,6 +134,7 @@ async def synapse_app_fixture(
             apps=[synapse_app_name, postgresql_app.name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
+            raise_on_error=False,
         )
         await model.relate(f"{synapse_app_name}:database", f"{postgresql_app.name}")
         await model.wait_for_idle(
