@@ -13,7 +13,7 @@ platforms:
 environment: &mas-source
   source: https://github.com/element-hq/matrix-authentication-service
   source-type: git
-  source-tag: v1.3.0
+  source-tag: v1.4.1
 parts:
   scripts:
     plugin: dump
