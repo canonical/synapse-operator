@@ -222,4 +222,4 @@ def validate_datasource(datasource: DatasourcePostgreSQL) -> None:
             datasource.get("port"),
         ]
     ):
-        raise MASDatasourceInvalidError(f"Missing values in postgresql datasource: {datasource}")
+        raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
