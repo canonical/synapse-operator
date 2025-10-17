@@ -13,7 +13,7 @@ platforms:
 environment: &mas-source
   source: https://github.com/element-hq/matrix-authentication-service
   source-type: git
-  source-tag: v1.2.0
+  source-tag: v1.4.1
 parts:
   scripts:
     plugin: dump
@@ -204,12 +204,13 @@ parts:
     <<: *mas-source
     source-subdir: frontend
     build-environment:
-      - NODE_URI: "https://nodejs.org/dist/v20.18.1/node-v20.18.1-linux-x64.tar.gz"
+      - NODE_URI: "https://nodejs.org/dist/v22.19.0/node-v22.19.0-linux-x64.tar.gz"
     override-build: |
       curl -Ls $NODE_URI | tar xzf - -C /usr/ --skip-old-files --no-same-owner --strip-components=1
       (cd $CRAFT_PART_BUILD/frontend; npm ci; npm run build)
       mkdir -p $CRAFT_PART_INSTALL/mas/share/assets
       cp frontend/dist/manifest.json $CRAFT_PART_INSTALL/mas/share/manifest.json
+      rm -f frontend/dist/index.html* frontend/dist/manifest.json*
       cp -r frontend/dist/* $CRAFT_PART_INSTALL/mas/share/assets
     stage:
       - mas/share/*
