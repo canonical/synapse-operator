@@ -93,9 +93,7 @@ class MatrixAuthObserver(Object):
                 )
                 # get_secret_value is dynamically created
                 registration_secrets.append(
-                    RegistrationSecret(
-                        file_path, registration.get_secret_value()  # pylint: disable=no-member
-                    )
+                    RegistrationSecret(file_path, registration.get_secret_value())
                 )
         return registration_secrets
 
