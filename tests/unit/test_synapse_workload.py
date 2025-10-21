@@ -336,6 +336,8 @@ def test_add_default_configurations_success(config_content: dict[str, typing.Any
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
 
 
+# Uppercase seems to be the correct styling for a test global constant.
+# pylint: disable=invalid-name
 SMTP_CONFIGURATION = SMTPConfiguration(
     enable_tls=True,
     force_tls=False,
