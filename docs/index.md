@@ -41,6 +41,7 @@ Synapse is an open-source project that welcomes community contributions, suggest
   1. [Backup and Restore](how-to/backup-and-restore.md)
   1. [Contribute](how-to/contribute.md)
   1. [How to horizontally scale](how-to/horizontally-scale.md)
+  1. [Upgrade](how-to/upgrade.md) 
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
   1. [External access](reference/external-access.md)
