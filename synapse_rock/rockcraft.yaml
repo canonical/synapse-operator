@@ -135,7 +135,7 @@ parts:
             cd ..
             #
             # install s3 storage provider
-            git clone --branch v1.4.0 --depth 1 https://github.com/matrix-org/synapse-s3-storage-provider
+            git clone --branch v1.6.0 --depth 1 https://github.com/matrix-org/synapse-s3-storage-provider
             cd synapse-s3-storage-provider
             pip3 install --break-system-packages --prefix="/install" --no-warn-script-location -U .
             cd ..
@@ -152,10 +152,6 @@ parts:
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
             pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
-            # fix issue while upload media to s3
-            # boto3 is installed by synapse-s3-storage-provider
-            # https://github.com/boto/boto3/issues/4398
-            pip3 install --break-system-packages --prefix="/install" --force-reinstall -v "boto3==1.35.99"
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
