@@ -473,6 +473,7 @@ def test_generate_mjolnir_config_success(monkeypatch: pytest.MonkeyPatch):
         synapse.MJOLNIR_CONFIG_PATH, yaml.safe_dump(expected_config), make_dirs=True
     )
 
+
 # Uppercase seems to be the correct styling for a test global constant.
 # pylint: disable=invalid-name
 SMTP_CONFIGURATION = SMTPConfiguration(
