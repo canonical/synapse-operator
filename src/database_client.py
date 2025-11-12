@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """The DatabaseClient class."""
+
 import logging
 import typing
 

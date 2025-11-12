@@ -21,7 +21,7 @@ To make sure that we don't steal IOPS from the running synapse instance,
 we need to throttle the walk/rmdir iterations.
 Given the MAX_IOPS, the formula is:
     ITERATIONS_BEFORE_SLEEP = (TARGET_IOPS * SLEEP_TIME * MAX_IOPS)/(MAX_IOPS - TARGET_IOPS)
-The values choosen here are for a TARGET_IOPS of 100 on a disk of 1600 MAX_IOPS.
+The values chosen here are for a TARGET_IOPS of 100 on a disk of 1600 MAX_IOPS.
 Which is very conservative if using a SSD. Check the table at https://en.wikipedia.org/wiki/IOPS#Solid-state_devices
 """
 ITERATIONS_BEFORE_SLEEP = 100
