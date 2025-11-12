@@ -41,4 +41,5 @@ header:
     - 'synapse_rock/patches/**'
     - '.lycheeignore'
     - 'terraform/**'
+    - 'uv.lock'
   comment: on-failure
