@@ -1,7 +1,6 @@
 name: Integration tests
 
 on:
-  pull_request:
   schedule:
     # Trigger at 6:00 AM and 6:00 PM UTC
     - cron: "0 6,18 * * *"
