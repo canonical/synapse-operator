@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Matrix-auth integration tests for Synapse charm."""
+
 import json
 import logging
 import pathlib

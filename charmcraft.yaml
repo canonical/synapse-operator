@@ -6,29 +6,26 @@
 
 type: charm
 bases:
-  - build-on:
-    - name: ubuntu
-      channel: "22.04"
-    run-on:
-    - name: ubuntu
-      channel: "22.04"
+- build-on:
+  - name: ubuntu
+    channel: "22.04"
+  run-on:
+  - name: ubuntu
+    channel: "22.04"
 charm-libs:
-  - lib: traefik_k8s.ingress
-    version: "2"
-  - lib: hydra.oauth
-    version: "0"
+- lib: traefik_k8s.ingress
+  version: "2"
+- lib: hydra.oauth
+  version: "0"
 parts:
   charm:
-    build-packages:
-      - libpq-dev
-      - libssl-dev
-      - libffi-dev
-      - pkg-config
+    source: .
+    plugin: uv
     build-snaps:
-      - rustup
-    override-build: |
-      rustup default stable
-      craftctl default
-    charm-binary-python-packages:
-    - psycopg2-binary
-    - cryptography
+    - astral-uv
+  dump:
+    plugin: dump
+    source: .
+    stage:
+    - scripts
+    - templates

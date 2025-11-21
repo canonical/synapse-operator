@@ -51,7 +51,7 @@ def get_headers(access_token: str) -> Dict[str, str]:
 
 
 # no type for kwargs
-def make_request(method: str, url: str, headers: Dict[str, str], **kwargs) -> requests.Response:  # type: ignore[no-untyped-def] # noqa: E501
+def make_request(method: str, url: str, headers: Dict[str, str], **kwargs) -> requests.Response:  # type: ignore[no-untyped-def]
     """Request URL.
 
     Args:
@@ -99,7 +99,7 @@ def impersonate_user(admin_access_token: str, server_url: str, user_id: str) -> 
         response = make_request("POST", url, headers=headers)
     except SynapseServerError as exc:
         logger.error("Failed to impersonate user %s", user_id)
-        raise SynapseImpersonateError((f"Failed to impersonate user {user_id}")) from exc
+        raise SynapseImpersonateError(f"Failed to impersonate user {user_id}") from exc
     access_token = response.json().get("access_token", "")
     return access_token
 
@@ -357,7 +357,7 @@ def main() -> None:  # noqa: C901
             while True:
                 user_input = (
                     input(
-                        f"{room_id} - failed, action required. What do you want to do? [r]etry / [s]kip / [f]inish: "  # noqa: E501 W505
+                        f"{room_id} - failed, action required. What do you want to do? [r]etry / [s]kip / [f]inish: "
                     )
                     .strip()
                     .lower()

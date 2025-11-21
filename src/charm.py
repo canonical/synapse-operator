@@ -5,7 +5,6 @@
 
 """Charm for Synapse on kubernetes."""
 
-
 import logging
 import re
 import typing

@@ -4,11 +4,12 @@ on:
   pull_request:
   schedule:
     # Trigger at 6:00 AM and 6:00 PM UTC
-    - cron: "0 6,18 * * *"
+  - cron: "0 6,18 * * *"
 
 jobs:
   integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: 
+      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
       extra-arguments: -x --localstack-address 172.17.0.1
@@ -17,8 +18,9 @@ jobs:
       juju-channel: 3.4/stable
       channel: 1.28-strict/stable
       modules: '["test_charm", "test_nginx", "test_s3", "test_scaling", "test_matrix_auth"]'
+      with-uv: true
   allure-report:
     if: ${{ (success() || failure()) && github.event_name == 'schedule' }}
     needs:
-      - integration-tests
+    - integration-tests
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main

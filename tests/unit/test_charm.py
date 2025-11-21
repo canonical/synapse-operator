@@ -392,8 +392,8 @@ def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pyt
     harness.begin()
 
     redis_config = harness.charm._redis.get_relation_as_redis_conf()
-    assert "redis-host" == redis_config["host"]
-    assert "1010" == str(redis_config["port"])
+    assert redis_config["host"] == "redis-host"
+    assert str(redis_config["port"]) == "1010"
 
 
 def test_smtp_enabled_reconcile_pebble_error(
