@@ -1,0 +1,157 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:806 Connecting to existing model github-pr-40641-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/postgresql-k8s-495
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] waiting: awaiting for primary endpoint to be ready
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:synapse-0
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [allocating] waiting: installing agent
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] maintenance: Configuring Synapse
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse/0 [idle] active: 
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse/0 [idle] active: 
+[32mINFO    [0m pytest_operator.plugin:plugin.py:762 Adding model github-pr-40641-microk8s:test-matrix-auth-tgta on cloud microk8s
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/noble/any-charm-100
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  any-charm1/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  any-charm1/0 [idle] active: 
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  any-charm1/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  any-charm1/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model                  Controller                Cloud/Region        Version  SLA          Timestamp
+test-matrix-auth-tgta  github-pr-40641-microk8s  microk8s/localhost  3.6.11   unsupported  19:21:15Z
+
+SAAS     Status  Store  URL
+synapse  active  local  admin/testing.synapse
+
+App         Version  Status  Scale  Charm      Channel      Rev  Address         Exposed  Message
+any-charm1           active      1  any-charm  latest/beta  100  10.152.183.113  no       
+
+Unit           Workload  Agent  Address      Ports  Message
+any-charm1/0*  active    idle   10.1.126.15         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model consumer...
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-40641-microk8s  microk8s/localhost  3.6.11   unsupported  19:21:16Z
+
+App             Version  Status  Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable  495  10.152.183.165  no       
+synapse                  active      1  synapse                      0  10.152.183.213  no       
+
+Unit               Workload  Agent  Address      Ports  Message
+postgresql-k8s/0*  active    idle   10.1.126.11         Primary
+synapse/0*         active    idle   10.1.126.13         
+
+Offer    Application  Charm    Rev  Connected  Endpoint     Interface    Role
+synapse  synapse      synapse  0    1/1        matrix-auth  matrix_auth  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-synapse-0: 19:18:32 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 501, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 19:18:33 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 19:18:42 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 19:18:55 ERROR unit.synapse/0.juju-log cannot perform the following tasks:
+- Start service "stats-exporter" (service start attempt: exited quickly with code 1, will ignore)
+----- Logs from task 0 -----
+2025-11-21T19:18:55Z INFO Most recent service output:
+    Traceback (most recent call last):
+      File "/usr/local/bin/synapse-stats-exporter", line 8, in <module>
+        sys.exit(main())
+                 ^^^^^^
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 85, in main
+        port = int(os.getenv("PROM_SYNAPSE_PORT", "5432"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ValueError: invalid literal for int() with base 10: ''
+2025-11-21T19:18:55Z ERROR service start attempt: exited quickly with code 1, will ignore
+-----
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/pebble.py", line 168, in replan_stats_exporter
+    container.start(STATS_EXPORTER_SERVICE_NAME)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/model.py", line 2670, in start
+    self._pebble.start_services(service_names)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/pebble.py", line 2357, in start_services
+    return self._services_action('start', services, timeout, delay)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/pebble.py", line 2435, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "stats-exporter" (service start attempt: exited quickly with code 1, will ignore)
+----- Logs from task 0 -----
+2025-11-21T19:18:55Z INFO Most recent service output:
+    Traceback (most recent call last):
+      File "/usr/local/bin/synapse-stats-exporter", line 8, in <module>
+        sys.exit(main())
+                 ^^^^^^
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 85, in main
+        port = int(os.getenv("PROM_SYNAPSE_PORT", "5432"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ValueError: invalid literal for int() with base 10: ''
+2025-11-21T19:18:55Z ERROR service start attempt: exited quickly with code 1, will ignore
+-----
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
