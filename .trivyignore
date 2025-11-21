@@ -20,3 +20,7 @@ CVE-2025-58186
 CVE-2025-58187
 CVE-2025-58188
 CVE-2025-61724
+# nodejs glob vulnerability
+# also present in the image
+# node:20-slim used by Draupnir/Mjolnir upstream projects
+CVE-2025-64756
