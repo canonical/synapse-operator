@@ -13,3 +13,7 @@ output "applications" {
     maubot                   = module.maubot
   }
 }
+
+output "model_uuid" {
+  value = juju_model.synapse.uuid
+}
