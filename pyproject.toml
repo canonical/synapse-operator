@@ -1,61 +1,147 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-[tool.bandit]
-exclude_dirs = ["/venv/"]
-[tool.bandit.assert_used]
-skips = ["*/*test.py", "*/test_*.py", "*tests/*.py"]
+[project]
+name = "synapse-operator"
+version = "0.0.0"
+description = "Matrix synapse chat server."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "boto3==1.41.3",
+  "cosl==1.3.1",
+  "cryptography==46.0.3",
+  "deepdiff==8.6.1",
+  "jinja2==3.1.6",
+  "jsonschema==4.25.1",
+  "ops==3.3.1",
+  "psycopg2-binary==2.9.11",
+  "pydantic==2.12.4",
+  "python-ulid==3.1",
+  "requests==2.32.5",
+]
 
-# Testing tools configuration
+[dependency-groups]
+fmt = [
+  "ruff",
+]
+lint = [
+  "codespell",
+  "mypy",
+  "pep8-naming",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-operator",
+  "python-magic",
+  "ruff",
+  "types-pyyaml",
+  "types-requests",
+]
+unit = [
+  "coverage[toml]",
+  "ops[testing]",
+  "pytest",
+]
+coverage-report = [
+  "coverage[toml]",
+  "pytest",
+]
+static = [
+  "bandit[toml]",
+]
+integration = [
+  "allure-pytest>=2.8.18",
+  "allure-pytest-collection-report @ git+https://github.com/canonical/data-platform-workflows@v24.0.0#subdirectory=python/pytest_plugins/allure_pytest_collection_report",
+  "juju>=3",
+  "macaroonbakery==1.3.2",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-operator",
+  "python-magic",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py310"
+line-length = 99
+
+# enable ruff linters:
+#   A flake8-builtins
+#   B flake8-bugbear
+# CPY flake8-copyright
+#   D pydocstyle
+# E/W pycodestyle
+#   F Pyflakes
+#   I isort
+#   N pep8-naming
+# RUF Ruff-specific rules
+#   S flake8-bandit
+# SIM flake8-simplify
+#  TC flake8-type-checking
+#  UP pyupgrade
+lint.select = [ "A", "B", "C", "CPY", "D", "E", "F", "I", "N", "RUF", "S", "SIM", "TC", "UP", "W" ]
+lint.ignore = [
+  "B904",
+  "D107",
+  "D203",
+  "D204",
+  "D205",
+  "D213",
+  "D215",
+  "D400",
+  "D404",
+  "D406",
+  "D407",
+  "D408",
+  "D409",
+  "D413",
+  "E501",
+  "S105",
+  "S603",
+  "TC002",
+  "TC006",
+  "UP006",
+  "UP007",
+  "UP035",
+  "UP045",
+]
+lint.per-file-ignores."tests/*" = [ "B011", "D100", "D101", "D102", "D103", "D104", "D212", "D415", "D417", "S" ]
+lint.flake8-copyright.author = "Canonical Ltd."
+lint.flake8-copyright.min-file-size = 1
+lint.flake8-copyright.notice-rgx = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+"
+lint.mccabe.max-complexity = 10
+lint.pydocstyle.convention = "google"
+
+[tool.codespell]
+skip = "build,lib,venv,icon.svg,.tox,.git,.mypy_cache,.ruff_cache,.coverage,htmlcov,uv.lock,grafana_dashboards"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+log_cli_level = "INFO"
+markers = [
+  "requires_secrets: mark tests that require external secrets",
+  "cos: mark tests that require a COS integration",
+  "nginx: mark tests that require an nginx integration",
+  "s3: mark tests that require an s3 integration (via localstack)",
+  "irc: mark tests that require an irc integration",
+]
+
 [tool.coverage.run]
 branch = true
 
 [tool.coverage.report]
 fail_under = 89
 show_missing = true
-
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-log_cli_level = "INFO"
-markers = [
-    "requires_secrets: mark tests that require external secrets",
-    "cos: mark tests that require a COS integration",
-    "nginx: mark tests that require an nginx integration",
-    "s3: mark tests that require an s3 integration (via localstack)",
-    "irc: mark tests that require an irc integration"
-]
-
-[tool.pylint.'MESSAGES CONTROL']
-extension-pkg-whitelist = "pydantic"
-
-# Formatting tools configuration
-[tool.black]
-line-length = 99
-target-version = ["py310"]
-
-[tool.isort]
-line_length = 99
-profile = "black"
-
-# Linting tools configuration
-[tool.flake8]
-max-line-length = 99
-max-doc-length = 99
-max-complexity = 10
-exclude = [".git", "__pycache__", ".tox", "build", "dist", "*.egg_info", "venv"]
-select = ["E", "W", "F", "C", "N", "R", "D", "H"]
-# Ignore W503, E501 because using black creates errors with this
-# Ignore D107 Missing docstring in __init__
-ignore = ["W503", "E501", "D107"]
-# D100, D101, D102, D103: Ignore missing docstrings in tests
-per-file-ignores = ["tests/*:D100,D101,D102,D103,D104,D205,D212,D415"]
-docstring-convention = "google"
-# Check for properly formatted copyright header in each file
-copyright-check = "True"
-copyright-author = "Canonical Ltd."
-copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
-classmethod-decorators = ['classmethod', 'validator', 'root_validator']
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -65,3 +151,9 @@ disallow_untyped_defs = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[tool.bandit]
+exclude_dirs = [ "/venv/" ]
+
+[tool.bandit.assert_used]
+skips = [ "*/*test.py", "*/test_*.py", "*tests/*.py" ]
