@@ -20,7 +20,6 @@ from charms.redis_k8s.v0.redis import (
 from charms.saml_integrator.v0.saml import SamlRequires
 from charms.smtp_integrator.v0.smtp import (
     AuthType,
-    SmtpDataAvailableEvent,
     SmtpRelationData,
     SmtpRequires,
     TransportSecurity,
@@ -73,22 +72,20 @@ S3_INVALID_CONFIGURATION = "Media: S3 configuration is invalid"
 class SynapseCharmEvents(ops.CharmEvents):
     """Custom charm events for Synapse.
 
-    This class combines events from multiple relations including Redis and SMTP.
+    This class adds Redis events to the charm.
 
     Attributes:
         redis_relation_updated: Event emitted when Redis relation is updated.
-        smtp_data_available: Event emitted when SMTP data becomes available.
     """
 
     redis_relation_updated = EventSource(RedisRelationUpdatedEvent)
-    smtp_data_available = EventSource(SmtpDataAvailableEvent)
 
 
 class SynapseCharm(CharmBaseWithState):
     """Charm the service.
 
     Attrs:
-        on: listen to custom Synapse events (Redis, SMTP, etc.).
+        on: listen to custom charm events (Redis events).
         peer_relation: charm peer relation.
         is_main: if is main unit or not.
     """
@@ -145,7 +142,7 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
         self.framework.observe(self.on.redis_relation_updated, self._trigger_reconcile)
-        self.framework.observe(self.on.smtp_data_available, self._trigger_reconcile)
+        self.framework.observe(self._smtp.on.smtp_data_available, self._trigger_reconcile)
         self.framework.observe(
             self._media.on.credentials_changed, self._on_media_credentials_changed
         )
