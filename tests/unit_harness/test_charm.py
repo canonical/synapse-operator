@@ -11,14 +11,30 @@ from unittest.mock import MagicMock
 
 import ops
 import pytest
+from ops.framework import EventSource
 from ops.testing import Harness
 
 import pebble
 import synapse
-from charm import SynapseCharm
+from charm import SynapseCharm, SynapseCharmEvents
 from pebble import PebbleServiceError
 
 from .conftest import TEST_SERVER_NAME
+
+
+def test_synapse_charm_events_has_redis_event() -> None:
+    """
+    arrange: create SynapseCharmEvents instance.
+    act: check for redis_relation_updated event and verify it's an EventSource.
+    assert: event exists and is properly configured.
+    """
+    # Test that the event class has the redis event
+    assert hasattr(SynapseCharmEvents, "redis_relation_updated")
+    # Test that it's an EventSource
+    assert isinstance(SynapseCharmEvents.redis_relation_updated, EventSource)
+    # Test that creating an instance works
+    events = SynapseCharmEvents()
+    assert hasattr(events, "redis_relation_updated")
 
 
 def test_synapse_pebble_layer(harness: Harness) -> None:
