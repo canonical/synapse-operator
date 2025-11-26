@@ -13,10 +13,14 @@ from typing import Optional
 import ops
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
-from charms.redis_k8s.v0.redis import RedisRelationCharmEvents, RedisRequires
+from charms.redis_k8s.v0.redis import (
+    RedisRelationUpdatedEvent,
+    RedisRequires,
+)
 from charms.saml_integrator.v0.saml import SamlRequires
 from charms.smtp_integrator.v0.smtp import (
     AuthType,
+    SmtpDataAvailableEvent,
     SmtpRelationData,
     SmtpRequires,
     TransportSecurity,
@@ -24,6 +28,7 @@ from charms.smtp_integrator.v0.smtp import (
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from ops import main
 from ops.charm import ActionEvent, RelationBrokenEvent
+from ops.framework import EventSource
 from pydantic.v1 import ValidationError
 
 import macaroon_key
@@ -65,11 +70,25 @@ S3_CANNOT_ACCESS_BUCKET = "Media: S3 bucket does not exist or cannot be accessed
 S3_INVALID_CONFIGURATION = "Media: S3 configuration is invalid"
 
 
+class SynapseCharmEvents(ops.CharmEvents):
+    """Custom charm events for Synapse.
+
+    This class combines events from multiple relations including Redis and SMTP.
+
+    Attributes:
+        redis_relation_updated: Event emitted when Redis relation is updated.
+        smtp_data_available: Event emitted when SMTP data becomes available.
+    """
+
+    redis_relation_updated = EventSource(RedisRelationUpdatedEvent)
+    smtp_data_available = EventSource(SmtpDataAvailableEvent)
+
+
 class SynapseCharm(CharmBaseWithState):
     """Charm the service.
 
     Attrs:
-        on: listen to Redis events.
+        on: listen to custom Synapse events (Redis, SMTP, etc.).
         peer_relation: charm peer relation.
         is_main: if is main unit or not.
     """
@@ -77,7 +96,7 @@ class SynapseCharm(CharmBaseWithState):
     # This class has several instance attributes like observers and libraries.
     # Consider refactoring if more attributes are added.
     # pylint: disable=too-many-instance-attributes
-    on = RedisRelationCharmEvents()
+    on = SynapseCharmEvents()
 
     def __init__(self, *args: typing.Any) -> None:
         """Construct.
