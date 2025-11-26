@@ -4,25 +4,26 @@
 variable "app_name" {
   description = "Name of the application in the Juju model."
   type        = string
-  default     = "nginx-ingress-integrator"
+  default     = "saml-integrator"
 }
 
-variable "base" {
-  description = "The operating system on which to deploy"
-  type        = string
-  default     = "ubuntu@22.04"
-}
 
 variable "channel" {
   description = "The channel to use when deploying a charm."
   type        = string
-  default     = "latest/stable"
+  default     = "4.9/edge"
 }
 
 variable "config" {
-  description = "Application config."
+  description = "Application config. Details about available options can be found at https://charmhub.io/saml-integrator/configurations."
   type        = map(string)
   default     = {}
+}
+
+variable "constraints" {
+  description = "Juju constraints to apply for this application."
+  type        = string
+  default     = ""
 }
 
 variable "model_uuid" {
@@ -32,14 +33,19 @@ variable "model_uuid" {
 }
 
 variable "revision" {
-  description = "Revision number of the charm."
+  description = "Revision number of the charm"
   type        = number
   default     = null
 }
 
+variable "base" {
+  description = "The operating system on which to deploy"
+  type        = string
+  default     = "ubuntu@22.04"
+}
 
 variable "units" {
-  description = "Number of units to deploy."
+  description = "Number of units to deploy"
   type        = number
   default     = 1
 }
