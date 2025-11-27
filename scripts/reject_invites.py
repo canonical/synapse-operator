@@ -135,8 +135,7 @@ def get_all_users(
             break
         result = response.json()
         users = result.get("users", [])
-        for user in users:
-            yield user
+        yield from users
         next_token = result.get("next_token")
         if not next_token:
             break
