@@ -76,6 +76,7 @@ class SynapseCharm(CharmBaseWithState):
         self._matrix_auth = MatrixAuthObserver(self)
         self._media = MediaObserver(self)
         self._database = DatabaseObserver(self, relation_name=synapse.SYNAPSE_DB_RELATION_NAME)
+        self._mas_database = DatabaseObserver(self, relation_name="mas-database")
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
@@ -333,6 +334,24 @@ class SynapseCharm(CharmBaseWithState):
             "userinfo_endpoint": oauth_data.get("userinfo_endpoint", ""),
             "jwks_uri": oauth_data.get("jwks_uri", ""),
             "subject_claim": oidc_subject_claim,
+        }
+
+    def get_mas_database_config(self) -> typing.Optional[typing.Dict[str, str]]:
+        """Get MAS database configuration from the relation.
+
+        Returns:
+            MAS database configuration dictionary if relation exists and is ready.
+        """
+        mas_datasource = self._mas_database.get_relation_as_datasource()
+        if not mas_datasource:
+            return None
+            
+        return {
+            "host": mas_datasource.host,
+            "port": str(mas_datasource.port),
+            "database": mas_datasource.database,
+            "username": mas_datasource.username,
+            "password": mas_datasource.password,
         }
 
     def _on_register_user_action(self, event: ActionEvent) -> None:

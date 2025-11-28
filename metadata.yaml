@@ -82,6 +82,10 @@ requires:
         interface: oauth
         limit: 1
         optional: true
+    mas-database:
+        interface: postgresql_client
+        limit: 1
+        optional: true
 
 peers:
   synapse-peers:
