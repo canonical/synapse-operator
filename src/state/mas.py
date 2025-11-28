@@ -172,7 +172,7 @@ class MASConfiguration:
                 "upstream-oidc-provider-id": secrets.token_hex(16),
             }
             secret = charm.app.add_secret(content=mas_context_secret, label=MAS_CONTEXT_LABEL)
-        
+
         try:
             mas_context = MASContext(
                 encryption_key=mas_context_secret["encryption-key"],
@@ -187,7 +187,7 @@ class MASConfiguration:
         except ValidationError as exc:
             logger.exception("Error validating MAS context.")
             raise MASContextValidationError("MAS secret content validation failed") from exc
-        
+
         return cls(datasource=datasource, mas_context=mas_context)
 
     @classmethod

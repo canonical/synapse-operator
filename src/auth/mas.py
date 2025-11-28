@@ -10,8 +10,8 @@ import ops
 from charms.hydra.v0.oauth import ClientConfig, OauthProviderConfig
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from charm_state import SynapseConfig
 from charm_types import SMTPConfiguration
-from state.charm_state import SynapseConfig
 from state.mas import MASConfiguration
 
 logger = logging.getLogger()
@@ -90,7 +90,7 @@ def sync_mas_config(container: ops.model.Container) -> None:
         MASConfigSyncError: when synchronisation of the MAS config failed.
     """
     command = [MAS_EXECUTABLE_PATH, "config", "sync", "--prune", "-c", MAS_CONFIGURATION_PATH]
-    
+
     try:
         process = container.exec(command=command, working_dir=MAS_WORKING_DIR)
         process.wait()
@@ -105,7 +105,7 @@ def register_user(
     is_admin: bool = False,
 ) -> str:
     """Register a new user with MAS. Afterwards start a provisioning job for all users.
-    
+
     Args:
         container: Synapse container.
         username: The username.

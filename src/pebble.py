@@ -17,6 +17,7 @@ from deepdiff import DeepDiff
 from ops.pebble import Check
 
 import synapse
+from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH, MAS_WORKING_DIR
 from charm_state import CharmState
 
 logger = logging.getLogger(__name__)
@@ -160,14 +161,13 @@ def replan_mjolnir(container: ops.model.Container) -> None:
     container.replan()
 
 
-def restart_mas(container: ops.model.Container, charm_state: CharmState) -> None:
+def restart_mas(container: ops.model.Container) -> None:
     """Restart Matrix Authentication Service (MAS).
 
     Args:
         container: Charm container.
-        charm_state: Instance of CharmState.
     """
-    container.add_layer("synapse-mas", _mas_pebble_layer(charm_state), combine=True)
+    container.add_layer("synapse-mas", _mas_pebble_layer(), combine=True)
     container.restart("synapse-mas")
 
 
@@ -571,17 +571,12 @@ def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.Layer
     return typing.cast(ops.pebble.LayerDict, layer)
 
 
-def _mas_pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
+def _mas_pebble_layer() -> ops.pebble.LayerDict:
     """Return a dictionary representing a Pebble layer for MAS.
-
-    Args:
-        charm_state: Instance of CharmState
 
     Returns:
         pebble layer for Matrix Authentication Service (MAS)
     """
-    from auth.mas import MAS_EXECUTABLE_PATH, MAS_CONFIGURATION_PATH, MAS_WORKING_DIR
-    
     command = f"{MAS_EXECUTABLE_PATH} server -c {MAS_CONFIGURATION_PATH}"
 
     layer = {

@@ -23,7 +23,6 @@ import pebble
 import signing_key
 import synapse
 from admin_access_token import AdminAccessTokenService
-from auth import mas
 from backup_observer import BackupObserver
 from charm_state import (
     MAIN_UNIT_ID,
@@ -43,7 +42,7 @@ from observability import Observability
 from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
-from state.mas import MASConfiguration, MASDatasourceMissingError, MASContextNotSetError
+from state.mas import MASConfiguration, MASContextNotSetError, MASDatasourceMissingError
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -60,6 +59,7 @@ class SynapseCharm(CharmBaseWithState):
         on: listen to Redis events.
         peer_relation: charm peer relation.
         is_main: if is main unit or not.
+        mas_enabled: whether Matrix Authentication Service is enabled.
     """
 
     # This class has several instance attributes like observers and libraries.
@@ -318,23 +318,23 @@ class SynapseCharm(CharmBaseWithState):
         Returns:
             OAuth configuration dictionary if relation exists and is ready.
         """
-        if not self._oauth.is_ready():
+        if not self._oauth.is_client_created():
             return None
-        
-        oauth_data = self._oauth.get_oauth_provider_info()
+
+        oauth_data = self._oauth.get_provider_info()
         if not oauth_data:
             return None
-            
+
         oidc_subject_claim = self.config.get("oidc_subject_claim", "user.email")
-        
+
         return {
-            "client_id": oauth_data.get("client_id", ""),
-            "client_secret": oauth_data.get("client_secret", ""),
-            "issuer_url": oauth_data.get("issuer_url", ""),
-            "authorization_endpoint": oauth_data.get("authorization_endpoint", ""),
-            "token_endpoint": oauth_data.get("token_endpoint", ""),
-            "userinfo_endpoint": oauth_data.get("userinfo_endpoint", ""),
-            "jwks_uri": oauth_data.get("jwks_uri", ""),
+            "client_id": oauth_data.client_id,
+            "client_secret": oauth_data.client_secret,
+            "issuer_url": oauth_data.issuer_url,
+            "authorization_endpoint": oauth_data.authorization_endpoint,
+            "token_endpoint": oauth_data.token_endpoint,
+            "userinfo_endpoint": oauth_data.userinfo_endpoint,
+            "jwks_uri": oauth_data.jwks_endpoint,
             "subject_claim": oidc_subject_claim,
         }
 
@@ -347,13 +347,13 @@ class SynapseCharm(CharmBaseWithState):
         mas_datasource = self._mas_database.get_relation_as_datasource()
         if not mas_datasource:
             return None
-            
+
         return {
-            "host": mas_datasource.host,
-            "port": str(mas_datasource.port),
-            "database": mas_datasource.database,
-            "username": mas_datasource.username,
-            "password": mas_datasource.password,
+            "host": mas_datasource["host"],
+            "port": str(mas_datasource["port"]),
+            "database": mas_datasource["db"],
+            "username": mas_datasource["user"],
+            "password": mas_datasource["password"],
         }
 
     @property
@@ -373,7 +373,7 @@ class SynapseCharm(CharmBaseWithState):
         """
         if not self.mas_enabled:
             return None
-        
+
         try:
             return MASConfiguration.from_charm(self)
         except (MASDatasourceMissingError, MASContextNotSetError):
