@@ -119,7 +119,14 @@ options:
   oidc_subject_claim:
     type: string
     default: user.email
-    description: |
+    description: |-
       For advanced use only! Only relevant if synapse is related to an oauth provider.
       Configure the subject claim that is used to map upstream provider users to local
       MAS users.
+  enable_mas:
+    type: boolean
+    default: false
+    description: |-
+      Enable Matrix Authentication Service (MAS) for authentication.
+      When enabled, MAS will handle user authentication instead of Synapse.
+      Requires mas-database relation to be configured.

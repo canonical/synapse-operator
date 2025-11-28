@@ -23,6 +23,7 @@ import pebble
 import signing_key
 import synapse
 from admin_access_token import AdminAccessTokenService
+from auth import mas
 from backup_observer import BackupObserver
 from charm_state import (
     MAIN_UNIT_ID,
@@ -42,6 +43,7 @@ from observability import Observability
 from redis_observer import RedisObserver
 from saml_observer import SAMLObserver
 from smtp_observer import SMTPObserver
+from state.mas import MASConfiguration, MASDatasourceMissingError, MASContextNotSetError
 from user import User
 
 logger = logging.getLogger(__name__)
@@ -353,6 +355,29 @@ class SynapseCharm(CharmBaseWithState):
             "username": mas_datasource.username,
             "password": mas_datasource.password,
         }
+
+    @property
+    def mas_enabled(self) -> bool:
+        """Check if MAS is enabled.
+
+        Returns:
+            bool: True if MAS is enabled in config.
+        """
+        return bool(self.config.get("enable_mas", False))
+
+    def get_mas_configuration(self) -> typing.Optional[MASConfiguration]:
+        """Get MAS configuration if MAS is enabled.
+
+        Returns:
+            MAS configuration if enabled and properly configured.
+        """
+        if not self.mas_enabled:
+            return None
+        
+        try:
+            return MASConfiguration.from_charm(self)
+        except (MASDatasourceMissingError, MASContextNotSetError):
+            return None
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
         """Register user and report action result.

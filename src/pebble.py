@@ -160,6 +160,17 @@ def replan_mjolnir(container: ops.model.Container) -> None:
     container.replan()
 
 
+def restart_mas(container: ops.model.Container, charm_state: CharmState) -> None:
+    """Restart Matrix Authentication Service (MAS).
+
+    Args:
+        container: Charm container.
+        charm_state: Instance of CharmState.
+    """
+    container.add_layer("synapse-mas", _mas_pebble_layer(charm_state), combine=True)
+    container.restart("synapse-mas")
+
+
 def replan_stats_exporter(container: ops.model.Container, charm_state: CharmState) -> None:
     """Replan Synapse StatsExporter service.
 
@@ -554,6 +565,38 @@ def _pebble_layer_federation_sender(charm_state: CharmState) -> ops.pebble.Layer
                 "startup": "enabled",
                 "command": command,
                 "environment": synapse.get_environment(charm_state),
+            }
+        },
+    }
+    return typing.cast(ops.pebble.LayerDict, layer)
+
+
+def _mas_pebble_layer(charm_state: CharmState) -> ops.pebble.LayerDict:
+    """Return a dictionary representing a Pebble layer for MAS.
+
+    Args:
+        charm_state: Instance of CharmState
+
+    Returns:
+        pebble layer for Matrix Authentication Service (MAS)
+    """
+    from auth.mas import MAS_EXECUTABLE_PATH, MAS_CONFIGURATION_PATH, MAS_WORKING_DIR
+    
+    command = f"{MAS_EXECUTABLE_PATH} server -c {MAS_CONFIGURATION_PATH}"
+
+    layer = {
+        "summary": "Matrix Authentication Service layer",
+        "description": "pebble config layer for MAS",
+        "services": {
+            "synapse-mas": {
+                "override": "replace",
+                "summary": "Matrix Authentication Service",
+                "startup": "enabled",
+                "command": command,
+                "working-dir": MAS_WORKING_DIR,
+                "environment": {
+                    "RUST_LOG": "info",
+                },
             }
         },
     }
