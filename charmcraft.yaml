@@ -17,6 +17,8 @@ charm-libs:
     version: "2"
   - lib: synapse.matrix_auth
     version: "1"
+  - lib: hydra.oauth
+    version: "0"
 parts:
   charm:
     build-packages:

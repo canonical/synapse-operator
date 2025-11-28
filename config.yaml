@@ -116,3 +116,10 @@ options:
       setting instance_map and stream writers. This configuration should be used
       in case of unrecoverable broken units and takes the form of
       worker0,worker1
+  oidc_subject_claim:
+    type: string
+    default: user.email
+    description: |
+      For advanced use only! Only relevant if synapse is related to an oauth provider.
+      Configure the subject claim that is used to map upstream provider users to local
+      MAS users.

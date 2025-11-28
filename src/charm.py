@@ -10,6 +10,7 @@ import logging
 import typing
 
 import ops
+from charms.hydra.v0.oauth import OAuthRequirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents
 from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
@@ -78,6 +79,7 @@ class SynapseCharm(CharmBaseWithState):
         self._saml = SAMLObserver(self)
         self._smtp = SMTPObserver(self)
         self._redis = RedisObserver(self)
+        self._oauth = OAuthRequirer(charm=self, relation_name="oauth")
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
@@ -306,6 +308,32 @@ class SynapseCharm(CharmBaseWithState):
             logger.info("mjolnir not found, skipping")
 
         self.unit.status = ops.ActiveStatus()
+
+    def get_relation_as_oauth_conf(self) -> typing.Optional[typing.Dict[str, str]]:
+        """Get OAuth provider configuration from the relation.
+
+        Returns:
+            OAuth configuration dictionary if relation exists and is ready.
+        """
+        if not self._oauth.is_ready():
+            return None
+        
+        oauth_data = self._oauth.get_oauth_provider_info()
+        if not oauth_data:
+            return None
+            
+        oidc_subject_claim = self.config.get("oidc_subject_claim", "user.email")
+        
+        return {
+            "client_id": oauth_data.get("client_id", ""),
+            "client_secret": oauth_data.get("client_secret", ""),
+            "issuer_url": oauth_data.get("issuer_url", ""),
+            "authorization_endpoint": oauth_data.get("authorization_endpoint", ""),
+            "token_endpoint": oauth_data.get("token_endpoint", ""),
+            "userinfo_endpoint": oauth_data.get("userinfo_endpoint", ""),
+            "jwks_uri": oauth_data.get("jwks_uri", ""),
+            "subject_claim": oidc_subject_claim,
+        }
 
     def _on_register_user_action(self, event: ActionEvent) -> None:
         """Register user and report action result.
