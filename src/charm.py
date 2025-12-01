@@ -11,8 +11,8 @@ import typing
 from typing import Optional
 
 import ops
-from charms.hydra.v0.oauth import OAuthRequirer
 from charms.data_platform_libs.v0.s3 import CredentialsChangedEvent, S3Requirer
+from charms.hydra.v0.oauth import OAuthRequirer
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import (
     RedisRelationUpdatedEvent,
@@ -58,9 +58,8 @@ from mjolnir import (
     MjolnirModeratorsNotFoundError,
 )
 from observability import Observability
-
-from state.mas import MASConfiguration, MASContextNotSetError, MASDatasourceMissingError
 from s3_parameters import S3Parameters
+from state.mas import MASConfiguration, MASContextNotSetError, MASDatasourceMissingError
 from user import User
 
 logger = logging.getLogger(__name__)
