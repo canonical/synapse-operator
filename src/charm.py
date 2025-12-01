@@ -36,6 +36,7 @@ import pebble
 import signing_key
 import synapse
 from admin_access_token import AdminAccessTokenService
+from auth.mas import generate_mas_config, generate_synapse_msc3861_config
 from backup_observer import BackupObserver
 from charm_state import (
     MAIN_UNIT_ID,
@@ -209,7 +210,7 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.reconcile(charm_state)
 
-    def reconcile(
+    def reconcile(  # noqa: C901
         self, charm_state: CharmState, maintenance_status: str = "Configuring Synapse"
     ) -> None:
         """Reconcile Synapse configuration with charm state.
@@ -233,7 +234,32 @@ class SynapseCharm(CharmBaseWithState):
 
         self.model.unit.status = ops.MaintenanceStatus(maintenance_status)
 
-        self.configure_and_start_services(charm_state, container)
+        # Configure MAS if enabled
+        rendered_mas_configuration = None
+        synapse_msc3861_configuration = None
+        if charm_state.synapse_config.enable_mas:
+            try:
+                mas_configuration = MASConfiguration.from_charm(self)
+                oauth_provider_info = None
+                if self._oauth.is_client_created():
+                    oauth_provider_info = self._oauth.get_provider_info()
+
+                rendered_mas_configuration = generate_mas_config(
+                    mas_configuration,
+                    charm_state.synapse_config,
+                    oauth_provider_info,
+                    charm_state.smtp_config,
+                    self.get_main_unit_address(),
+                )
+                synapse_msc3861_configuration = generate_synapse_msc3861_config(
+                    mas_configuration, charm_state.synapse_config
+                )
+            except (MASContextNotSetError, MASDatasourceMissingError) as e:
+                logger.warning("MAS configuration failed: %s", str(e))
+
+        self.configure_and_start_services(
+            charm_state, container, rendered_mas_configuration, synapse_msc3861_configuration
+        )
 
         if self.unit.is_leader():
             self._matrix_auth.update_matrix_auth_integration(charm_state)
@@ -249,13 +275,19 @@ class SynapseCharm(CharmBaseWithState):
         self._set_unit_with_service_status(charm_state)
 
     def configure_and_start_services(
-        self, charm_state: CharmState, container: ops.Container
+        self,
+        charm_state: CharmState,
+        container: ops.Container,
+        rendered_mas_configuration: typing.Optional[str] = None,
+        synapse_msc3861_configuration: typing.Optional[dict] = None,
     ) -> None:
         """Configure and start pebble layers.
 
         Args:
             charm_state: charm state.
             container: charm container.
+            rendered_mas_configuration: MAS configuration string if MAS is enabled.
+            synapse_msc3861_configuration: Synapse MSC3861 configuration if MAS is enabled.
         """
         if self.peer_relation:
             try:
@@ -268,11 +300,34 @@ class SynapseCharm(CharmBaseWithState):
                     "Signing key secret not found, check the logs"
                 )
         unit_number = self.unit.name.split("/")[1]
-        pebble.reconcile(charm_state, container, is_main=self.is_main, unit_number=unit_number)
+        pebble.reconcile(
+            charm_state,
+            rendered_mas_configuration,
+            synapse_msc3861_configuration,
+            container,
+            is_main=self.is_main,
+            unit_number=unit_number,
+        )
         pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
         if self.peer_relation:
             signing_key.write_to_secret(self.peer_relation, self, charm_state, container)
             macaroon_key.write_to_secret(self.peer_relation, self, charm_state, container)
+
+    def get_main_unit_address(self) -> str:
+        """Get the main unit address.
+
+        Returns:
+            The address of the main unit.
+        """
+        return self._get_unit_address(MAIN_UNIT_ID)
+
+    def get_unit_number(self) -> str:
+        """Get the unit number.
+
+        Returns:
+            The unit number as a string.
+        """
+        return self.unit.name.split("/")[1]
 
     def _get_unit_address(self, unit_id: int) -> str:
         """Get unit address.
@@ -411,9 +466,6 @@ class SynapseCharm(CharmBaseWithState):
         Returns:
             MAS configuration if enabled and properly configured.
         """
-        if not self.mas_enabled:
-            return None
-
         try:
             return MASConfiguration.from_charm(self)
         except (MASDatasourceMissingError, MASContextNotSetError):

@@ -161,12 +161,22 @@ def replan_mjolnir(container: ops.model.Container) -> None:
     container.replan()
 
 
-def restart_mas(container: ops.model.Container) -> None:
+def restart_mas(
+    container: ops.model.Container,
+    rendered_mas_configuration: str,
+    charm_state: CharmState,  # pylint: disable=unused-argument
+) -> None:
     """Restart Matrix Authentication Service (MAS).
 
     Args:
         container: Charm container.
+        rendered_mas_configuration: The MAS configuration to write.
+        charm_state: Instance of CharmState.
     """
+    # Write MAS configuration file
+    container.push(MAS_CONFIGURATION_PATH, rendered_mas_configuration, make_dirs=True)
+
+    # Add and restart MAS service
     container.add_layer("synapse-mas", _mas_pebble_layer(), combine=True)
     container.restart("synapse-mas")
 
@@ -211,6 +221,24 @@ def replan_synapse_federation_sender(
         "synapse-federation-sender", _pebble_layer_federation_sender(charm_state), combine=True
     )
     container.replan()
+
+
+def _get_mas_config(container: ops.model.Container) -> dict:
+    """Get the current MAS configuration.
+
+    Args:
+        container: MAS container.
+
+    Returns:
+        dict: MAS configuration or empty dict if not found.
+    """
+    try:
+        config = container.pull(MAS_CONFIGURATION_PATH).read()
+        current_mas_config = yaml.safe_load(config)
+        return current_mas_config or {}
+    except ops.pebble.PathError:
+        # MAS config file doesn't exist yet
+        return {}
 
 
 def _get_synapse_config(container: ops.model.Container) -> dict:
@@ -284,8 +312,12 @@ def _environment_has_changed(
 
 
 # The complexity of this method will be reviewed.
-def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statements
+def reconcile(  # noqa: C901
+    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     charm_state: CharmState,
+    rendered_mas_configuration: typing.Optional[str],
+    synapse_msc3861_configuration: typing.Optional[dict],
     container: ops.model.Container,
     is_main: bool = True,
     unit_number: str = "",
@@ -296,6 +328,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
 
     Args:
         charm_state: Instance of CharmState
+        rendered_mas_configuration: MAS configuration string if MAS is enabled.
+        synapse_msc3861_configuration: Synapse MSC3861 configuration if MAS is enabled.
         container: Charm container.
         is_main: if unit is main.
         unit_number: unit number id to set the worker name.
@@ -379,6 +413,24 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
+
+        # Handle MAS configuration if enabled
+        if rendered_mas_configuration and synapse_msc3861_configuration:
+            existing_mas_config = _get_mas_config(container=container)
+            mas_config_has_changed = DeepDiff(
+                existing_mas_config,
+                yaml.safe_load(rendered_mas_configuration),
+                ignore_order=True,
+                ignore_string_case=True,
+            )
+            if mas_config_has_changed:
+                restart_mas(container, rendered_mas_configuration, charm_state)
+
+            # Configure MSC3861 in Synapse
+            synapse.workload_configuration.configure_mas(
+                current_synapse_config, synapse_msc3861_configuration
+            )
+
         config_has_changed = DeepDiff(
             existing_synapse_config,
             current_synapse_config,

@@ -498,6 +498,17 @@ def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
         logger.error("Enable stream writers called but no persisters found. Verify peer relation.")
 
 
+def configure_mas(current_yaml: dict, synapse_msc3861_configuration: dict) -> None:
+    """Configure Synapse for MSC3861 (Matrix Authentication Service).
+
+    Args:
+        current_yaml: Current Synapse configuration.
+        synapse_msc3861_configuration: MSC3861 configuration to apply.
+    """
+    # Merge MSC3861 configuration into current Synapse config
+    current_yaml.update(synapse_msc3861_configuration)
+
+
 def enable_trusted_key_servers(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to set trusted_key_servers.
 
