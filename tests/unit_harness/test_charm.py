@@ -11,14 +11,30 @@ from unittest.mock import MagicMock
 
 import ops
 import pytest
+from ops.framework import EventSource
 from ops.testing import Harness
 
 import pebble
 import synapse
-from charm import SynapseCharm
+from charm import SynapseCharm, SynapseCharmEvents
 from pebble import PebbleServiceError
 
 from .conftest import TEST_SERVER_NAME
+
+
+def test_synapse_charm_events_has_redis_event() -> None:
+    """
+    arrange: create SynapseCharmEvents instance.
+    act: check for redis_relation_updated event and verify it's an EventSource.
+    assert: event exists and is properly configured.
+    """
+    # Test that the event class has the redis event
+    assert hasattr(SynapseCharmEvents, "redis_relation_updated")
+    # Test that it's an EventSource
+    assert isinstance(SynapseCharmEvents.redis_relation_updated, EventSource)
+    # Test that creating an instance works
+    events = SynapseCharmEvents()
+    assert hasattr(events, "redis_relation_updated")
 
 
 def test_synapse_pebble_layer(harness: Harness) -> None:
@@ -145,7 +161,7 @@ def test_saml_integration_container_down(saml_configured: Harness) -> None:
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
     relation = harness.charm.framework.model.get_relation("saml", 0)
 
-    harness.charm._saml.saml.on.saml_data_available.emit(relation)
+    harness.charm._saml.on.saml_data_available.emit(relation)
 
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
@@ -163,7 +179,7 @@ def test_smtp_integration_container_down(smtp_configured: Harness) -> None:
     harness.set_can_connect(harness.model.unit.containers[synapse.SYNAPSE_CONTAINER_NAME], False)
     relation = harness.charm.framework.model.get_relation("smtp", 0)
 
-    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+    harness.charm._smtp.on.smtp_data_available.emit(relation)
 
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
     assert "Waiting for" in str(harness.model.unit.status)
@@ -186,7 +202,7 @@ def test_smtp_relation_success(smtp_configured: Harness, monkeypatch: pytest.Mon
     harness.begin()
 
     relation = harness.charm.framework.model.get_relation("smtp", 0)
-    harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+    harness.charm._smtp.on.smtp_data_available.emit(relation)
 
     enable_smtp_mock.assert_called_once()
 
@@ -335,9 +351,9 @@ def test_redis_configuration_success(redis_configured: Harness, monkeypatch: pyt
 
     harness.begin()
 
-    redis_config = harness.charm._redis.get_relation_as_redis_conf()
+    redis_config = harness.charm.get_relation_as_redis_conf()
     assert "redis-host" == redis_config["host"]
-    assert "1010" == str(redis_config["port"])
+    assert 1010 == redis_config["port"]
 
 
 def test_saml_enabled_reconcile_pebble_error(
@@ -357,7 +373,7 @@ def test_saml_enabled_reconcile_pebble_error(
     relation = harness.charm.framework.model.get_relation("saml", 0)
 
     with pytest.raises(pebble.PebbleServiceError):
-        harness.charm._saml.saml.on.saml_data_available.emit(relation)
+        harness.charm._saml.on.saml_data_available.emit(relation)
 
 
 def test_smtp_enabled_reconcile_pebble_error(
@@ -377,7 +393,7 @@ def test_smtp_enabled_reconcile_pebble_error(
     relation = harness.charm.framework.model.get_relation("smtp", 0)
 
     with pytest.raises(pebble.PebbleServiceError):
-        harness.charm._smtp.smtp.on.smtp_data_available.emit(relation)
+        harness.charm._smtp.on.smtp_data_available.emit(relation)
 
 
 def test_redis_enabled_reconcile_pebble_error(
