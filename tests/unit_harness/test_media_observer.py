@@ -61,7 +61,7 @@ def test_get_relation_as_media_conf(harness: Harness, relation_data, expected_co
     harness.add_relation("media", "s3-integrator", app_data=relation_data)
     harness.begin()
 
-    media_configuration = harness.charm._media.get_relation_as_media_conf()
+    media_configuration = harness.charm.get_relation_as_media_conf()
 
     assert media_configuration == expected_config
 
@@ -111,7 +111,7 @@ def test_media_configurations(harness: Harness, relation_data, valid):
     harness.add_relation("media", "s3-integrator", app_data=relation_data)
     harness.begin()
 
-    media_conf = harness.charm._media.get_relation_as_media_conf()
+    media_conf = harness.charm.get_relation_as_media_conf()
     if valid:
         assert media_conf is not None
     else:
@@ -142,6 +142,6 @@ def test_enable_media(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     )
 
     relation = harness.charm.framework.model.get_relation("media", 0)
-    harness.charm._media._s3_client.on.credentials_changed.emit(relation)
+    harness.charm._media.on.credentials_changed.emit(relation)
 
     enable_media_mock.assert_called_once()

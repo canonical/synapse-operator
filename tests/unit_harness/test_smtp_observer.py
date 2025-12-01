@@ -78,7 +78,7 @@ def test_get_relation_as_smtp_conf(harness: Harness, relation_data, expected_con
     harness.add_relation("smtp", "smtp-integrator", app_data=relation_data)
     harness.begin()
 
-    smtp_configuration = harness.charm._smtp.get_relation_as_smtp_conf()
+    smtp_configuration = harness.charm.get_relation_as_smtp_conf()
 
     assert smtp_configuration == expected_config
 
@@ -118,7 +118,7 @@ def test_get_relation_fails_invalid_config(harness: Harness, relation_data):
     harness.begin()
 
     with pytest.raises(CharmConfigInvalidError):
-        harness.charm._smtp.get_relation_as_smtp_conf()
+        harness.charm.get_relation_as_smtp_conf()
 
 
 def test_get_relation_as_smtp_conf_password_from_juju_secret(harness: Harness):
@@ -141,6 +141,6 @@ def test_get_relation_as_smtp_conf_password_from_juju_secret(harness: Harness):
     harness.grant_secret(password_id, "synapse")
     harness.begin()
 
-    smtp_configuration = harness.charm._smtp.get_relation_as_smtp_conf()
+    smtp_configuration = harness.charm.get_relation_as_smtp_conf()
 
     assert smtp_configuration["password"] == password
