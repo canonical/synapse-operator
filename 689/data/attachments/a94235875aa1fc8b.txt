@@ -1,0 +1,206 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:806 Connecting to existing model github-pr-9a758-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/postgresql-k8s-495
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:synapse-0
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] blocked: Waiting for mas-database integration.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] error: hook failed: "mas-database-relation-changed"
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-9a758-microk8s  microk8s/localhost  3.6.12   unsupported  06:33:49Z
+
+App             Version  Status  Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable  495  10.152.183.111  no       
+synapse                  error       1  synapse                      0  10.152.183.71   no       hook failed: "mas-database-relation-changed"
+
+Unit               Workload  Agent  Address      Ports  Message
+postgresql-k8s/0*  active    idle   10.1.16.142         Primary
+synapse/0*         error     idle   10.1.16.144         hook failed: "mas-database-relation-changed"
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-synapse-0: 06:23:40 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 501, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:23:41 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:23:50 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:23:53 ERROR unit.synapse/0.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 391, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-0: 06:23:56 ERROR unit.synapse/0.juju-log database:4: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/database_observer.py", line 115, in _on_database_created
+    mas_configuration = MASConfiguration.from_charm(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-0: 06:24:03 ERROR unit.synapse/0.juju-log mas-database:5: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 582, in <module>
+    main(SynapseCharm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/__init__.py", line 360, in __call__
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/_main.py", line 507, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/_main.py", line 491, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/_main.py", line 426, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/_main.py", line 470, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3907, in _on_relation_changed_event
+    getattr(self.on, "database_created").emit(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/framework.py", line 337, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/framework.py", line 910, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/framework.py", line 1028, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/database_observer.py", line 64, in _on_database_created
+    charm.reconcile(charm_state, mas_configuration)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 281, in reconcile
+    pebble.reconcile(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/pebble.py", line 351, in reconcile
+    restart_mas(container, rendered_mas_configuration, charm_state)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/pebble.py", line 687, in restart_mas
+    replan_mas(container, charm_state)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/pebble.py", line 199, in replan_mas
+    container.replan()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/model.py", line 2594, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/pebble.py", line 2326, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/pebble.py", line 2428, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "synapse-mas" (service start attempt: exited quickly with code 1, will restart)
+----- Logs from task 0 -----
+2025-12-16T06:24:03Z INFO Most recent service output:
+    2025-12-16T06:24:02.834000Z  INFO mas_cli::commands::server:63 Starting up version="v1.8.0"
+    2025-12-16T06:24:02.834023Z  INFO mas_cli::commands::server:72 Connecting to the database
+    2025-12-16T06:24:02.839895Z  INFO mas_cli::commands::server:88 Running pending database migrations
+    2025-12-16T06:24:02.841327Z  INFO sqlx::postgres::notice:185 relation "_sqlx_migrations" already exists, skipping
+    2025-12-16T06:24:02.848833Z  INFO mas_cli::sync:101 Acquiring configuration lock
+    2025-12-16T06:24:02.849336Z  INFO mas_cli::sync:108 Syncing providers and clients defined in config to database prune=false dry_run=false
+    2025-12-16T06:24:02.851279Z  INFO mas_cli::sync:386 Updating client client.id=01KCJX905JTW48DJPVEJCVTHXV
+    2025-12-16T06:24:02.853014Z  INFO mas_cli::commands::server:134 Loading and compiling the policy module
+    2025-12-16T06:24:03.073988Z  INFO mas_templates:242 Loading templates from filesystem root=/mas/share/templates
+    Error: Failed to load the templates at /mas/share/templates
+    
+    Caused by:
+        missing templates {"pages/compat_login_policy_violation.html"}
+2025-12-16T06:24:03Z ERROR service start attempt: exited quickly with code 1, will restart
+-----
+unit-synapse-0: 06:24:03 ERROR juju.worker.uniter.operation hook "mas-database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
