@@ -559,7 +559,7 @@ def _stats_exporter_pebble_layer() -> ops.pebble.LayerDict:
                 "summary": "Synapse Stats Exporter service",
                 "command": "synapse-stats-exporter",
                 "startup": "disabled",
-                "on-failure": "ignore",
+                "on-failure": "success-shutdown",
             }
         },
     }
