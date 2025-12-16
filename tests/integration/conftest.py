@@ -123,7 +123,7 @@ async def synapse_app_fixture(
     await model.wait_for_idle(
         apps=[synapse_app_name],
         status=typing.cast(str, BlockedStatus.name),
-        idle_period=5,
+        idle_period=3,
     )
     synapse_ip = (await get_unit_ips(app.name))[0]
     await app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
@@ -134,7 +134,7 @@ async def synapse_app_fixture(
         await model.wait_for_idle(
             apps=[synapse_app_name, postgresql_app.name],
             status=ACTIVE_STATUS_NAME,
-            idle_period=5,
+            idle_period=3,
             raise_on_error=False,
         )
     return app
@@ -267,12 +267,15 @@ def user_username_fixture() -> typing.Generator[str, None, None]:
 
 @pytest_asyncio.fixture(scope="module", name="user")
 async def user_fixture(synapse_app: Application, user_username: str) -> tuple[str, str]:
-    """Register a user and return the new password.
+    """Register a user and return the username and password.
 
     Returns:
-        The new user password
+        The username and password as a tuple
     """
-    return (user_username, await register_user(synapse_app, user_username))
+    password = token_hex(16)
+    unit = synapse_app.units[0]
+    await register_user(unit, user_username, password, admin=False)
+    return (user_username, password)
 
 
 @pytest_asyncio.fixture(scope="module", name="access_token")
@@ -370,7 +373,7 @@ def boto_s3_client_fixture(s3_backup_configuration: dict, s3_backup_credentials:
     yield s3_client
 
 
-@pytest.fixture(scope="function", name="s3_backup_bucket")
+@pytest.fixture(scope="module", name="s3_backup_bucket")
 def s3_backup_bucket_fixture(
     s3_backup_configuration: dict, s3_backup_credentials: dict, boto_s3_client: typing.Any
 ):
@@ -385,7 +388,7 @@ def s3_backup_bucket_fixture(
     boto_s3_client.delete_bucket(Bucket=bucket_name)
 
 
-@pytest_asyncio.fixture(scope="function", name="s3_integrator_app_backup")
+@pytest_asyncio.fixture(scope="module", name="s3_integrator_app_backup")
 async def s3_integrator_app_backup_fixture(
     model: Model, s3_backup_configuration: dict, s3_backup_credentials: dict
 ):
@@ -410,24 +413,29 @@ async def s3_integrator_app_backup_fixture(
 
 
 @pytest_asyncio.fixture(scope="module", name="redis_app")
-async def redis_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    synapse_app_name: str,
-):
-    """Deploy redis."""
+async def redis_app_fixture(ops_test: OpsTest, model: Model, pytestconfig: Config, request):
+    """Deploy Redis application only if tests require it."""
+    # Skip Redis deployment if no tests in this module need it
+    if not any(marker.name == "redis" for marker in request.node.iter_markers()):
+        return None
+
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    redis_app_name = "redis"
+    if use_existing or redis_app_name in model.applications:
+        return model.applications[redis_app_name]
+
     async with ops_test.fast_forward():
         app = await model.deploy(
-            "redis-k8s",
-            application_name="redis",
+            "redis",
+            application_name=redis_app_name,
             channel="latest/edge",
         )
         await model.wait_for_idle(
-            raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
+            apps=[redis_app_name],
+            status=ACTIVE_STATUS_NAME,
+            idle_period=3,
         )
-        await model.add_relation(f"{app.name}:redis", synapse_app_name)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
-
+        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=3)
     return app
 
 
@@ -466,7 +474,7 @@ def s3_media_integrator_name_fixture() -> str:
     return "s3-integrator-media"
 
 
-@pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
+@pytest_asyncio.fixture(scope="module", name="s3_integrator_app_media")
 async def s3_integrator_app_media_fixture(
     model: Model,
     s3_media_configuration: dict,
@@ -525,7 +533,7 @@ def boto_s3_media_client_fixture(
     yield s3_client
 
 
-@pytest.fixture(scope="function", name="s3_media_bucket")
+@pytest.fixture(scope="module", name="s3_media_bucket")
 def s3_media_bucket_fixture(
     s3_media_configuration: dict, s3_media_credentials: dict, boto_s3_media_client: typing.Any
 ):

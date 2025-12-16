@@ -41,7 +41,7 @@ async def test_synapse_enable_s3_backup_integration_success(
     await model.wait_for_idle(apps=[s3_integrator_app_backup.name], status=ACTIVE_STATUS_NAME)
 
     await model.wait_for_idle(
-        idle_period=30,
+        idle_period=15,
         apps=[synapse_app.name, s3_integrator_app_backup.name],
         status=ACTIVE_STATUS_NAME,
     )
