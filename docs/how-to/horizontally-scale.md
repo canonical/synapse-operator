@@ -4,7 +4,11 @@ A Synapse deployment can scale horizontally by running multiple Synapse processe
 While adding more units to the Synapse charm, one of them will be the Main process and others,
 the workers. This architecture has specific requirements that will be described in this document.
 
+<!-- vale Canonical.025a-latinisms-with-english-equivalents = NO -->
+
 For more details about scaling, refer to ["Scaling synapse via workers"](https://element-hq.github.io/synapse/latest/workers.html#scaling-synapse-via-workers) in the Synapse documentation.
+
+<!-- vale Canonical.025a-latinisms-with-english-equivalents = YES -->
 
 ## Requirements
 

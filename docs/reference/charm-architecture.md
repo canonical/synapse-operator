@@ -65,7 +65,7 @@ The Synapse charm deploys a container named `synapse` with the following Pebble 
 
 When Synapse is scaled, not all layers are added to every unit. Only one unit is elected as the main (leader) unit, while the others are worker units.
 
-To demonstrate the difference, here’s what you can expect when logging in via `kubectl` to the main and worker units:
+To demonstrate the difference, here’s what you can expect when logging in using `kubectl` to the main and worker units:
 
 #### Leader unit (main)
 

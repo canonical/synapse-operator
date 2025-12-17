@@ -13,6 +13,6 @@ Synapse configuration sets default to matrix.org.
 ## Federation required
 
 Federation is the process by which users on different servers can participate in the same room.
-For this to work, the server communicate with each other via HTTPS port 8448 or a different port
+For this to work, the server communicate with each other through HTTPS port 8448 or a different port
 depending how the server is configured. See ["Setting up federation"](https://matrix-org.github.io/synapse/latest/federate.html)
 in Matrix documentation for reference.

@@ -5,10 +5,10 @@
 - Integrate with the PostgreSQL K8s charm.
 - Expose the Synapse charm by using Traefik K8s charm.
 - Create a user.
-- Access your Synapse instance via Element Desktop.
+- Access your Synapse instance using Element Desktop.
 
 Through the process, you'll verify the workload state, and log in to your
-Synapse instance via Element Desktop application.
+Synapse instance using the Element Desktop application.
 
 ## Requirements
 
@@ -100,21 +100,18 @@ App                       Version                       Status  Scale  Charm    
 traefik-k8s      2.9.6                 active       1  traefik-k8s      stable     110  10.152.183.225  no
 ```
 
-You can configure the resolution of "tutorial-synapse.juju.local" by adding an
+You can configure the resolution of `tutorial-synapse.juju.local` by adding an
 "A" record with the IP address "10.152.183.225" to the appropriate zone in your
 DNS server's configuration. Save the changes and ensure that DNS caches are
 flushed or DNS services are restarted if necessary. This will allow clients
-querying your DNS server to resolve "tutorial-synapse.juju.local" to the
+querying your DNS server to resolve `tutorial-synapse.juju.local` to the
 specified IP address. Note that it might take a few minutes for the DNS changes
 to take effect.
 
 In case you don’t have access to a DNS: The browser uses entries in the
 `/etc/hosts` file to override what is returned by a DNS server. So, to resolve
-it to your Traefik IP, open the `/etc/hosts` file and add the following line
-accordingly:
-```
-10.152.183.225 tutorial-synapse.juju.local
-```
+it to your Traefik IP, open the `/etc/hosts` file and add the line
+`10.152.183.225 tutorial-synapse.juju.local`.
 
 > Optional: run `echo "10.152.183.225 tutorial-synapse.juju.local" >> /etc/hosts`
 to redirect the output of the command `echo` to the end of the file `/etc/hosts`.
@@ -129,14 +126,14 @@ juju run-action synapse/0 register-user username=alice password=<secure-password
 ```
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
-## Access Synapse via the Element desktop client
+## Access Synapse using the Element desktop client
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 Follow the [instructions](https://element.io/download) to
 install Element Desktop.
 
 Open it and click on “Sign in”. Then click on “Edit” to provide which server you
- want to use (tutorial-synapse.juju.local).
+ want to use (`tutorial-synapse.juju.local`).
 
 Now, you can fill in the username and password fields accordingly to the action
 output. Then you should see a welcome page and it's ready to chat.

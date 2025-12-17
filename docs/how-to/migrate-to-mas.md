@@ -2,7 +2,7 @@
 This document shows how to migrate a legacy Synapse homeserver (`1/edge` track) to an oidc-native homeserver (`2/edge` track).
 
 ## Initial deployment setup 
-This document will cover the migration path for a synapse charm on the `1/edge` track that uses the `saml-integrator` charm to provide authentication via SAML.
+This document will cover the migration path for a synapse charm on the `1/edge` track that uses the `saml-integrator` charm to provide authentication using SAML.
 
 > **_NOTE:_** The existing synapse charm is deployed with the name `server`.
 
@@ -18,7 +18,7 @@ juju deploy synapse server-mas --channel=2/edge \
 ```
 
 ### Integrate with the `postgresql-k8s` charm
-Integrate with the existing `postgresql-k8s` charm to set up the database for the new charm. Note that you need to integrate with the `postgresql-k8s` charm via both the `database` and the `mas-database` endpoints.
+Integrate with the existing `postgresql-k8s` charm to set up the database for the new charm. Note that you need to integrate with the `postgresql-k8s` charm using both the `database` and the `mas-database` endpoints.
 ```
 juju integrate server-mas:mas-database postgresql-k8s
 juju integrate server-mas:database postgresql-k8s
