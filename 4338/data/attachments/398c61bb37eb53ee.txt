@@ -1,0 +1,99 @@
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-2c58e-microk8s  microk8s/localhost  3.6.12   unsupported  16:04:21Z
+
+App             Version  Status  Scale  Charm           Channel  Rev  Address         Exposed  Message
+postgresql-k8s  14.19    active      1  postgresql-k8s  14/edge  701  10.152.183.125  no       
+synapse                  active      1  synapse                    0  10.152.183.70   no       
+
+Unit               Workload  Agent  Address      Ports  Message
+postgresql-k8s/0*  active    idle   10.1.16.140         Primary
+synapse/0*         active    idle   10.1.16.143         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-synapse-0: 16:01:51 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 501, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 16:01:53 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 16:02:00 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 391, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 16:02:07 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 16:02:21 ERROR unit.synapse/0.juju-log mas-database:5: cannot perform the following tasks:
+- Start service "stats-exporter" (service start attempt: exited quickly with code 1, will ignore)
+----- Logs from task 0 -----
+2025-12-17T16:02:21Z INFO Most recent service output:
+    Traceback (most recent call last):
+      File "/usr/local/bin/synapse-stats-exporter", line 8, in <module>
+        sys.exit(main())
+                 ^^^^^^
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 85, in main
+        port = int(os.getenv("PROM_SYNAPSE_PORT", "5432"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ValueError: invalid literal for int() with base 10: ''
+2025-12-17T16:02:21Z ERROR service start attempt: exited quickly with code 1, will ignore
+-----
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/pebble.py", line 168, in replan_stats_exporter
+    container.start(STATS_EXPORTER_SERVICE_NAME)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/model.py", line 2601, in start
+    self._pebble.start_services(service_names)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/pebble.py", line 2350, in start_services
+    return self._services_action('start', services, timeout, delay)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/ops/pebble.py", line 2428, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "stats-exporter" (service start attempt: exited quickly with code 1, will ignore)
+----- Logs from task 0 -----
+2025-12-17T16:02:21Z INFO Most recent service output:
+    Traceback (most recent call last):
+      File "/usr/local/bin/synapse-stats-exporter", line 8, in <module>
+        sys.exit(main())
+                 ^^^^^^
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 85, in main
+        port = int(os.getenv("PROM_SYNAPSE_PORT", "5432"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ValueError: invalid literal for int() with base 10: ''
+2025-12-17T16:02:21Z ERROR service start attempt: exited quickly with code 1, will ignore
+-----
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
