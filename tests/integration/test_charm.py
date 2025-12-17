@@ -17,6 +17,10 @@ from ops.model import ActiveStatus
 
 import synapse
 
+# Application name constants
+NGINX_INTEGRATOR_APP_NAME = "nginx-ingress-integrator"
+SYNAPSE_APP_NAME = "synapse"
+
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 
@@ -84,8 +88,6 @@ async def test_synapse_scale_blocked(synapse_app: Application):
 async def test_nginx_route_integration(
     model: Model,
     nginx_integrator_app: Application,
-    synapse_app_name: str,
-    nginx_integrator_app_name: str,
 ):
     """
     arrange: build and deploy the Synapse charm, and deploy the nginx-integrator.
@@ -93,13 +95,13 @@ async def test_nginx_route_integration(
     assert: requesting the charm through nginx-integrator should return a correct response.
     """
     await model.add_relation(
-        f"{synapse_app_name}:nginx-route", f"{nginx_integrator_app_name}:nginx-route"
+        f"{SYNAPSE_APP_NAME}:nginx-route", f"{NGINX_INTEGRATOR_APP_NAME}:nginx-route"
     )
-    await nginx_integrator_app.set_config({"service-hostname": synapse_app_name})
+    await nginx_integrator_app.set_config({"service-hostname": SYNAPSE_APP_NAME})
     await model.wait_for_idle(idle_period=30, status=ACTIVE_STATUS_NAME)
 
     response = requests.get(
-        "http://127.0.0.1/_matrix/static/", headers={"Host": synapse_app_name}, timeout=5
+        "http://127.0.0.1/_matrix/static/", headers={"Host": SYNAPSE_APP_NAME}, timeout=5
     )
     assert response.status_code == 200
     assert "Welcome to the Matrix" in response.text

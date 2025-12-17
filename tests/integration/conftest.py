@@ -34,17 +34,17 @@ WAITING_STATUS_NAME = "waiting"
 PEBBLE_EXEC = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
 DUMP_MAS_CONFIG = f"{PEBBLE_EXEC} mas-cli -c {MAS_CONFIGURATION_PATH} config dump"
 
+# Application names and constants
+EXTERNAL_HOSTNAME = "juju.test"
+NGINX_INTEGRATOR_APP_NAME = "nginx-ingress-integrator"
+POSTGRESQL_APP_NAME = "postgresql-k8s"
+S3_MEDIA_INTEGRATOR_NAME = "s3-integrator-media"
+SYNAPSE_APP_NAME = "synapse"
+SYNAPSE_APP_CHARMHUB_NAME = "synapse-charmhub"
 
-@pytest_asyncio.fixture(scope="module", name="server_name")
-async def server_name_fixture() -> str:
-    """Return a server_name."""
-    return "my.synapse.local"
-
-
-@pytest_asyncio.fixture(scope="module", name="another_server_name")
-async def another_server_name_fixture() -> str:
-    """Return a server_name."""
-    return "another.synapse.local"
+# Server names
+SERVER_NAME = "my.synapse.local"
+ANOTHER_SERVER_NAME = "another.synapse.local"
 
 
 @pytest_asyncio.fixture(scope="module", name="model")
@@ -81,26 +81,12 @@ def synapse_image_fixture(pytestconfig: Config):
     return synapse_image
 
 
-@pytest_asyncio.fixture(scope="module", name="synapse_app_name")
-def synapse_app_name_fixture() -> str:
-    """Get Synapse application name."""
-    return "synapse"
-
-
-@pytest_asyncio.fixture(scope="module", name="synapse_app_charmhub_name")
-def synapse_app_charmhub_name_fixture() -> str:
-    """Get Synapse application name from Charmhub fixture."""
-    return "synapse-charmhub"
-
-
 # pylint: disable=too-many-positional-arguments
 @pytest_asyncio.fixture(scope="module", name="synapse_app")
 async def synapse_app_fixture(
     ops_test: OpsTest,
-    synapse_app_name: str,
     synapse_image: str,
     model: Model,
-    server_name: str,
     synapse_charm: str,
     postgresql_app: Application,
     pytestconfig: Config,
@@ -108,20 +94,20 @@ async def synapse_app_fixture(
 ):
     """Build and deploy the Synapse charm."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing or synapse_app_name in model.applications:
-        return model.applications[synapse_app_name]
+    if use_existing or SYNAPSE_APP_NAME in model.applications:
+        return model.applications[SYNAPSE_APP_NAME]
     resources = {
         "synapse-image": synapse_image,
     }
     app = await model.deploy(
         f"./{synapse_charm}",
         resources=resources,
-        application_name=synapse_app_name,
-        config={"server_name": server_name},
+        application_name=SYNAPSE_APP_NAME,
+        config={"server_name": SERVER_NAME},
     )
 
     await model.wait_for_idle(
-        apps=[synapse_app_name],
+        apps=[SYNAPSE_APP_NAME],
         status=typing.cast(str, BlockedStatus.name),
         idle_period=5,
     )
@@ -129,10 +115,13 @@ async def synapse_app_fixture(
     await app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
 
     async with ops_test.fast_forward():
-        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app.name}")
-        await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app.name}:database")
+        await model.relate(f"{SYNAPSE_APP_NAME}:database", f"{postgresql_app.name}")
+        await model.relate(
+            f"{SYNAPSE_APP_NAME}:mas-database",
+            f"{postgresql_app.name}:database",
+        )
         await model.wait_for_idle(
-            apps=[synapse_app_name, postgresql_app.name],
+            apps=[SYNAPSE_APP_NAME, postgresql_app.name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
             raise_on_error=False,
@@ -144,8 +133,6 @@ async def synapse_app_fixture(
 async def synapse_charmhub_app_fixture(
     ops_test: OpsTest,
     model: Model,
-    server_name: str,
-    synapse_app_charmhub_name: str,
     postgresql_app: Application,
     synapse_charm: str,
 ):
@@ -153,21 +140,24 @@ async def synapse_charmhub_app_fixture(
     async with ops_test.fast_forward():
         app = await model.deploy(
             "synapse",
-            application_name=synapse_app_charmhub_name,
+            application_name=SYNAPSE_APP_CHARMHUB_NAME,
             trust=True,
             channel="2/edge",
             series="jammy",
-            config={"server_name": server_name},
+            config={"server_name": SERVER_NAME},
         )
         await model.wait_for_idle(
             apps=[postgresql_app.name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
-        await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{postgresql_app.name}")
-        await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app.name}")
+        await model.relate(
+            f"{SYNAPSE_APP_CHARMHUB_NAME}:mas-database",
+            f"{postgresql_app.name}",
+        )
+        await model.relate(f"{SYNAPSE_APP_CHARMHUB_NAME}:database", f"{postgresql_app.name}")
         await model.wait_for_idle(
-            apps=[synapse_app_charmhub_name, postgresql_app.name],
+            apps=[SYNAPSE_APP_CHARMHUB_NAME, postgresql_app.name],
             status=ACTIVE_STATUS_NAME,
             idle_period=5,
         )
@@ -199,62 +189,43 @@ async def get_unit_ips_fixture(ops_test: OpsTest):
     return get_unit_ips
 
 
-@pytest.fixture(scope="module", name="external_hostname")
-def external_hostname_fixture() -> str:
-    """Return the external hostname for ingress-related tests."""
-    return "juju.test"
-
-
-@pytest.fixture(scope="module", name="nginx_integrator_app_name")
-def nginx_integrator_app_name_fixture() -> str:
-    """Return the name of the nginx integrator application deployed for tests."""
-    return "nginx-ingress-integrator"
-
-
 @pytest_asyncio.fixture(scope="module", name="nginx_integrator_app")
 async def nginx_integrator_app_fixture(
     ops_test: OpsTest,
     model: Model,
     synapse_app,
-    nginx_integrator_app_name: str,
     pytestconfig: Config,
 ):
     """Deploy nginx-ingress-integrator."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing or nginx_integrator_app_name in model.applications:
-        return model.applications[nginx_integrator_app_name]
+    if use_existing or NGINX_INTEGRATOR_APP_NAME in model.applications:
+        return model.applications[NGINX_INTEGRATOR_APP_NAME]
     async with ops_test.fast_forward():
         app = await model.deploy(
             "nginx-ingress-integrator",
-            application_name=nginx_integrator_app_name,
+            application_name=NGINX_INTEGRATOR_APP_NAME,
             trust=True,
             channel="latest/stable",
             revision=121,
         )
-        # The nginx-ingress-integrator charm goes into "waiting" when waiting for relation
+        # The nginx-integrator charm goes into "waiting" when waiting
         await model.wait_for_idle(
-            apps=[nginx_integrator_app_name], raise_on_blocked=True, status=WAITING_STATUS_NAME
+            apps=[NGINX_INTEGRATOR_APP_NAME],
+            raise_on_blocked=True,
+            status=WAITING_STATUS_NAME,
         )
     return app
 
 
-@pytest.fixture(scope="module", name="postgresql_app_name")
-def postgresql_app_name_app_name_fixture() -> str:
-    """Return the name of the postgresql application deployed for tests."""
-    return "postgresql-k8s"
-
-
 @pytest_asyncio.fixture(scope="module", name="postgresql_app")
-async def postgresql_app_fixture(
-    ops_test: OpsTest, model: Model, postgresql_app_name: str, pytestconfig: Config
-):
+async def postgresql_app_fixture(ops_test: OpsTest, model: Model, pytestconfig: Config):
     """Deploy postgresql."""
     use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if not use_existing and postgresql_app_name not in model.applications:
+    if not use_existing and POSTGRESQL_APP_NAME not in model.applications:
         async with ops_test.fast_forward():
-            await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
+            await model.deploy(POSTGRESQL_APP_NAME, channel="14/stable", trust=True)
             await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    postgresql_application = model.applications.get(postgresql_app_name)
+    postgresql_application = model.applications.get(POSTGRESQL_APP_NAME)
     assert postgresql_application, "Synapse requires postgresql to be deployed"
     yield postgresql_application
 
@@ -413,7 +384,6 @@ async def s3_integrator_app_backup_fixture(
 async def redis_fixture(
     ops_test: OpsTest,
     model: Model,
-    synapse_app_name: str,
 ):
     """Deploy redis."""
     async with ops_test.fast_forward():
@@ -425,7 +395,7 @@ async def redis_fixture(
         await model.wait_for_idle(
             raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
         )
-        await model.add_relation(f"{app.name}:redis", synapse_app_name)
+        await model.add_relation(f"{app.name}:redis", SYNAPSE_APP_NAME)
         await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
 
     return app
@@ -460,21 +430,14 @@ def s3_media_credentials_fixture(localstack_address: str) -> dict:
     }
 
 
-@pytest.fixture(scope="module", name="s3_media_integrator_name")
-def s3_media_integrator_name_fixture() -> str:
-    """Return the name of the s3 integrator application deployed for tests."""
-    return "s3-integrator-media"
-
-
 @pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
 async def s3_integrator_app_media_fixture(
     model: Model,
     s3_media_configuration: dict,
     s3_media_credentials: dict,
-    s3_media_integrator_name: str,
 ):
     """Returns a s3-integrator app configured with backup parameters."""
-    s3_integrator_app_name = s3_media_integrator_name
+    s3_integrator_app_name = S3_MEDIA_INTEGRATOR_NAME
     s3_integrator_app = await model.deploy(
         "s3-integrator",
         application_name=s3_integrator_app_name,
