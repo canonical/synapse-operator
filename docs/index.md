@@ -44,7 +44,7 @@ Synapse is an open-source project that welcomes community contributions, suggest
   1. [Upgrade](how-to/upgrade.md) 
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
+  1. [Charm architecture](reference/charm-architecture.md)
   1. [External access](reference/external-access.md)
   1. [Integrations](reference/integrations.md)
 1. [Explanation](explanation)
-  1. [Charm architecture](explanation/charm-architecture.md)
