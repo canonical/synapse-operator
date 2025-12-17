@@ -40,7 +40,7 @@ source .tox/unit/bin/activate
 ### Testing
 
 Note that the [Synapse](https://github.com/canonical/synapse-operator/blob/2/main/synapse_rock/rockcraft.yaml) image need to be built and
-pushed to microk8s for the tests to run. It should be tagged as
+pushed to MicroK8s for the tests to run. It should be tagged as
 `localhost:32000/synapse:latest`so that Kubernetes knows how to pull them
 from the MicroK8s repository. Note that the MicroK8s registry needs to be
 enabled using `microk8s enable registry`. More details regarding the OCI image
@@ -68,7 +68,7 @@ Build the charm in this git repository using:
 charmcraft pack
 ```
 For the integration tests (and also to deploy the charm locally), the synapse
-image is required in the microk8s registry. To enable it:
+image is required in the MicroK8s registry. To enable it:
 
     microk8s enable registry
 
