@@ -8,6 +8,7 @@ import logging
 import pathlib
 import typing
 
+import pytest
 from juju.application import Application
 from juju.controller import Controller  # type: ignore
 from juju.model import Model
@@ -21,6 +22,7 @@ ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.skip(reason="IRC Bridge not currently used")
 async def test_synapse_cmr_matrix_auth(
     ops_test: OpsTest,
     model: Model,
