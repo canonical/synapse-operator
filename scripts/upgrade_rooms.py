@@ -306,29 +306,38 @@ def main() -> None:  # noqa: C901
 
     logger.info("Room version %s is supported by the server.", version)
 
-    public_rooms = get_public_rooms(admin_access_token, server_url, limit=args.limit)
-    if args.dry_run:
-        logger.info("[DRY-RUN] Listing up to %d public rooms from %s", args.limit, server_url)
-        print("room_id;name;total_members;version;error")
-        for room in public_rooms:
-            name = room.get("name", "")
-            room_id = room.get("room_id", "")
-            num_joined = room.get("num_joined_members", 0)
-            error = ""
-            if homeserver not in room_id:
-                continue
-            try:
-                room_version = get_room_version(admin_access_token, server_url, room_id)
-            except SynapseServerError:
-                error = "Failed"
-            print(f"{name};{room_id};{num_joined};{room_version};{error}")
-        return
+    if not args.room_id:
+        public_rooms = get_public_rooms(admin_access_token, server_url, limit=args.limit)
+        if args.dry_run:
+            logger.info("[DRY-RUN] Listing up to %d public rooms from %s", args.limit, server_url)
+            print("room_id;name;total_members;version;error")
+            for room in public_rooms:
+                name = room.get("name", "")
+                room_id = room.get("room_id", "")
+                num_joined = room.get("num_joined_members", 0)
+                error = ""
+                if homeserver not in room_id:
+                    continue
+                try:
+                    room_version = get_room_version(admin_access_token, server_url, room_id)
+                except SynapseServerError:
+                    error = "Failed"
+                print(f"{name};{room_id};{num_joined};{room_version};{error}")
+            return
 
     if args.room_id:
         logger.info("%s - upgrading using room_id", args.room_id)
         current_room_version = get_room_version(admin_access_token, server_url, args.room_id)
         if current_room_version == version:
-            logger.warning("%s - room already is version %d, no action", args.room_id, version)
+            logger.warning("%s - room already is version %s, no action", args.room_id, version)
+            return
+        if args.dry_run:
+            logger.info(
+                "[DRY-RUN] room %s is version %s and will be upgraded to %s",
+                args.room_id,
+                current_room_version,
+                version,
+            )
             return
         upgrade_room(admin_access_token, server_url, args.room_id, version)
         return
