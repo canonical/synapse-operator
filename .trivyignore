@@ -1,21 +1,10 @@
 # Add CVEs here to be ignored by Trivy if needed
-# nodejs
 CVE-2024-21538
 CVE-2025-7783
-# pebble
 CVE-2025-47907
-# gosu
 CVE-2024-24790
 CVE-2024-24788
 CVE-2024-34156
 CVE-2025-47907
-
-# gosu
 CVE-2025-58183
-CVE-2025-58186
-CVE-2025-58187
-CVE-2025-58188
-# nodejs glob vulnerability
-# also present in the image
-# node:20-slim used by Draupnir/Mjolnir upstream projects
 CVE-2025-64756
