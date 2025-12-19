@@ -1,0 +1,257 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:806 Connecting to existing model github-pr-0c7b4-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/postgresql-k8s-495
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:synapse-0
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Waiting for mas-database integration.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [executing] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [executing] maintenance: Configuring Synapse
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:synapse-1
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] blocked: Waiting for mas-database integration.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] active: 
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/redis-k8s-42
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse-scaling/0 [idle] active: 
+  synapse/0 [executing] active: 
+  redis/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] active: 
+  redis/0 [executing] waiting: Waiting for Pebble in workload container
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active:
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] active: 
+  redis/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] active: 
+  redis/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [executing] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Redis integration is required.
+  synapse-scaling/1 [idle] blocked: Redis integration is required.
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-0c7b4-microk8s  microk8s/localhost  3.6.12   unsupported  15:56:14Z
+
+App              Version  Status   Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s   14.15    active       1  postgresql-k8s  14/stable  495  10.152.183.39   no       
+synapse                   active       1  synapse                      1  10.152.183.71   no       
+synapse-scaling  1.142.1  blocked      2  synapse                      0  10.152.183.146  no       Redis integration is required.
+
+Unit                Workload  Agent  Address      Ports  Message
+postgresql-k8s/0*   active    idle   10.1.206.75         Primary
+synapse-scaling/0*  blocked   idle   10.1.206.78         Redis integration is required.
+synapse-scaling/1   blocked   idle   10.1.206.84         Redis integration is required.
+synapse/0*          active    idle   10.1.206.80         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-synapse-scaling-0: 15:42:15 ERROR unit.synapse-scaling/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/./src/charm.py", line 501, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-scaling-0: 15:42:17 ERROR unit.synapse-scaling/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-scaling-0: 15:42:26 ERROR unit.synapse-scaling/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-scaling-0: 15:42:30 ERROR unit.synapse-scaling/0.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/./src/charm.py", line 391, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-scaling-0: 15:42:32 ERROR unit.synapse-scaling/0.juju-log database:4: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/database_observer.py", line 115, in _on_database_created
+    mas_configuration = MASConfiguration.from_charm(charm)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-scaling-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-0: 15:43:38 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 501, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 15:43:39 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 391, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 15:43:40 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 15:43:48 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/./src/charm.py", line 348, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 15:43:54 ERROR unit.synapse/0.juju-log database:7: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 101, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/database_observer.py", line 115, in _on_database_created
+    mas_configuration = MASConfiguration.from_charm(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-0: 15:44:57 ERROR unit.synapse/0.juju-log redis:10: Failed to get Redis relation data: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/redis_observer.py", line 58, in get_relation_as_redis_conf
+    redis_port = int(self.redis.relation_data.get("port"))
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+unit-synapse-0: 15:45:06 ERROR unit.synapse/0.juju-log redis:10: Failed to get Redis relation data: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/redis_observer.py", line 58, in get_relation_as_redis_conf
+    redis_port = int(self.redis.relation_data.get("port"))
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
