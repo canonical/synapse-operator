@@ -22,7 +22,7 @@ Limits the number of remote rooms a user can join before being throttled.
 
 ### [`rc_joins_remote_per_second`](https://charmhub.io/synapse/configurations#rc_joins_remote_per_second)
 
-Defines the rate limit for how many remote rooms a user can join per second.
+Defines the rate limit for how many remote rooms a user can join each second.
 
 - Default: `0.01`
 
@@ -59,4 +59,4 @@ For details and implementation, visit the module’s repository: [Synapse Invite
 ---
 
 ## Mjolnir
-With the arrival of MAS, mjolnir has been temporary disabled.
+With the arrival of MAS, Mjolnir has been temporary disabled.

@@ -1,5 +1,9 @@
 # Changelog
 
+### 2025-12-17
+
+- Moved charm-architecture.md from Explanation to Reference category.
+
 ### 2025-11-25
 
 - Update terraform files to attend Juju Terraform provider model_uuid requirement.
