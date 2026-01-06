@@ -15,6 +15,9 @@ from typing import Dict, Optional
 
 import requests
 
+# Configuration
+UPGRADE_ROOM_TIMEOUT = int(os.environ.get("UPGRADE_ROOM_TIMEOUT", "300"))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s",
@@ -68,7 +71,7 @@ def make_request(method: str, url: str, headers: Dict[str, str], **kwargs) -> re
     """
     try:
         logger.info("Requesting %s", url)
-        response = requests.request(method, url, headers=headers, timeout=30, **kwargs)
+        response = requests.request(method, url, headers=headers, timeout=UPGRADE_ROOM_TIMEOUT, **kwargs)
         response.raise_for_status()
         return response
     except requests.exceptions.Timeout as exc:
