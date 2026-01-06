@@ -1,5 +1,13 @@
 # Changelog
 
+### 2025-12-17
+
+- Moved charm-architecture.md from Explanation to Reference category.
+
+### 2025-11-25
+
+- Update terraform files to attend Juju Terraform provider model_uuid requirement.
+
 ### 2025-06-23
 
 - Add `experimental_extract_background_tasks` configuration.

@@ -1,8 +1,14 @@
+Addon
 allowlist
+allowlists
 cron
 Draupnir
 fatals
 homeserver
+homeservers
 MAS
+Maubot
+Mjolnir
 OIDC
+Ratelimiting
 Synapse

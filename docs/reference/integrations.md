@@ -9,7 +9,7 @@ _Supported charms_: [s3-integrator](https://charmhub.io/s3-integrator/)
 In order to perform backups, Synapse has to be integrated with the s3-integrator charm using the
 endpoint backup. Backups will be stored, listed and recovered from the location
 indicated in the S3 compatible object storage provider configuration provided by the integration.
-The Synapse charm will back up the media files, signing keys and sqlite database file if applicable.
+The Synapse charm will back up the media files, signing keys and SQLite database file if applicable.
 If Synapse database integration is used, the Synapse charm will not back up the related database.
 
 Example `backup` integrate command: 
@@ -19,7 +19,7 @@ juju integrate synapse:backup s3-integrator
 
 ### `db`
 
-_Interface_: pgsql
+_Interface_: `pgsql`
 
 _Supported charms_: [`postgresql-k8s`](https://charmhub.io/postgresql-k8s),
 [`postgresql`](https://charmhub.io/postgresql)
@@ -98,7 +98,11 @@ _Supported charms_: [`redis-k8s`](https://charmhub.io/redis-k8s)
 Integrating Synapse with Redis is required by horizontal scaling the charm.
 If the relation is not present, the charm will be blocked.
 
+<!-- vale Canonical.025a-latinisms-with-english-equivalents = NO -->
+
 See more information in [Scaling synapse via workers](https://matrix-org.github.io/synapse/latest/workers.html) in documentation repository for Synapse.
+
+<!-- vale Canonical.025a-latinisms-with-english-equivalents = YES -->
 
 Example `redis` integrate command: 
 ```

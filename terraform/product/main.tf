@@ -27,30 +27,30 @@ module "synapse" {
   channel     = local.channels.synapse
   config      = local.config_synapse
   constraints = var.constraints.synapse
-  model       = juju_model.synapse.name
+  model_uuid  = juju_model.synapse.uuid
   revision    = local.revisions.synapse
   units       = local.units.synapse
 }
 
 module "lego" {
-  count    = local.enable.nginx_ingress_integrator && local.enable.lego ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "../modules/lego"
-  channel  = local.channels.lego
-  revision = local.revisions.lego
-  config   = local.config_lego
+  count      = local.enable.nginx_ingress_integrator && local.enable.lego ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
+  source     = "../modules/lego"
+  channel    = local.channels.lego
+  revision   = local.revisions.lego
+  config     = local.config_lego
 }
 
 resource "juju_secret" "lego_credentials" {
-  count = local.enable.nginx_ingress_integrator && local.enable.lego ? 1 : 0
-  model = local.model.name
-  name  = local.lego_secret.name
-  value = local.lego_secret.value
+  count      = local.enable.nginx_ingress_integrator && local.enable.lego ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
+  name       = local.lego_secret.name
+  value      = local.lego_secret.value
 }
 
 resource "juju_access_secret" "lego_credentials_access" {
-  count = local.enable.nginx_ingress_integrator && local.enable.lego ? 1 : 0
-  model = local.model.name
+  count      = local.enable.nginx_ingress_integrator && local.enable.lego ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
   applications = [
     module.lego[0].app_name
   ]
@@ -58,35 +58,35 @@ resource "juju_access_secret" "lego_credentials_access" {
 }
 
 module "maubot" {
-  count    = local.enable.maubot ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "../modules/maubot"
-  channel  = local.channels.maubot
-  revision = local.revisions.maubot
+  count      = local.enable.maubot ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
+  source     = "../modules/maubot"
+  channel    = local.channels.maubot
+  revision   = local.revisions.maubot
 }
 
 module "nginx_ingress_integrator" {
-  count    = local.enable.nginx_ingress_integrator ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "../modules/nginx-ingress-integrator"
-  app_name = local.app_names.nginx_ingress_integrator
-  channel  = local.channels.nginx_ingress_integrator
-  revision = local.revisions.nginx_ingress_integrator
-  config   = local.config_nginx_ingress_integrator
+  count      = local.enable.nginx_ingress_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
+  source     = "../modules/nginx-ingress-integrator"
+  app_name   = local.app_names.nginx_ingress_integrator
+  channel    = local.channels.nginx_ingress_integrator
+  revision   = local.revisions.nginx_ingress_integrator
+  config     = local.config_nginx_ingress_integrator
 }
 
 module "redis_k8s" {
-  count    = local.enable.redis_k8s ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "../modules/redis-k8s"
-  app_name = local.app_names.redis_k8s
-  channel  = local.channels.redis_k8s
-  revision = local.revisions.redis_k8s
+  count      = local.enable.redis_k8s ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
+  source     = "../modules/redis-k8s"
+  app_name   = local.app_names.redis_k8s
+  channel    = local.channels.redis_k8s
+  revision   = local.revisions.redis_k8s
 }
 
 module "s3_integrator_backup" {
   count         = local.enable.s3_integrator_backup ? 1 : 0
-  model         = juju_model.synapse.name
+  model_uuid    = juju_model.synapse.uuid
   source        = "../modules/s3-integrator"
   app_name      = local.app_names.s3_integrator_backup
   channel       = local.channels.s3_integrator_backup
@@ -98,7 +98,7 @@ module "s3_integrator_backup" {
 
 module "s3_integrator_media" {
   count         = local.enable.s3_integrator_media ? 1 : 0
-  model         = juju_model.synapse.name
+  model_uuid    = juju_model.synapse.uuid
   source        = "../modules/s3-integrator"
   app_name      = local.app_names.s3_integrator_media
   channel       = local.channels.s3_integrator_media
@@ -109,40 +109,40 @@ module "s3_integrator_media" {
 }
 
 module "smtp_integrator" {
-  count    = local.enable.smtp_integrator ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "../modules/smtp-integrator"
-  channel  = local.channels.smtp_integrator
-  revision = local.revisions.smtp_integrator
-  config   = local.config_smtp_integrator
+  count      = local.enable.smtp_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
+  source     = "../modules/smtp-integrator"
+  channel    = local.channels.smtp_integrator
+  revision   = local.revisions.smtp_integrator
+  config     = local.config_smtp_integrator
 }
 
 module "local_saml_integrator" {
-  count    = local.enable.local_saml_integrator ? 1 : 0
-  model    = juju_model.synapse.name
-  source   = "git::https://github.com/canonical/saml-integrator-operator//terraform/charm?ref=rev104&depth=1"
-  channel  = local.channels.local_saml_integrator
-  revision = local.revisions.local_saml_integrator
-  config   = local.config_local_saml_integrator
+  count      = local.enable.local_saml_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
+  source     = "../modules/saml-integrator"
+  channel    = local.channels.local_saml_integrator
+  revision   = local.revisions.local_saml_integrator
+  config     = local.config_local_saml_integrator
 }
 
 module "local_postgresql" {
-  count           = local.enable.local_postgresql ? 1 : 0
-  juju_model_name = juju_model.synapse.name
-  source          = "git::https://github.com/canonical/postgresql-k8s-operator//terraform?ref=rev667&depth=1"
-  base            = "ubuntu@22.04"
-  app_name        = local.app_names.local_postgresql
-  channel         = local.channels.local_postgresql
-  revision        = local.revisions.local_postgresql
-  config          = local.config_local_postgresql
-  storage_size    = "1G"
+  count        = local.enable.local_postgresql ? 1 : 0
+  model_uuid   = juju_model.synapse.uuid
+  source       = "../modules/postgresql-k8s"
+  base         = "ubuntu@22.04"
+  app_name     = local.app_names.local_postgresql
+  channel      = local.channels.local_postgresql
+  revision     = local.revisions.local_postgresql
+  config       = local.config_local_postgresql
+  storage_size = "1G"
 }
 
 # Integrations with offers
 
 resource "juju_integration" "synapse_postgresql" {
-  count = local.integrate_offers.postgresql ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.integrate_offers.postgresql ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -155,8 +155,8 @@ resource "juju_integration" "synapse_postgresql" {
 }
 
 resource "juju_integration" "synapse_prometheus" {
-  count = local.integrate_offers.prometheus ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.integrate_offers.prometheus ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -169,8 +169,8 @@ resource "juju_integration" "synapse_prometheus" {
 }
 
 resource "juju_integration" "synapse_grafana" {
-  count = local.integrate_offers.grafana ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.integrate_offers.grafana ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -183,8 +183,8 @@ resource "juju_integration" "synapse_grafana" {
 }
 
 resource "juju_integration" "synapse_saml" {
-  count = local.integrate_offers.saml_integrator ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.integrate_offers.saml_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -197,8 +197,8 @@ resource "juju_integration" "synapse_saml" {
 }
 
 resource "juju_integration" "maubot_postgresql" {
-  count = local.enable.maubot && local.integrate_offers.postgresql ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.maubot && local.integrate_offers.postgresql ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.maubot[0].app_name
@@ -211,8 +211,8 @@ resource "juju_integration" "maubot_postgresql" {
 }
 
 resource "juju_integration" "maubot_prometheus" {
-  count = local.enable.maubot && local.integrate_offers.prometheus ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.maubot && local.integrate_offers.prometheus ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.maubot[0].app_name
@@ -225,8 +225,8 @@ resource "juju_integration" "maubot_prometheus" {
 }
 
 resource "juju_integration" "maubot_grafana" {
-  count = local.enable.maubot && local.integrate_offers.grafana ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.maubot && local.integrate_offers.grafana ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.maubot[0].app_name
@@ -241,8 +241,8 @@ resource "juju_integration" "maubot_grafana" {
 # Integrations between modules
 
 resource "juju_integration" "synapse_maubot" {
-  count = local.enable.maubot ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.maubot ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -256,8 +256,8 @@ resource "juju_integration" "synapse_maubot" {
 }
 
 resource "juju_integration" "synapse_nginx_ingress_integrator" {
-  count = local.enable.nginx_ingress_integrator ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.nginx_ingress_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -271,8 +271,8 @@ resource "juju_integration" "synapse_nginx_ingress_integrator" {
 }
 
 resource "juju_integration" "synapse_s3_integrator_backup" {
-  count = local.enable.s3_integrator_backup ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.s3_integrator_backup ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -286,8 +286,8 @@ resource "juju_integration" "synapse_s3_integrator_backup" {
 }
 
 resource "juju_integration" "synapse_s3_integrator_media" {
-  count = local.enable.s3_integrator_media ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.s3_integrator_media ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -301,8 +301,8 @@ resource "juju_integration" "synapse_s3_integrator_media" {
 }
 
 resource "juju_integration" "synapse_smtp_integrator" {
-  count = local.enable.smtp_integrator ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.smtp_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -316,8 +316,8 @@ resource "juju_integration" "synapse_smtp_integrator" {
 }
 
 resource "juju_integration" "synapse_local_saml_integrator" {
-  count = local.enable.local_saml_integrator ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.local_saml_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -331,8 +331,8 @@ resource "juju_integration" "synapse_local_saml_integrator" {
 }
 
 resource "juju_integration" "synapse_redis" {
-  count = local.enable.redis_k8s ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.redis_k8s ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
@@ -346,8 +346,8 @@ resource "juju_integration" "synapse_redis" {
 }
 
 resource "juju_integration" "nginx_lego" {
-  count = local.enable.lego && local.enable.nginx_ingress_integrator ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.lego && local.enable.nginx_ingress_integrator ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.nginx_ingress_integrator[0].app_name
@@ -361,8 +361,8 @@ resource "juju_integration" "nginx_lego" {
 }
 
 resource "juju_integration" "maubot_local_postgresql" {
-  count = local.enable.maubot && local.enable.local_postgresql ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.maubot && local.enable.local_postgresql ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.maubot[0].app_name
@@ -376,8 +376,8 @@ resource "juju_integration" "maubot_local_postgresql" {
 }
 
 resource "juju_integration" "synapse_local_postgresql" {
-  count = local.enable.local_postgresql ? 1 : 0
-  model = juju_model.synapse.name
+  count      = local.enable.local_postgresql ? 1 : 0
+  model_uuid = juju_model.synapse.uuid
 
   application {
     name     = module.synapse.app_name
