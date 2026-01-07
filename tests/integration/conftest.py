@@ -178,25 +178,27 @@ async def nginx_integrator_app_fixture(
     synapse_app,
 ):
     """Deploy nginx-ingress-integrator."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            NGINX_INGRESS_INTEGRATOR.charm_name,
-            application_name=NGINX_INTEGRATOR_APP_NAME,
-            trust=NGINX_INGRESS_INTEGRATOR.trust,
-            channel=NGINX_INGRESS_INTEGRATOR.channel,
-            revision=NGINX_INGRESS_INTEGRATOR.revision,
-        )
-        # The nginx-integrator charm goes into "waiting" when waiting
-        await model.wait_for_idle(
-            apps=[NGINX_INTEGRATOR_APP_NAME],
-            raise_on_blocked=True,
-            status=WAITING_STATUS_NAME,
-        )
-        await model.add_relation(f"{app.name}:nginx-route", f"{synapse_app.name}:nginx-route")
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
-    yield app
-    await model.remove_application(app.name)
-    await model.block_until(lambda: app.name not in model.applications, timeout=60)
+    try:
+        async with ops_test.fast_forward():
+            app = await model.deploy(
+                NGINX_INGRESS_INTEGRATOR.charm_name,
+                application_name=NGINX_INTEGRATOR_APP_NAME,
+                trust=NGINX_INGRESS_INTEGRATOR.trust,
+                channel=NGINX_INGRESS_INTEGRATOR.channel,
+                revision=NGINX_INGRESS_INTEGRATOR.revision,
+            )
+            # The nginx-integrator charm goes into "waiting" when waiting
+            await model.wait_for_idle(
+                apps=[NGINX_INTEGRATOR_APP_NAME],
+                raise_on_blocked=True,
+                status=WAITING_STATUS_NAME,
+            )
+            await model.add_relation(f"{app.name}:nginx-route", f"{synapse_app.name}:nginx-route")
+            await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
+        yield app
+    finally:
+        await model.remove_application(app.name)
+        await model.block_until(lambda: app.name not in model.applications, timeout=60)
 
 
 @pytest_asyncio.fixture(scope="function", name="oauth_external_idp_integrator")
@@ -204,22 +206,24 @@ async def oauth_external_idp_integrator_fixture(
     ops_test: OpsTest, model: Model, mock_external_idp_config, synapse_app
 ):
     """Returns a oauth idp app."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            OAUTH_EXTERNAL_IDP_INTEGRATOR.charm_name,
-            application_name=OIDC_APP_NAME,
-            channel=OAUTH_EXTERNAL_IDP_INTEGRATOR.channel,
-            revision=OAUTH_EXTERNAL_IDP_INTEGRATOR.revision,
-            config=mock_external_idp_config,
-        )
-        await model.wait_for_idle(apps=[app.name], idle_period=30)
-        await synapse_app.model.relate(synapse_app.name, app.name)
-        await model.wait_for_idle(
-            apps=[app.name, synapse_app.name], status=ACTIVE_STATUS_NAME, idle_period=30
-        )
-    yield app
-    await model.remove_application(app.name)
-    await model.block_until(lambda: app.name not in model.applications, timeout=60)
+    try:
+        async with ops_test.fast_forward():
+            app = await model.deploy(
+                OAUTH_EXTERNAL_IDP_INTEGRATOR.charm_name,
+                application_name=OIDC_APP_NAME,
+                channel=OAUTH_EXTERNAL_IDP_INTEGRATOR.channel,
+                revision=OAUTH_EXTERNAL_IDP_INTEGRATOR.revision,
+                config=mock_external_idp_config,
+            )
+            await model.wait_for_idle(apps=[app.name], idle_period=30)
+            await synapse_app.model.relate(synapse_app.name, app.name)
+            await model.wait_for_idle(
+                apps=[app.name, synapse_app.name], status=ACTIVE_STATUS_NAME, idle_period=30
+            )
+        yield app
+    finally:
+        await model.remove_application(app.name)
+        await model.block_until(lambda: app.name not in model.applications, timeout=60)
 
 
 @pytest.fixture(scope="module", name="user_username")
