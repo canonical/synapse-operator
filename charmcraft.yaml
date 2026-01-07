@@ -19,16 +19,13 @@ charm-libs:
     version: "0"
 parts:
   charm:
-    build-packages:
-      - libpq-dev
-      - libssl-dev
-      - libffi-dev
-      - pkg-config
+    source: .
+    plugin: uv
     build-snaps:
-      - rustup
-    override-build: |
-      rustup default stable
-      craftctl default
-    charm-binary-python-packages:
-    - psycopg2-binary
-    - cryptography
+    - astral-uv
+  dump:
+    plugin: dump
+    source: .
+    stage:
+    - scripts
+    - templates

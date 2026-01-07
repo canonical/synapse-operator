@@ -459,8 +459,8 @@ def test_create_backup_correct(
             tuple with status_code, stdout and stderr.
         """
         # simple check to see that at least the files are in the command
-        assert any(("'file1'" in arg for arg in args))
-        assert any(("'dir1'" in arg for arg in args))
+        assert any("'file1'" in arg for arg in args)
+        assert any("'dir1'" in arg for arg in args)
         return synapse.ExecResult(0, "", "")
 
     harness.register_command_handler(  # type: ignore
@@ -556,7 +556,7 @@ def test_restore_backup_correct(
             tuple with status_code, stdout and stderr.
         """
         # simple check to see that the correct command was called
-        assert any(("--decrypt" in arg for arg in args))
+        assert any("--decrypt" in arg for arg in args)
         return synapse.ExecResult(0, "", "")
 
     harness.register_command_handler(  # type: ignore
@@ -708,7 +708,7 @@ def test_build_backup_command_correct(s3_parameters_backup):
     assert list(command) == [
         backup.BASH_COMMAND,
         "-c",
-        f"set -euxo pipefail; tar -c '/data/homeserver.db' '/data/example.com.signing.key' | gpg --batch --no-symkey-cache --passphrase-file '/root/.gpg_passphrase' --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=1000 - 's3://synapse-backup-bucket/synapse-backups/20230101231200'",  # noqa: E501
+        f"set -euxo pipefail; tar -c '/data/homeserver.db' '/data/example.com.signing.key' | gpg --batch --no-symkey-cache --passphrase-file '/root/.gpg_passphrase' --symmetric | {backup.AWS_COMMAND} s3 cp --expected-size=1000 - 's3://synapse-backup-bucket/synapse-backups/20230101231200'",
     ]
 
 
@@ -819,5 +819,5 @@ def test_build_restore_command_correct(s3_parameters_backup):
     assert list(command) == [
         backup.BASH_COMMAND,
         "-c",
-        f"set -euxo pipefail; {backup.AWS_COMMAND} s3 cp 's3://synapse-backup-bucket/synapse-backups/20230101231200' - | gpg --batch --no-symkey-cache --decrypt --passphrase-file '/root/.gpg_passphrase' | tar -x -C /",  # noqa: E501
+        f"set -euxo pipefail; {backup.AWS_COMMAND} s3 cp 's3://synapse-backup-bucket/synapse-backups/20230101231200' - | gpg --batch --no-symkey-cache --decrypt --passphrase-file '/root/.gpg_passphrase' | tar -x -C /",
     ]

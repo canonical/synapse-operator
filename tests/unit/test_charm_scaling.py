@@ -90,7 +90,7 @@ def test_scaling_main_configured(harness: Harness) -> None:
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
     ][synapse.SYNAPSE_SERVICE_NAME]
-    assert "/start.py" == synapse_layer["command"]
+    assert synapse_layer["command"] == "/start.py"
 
 
 def test_scaling_main_unit_departed(harness: Harness) -> None:
@@ -128,7 +128,7 @@ def test_scaling_main_unit_departed(harness: Harness) -> None:
     synapse_layer = harness.get_container_pebble_plan(synapse.SYNAPSE_CONTAINER_NAME).to_dict()[
         "services"
     ][synapse.SYNAPSE_SERVICE_NAME]
-    assert "/start.py" == synapse_layer["command"]
+    assert synapse_layer["command"] == "/start.py"
 
 
 def test_scaling_instance_map_configured(harness: Harness) -> None:

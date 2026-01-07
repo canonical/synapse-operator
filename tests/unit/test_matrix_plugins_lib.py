@@ -41,7 +41,7 @@ SAMPLE_PROVIDER_DATA = {
 # pylint: disable=line-too-long
 SAMPLE_REQUIRER_DATA = {
     "registration_secret_id": "test-registration-id",
-    "registration_secret": "gAAAAABngB_H9JrNUwPDr-4E-ouqyG0V_O_1l4X-7f3wZ2A7dsZAUwUoz1lL5pmrrLdIZa5aBw_-P4iEs1le_u30RMWdtLIwAg==",  # noqa: E501
+    "registration_secret": "gAAAAABngB_H9JrNUwPDr-4E-ouqyG0V_O_1l4X-7f3wZ2A7dsZAUwUoz1lL5pmrrLdIZa5aBw_-P4iEs1le_u30RMWdtLIwAg==",
 }
 
 

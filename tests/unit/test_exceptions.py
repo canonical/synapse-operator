@@ -3,7 +3,6 @@
 
 """Exceptions unit tests."""
 
-
 from exceptions import CharmDatabaseRelationNotFoundError
 
 
