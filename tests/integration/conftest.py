@@ -216,7 +216,7 @@ async def oauth_external_idp_integrator_fixture(
                 config=mock_external_idp_config,
             )
             await model.wait_for_idle(apps=[app.name], idle_period=30)
-            await synapse_app.model.relate(synapse_app.name, app.name)
+            await model.relate(synapse_app.name, app.name)
             await model.wait_for_idle(
                 apps=[app.name, synapse_app.name], status=ACTIVE_STATUS_NAME, idle_period=30
             )
