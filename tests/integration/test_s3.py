@@ -19,7 +19,7 @@ from juju.action import Action
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
-from ops.model import ActiveStatus, BlockedStatus
+from ops.model import BlockedStatus
 from pytest import Config
 from pytest_operator.plugin import OpsTest
 
@@ -29,9 +29,8 @@ from tests.integration.dependencies import S3_INTEGRATOR
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments, duplicate-code, unused-argument
+from .conftest import ACTIVE_STATUS_NAME
 
-# mypy has trouble to inferred types for variables that are initialized in subclasses.
-ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 S3_MEDIA_INTEGRATOR_APP_NAME = "s3-integrator-media"
 S3_BACKUP_INTEGRATOR_APP_NAME = "s3-integrator-backup"
 SYNAPSE_S3_APP_NAME = "synapse-s3"
