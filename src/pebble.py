@@ -339,7 +339,6 @@ def reconcile(  # noqa: C901
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-
         existing_mas_config = _get_mas_config(container=container)
         mas_config_has_changed = DeepDiff(
             existing_mas_config,

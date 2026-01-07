@@ -165,7 +165,7 @@ def enable_background_tasks_worker(current_yaml: dict, charm_state: CharmState) 
     if not charm_state.instance_map_config:
         logging.error("background_tasks_worker was called but no instance_map, skipping")
         return
-    workers = [w for w in charm_state.instance_map_config.keys() if w.startswith("worker")]
+    workers = [w for w in charm_state.instance_map_config if w.startswith("worker")]
     workers.sort()
     if not workers:
         logging.error(
@@ -413,7 +413,7 @@ def enable_stream_writers(current_yaml: dict, charm_state: CharmState) -> None:
     if charm_state.instance_map_config is not None:
         persisters = [
             key
-            for key in charm_state.instance_map_config.keys()
+            for key in charm_state.instance_map_config
             if key not in ["main", "federationsender1"]
         ]
         persisters.sort()
