@@ -15,18 +15,15 @@ from juju.application import Application
 from juju.errors import JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
-from ops.model import ActiveStatus
 
 import synapse
 
-from .conftest import DUMP_MAS_CONFIG
-
-# Application name constants
-NGINX_INTEGRATOR_APP_NAME = "nginx-ingress-integrator"
-SYNAPSE_APP_NAME = "synapse"
-
-# mypy has trouble to inferred types for variables that are initialized in subclasses.
-ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
+# Application name constants are imported from conftest
+from .conftest import (
+    ACTIVE_STATUS_NAME,
+    DUMP_MAS_CONFIG,
+    SYNAPSE_APP_NAME,
+)
 
 logger = logging.getLogger(__name__)
 

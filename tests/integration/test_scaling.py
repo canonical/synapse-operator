@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Core integration tests for Synapse charm."""
+
 import logging
 import typing
 
