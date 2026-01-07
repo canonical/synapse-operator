@@ -3,7 +3,6 @@
 
 """Fixtures for Synapse charm integration tests."""
 
-
 import json
 import re
 import typing

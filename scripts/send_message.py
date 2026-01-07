@@ -60,7 +60,7 @@ def get_headers(access_token: str) -> Dict[str, str]:
 
 
 # no type for kwargs
-def make_request(method: str, url: str, headers: Dict[str, str], **kwargs) -> requests.Response:  # type: ignore[no-untyped-def] # noqa: E501
+def make_request(method: str, url: str, headers: Dict[str, str], **kwargs) -> requests.Response:  # type: ignore[no-untyped-def]
     """Request URL.
 
     Args:
@@ -163,7 +163,7 @@ def send_message(
     """
     headers = get_headers(access_token)
     # Generate a transaction ID to ensure idempotency
-    txn_id = f"m{int(time.time() * 1000)}_{random.randint(1000, 9999)}"
+    txn_id = f"m{int(time.time() * 1000)}_{random.randint(1000, 9999)}"  # noqa: S311
 
     url = f"{server_url}/_matrix/client/v3/rooms/{room_id}/send/m.room.message/{txn_id}"
 
@@ -361,7 +361,7 @@ def main() -> None:  # noqa: C901
             except SynapsePinMessageError as pin_exc:
                 logger.error("Message sent but failed to pin: %s", str(pin_exc))
                 print(f"Message sent successfully but failed to pin. Event ID: {event_id}")
-                print(f"Pin error: {str(pin_exc)}")
+                print(f"Pin error: {pin_exc!s}")
         else:
             print(f"Message sent successfully. Event ID: {event_id}")
     except SynapseSendMessageError as exc:

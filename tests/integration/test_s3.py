@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm needing the s3_backup_bucket fixture."""
+
 import logging
 import re
 import typing
@@ -570,7 +571,7 @@ async def test_synapse_enable_media(  # pylint: disable=too-many-positional-argu
 @pytest.mark.s3
 @pytest.mark.usefixtures("s3_backup_bucket")
 @pytest.mark.usefixtures("s3_media_bucket")
-async def test_synapse_create_backup_correct_media_sync_cleanup(  # noqa: E501 pylint: disable=too-many-positional-arguments
+async def test_synapse_create_backup_correct_media_sync_cleanup(
     model: Model,
     synapse_app_s3: Application,
     s3_integrator_app_backup: Application,

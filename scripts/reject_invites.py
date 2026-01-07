@@ -49,7 +49,7 @@ def get_headers(access_token: str) -> Dict[str, str]:
 
 
 # no type for kwargs
-def make_request(method: str, url: str, headers: Dict[str, str], **kwargs) -> requests.Response:  # type: ignore[no-untyped-def] # noqa: E501
+def make_request(method: str, url: str, headers: Dict[str, str], **kwargs) -> requests.Response:  # type: ignore[no-untyped-def]
     """Request URL.
 
     Args:
@@ -135,8 +135,7 @@ def get_all_users(
             break
         result = response.json()
         users = result.get("users", [])
-        for user in users:
-            yield user
+        yield from users
         next_token = result.get("next_token")
         if not next_token:
             break
@@ -163,7 +162,7 @@ def impersonate_user(admin_access_token: str, server_url: str, user_id: str) -> 
         response = make_request("POST", url, headers=headers)
     except SynapseServerError as exc:
         logger.error("Failed to impersonate user %s", user_id)
-        raise SynapseImpersonateError((f"Failed to impersonate user {user_id}")) from exc
+        raise SynapseImpersonateError(f"Failed to impersonate user {user_id}") from exc
     access_token = response.json().get("access_token", "")
     return access_token
 
