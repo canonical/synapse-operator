@@ -1,0 +1,7 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+copilot:
+  version: "v0.4.0"
+  collections:
+    - pfe-charms
