@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Helper module used to manage MAS-related workloads."""
+
 import logging
 import secrets
 import typing

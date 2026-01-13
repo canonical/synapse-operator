@@ -56,7 +56,7 @@ class User(BaseModel):
         self.password = _generate_password()
 
     @validator("username")
-    def username_must_not_be_empty(cls: "User", v: str) -> str:  # pylint: disable=no-self-argument
+    def username_must_not_be_empty(cls: "User", v: str) -> str:  # pylint: disable=no-self-argument  # noqa: N805
         """Check if username is empty.
 
         Args:

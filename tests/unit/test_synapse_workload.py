@@ -5,7 +5,6 @@
 
 # pylint: disable=duplicate-code
 
-
 import io
 import typing
 from secrets import token_hex
@@ -685,7 +684,7 @@ def test_invite_checker_blocklist_allowlist_url(config_content: dict[str, typing
         "public_baseurl": "https://example.com",
     }
     # pylint: disable=line-too-long
-    synapse_config = SynapseConfig(**invite_checker_blocklist_allowlist_url)  # type: ignore[arg-type] # noqa: E501
+    synapse_config = SynapseConfig(**invite_checker_blocklist_allowlist_url)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
         smtp_config=SMTP_CONFIGURATION,
@@ -724,7 +723,7 @@ def test_generate_moderation_config():
         "public_baseurl": "https://example.com",
         "moderation_room_alias": "moderation",
     }
-    synapse_config = SynapseConfig(**base_config)  # type: ignore[arg-type] # noqa: E501
+    synapse_config = SynapseConfig(**base_config)  # type: ignore[arg-type]
     charm_state = CharmState(
         datasource=None,
         smtp_config=SMTP_CONFIGURATION,
@@ -813,7 +812,7 @@ def test_query_workload_version(mock_response_data, expected_version, monkeypatc
     mock_response.json.return_value = mock_response_data
     mock_response.status_code = 200
 
-    def mock_get(url, timeout):  # noqa: DCO010  # pylint: disable=unused-argument
+    def mock_get(url, timeout):  # pylint: disable=unused-argument
         return mock_response
 
     monkeypatch.setattr("requests.get", mock_get)
@@ -830,7 +829,7 @@ def test_query_workload_version_timeout(monkeypatch):
     assert: The function should handle the timeout and return '-'.
     """
 
-    def mock_get_timeout(url, timeout):  # noqa: DCO010
+    def mock_get_timeout(url, timeout):
         raise requests.exceptions.Timeout("Request timed out")
 
     monkeypatch.setattr("requests.get", mock_get_timeout)

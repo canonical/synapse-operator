@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm oauth integration."""
+
 import logging
 
 import yaml

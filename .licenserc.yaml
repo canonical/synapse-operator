@@ -5,6 +5,9 @@ header:
     content: |
       Copyright [year] [owner]
       See LICENSE file for licensing details.
+    pattern: |
+      Copyright \d{4} Canonical Ltd.
+      See LICENSE file for licensing details.
   paths:
     - '**'
   paths-ignore:
@@ -12,7 +15,6 @@ header:
     - '**/.gitkeep'
     - '**/*.cfg'
     - '**/*.conf'
-    - '**/*.conf.template'
     - '**/*.j2'
     - '**/*.json'
     - '**/*.md'
@@ -28,17 +30,20 @@ header:
     - '.trivyignore'
     - '.woke.yaml'
     - '.woke.yml'
-    - '.wokeignore'
     - 'CODEOWNERS'
     - 'icon.svg'
     - 'LICENSE'
     - 'trivy.yaml'
     - 'zap_rules.tsv'
     - 'lib/**'
-    - 'templates/**'
-    - 'synapse_rock/cron/**/*.py'
-    - 'synapse_rock/scripts/**/*.py'
-    - 'synapse_rock/patches/**'
-    - '.lycheeignore'
+    - 'indico_rock/etc/*'
+    - 'tests/unit_harness/pre_run_script.sh'
+    - 'docs/release-notes/**/*.yaml'
     - 'terraform/**'
+    - 'scripts/**'
+    - '.lycheeignore'
+    - '.wokeignore'
+    - 'synapse_rock/patches/*'
+    - 'templates/*'
+    - 'uv.lock '
   comment: on-failure
