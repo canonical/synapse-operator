@@ -41,4 +41,9 @@ header:
     - 'docs/release-notes/**/*.yaml'
     - 'terraform/**'
     - 'scripts/**'
+    - '.lycheeignore'
+    - '.wokeignore'
+    - 'synapse_rock/patches/*'
+    - 'templates/*'
+    - 'uv.lock '
   comment: on-failure
