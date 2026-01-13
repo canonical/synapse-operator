@@ -45,5 +45,5 @@ header:
     - '.wokeignore'
     - 'synapse_rock/patches/*'
     - 'templates/*'
-    - 'uv.lock '
+    - 'uv.lock'
   comment: on-failure
