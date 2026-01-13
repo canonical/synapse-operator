@@ -152,6 +152,8 @@ parts:
             cp -r rust /synapse/
             cp pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
             pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location /synapse[all];
+            # https://github.com/element-hq/synapse/issues/19375
+            pip3 install --break-system-packages --ignore-installed --prefix="/install" --force-reinstall -v --no-cache-dir "prometheus-client==0.23.1"
             cp docker/start.py $CRAFT_PART_INSTALL/
             chmod 755 $CRAFT_PART_INSTALL/start.py
             cp -r docker/conf $CRAFT_PART_INSTALL/
