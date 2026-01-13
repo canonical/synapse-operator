@@ -158,6 +158,8 @@ parts:
       # fix issue while creating file
       # https://github.com/element-hq/synapse/issues/17882
       pip3 install --break-system-packages --prefix="/install" --force-reinstall -v "Twisted==24.7.0"
+      # https://github.com/element-hq/synapse/issues/19375
+      pip3 install --break-system-packages --prefix="/install" --force-reinstall -v "prometheus-client==0.23.1"
       cp docker/start.py $CRAFT_PART_INSTALL/
       chmod 755 $CRAFT_PART_INSTALL/start.py
       cp -r docker/conf $CRAFT_PART_INSTALL/
