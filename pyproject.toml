@@ -61,7 +61,7 @@ integration = [
   "allure-pytest>=2.8.18",
   "allure-pytest-collection-report @ git+https://github.com/canonical/data-platform-workflows@v24.0.0#subdirectory=python/pytest_plugins/allure_pytest_collection_report",
   "juju>=3",
-  "macaroonbakery==1.3.2",
+  "macaroonbakery==1.3.4",
   "pytest",
   "pytest-asyncio",
   "pytest-operator",
