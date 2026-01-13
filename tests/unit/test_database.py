@@ -252,5 +252,5 @@ def test_synapse_stats_exporter_pebble_layer(harness: Harness) -> None:
             "PROM_SYNAPSE_PORT": synapse_env["POSTGRES_PORT"],
             "PROM_SYNAPSE_DATABASE": synapse_env["POSTGRES_DB"],
         },
-        "on-failure": "ignore",
+        "on-failure": "success-shutdown",
     }

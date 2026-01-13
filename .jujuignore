@@ -1,0 +1,7 @@
+/venv
+*.py[cod]
+*.charm
+/.github
+/docs
+/terraform
+/synapse_rock
