@@ -128,6 +128,7 @@ parts:
       # install synapse requirements
       pip3 install --break-system-packages --root-user-action=ignore "poetry==$POETRY_VERSION"
       cp pyproject.toml poetry.lock /synapse/
+      $CRAFT_PART_INSTALL/usr/local/bin/poetry self add poetry-plugin-export
       $CRAFT_PART_INSTALL/usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
       pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
       #
