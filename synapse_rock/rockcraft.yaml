@@ -114,7 +114,7 @@ parts:
     source-type: git
     source-tag: v1.144.0
     build-environment:
-      - POETRY_VERSION: "1.7.1"
+      - POETRY_VERSION: "2.1.1"
     override-build: |
       craftctl default
       export RUSTUP_HOME=/rust
