@@ -8,10 +8,8 @@ import re
 import typing
 from secrets import token_hex
 
-import boto3
 import pytest
 import pytest_asyncio
-from botocore.config import Config as BotoConfig
 from juju.action import Action
 from juju.application import Application
 from juju.model import Model
@@ -22,28 +20,31 @@ from pytest_operator.plugin import OpsTest
 
 from auth.mas import MAS_CONFIGURATION_PATH, MAS_EXECUTABLE_PATH
 from tests.conftest import SYNAPSE_IMAGE_PARAM
-from tests.integration.helpers import register_user
+from tests.integration.dependencies import (
+    NGINX_INGRESS_INTEGRATOR,
+    OAUTH_EXTERNAL_IDP_INTEGRATOR,
+    POSTGRESQL_K8S,
+)
 
 # caused by pytest fixtures, mark does not work in fixtures
-# pylint: disable=too-many-arguments, unused-argument
+# pylint: disable=too-many-arguments
 
 # mypy has trouble to inferred types for variables that are initialized in subclasses.
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 WAITING_STATUS_NAME = "waiting"
 PEBBLE_EXEC = "PEBBLE_SOCKET=/charm/containers/synapse/pebble.socket pebble exec --"
-DUMP_MAS_CONFIG = f"{PEBBLE_EXEC} mas-cli -c {MAS_CONFIGURATION_PATH} config dump"
+DUMP_MAS_CONFIG = f"{PEBBLE_EXEC} /mas-cli -c {MAS_CONFIGURATION_PATH} config dump"
 
+# Application names and constants
+EXTERNAL_HOSTNAME = "juju.test"
+NGINX_INTEGRATOR_APP_NAME = "nginx-ingress-integrator"
+POSTGRESQL_APP_NAME = "postgresql-k8s"
+SYNAPSE_APP_NAME = "synapse"
+OIDC_APP_NAME = "oidc"
 
-@pytest_asyncio.fixture(scope="module", name="server_name")
-async def server_name_fixture() -> str:
-    """Return a server_name."""
-    return "my.synapse.local"
-
-
-@pytest_asyncio.fixture(scope="module", name="another_server_name")
-async def another_server_name_fixture() -> str:
-    """Return a server_name."""
-    return "another.synapse.local"
+# Server names
+SERVER_NAME = "my.synapse.local"
+ANOTHER_SERVER_NAME = "another.synapse.local"
 
 
 @pytest_asyncio.fixture(scope="module", name="model")
@@ -80,100 +81,6 @@ def synapse_image_fixture(pytestconfig: Config):
     return synapse_image
 
 
-@pytest_asyncio.fixture(scope="module", name="synapse_app_name")
-def synapse_app_name_fixture() -> str:
-    """Get Synapse application name."""
-    return "synapse"
-
-
-@pytest_asyncio.fixture(scope="module", name="synapse_app_charmhub_name")
-def synapse_app_charmhub_name_fixture() -> str:
-    """Get Synapse application name from Charmhub fixture."""
-    return "synapse-charmhub"
-
-
-# pylint: disable=too-many-positional-arguments
-@pytest_asyncio.fixture(scope="module", name="synapse_app")
-async def synapse_app_fixture(
-    ops_test: OpsTest,
-    synapse_app_name: str,
-    synapse_image: str,
-    model: Model,
-    server_name: str,
-    synapse_charm: str,
-    postgresql_app: Application,
-    pytestconfig: Config,
-    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-):
-    """Build and deploy the Synapse charm."""
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing or synapse_app_name in model.applications:
-        return model.applications[synapse_app_name]
-    resources = {
-        "synapse-image": synapse_image,
-    }
-    app = await model.deploy(
-        f"./{synapse_charm}",
-        resources=resources,
-        application_name=synapse_app_name,
-        config={"server_name": server_name},
-    )
-
-    await model.wait_for_idle(
-        apps=[synapse_app_name],
-        status=typing.cast(str, BlockedStatus.name),
-        idle_period=5,
-    )
-    synapse_ip = (await get_unit_ips(app.name))[0]
-    await app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
-
-    async with ops_test.fast_forward():
-        await model.relate(f"{synapse_app_name}:database", f"{postgresql_app.name}")
-        await model.relate(f"{synapse_app_name}:mas-database", f"{postgresql_app.name}:database")
-        await model.wait_for_idle(
-            apps=[synapse_app_name, postgresql_app.name],
-            status=ACTIVE_STATUS_NAME,
-            idle_period=5,
-            raise_on_error=False,
-        )
-    return app
-
-
-@pytest_asyncio.fixture(scope="module", name="synapse_charmhub_app")
-async def synapse_charmhub_app_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    server_name: str,
-    synapse_app_charmhub_name: str,
-    postgresql_app: Application,
-    synapse_charm: str,
-):
-    """Deploy synapse from Charmhub."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            "synapse",
-            application_name=synapse_app_charmhub_name,
-            trust=True,
-            channel="2/edge",
-            series="jammy",
-            config={"server_name": server_name},
-        )
-        await model.wait_for_idle(
-            apps=[postgresql_app.name],
-            status=ACTIVE_STATUS_NAME,
-            idle_period=5,
-        )
-        await model.relate(f"{synapse_app_charmhub_name}:mas-database", f"{postgresql_app.name}")
-        await model.relate(f"{synapse_app_charmhub_name}:database", f"{postgresql_app.name}")
-        await model.wait_for_idle(
-            apps=[synapse_app_charmhub_name, postgresql_app.name],
-            status=ACTIVE_STATUS_NAME,
-            idle_period=5,
-        )
-        await model.wait_for_idle(idle_period=5)
-    return app
-
-
 @pytest_asyncio.fixture(scope="module", name="get_unit_ips")
 async def get_unit_ips_fixture(ops_test: OpsTest):
     """Return an async function to retrieve unit ip addresses of a certain application."""
@@ -198,64 +105,125 @@ async def get_unit_ips_fixture(ops_test: OpsTest):
     return get_unit_ips
 
 
-@pytest.fixture(scope="module", name="external_hostname")
-def external_hostname_fixture() -> str:
-    """Return the external hostname for ingress-related tests."""
-    return "juju.test"
+# pylint: disable=too-many-positional-arguments
+@pytest_asyncio.fixture(scope="module", name="synapse_app")
+async def synapse_app_fixture(
+    ops_test: OpsTest,
+    synapse_image: str,
+    model: Model,
+    synapse_charm: str,
+    postgresql_app: Application,
+    pytestconfig: Config,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """Build and deploy the Synapse charm."""
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if not use_existing and SYNAPSE_APP_NAME not in model.applications:
+        resources = {
+            "synapse-image": synapse_image,
+        }
+        async with ops_test.fast_forward():
+            app = await model.deploy(
+                f"./{synapse_charm}",
+                resources=resources,
+                application_name=SYNAPSE_APP_NAME,
+                config={"server_name": SERVER_NAME},
+            )
+            await model.wait_for_idle(
+                apps=[SYNAPSE_APP_NAME],
+                status=typing.cast(str, BlockedStatus.name),
+                idle_period=5,
+            )
+            synapse_ip = (await get_unit_ips(app.name))[0]
+            await app.set_config({"public_baseurl": f"http://{synapse_ip}:8080"})
+            await model.relate(f"{SYNAPSE_APP_NAME}:database", f"{postgresql_app.name}")
+            await model.relate(
+                f"{SYNAPSE_APP_NAME}:mas-database",
+                f"{postgresql_app.name}:database",
+            )
+            await model.wait_for_idle(
+                apps=[SYNAPSE_APP_NAME, postgresql_app.name],
+                status=ACTIVE_STATUS_NAME,
+                idle_period=5,
+                raise_on_error=False,
+            )
+    app = model.applications.get(SYNAPSE_APP_NAME)
+    return app
 
 
-@pytest.fixture(scope="module", name="nginx_integrator_app_name")
-def nginx_integrator_app_name_fixture() -> str:
-    """Return the name of the nginx integrator application deployed for tests."""
-    return "nginx-ingress-integrator"
+@pytest_asyncio.fixture(scope="module", name="postgresql_app")
+async def postgresql_app_fixture(ops_test: OpsTest, model: Model, pytestconfig: Config):
+    """Deploy postgresql."""
+    use_existing = pytestconfig.getoption("--use-existing", default=False)
+    if not use_existing and POSTGRESQL_APP_NAME not in model.applications:
+        async with ops_test.fast_forward():
+            await model.deploy(
+                POSTGRESQL_K8S.charm_name,
+                application_name=POSTGRESQL_APP_NAME,
+                channel=POSTGRESQL_K8S.channel,
+                revision=POSTGRESQL_K8S.revision,
+                trust=POSTGRESQL_K8S.trust,
+                config={"profile": "testing"},
+            )
+            await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
+    app = model.applications.get(POSTGRESQL_APP_NAME)
+    assert app, "Synapse requires postgresql to be deployed"
+    return app
 
 
-@pytest_asyncio.fixture(scope="module", name="nginx_integrator_app")
+@pytest_asyncio.fixture(scope="function", name="nginx_integrator_app")
 async def nginx_integrator_app_fixture(
     ops_test: OpsTest,
     model: Model,
     synapse_app,
-    nginx_integrator_app_name: str,
-    pytestconfig: Config,
 ):
     """Deploy nginx-ingress-integrator."""
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if use_existing or nginx_integrator_app_name in model.applications:
-        return model.applications[nginx_integrator_app_name]
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            "nginx-ingress-integrator",
-            application_name=nginx_integrator_app_name,
-            trust=True,
-            channel="latest/stable",
-            revision=121,
-        )
-        # The nginx-ingress-integrator charm goes into "waiting" when waiting for relation
-        await model.wait_for_idle(
-            apps=[nginx_integrator_app_name], raise_on_blocked=True, status=WAITING_STATUS_NAME
-        )
-    return app
-
-
-@pytest.fixture(scope="module", name="postgresql_app_name")
-def postgresql_app_name_app_name_fixture() -> str:
-    """Return the name of the postgresql application deployed for tests."""
-    return "postgresql-k8s"
-
-
-@pytest_asyncio.fixture(scope="module", name="postgresql_app")
-async def postgresql_app_fixture(
-    ops_test: OpsTest, model: Model, postgresql_app_name: str, pytestconfig: Config
-):
-    """Deploy postgresql."""
-    use_existing = pytestconfig.getoption("--use-existing", default=False)
-    if not use_existing and postgresql_app_name not in model.applications:
+    try:
         async with ops_test.fast_forward():
-            await model.deploy(postgresql_app_name, channel="14/stable", trust=True)
-            await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    postgresql_application = model.applications.get(postgresql_app_name)
-    assert postgresql_application, "Synapse requires postgresql to be deployed"
-    yield postgresql_application
+            app = await model.deploy(
+                NGINX_INGRESS_INTEGRATOR.charm_name,
+                application_name=NGINX_INTEGRATOR_APP_NAME,
+                trust=NGINX_INGRESS_INTEGRATOR.trust,
+                channel=NGINX_INGRESS_INTEGRATOR.channel,
+                revision=NGINX_INGRESS_INTEGRATOR.revision,
+            )
+            # The nginx-integrator charm goes into "waiting" when waiting
+            await model.wait_for_idle(
+                apps=[NGINX_INTEGRATOR_APP_NAME],
+                raise_on_blocked=True,
+                status=WAITING_STATUS_NAME,
+            )
+            await model.add_relation(f"{app.name}:nginx-route", f"{synapse_app.name}:nginx-route")
+            await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
+        yield app
+    finally:
+        await model.remove_application(app.name)
+        await model.block_until(lambda: app.name not in model.applications, timeout=60)
+
+
+@pytest_asyncio.fixture(scope="function", name="oauth_external_idp_integrator")
+async def oauth_external_idp_integrator_fixture(
+    ops_test: OpsTest, model: Model, mock_external_idp_config, synapse_app
+):
+    """Returns a oauth idp app."""
+    try:
+        async with ops_test.fast_forward():
+            app = await model.deploy(
+                OAUTH_EXTERNAL_IDP_INTEGRATOR.charm_name,
+                application_name=OIDC_APP_NAME,
+                channel=OAUTH_EXTERNAL_IDP_INTEGRATOR.channel,
+                revision=OAUTH_EXTERNAL_IDP_INTEGRATOR.revision,
+                config=mock_external_idp_config,
+            )
+            await model.wait_for_idle(apps=[app.name], idle_period=30)
+            await model.relate(synapse_app.name, app.name)
+            await model.wait_for_idle(
+                apps=[app.name, synapse_app.name], status=ACTIVE_STATUS_NAME, idle_period=30
+            )
+        yield app
+    finally:
+        await model.remove_application(app.name)
+        await model.block_until(lambda: app.name not in model.applications, timeout=60)
 
 
 @pytest.fixture(scope="module", name="user_username")
@@ -271,7 +239,15 @@ async def user_fixture(synapse_app: Application, user_username: str) -> tuple[st
     Returns:
         The new user password
     """
-    return (user_username, await register_user(synapse_app, user_username))
+    action_register_user: Action = await synapse_app.units[0].run_action(
+        "register-user", username=user_username, admin=True
+    )
+    await action_register_user.wait()
+    assert action_register_user.status == "completed"
+    assert action_register_user.results.get("register-user")
+    password = action_register_user.results.get("user-password")
+    assert password
+    return (user_username, password)
 
 
 @pytest_asyncio.fixture(scope="module", name="access_token")
@@ -302,243 +278,6 @@ async def access_token_fixture(
     return parsed_output["token"]
 
 
-@pytest.fixture(scope="module", name="localstack_address")
-def localstack_address_fixture(pytestconfig: Config):
-    """Provides localstack IP address to be used in the integration test."""
-    address = pytestconfig.getoption("--localstack-address")
-    if not address:
-        raise ValueError("--localstack-address argument is required for selected test cases")
-    yield address
-
-
-@pytest.fixture(scope="module", name="s3_backup_configuration")
-def s3_backup_configuration_fixture(localstack_address: str) -> dict:
-    """Return the S3 configuration to use for backups
-
-    Returns:
-        The S3 configuration as a dict
-    """
-    return {
-        "endpoint": f"http://{localstack_address}:4566",
-        "bucket": "backups-bucket",
-        "path": "/synapse",
-        "region": "us-east-1",
-        "s3-uri-style": "path",
-    }
-
-
-@pytest.fixture(scope="module", name="s3_backup_credentials")
-def s3_backup_credentials_fixture(localstack_address: str) -> dict:
-    """Return the S3 AWS credentials to use for backups
-
-    Returns:
-        The S3 credentials as a dict
-    """
-    return {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
-    }
-
-
-@pytest.fixture(scope="function", name="boto_s3_client")
-def boto_s3_client_fixture(s3_backup_configuration: dict, s3_backup_credentials: dict):
-    """Return a S# boto3 client ready to use
-
-    Returns:
-        The boto S3 client
-    """
-    s3_client_config = BotoConfig(
-        region_name=s3_backup_configuration["region"],
-        s3={
-            "addressing_style": "virtual",
-        },
-        # no_proxy env variable is not read by boto3, so
-        # this is needed for the tests to avoid hitting the proxy.
-        proxies={},
-    )
-
-    s3_client = boto3.client(
-        "s3",
-        s3_backup_configuration["region"],
-        aws_access_key_id=s3_backup_credentials["access-key"],
-        aws_secret_access_key=s3_backup_credentials["secret-key"],
-        endpoint_url=s3_backup_configuration["endpoint"],
-        use_ssl=False,
-        config=s3_client_config,
-    )
-    yield s3_client
-
-
-@pytest.fixture(scope="function", name="s3_backup_bucket")
-def s3_backup_bucket_fixture(
-    s3_backup_configuration: dict, s3_backup_credentials: dict, boto_s3_client: typing.Any
-):
-    """Creates a bucket using S3 configuration."""
-    bucket_name = s3_backup_configuration["bucket"]
-    boto_s3_client.create_bucket(Bucket=bucket_name)
-    yield
-    objectsresponse = boto_s3_client.list_objects(Bucket=bucket_name)
-    if "Contents" in objectsresponse:
-        for c in objectsresponse["Contents"]:
-            boto_s3_client.delete_object(Bucket=bucket_name, Key=c["Key"])
-    boto_s3_client.delete_bucket(Bucket=bucket_name)
-
-
-@pytest_asyncio.fixture(scope="function", name="s3_integrator_app_backup")
-async def s3_integrator_app_backup_fixture(
-    model: Model, s3_backup_configuration: dict, s3_backup_credentials: dict
-):
-    """Returns a s3-integrator app configured with backup parameters."""
-    s3_integrator_app_name = "s3-integrator-backup"
-    s3_integrator_app = await model.deploy(
-        "s3-integrator",
-        application_name=s3_integrator_app_name,
-        channel="1/edge",
-        config=s3_backup_configuration,
-    )
-    await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
-    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
-        "sync-s3-credentials",
-        **s3_backup_credentials,
-    )
-    await action_sync_s3_credentials.wait()
-    await model.wait_for_idle(status=ACTIVE_STATUS_NAME)
-    yield s3_integrator_app
-    await model.remove_application(s3_integrator_app_name)
-    await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
-
-
-@pytest_asyncio.fixture(scope="module", name="redis_app")
-async def redis_fixture(
-    ops_test: OpsTest,
-    model: Model,
-    synapse_app_name: str,
-):
-    """Deploy redis."""
-    async with ops_test.fast_forward():
-        app = await model.deploy(
-            "redis-k8s",
-            application_name="redis",
-            channel="latest/edge",
-        )
-        await model.wait_for_idle(
-            raise_on_error=False, raise_on_blocked=True, status=ACTIVE_STATUS_NAME
-        )
-        await model.add_relation(f"{app.name}:redis", synapse_app_name)
-        await model.wait_for_idle(status=ACTIVE_STATUS_NAME, idle_period=10)
-
-    return app
-
-
-@pytest.fixture(scope="function", name="s3_media_configuration")
-def s3_media_configuration_fixture(localstack_address: str) -> dict:
-    """Return the S3 configuration to use for media
-
-    Returns:
-        The S3 configuration as a dict
-    """
-    return {
-        "endpoint": f"http://{localstack_address}:4566",
-        "bucket": "synapse-media-bucket",
-        "path": "/media",
-        "region": "us-east-1",
-        "s3-uri-style": "path",
-    }
-
-
-@pytest.fixture(scope="module", name="s3_media_credentials")
-def s3_media_credentials_fixture(localstack_address: str) -> dict:
-    """Return the S3 AWS credentials to use for media
-
-    Returns:
-        The S3 credentials as a dict
-    """
-    return {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
-    }
-
-
-@pytest.fixture(scope="module", name="s3_media_integrator_name")
-def s3_media_integrator_name_fixture() -> str:
-    """Return the name of the s3 integrator application deployed for tests."""
-    return "s3-integrator-media"
-
-
-@pytest_asyncio.fixture(scope="function", name="s3_integrator_app_media")
-async def s3_integrator_app_media_fixture(
-    model: Model,
-    s3_media_configuration: dict,
-    s3_media_credentials: dict,
-    s3_media_integrator_name: str,
-):
-    """Returns a s3-integrator app configured with backup parameters."""
-    s3_integrator_app_name = s3_media_integrator_name
-    s3_integrator_app = await model.deploy(
-        "s3-integrator",
-        application_name=s3_integrator_app_name,
-        channel="1/edge",
-        config=s3_media_configuration,
-    )
-    await model.wait_for_idle(apps=[s3_integrator_app_name], idle_period=5, status="blocked")
-    action_sync_s3_credentials: Action = await s3_integrator_app.units[0].run_action(
-        "sync-s3-credentials",
-        **s3_media_credentials,
-    )
-    await action_sync_s3_credentials.wait()
-    await model.wait_for_idle(apps=[s3_integrator_app_name], status="active")
-
-    yield s3_integrator_app
-    await model.remove_application(s3_integrator_app_name)
-    await model.block_until(lambda: s3_integrator_app_name not in model.applications, timeout=60)
-
-
-@pytest.fixture(scope="function", name="boto_s3_media_client")
-def boto_s3_media_client_fixture(
-    model: Model, s3_media_configuration: dict, s3_media_credentials: dict
-):
-    """Return a S# boto3 client ready to use
-
-    Returns:
-        The boto S3 client
-    """
-    s3_client_config = BotoConfig(
-        region_name=s3_media_configuration["region"],
-        s3={
-            "addressing_style": "virtual",
-        },
-        # no_proxy env variable is not read by boto3, so
-        # this is needed for the tests to avoid hitting the proxy.
-        proxies={},
-    )
-
-    s3_client = boto3.client(
-        "s3",
-        s3_media_configuration["region"],
-        aws_access_key_id=s3_media_credentials["access-key"],
-        aws_secret_access_key=s3_media_credentials["secret-key"],
-        endpoint_url=s3_media_configuration["endpoint"],
-        use_ssl=False,
-        config=s3_client_config,
-    )
-    yield s3_client
-
-
-@pytest.fixture(scope="function", name="s3_media_bucket")
-def s3_media_bucket_fixture(
-    s3_media_configuration: dict, s3_media_credentials: dict, boto_s3_media_client: typing.Any
-):
-    """Creates a bucket using S3 configuration."""
-    bucket_name = s3_media_configuration["bucket"]
-    boto_s3_media_client.create_bucket(Bucket=bucket_name)
-    yield
-    objectsresponse = boto_s3_media_client.list_objects(Bucket=bucket_name)
-    if "Contents" in objectsresponse:
-        for c in objectsresponse["Contents"]:
-            boto_s3_media_client.delete_object(Bucket=bucket_name, Key=c["Key"])
-    boto_s3_media_client.delete_bucket(Bucket=bucket_name)
-
-
 @pytest.fixture(scope="module", name="mock_external_idp_config")
 def mock_external_idp_config_fixture() -> dict:
     """Create the mock upstream idp config."""
@@ -553,16 +292,3 @@ def mock_external_idp_config_fixture() -> dict:
         "client_id": "client_id",
         "client_secret": "client_secret",
     }
-
-
-@pytest_asyncio.fixture(scope="function", name="oauth_external_idp_integrator")
-async def oauth_external_idp_integrator_fixture(model: Model, mock_external_idp_config):
-    """Returns a s3-integrator app configured with backup parameters."""
-    application = await model.deploy(
-        "oauth-external-idp-integrator",
-        application_name="oidc",
-        channel="latest/edge",
-        config=mock_external_idp_config,
-    )
-    await model.wait_for_idle(apps=[application.name], idle_period=30)
-    yield application
