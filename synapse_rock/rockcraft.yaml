@@ -112,9 +112,9 @@ parts:
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git
-    source-tag: v1.142.1
+    source-tag: v1.144.0
     build-environment:
-      - POETRY_VERSION: "1.7.1"
+      - POETRY_VERSION: "2.1.1"
     override-build: |
       craftctl default
       export RUSTUP_HOME=/rust
@@ -128,6 +128,7 @@ parts:
       # install synapse requirements
       pip3 install --break-system-packages --root-user-action=ignore "poetry==$POETRY_VERSION"
       cp pyproject.toml poetry.lock /synapse/
+      $CRAFT_PART_INSTALL/usr/local/bin/poetry self add poetry-plugin-export
       $CRAFT_PART_INSTALL/usr/local/bin/poetry export --extras all -o /synapse/requirements.txt
       pip3 install --break-system-packages --prefix="/install" --no-deps --no-warn-script-location -r /synapse/requirements.txt
       #
