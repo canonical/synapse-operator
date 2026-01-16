@@ -1,3 +1,6 @@
+---
+applyTo: "terraform/*"
+---
 # Terraform Development Guidelines
 
 This document provides Copilot with instructions for generating and reviewing Terraform code in this repository.
