@@ -112,7 +112,7 @@ parts:
     plugin: nil
     source: https://github.com/element-hq/synapse/
     source-type: git
-    source-tag: v1.144.0
+    source-tag: v1.145.0
     build-environment:
       - POETRY_VERSION: "2.1.1"
     override-build: |
