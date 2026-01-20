@@ -28,6 +28,8 @@ from charm_types import (
     SMTPConfiguration,
 )
 
+MAIN_UNIT_ID = 0
+
 logger = logging.getLogger(__name__)
 
 
