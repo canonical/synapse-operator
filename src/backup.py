@@ -475,6 +475,8 @@ def _get_environment(s3_parameters: S3Parameters) -> Dict[str, str]:
     environment = {
         "AWS_ACCESS_KEY_ID": s3_parameters.access_key,
         "AWS_SECRET_ACCESS_KEY": s3_parameters.secret_key,
+        "AWS_REQUEST_CHECKSUM_CALCULATION": "WHEN_REQUIRED",
+        "AWS_RESPONSE_CHECKSUM_VALIDATION": "WHEN_REQUIRED",
     }
     if s3_parameters.endpoint:
         environment["AWS_ENDPOINT_URL"] = s3_parameters.endpoint
