@@ -78,6 +78,7 @@ dependency_groups = [ "lint" ]
 
 [env.unit]
 description = "Run unit tests"
+base_python = ["python3.12"]
 commands = [
   [
     "coverage",
