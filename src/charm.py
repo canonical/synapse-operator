@@ -229,7 +229,9 @@ class SynapseCharm(CharmBaseWithState):
         logger.debug("instance_map is: %s", str(instance_map))
         return instance_map
 
-    def reconcile(self, charm_state: CharmState, mas_configuration: MASConfiguration) -> None:
+    def reconcile(  # noqa: C901
+        self, charm_state: CharmState, mas_configuration: MASConfiguration
+    ) -> None:
         """Reconcile Synapse configuration with charm state.
 
         This is the main entry for changes that require a restart.
@@ -276,6 +278,14 @@ class SynapseCharm(CharmBaseWithState):
                 container.push(
                     signing_key_path, signing_key_from_secret, make_dirs=True, encoding="utf-8"
                 )
+            # check macaroon key
+            macaroon_key_path = f"/data/{charm_state.synapse_config.server_name}.macaroon.key"
+            macaroon_key_from_secret = self.get_macaroon_key()
+            if macaroon_key_from_secret:
+                logger.debug("Macaroon key secret was found, pushing it to the container")
+                container.push(
+                    macaroon_key_path, macaroon_key_from_secret, make_dirs=True, encoding="utf-8"
+                )
             # reconcile configuration
             pebble.reconcile(
                 charm_state,
@@ -292,6 +302,16 @@ class SynapseCharm(CharmBaseWithState):
                 with container.pull(signing_key_path) as f:
                     signing_key = f.read()
                     self.set_signing_key(signing_key.rstrip())
+
+            # create new macaroon key if needed
+            if self.is_main() and not macaroon_key_from_secret:
+                try:
+                    logger.debug("Macaroon key secret not found, creating secret")
+                    with container.pull(macaroon_key_path) as f:
+                        macaroon_key = f.read()
+                        self.set_macaroon_key(macaroon_key.rstrip())
+                except ops.pebble.PathError:
+                    logger.debug("Macaroon key file not found in container, skipping")
 
             # update matrix-auth integration with configuration data
             if self.unit.is_leader():
@@ -483,6 +503,55 @@ class SynapseCharm(CharmBaseWithState):
             except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
                 logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
                 del peer_relation[0].data[self.app]["secret-signing-id"]
+        return None
+
+    def set_macaroon_key(self, macaroon_key: str) -> None:
+        """Create secret with macaroon key content.
+
+        Args:
+            macaroon_key: macaroon key as string.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to set macaroon key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return
+
+        if macaroon_key == self.get_macaroon_key():
+            logger.info("Received macaroon key but there is no change, skipping")
+            return
+        if self.unit.is_leader():
+            logger.debug("Adding macaroon key to secret: %s", macaroon_key)
+            secret = self.app.add_secret({"secret-macaroon-key": macaroon_key})
+            peer_relation[0].data[self.app].update(
+                {"secret-macaroon-id": typing.cast(str, secret.id)}
+            )
+
+    def get_macaroon_key(self) -> typing.Optional[str]:
+        """Get macaroon key from secret.
+
+        Returns:
+            Macaroon key as string or None if not found.
+        """
+        peer_relation = self.model.relations[synapse.SYNAPSE_PEER_RELATION_NAME]
+        if not peer_relation:
+            logger.error(
+                "Failed to get macaroon key: no peer relation %s found",
+                synapse.SYNAPSE_PEER_RELATION_NAME,
+            )
+            return None
+
+        secret_id = peer_relation[0].data[self.app].get("secret-macaroon-id")
+        if secret_id:
+            try:
+                secret = self.model.get_secret(id=secret_id)
+                logging.debug(secret.get_content().get("secret-macaroon-key"))
+                return secret.get_content().get("secret-macaroon-key")
+            except (ops.model.SecretNotFoundError, ValueError, TypeError) as exc:
+                logger.exception("Failed to get secret id %s: %s", secret_id, str(exc))
+                del peer_relation[0].data[self.app]["secret-macaroon-id"]
         return None
 
     @validate_charm_state

@@ -21,7 +21,7 @@ from s3_parameters import S3Parameters
 
 AWS_COMMAND = "/aws/dist/aws"
 
-# The configuration files to back up consist in the signing keys
+# The configuration files to back up consist in the signing and macaroon keys
 # plus the sqlite db if it exists.
 BACKUP_FILE_PATTERNS = ["*.key", "homeserver.db*"]
 

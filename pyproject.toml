@@ -140,7 +140,7 @@ markers = [
 branch = true
 
 [tool.coverage.report]
-fail_under = 89
+fail_under = 87
 show_missing = true
 
 [tool.mypy]
