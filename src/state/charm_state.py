@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import typing
+from enum import Enum
 
 import ops
 from pydantic.v1 import (
@@ -35,6 +36,20 @@ logger = logging.getLogger(__name__)
 
 class CharmConfigInvalidError(Exception):
     """Exception raised when a charm configuration is found to be invalid."""
+
+
+class RateLimitingLevel(str, Enum):
+    """Define values for rate limiting.
+
+    Attributes:
+        DEFAULT: default.
+        PERMISSIVE: permissive.
+        UNLIMITED: unlimited.
+    """
+
+    DEFAULT = "default"
+    PERMISSIVE = "permissive"
+    UNLIMITED = "unlimited"
 
 
 class ProxyConfig(BaseModel):
@@ -73,8 +88,7 @@ class SynapseConfig(BaseModel):
         publish_rooms_allowlist: publish_rooms_allowlist config.
         experimental_alive_check: experimental_alive_check config.
         experimental_extract_background_tasks: experimental_extract_background_tasks.
-        rc_joins_remote_burst_count: rc_join burst_count config.
-        rc_joins_remote_per_second: rc_join per_second config.
+        rate_limiting_level: rate_limiting_level config.
         report_stats: report_stats config.
         server_name: server_name config.
         trusted_key_servers: trusted_key_servers config.
@@ -98,8 +112,7 @@ class SynapseConfig(BaseModel):
     moderation_room_alias: str | None = Field(None)
     public_baseurl: str = Field(..., min_length=2)
     publish_rooms_allowlist: str | None = Field(None)
-    rc_joins_remote_burst_count: int | None = Field(None)
-    rc_joins_remote_per_second: float | None = Field(None)
+    rate_limiting_level: str = Field(None)
     report_stats: str | None = Field(None)
     server_name: str = Field(..., min_length=2)
     # notif_from should be after server_name because of how the validator is set.
@@ -240,6 +253,29 @@ class SynapseConfig(BaseModel):
             raise ValidationError(
                 f"Invalid experimental_alive_check, threshold should be a number: {value}", cls
             ) from exc
+
+    @validator("rate_limiting_level")
+    @classmethod
+    def validate_rate_limit(cls, value: str) -> str:
+        """Check rate limit level configuration.
+
+        If invalid, set the default.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The rate limit level.
+        """
+        v_lower = value.lower()
+        try:
+            return RateLimitingLevel(v_lower)
+        except ValueError:
+            allowed = [e.value for e in RateLimitingLevel]
+            logger.error(
+                "rate_limiting_level must be one of %s, ignoring and setting as default", allowed
+            )
+            return RateLimitingLevel.DEFAULT.value
 
 
 @dataclasses.dataclass(frozen=True)

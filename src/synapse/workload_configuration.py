@@ -9,6 +9,7 @@ import logging
 
 from state.charm_state import CharmState
 
+from .rate_limiting_levels import RATE_LIMITING_CONFIG
 from .workload import SYNAPSE_EXPORTER_PORT, EnableSMTPError, WorkloadError
 
 logger = logging.getLogger(__name__)
@@ -246,22 +247,6 @@ def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
         raise WorkloadError(str(exc)) from exc
 
 
-def enable_rc_joins_remote_rate(current_yaml: dict, charm_state: CharmState) -> None:
-    """Enable rc_joins remote rate.
-
-    Args:
-        current_yaml: current configuration.
-        charm_state: Instance of CharmState.
-    """
-    rc_joins = {
-        "remote": {
-            "per_second": charm_state.synapse_config.rc_joins_remote_per_second,
-            "burst_count": charm_state.synapse_config.rc_joins_remote_burst_count,
-        }
-    }
-    current_yaml["rc_joins"] = rc_joins
-
-
 def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
     """Change the Synapse configuration to enable Redis.
 
@@ -441,5 +426,25 @@ def enable_trusted_key_servers(current_yaml: dict, charm_state: CharmState) -> N
                 {"server_name": f"{item}"}
                 for item in _create_tuple_from_string_list(trusted_key_servers)
             )
+    except KeyError as exc:
+        raise WorkloadError(str(exc)) from exc
+
+
+def set_rate_limiting_level(current_yaml: dict, charm_state: CharmState) -> None:
+    """Change the Synapse configuration to set rate limiting.
+
+    Args:
+        current_yaml: current configuration.
+        charm_state: Instance of CharmState.
+
+    Raises:
+        WorkloadError: something went wrong setting the configuration.
+    """
+    if not current_yaml:
+        return
+    try:
+        level = charm_state.synapse_config.rate_limiting_level
+        config = RATE_LIMITING_CONFIG[level]
+        current_yaml.update(config)
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc

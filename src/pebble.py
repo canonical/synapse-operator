@@ -355,11 +355,11 @@ def reconcile(  # noqa: C901
         current_synapse_config = _get_synapse_config(container)
 
         synapse.add_default_configurations(current_synapse_config)
+        synapse.set_rate_limiting_level(current_synapse_config, charm_state)
         synapse.set_public_baseurl(current_synapse_config, charm_state)
         if charm_state.synapse_config.block_non_admin_invites:
             logger.debug("pebble.change_config: Enabling Block non admin invites")
             synapse.block_non_admin_invites(current_synapse_config, charm_state=charm_state)
-        synapse.enable_rc_joins_remote_rate(current_synapse_config, charm_state=charm_state)
         if (
             charm_state.synapse_config.invite_checker_policy_rooms
             or charm_state.synapse_config.invite_checker_blocklist_allowlist_url
