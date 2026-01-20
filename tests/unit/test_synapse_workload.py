@@ -330,6 +330,7 @@ def test_add_default_configurations_success(config_content: dict[str, typing.Any
         },
         "serve_server_wellknown": True,
         "room_list_publication_rules": [{"action": "allow"}],
+        "default_room_version": 12,
     }
 
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)

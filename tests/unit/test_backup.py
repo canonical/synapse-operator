@@ -5,6 +5,7 @@
 
 # pylint: disable=protected-access
 
+import contextlib
 import datetime
 import os
 import pathlib
@@ -758,10 +759,8 @@ def test_get_paths_to_backup_empty(harness: Harness):
     """
     container = harness.model.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
     container.remove_path(f"/data/{TEST_SERVER_NAME}.signing.key")
-    try:
+    with contextlib.suppress(ops.pebble.PathError):
         container.remove_path(f"/data/{TEST_SERVER_NAME}.macaroon.key")
-    except ops.pebble.PathError:
-        pass
     synapse_root = harness.get_filesystem_root(container)
     media_dir = synapse_root / "media_store"
     media_dir.mkdir()
