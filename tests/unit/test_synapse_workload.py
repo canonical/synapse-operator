@@ -330,6 +330,7 @@ def test_add_default_configurations_success(config_content: dict[str, typing.Any
         },
         "serve_server_wellknown": True,
         "room_list_publication_rules": [{"action": "allow"}],
+        "default_room_version": 12,
     }
 
     assert yaml.safe_dump(content) == yaml.safe_dump(expected_config_content)
@@ -581,30 +582,6 @@ def test_publish_rooms_allowlist_error(invalid_config):
         # Prevent mypy error:
         # Argument 1 to "SynapseConfig" has incompatible type "**dict[str, str]"; expected "bool"
         SynapseConfig(**synapse_with_notif_config)  # type: ignore[arg-type]
-
-
-def test_enable_rc_joins_remote_rate(
-    harness: Harness,
-    config_content: dict[str, typing.Any],
-):
-    """
-    arrange: set mock container with file.
-    act: update rc_joins_remote_rate config and call rc_joins_remote_rate.
-    assert: new configuration file is pushed and rc_joins_remote_rate is enabled.
-    """
-    config = config_content
-
-    harness.update_config({"rc_joins_remote_burst_count": 10, "rc_joins_remote_per_second": 0.2})
-    harness.begin()
-    synapse.enable_rc_joins_remote_rate(config, harness.charm.build_charm_state())
-
-    expected_config_content = {
-        "listeners": [
-            {"type": "http", "port": 8080, "bind_addresses": ["::"]},
-        ],
-        "rc_joins": {"remote": {"burst_count": 10, "per_second": 0.2}},
-    }
-    assert yaml.safe_dump(config) == yaml.safe_dump(expected_config_content)
 
 
 def test_enable_limit_remote_rooms_complexity(

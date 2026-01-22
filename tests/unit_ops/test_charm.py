@@ -8,8 +8,10 @@ from unittest.mock import MagicMock
 
 import pytest
 from ops import testing
+from pytest import MonkeyPatch
 
 import backup
+import pebble
 import synapse
 from charm import SynapseCharm
 
@@ -67,3 +69,68 @@ def test_create_backup_correct_enable_media_sync_cleanup(
     assert ctx.action_results["result"] == "correct"
     assert ctx.action_results["media-sync-cleanup-result"] == "correct"
     run_media_sync_cleanup_mock.assert_called_once()
+
+
+def test_config_changed_multiple_units_with_redis(
+    multiple_units_base_state: dict, monkeypatch: MonkeyPatch, mas_context_secret
+):
+    """
+    arrange: prepare synapse state.
+    act: run config_changed.
+    assert: instance_map_config is correct.
+    """
+    multiple_units_base_state["secrets"] = [mas_context_secret]
+    state = testing.State(**multiple_units_base_state)
+    context = testing.Context(
+        charm_type=SynapseCharm,
+    )
+    monkeypatch.setattr(SynapseCharm, "_set_workload_version", MagicMock())
+    monkeypatch.setattr(pebble, "reconcile", MagicMock())
+    monkeypatch.setattr(
+        SynapseCharm, "get_signing_key", MagicMock(return_value="mock_signing_key")
+    )
+    monkeypatch.setattr(
+        SynapseCharm, "get_macaroon_key", MagicMock(return_value="mock_macaroon_key")
+    )
+
+    with context(context.on.config_changed(), state) as manager:
+        out = manager.run()
+        assert manager.charm.build_charm_state().instance_map_config == {
+            "federationsender1": {"host": "synapse-0.synapse-endpoints", "port": 8034},
+            "main": {"host": "synapse-0.synapse-endpoints", "port": 8035},
+            "worker1": {"host": "synapse-1.synapse-endpoints", "port": 8034},
+            "worker2": {"host": "synapse-2.synapse-endpoints", "port": 8034},
+        }
+        assert out.unit_status == testing.ActiveStatus()
+
+
+def test_config_changed_workers_ignore_list(
+    multiple_units_base_state: dict, monkeypatch: MonkeyPatch
+):
+    """
+    arrange: prepare synapse state and set workers_ignore_list.
+    act: run config_changed.
+    assert: instance_map_config is correct without worker in workers_ignore_list.
+    """
+    multiple_units_base_state["config"]["workers_ignore_list"] = "worker1"
+    state = testing.State(**multiple_units_base_state)
+    context = testing.Context(
+        charm_type=SynapseCharm,
+    )
+    monkeypatch.setattr(SynapseCharm, "_set_workload_version", MagicMock())
+    monkeypatch.setattr(pebble, "reconcile", MagicMock())
+    monkeypatch.setattr(
+        SynapseCharm, "get_signing_key", MagicMock(return_value="mock_signing_key")
+    )
+    monkeypatch.setattr(
+        SynapseCharm, "get_macaroon_key", MagicMock(return_value="mock_macaroon_key")
+    )
+
+    with context(context.on.config_changed(), state) as manager:
+        out = manager.run()
+        assert manager.charm.build_charm_state().instance_map_config == {
+            "federationsender1": {"host": "synapse-0.synapse-endpoints", "port": 8034},
+            "main": {"host": "synapse-0.synapse-endpoints", "port": 8035},
+            "worker2": {"host": "synapse-2.synapse-endpoints", "port": 8034},
+        }
+        assert out.unit_status == testing.ActiveStatus()
