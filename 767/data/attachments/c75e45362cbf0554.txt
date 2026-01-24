@@ -1,0 +1,146 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:806 Connecting to existing model github-pr-c6e49-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/postgresql-k8s-495
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:synapse-0
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] blocked: Waiting for mas-database integration.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [executing] active: 
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/nginx-ingress-integrator-253
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  nginx-ingress-integrator/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  nginx-ingress-integrator/0 [idle] waiting: waiting for relation
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse/0 [idle] active: 
+  nginx-ingress-integrator/0 [idle] waiting: waiting for relation
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  nginx-ingress-integrator/0 [executing] waiting: Waiting for ingress IP availability
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  nginx-ingress-integrator/0 [idle] active: Ingress IP(s): 127.0.0.1
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse/0 [idle] active: 
+  nginx-ingress-integrator/0 [executing] active: Ingress IP(s): 127.0.0.1
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  nginx-ingress-integrator/0 [idle] active: Ingress IP(s): 127.0.0.1
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-c6e49-microk8s  microk8s/localhost  3.6.13   unsupported  06:27:19Z
+
+App             Version  Status  Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable  495  10.152.183.126  no       
+synapse                  active      1  synapse                      0  10.152.183.167  no       
+
+Unit               Workload  Agent  Address      Ports  Message
+postgresql-k8s/0*  active    idle   10.1.12.143         Primary
+synapse/0*         active    idle   10.1.12.145         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-synapse-0: 06:23:51 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 517, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:23:53 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 365, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:24:01 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 365, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 06:24:17 ERROR unit.synapse/0.juju-log cannot perform the following tasks:
+- Start service "stats-exporter" (service start attempt: exited quickly with code 1, will ignore)
+----- Logs from task 0 -----
+2026-01-24T06:24:17Z INFO Most recent service output:
+    Synapse Stats Exporter started.
+    Error fetching data: could not translate host name "host" to address: No address associated with hostname
+    
+    Traceback (most recent call last):
+      File "/usr/local/bin/synapse-stats-exporter", line 8, in <module>
+        sys.exit(main())
+                 ^^^^^^
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 105, in main
+        synapse_stats_metrics.run_metrics_loop()
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 45, in run_metrics_loop
+        if postgreSQL_pool:
+           ^^^^^^^^^^^^^^^
+    UnboundLocalError: cannot access local variable 'postgreSQL_pool' where it is not associated with a value
+2026-01-24T06:24:17Z ERROR service start attempt: exited quickly with code 1, will ignore
+-----
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/pebble.py", line 165, in replan_stats_exporter
+    container.start(STATS_EXPORTER_SERVICE_NAME)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2601, in start
+    self._pebble.start_services(service_names)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2350, in start_services
+    return self._services_action('start', services, timeout, delay)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2428, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "stats-exporter" (service start attempt: exited quickly with code 1, will ignore)
+----- Logs from task 0 -----
+2026-01-24T06:24:17Z INFO Most recent service output:
+    Synapse Stats Exporter started.
+    Error fetching data: could not translate host name "host" to address: No address associated with hostname
+    
+    Traceback (most recent call last):
+      File "/usr/local/bin/synapse-stats-exporter", line 8, in <module>
+        sys.exit(main())
+                 ^^^^^^
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 105, in main
+        synapse_stats_metrics.run_metrics_loop()
+      File "/usr/local/lib/python3.12/dist-packages/synapse_stats_exporter/exporter.py", line 45, in run_metrics_loop
+        if postgreSQL_pool:
+           ^^^^^^^^^^^^^^^
+    UnboundLocalError: cannot access local variable 'postgreSQL_pool' where it is not associated with a value
+2026-01-24T06:24:17Z ERROR service start attempt: exited quickly with code 1, will ignore
+-----
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
