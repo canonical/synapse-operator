@@ -18,7 +18,7 @@ this process by using a [Multipass](https://multipass.run/) VM as outlined in th
 
 :warning: When using a Multipass VM, make sure to replace IP addresses with the
 VM IP in steps that assume you're running locally. To get the IP address of the
-Multipass instance run ```multipass info my-juju-vm```.
+Multipass instance run ``multipass info my-juju-vm``.
 
 ## Set up a tutorial model
 
@@ -37,11 +37,11 @@ Synapse requires connections to PostgreSQL. Deploy both charm applications.
 ### Deploy and integrate the charms
 ```
 juju deploy postgresql-k8s --trust
-juju deploy synapse
+juju deploy synapse --channel 2/edge
 ```
 
-Run `juju status` to see the current status of the deployment. Synapse
-unit should be in `waiting` status.
+Run `juju status` to see the current status of the deployment. The Synapse
+unit should be in a `blocked` status.
 
 Set the server name by running the following command:
 ```
@@ -49,21 +49,31 @@ juju config synapse server_name=tutorial-synapse.juju.local
 ```
 
 Run `juju status` again to see that the message has changed:
+
+<!-- SPREAD SKIP -->
+
 ```
-synapse/0*                 waiting   idle   10.1.74.70             Waiting for database availability
+synapse/0*                 waiting   idle   10.1.74.70             Waiting for mas-database integration.
 ```
+
+<!-- SPREAD SKIP END -->
 
 Provide the integration between Synapse and PostgreSQL:
 ```
-juju integrate synapse postgresql-k8s
+juju integrate synapse:mas-database postgresql-k8s
 ```
 
 Run `juju status` and wait until the Application status is `Active` as the
 following example:
+
+<!-- SPREAD SKIP -->
+
 ```
 App                       Version                       Status  Scale  Charm                     Channel  Rev  Address         Exposed  Message
 synapse                 3.2                           active      1  synapse                              17  10.152.183.68   no
 ```
+
+<!-- SPREAD SKIP END -->
 
 The deployment is complete when the status is `Active`.
 
@@ -95,10 +105,19 @@ juju integrate synapse traefik-k8s
 Now, you will need to go into your DNS settings and set the IP address of the
 Traefik charm to the DNS entry you’re setting up. Getting the IP address can be
 done using `juju status`.
+
+<!-- SPREAD SKIP -->
+
 ```
 App                       Version                       Status  Scale  Charm                     Channel  Rev  Address         Exposed  Message
 traefik-k8s      2.9.6                 active       1  traefik-k8s      stable     110  10.152.183.225  no
 ```
+
+<!-- SPREAD SKIP END -->
+
+<!-- SPREAD
+TRAEFIK_APP_IP=$(juju status --format json | jq -r '.applications."traefik-k8s".address')
+-->
 
 You can configure the resolution of `tutorial-synapse.juju.local` by adding an
 "A" record with the IP address "10.152.183.225" to the appropriate zone in your
@@ -116,14 +135,27 @@ it to your Traefik IP, open the `/etc/hosts` file and add the line
 > Optional: run `echo "10.152.183.225 tutorial-synapse.juju.local" >> /etc/hosts`
 to redirect the output of the command `echo` to the end of the file `/etc/hosts`.
 
+<!-- SPREAD
+echo "$TRAEFIK_APP_IP tutorial-synapse.juju.local | sudo tee -a /etc/hosts"
+-->
+
 After that, visit http://tutorial-synapse.juju.local in a browser and you'll be
 presented with a screen with the following text: "It works! Synapse is running".
+
+<!-- SPREAD
+# CURRENTLY NOT WORKING
+curl http://tutorial-synapse.juju.local
+-->
 
 ## Create a user
 Create a user by running the following command:
 ```
-juju run-action synapse/0 register-user username=alice password=<secure-password> admin=no
+juju run synapse/0 register-user username=alice admin=no
 ```
+
+The terminal output for the action will list the password like
+``user-password: <password>``. Note this password as you will need
+it in the next step.
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 ## Access Synapse using the Element desktop client
@@ -143,6 +175,10 @@ output. Then you should see a welcome page and it's ready to chat.
 Well done! You've successfully completed the Synapse tutorial. To remove the
 model environment you created during this tutorial, use the following command.
 
+<!-- SPREAD SKIP -->
+
 ```
 juju destroy-model synapse-tutorial
 ```
+
+<!-- SPREAD SKIP END -->
