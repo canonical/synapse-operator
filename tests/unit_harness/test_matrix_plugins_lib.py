@@ -33,11 +33,11 @@ provides:
 
 SAMPLE_PROVIDER_DATA = {
     "homeserver": "https://example.com",
-    "shared_secret_id": "test-secret-id",
+    "shared_secret_id": "test-secret-id",  # nosec B105
 }
 
 SAMPLE_REQUIRER_DATA = {
-    "registration_secret_id": "test-registration-id",
+    "registration_secret_id": "test-registration-id",  # nosec B105
 }
 
 

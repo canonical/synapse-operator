@@ -3,7 +3,6 @@
 
 """Provide the Observability class to represent the observability stack for Synapse."""
 
-
 import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v1.loki_push_api import LogProxyConsumer

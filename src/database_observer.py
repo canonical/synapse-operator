@@ -5,6 +5,7 @@
 # mypy: disable-error-code="attr-defined"
 
 """The Database agent relation observer."""
+
 import logging
 import typing
 
