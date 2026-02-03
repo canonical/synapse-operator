@@ -254,7 +254,7 @@ def test_disable_password_config_is_called(
     act: call pebble reconcile.
     assert: disable_password_config is called.
     """
-    harness.update_config({"enable_password_config": False})
+    harness.update_config({"enable_password_config": False})  # nosec B105
     harness.begin()
     monkeypatch.setattr(synapse, "add_default_configurations", MagicMock())
     monkeypatch.setattr(synapse, "set_public_baseurl", MagicMock())

@@ -206,7 +206,7 @@ async def test_synapse_enable_smtp(
     authorization_token = f"Bearer {access_token}"
     headers = {"Authorization": authorization_token}
     sample_check = {
-        "client_secret": "this_is_my_secret_string",
+        "client_secret": "this_is_my_secret_string",  # nosec B105
         "email": "example@example.com",
         "id_server": "id.matrix.org",
         "send_attempt": "1",
