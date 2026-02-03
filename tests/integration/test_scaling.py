@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Synapse charm integrated with Redis."""
+
 import logging
 import typing
 

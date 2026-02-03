@@ -5,7 +5,6 @@
 
 """Synapse signing key."""
 
-
 import logging
 import typing
 
