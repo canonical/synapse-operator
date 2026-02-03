@@ -74,8 +74,8 @@ def test_matrix_auth_update_only_once(harness: Harness, monkeypatch: pytest.Monk
         "maubot",
         app_data={
             "homeserver": "example.com",
-            "shared_secret_id": "test-secret-id",
-            "encryption_key_secret_id": "test-secret-id",
+            "shared_secret_id": "test-secret-id",  # nosec B105
+            "encryption_key_secret_id": "test-secret-id",  # nosec B105
         },
     )
     harness.add_relation_unit(rel_id, "maubot/0")

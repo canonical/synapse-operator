@@ -28,7 +28,7 @@ def test_create_user_success(harness: Harness, mocked_synapse_calls):
     with patch("synapse.api._do_request") as mock_request:
         mock_request.return_value.status_code = 200
         mock_request.return_value.json.return_value = {
-            "access_token": "access_token",
+            "access_token": "access_token",  # nosec B105
             "nonce": "sense",
         }
         user = create_user(

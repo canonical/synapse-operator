@@ -16,8 +16,7 @@ def base_state_fixture(tmp_path: Path):
     """State with container and config file set."""
     config_file_path = tmp_path / "config.yaml"
     config_file_path.write_text(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
         server_name: "test.synapse"
         listeners:
           - port: 8008
@@ -29,8 +28,7 @@ def base_state_fixture(tmp_path: Path):
               - names: [client, federation]
                 compress: false
         signing_key_path: "/data/SERVERNAME.signing.key"
-        """
-        ),
+        """),
         encoding="utf-8",
     )
 

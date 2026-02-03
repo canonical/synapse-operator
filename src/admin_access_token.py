@@ -5,6 +5,7 @@
 # pylint: disable=too-few-public-methods
 
 """The Admin Access Token service."""
+
 import logging
 import typing
 
