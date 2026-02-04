@@ -97,6 +97,9 @@ juju config traefik-k8s external_hostname=juju.local
 juju config traefik-k8s routing_mode=subdomain
 ```
 
+With these settings, the Synapse hostname will have the Juju model name
+appended to the front like `synapse-tutorial-synapse.juju.local`. 
+
 Provide integration between Synapse and Traefik:
 ```
 juju integrate synapse traefik-k8s
@@ -116,35 +119,34 @@ traefik-k8s      2.9.6                 active       1  traefik-k8s      stable  
 <!-- SPREAD SKIP END -->
 
 <!-- SPREAD
-TRAEFIK_APP_IP=$(juju status --format json | jq -r '.applications."traefik-k8s".address')
+TRAEFIK_APP_IP=$(juju status --format json | jq -r '.applications."traefik-k8s".units."traefik-k8s/0".address')
 -->
 
 You can configure the resolution of `tutorial-synapse.juju.local` by adding an
-"A" record with the IP address "10.152.183.225" to the appropriate zone in your
+"A" record with the IP address "10.1.233.207" to the appropriate zone in your
 DNS server's configuration. Save the changes and ensure that DNS caches are
 flushed or DNS services are restarted if necessary. This will allow clients
-querying your DNS server to resolve `tutorial-synapse.juju.local` to the
+querying your DNS server to resolve `synapse-tutorial-synapse.juju.local` to the
 specified IP address. Note that it might take a few minutes for the DNS changes
 to take effect.
 
 In case you don’t have access to a DNS: The browser uses entries in the
 `/etc/hosts` file to override what is returned by a DNS server. So, to resolve
 it to your Traefik IP, open the `/etc/hosts` file and add the line
-`10.152.183.225 tutorial-synapse.juju.local`.
+`10.1.233.207 synapse-tutorial-synapse.juju.local`.
 
-> Optional: run `echo "10.152.183.225 tutorial-synapse.juju.local" >> /etc/hosts`
+> Optional: run `echo "10.1.233.207 synapse-tutorial-synapse.juju.local" >> /etc/hosts`
 to redirect the output of the command `echo` to the end of the file `/etc/hosts`.
 
 <!-- SPREAD
-echo "$TRAEFIK_APP_IP tutorial-synapse.juju.local | sudo tee -a /etc/hosts"
+echo "$TRAEFIK_APP_IP synapse-tutorial-synapse.juju.local" | sudo tee -a /etc/hosts
 -->
 
-After that, visit http://tutorial-synapse.juju.local in a browser and you'll be
+After that, visit http://synapse-tutorial-synapse.juju.local in a browser and you'll be
 presented with a screen with the following text: "It works! Synapse is running".
 
 <!-- SPREAD
-# CURRENTLY NOT WORKING
-curl http://tutorial-synapse.juju.local
+curl -H 'Host: synapse-tutorial-synapse.juju.local' http://synapse-tutorial-synapse.juju.local/
 -->
 
 ## Create a user
@@ -165,7 +167,7 @@ Follow the [instructions](https://element.io/download) to
 install Element Desktop.
 
 Open it and click on “Sign in”. Then click on “Edit” to provide which server you
- want to use (`tutorial-synapse.juju.local`).
+ want to use (`synapse-tutorial-synapse.juju.local`).
 
 Now, you can fill in the username and password fields accordingly to the action
 output. Then you should see a welcome page and it's ready to chat.
