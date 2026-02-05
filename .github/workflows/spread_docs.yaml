@@ -10,7 +10,7 @@ on:
 
 jobs:
   tutorial-spread-test:
-    uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@add-rst-support
+    uses: canonical/operator-workflows/.github/workflows/docs_spread.yaml@main
     secrets: inherit
     with:
       input-file: docs/tutorial/getting-started.md

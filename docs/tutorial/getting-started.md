@@ -63,6 +63,11 @@ Provide the integration between Synapse and PostgreSQL:
 juju integrate synapse:mas-database postgresql-k8s
 ```
 
+<!-- SPREAD 
+juju wait-for application synapse --query='status=="active"' --timeout 10m
+juju wait-for application postgresql-k8s --query='status=="active"' --timeout 10m
+-->
+
 Run `juju status` and wait until the Application status is `Active` as the
 following example:
 
@@ -104,6 +109,11 @@ Provide integration between Synapse and Traefik:
 ```
 juju integrate synapse traefik-k8s
 ```
+
+<!-- SPREAD 
+juju wait-for application synapse --query='status=="active"' --timeout 10m
+juju wait-for application traefik-k8s --query='status=="active"' --timeout 10m
+-->
 
 Now, you will need to go into your DNS settings and set the IP address of the
 Traefik charm to the DNS entry you’re setting up. Getting the IP address can be
