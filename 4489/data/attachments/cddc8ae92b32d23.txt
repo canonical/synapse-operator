@@ -1,0 +1,201 @@
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] blocked: Redis integration is required.
+  synapse/1 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-5532d-microk8s  microk8s/localhost  3.6.14   unsupported  19:21:37Z
+
+App             Version  Status  Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable  495  10.152.183.24   no       
+synapse         ...      active      1  synapse                      0  10.152.183.132  no       
+
+Unit               Workload  Agent  Address       Ports  Message
+postgresql-k8s/0*  active    idle   10.1.100.204         Primary
+synapse/0*         active    idle   10.1.100.206         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-synapse-0: 19:14:12 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 517, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 19:14:13 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 365, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 19:14:21 ERROR unit.synapse/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 365, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-0: 19:14:28 ERROR unit.synapse/0.juju-log database:4: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/database_observer.py", line 116, in _on_database_created
+    mas_configuration = MASConfiguration.from_charm(charm)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-0: 19:14:30 ERROR unit.synapse/0.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 401, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+model-3a12f80e-beae-42ce-8272-d868381af443: 19:17:46 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-synapse-0: 19:17:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-postgresql-k8s-0: 19:17:49 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): write tcp 10.1.100.204:54928->10.152.183.23:17070: write: connection reset by peer
+unit-synapse-0: 19:18:10 ERROR unit.synapse/0.juju-log oauth:8: Request error while querying version from synapse-0.synapse-endpoints: ConnectionError(MaxRetryError("HTTPConnectionPool(host='synapse-0.synapse-endpoints', port=8008): Max retries exceeded with url: /_synapse/admin/v1/server_version (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7ff9a51328f0>: Failed to establish a new connection: [Errno 111] Connection refused'))"))
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 494, in request
+    self.endheaders()
+  File "/usr/lib/python3.10/http/client.py", line 1278, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1038, in _send_output
+    self.send(msg)
+  File "/usr/lib/python3.10/http/client.py", line 976, in send
+    self.connect()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 325, in connect
+    self.sock = self._new_conn()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x7ff9a51328f0>: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='synapse-0.synapse-endpoints', port=8008): Max retries exceeded with url: /_synapse/admin/v1/server_version (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7ff9a51328f0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 568, in query_workload_version
+    res = requests.get(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/adapters.py", line 677, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='synapse-0.synapse-endpoints', port=8008): Max retries exceeded with url: /_synapse/admin/v1/server_version (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7ff9a51328f0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+unit-synapse-0: 19:18:24 ERROR unit.synapse/0.juju-log oauth:8: Request error while querying version from synapse-0.synapse-endpoints: ConnectionError(MaxRetryError("HTTPConnectionPool(host='synapse-0.synapse-endpoints', port=8008): Max retries exceeded with url: /_synapse/admin/v1/server_version (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9ed593ddb0>: Failed to establish a new connection: [Errno 111] Connection refused'))"))
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 494, in request
+    self.endheaders()
+  File "/usr/lib/python3.10/http/client.py", line 1278, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1038, in _send_output
+    self.send(msg)
+  File "/usr/lib/python3.10/http/client.py", line 976, in send
+    self.connect()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 325, in connect
+    self.sock = self._new_conn()
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x7f9ed593ddb0>: Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='synapse-0.synapse-endpoints', port=8008): Max retries exceeded with url: /_synapse/admin/v1/server_version (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9ed593ddb0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-0/charm/src/charm.py", line 568, in query_workload_version
+    res = requests.get(
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-0/charm/venv/lib/python3.10/site-packages/requests/adapters.py", line 677, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='synapse-0.synapse-endpoints', port=8008): Max retries exceeded with url: /_synapse/admin/v1/server_version (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9ed593ddb0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+model-3a12f80e-beae-42ce-8272-d868381af443: 19:20:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-synapse-0: 19:20:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-postgresql-k8s-0: 19:20:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
