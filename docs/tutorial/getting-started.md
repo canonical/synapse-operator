@@ -122,8 +122,18 @@ done using `juju status`.
 <!-- SPREAD SKIP -->
 
 ```
-App                       Version                       Status  Scale  Charm                     Channel  Rev  Address         Exposed  Message
-traefik-k8s      2.9.6                 active       1  traefik-k8s      stable     110  10.152.183.225  no
+Model             Controller          Cloud/Region        Version  SLA          Timestamp
+synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  18:10:46Z
+
+App             Version  Status  Scale  Charm           Channel        Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable      495  10.152.183.23   no       
+synapse                  active      1  synapse         2/edge         871  10.152.183.189  no       
+traefik-k8s     2.11.0   active      1  traefik-k8s     latest/stable  263  10.152.183.88   no       Serving at http://juju.local
+
+Unit               Workload  Agent  Address       Ports  Message
+postgresql-k8s/0*  active    idle   10.1.233.203         Primary
+synapse/0*         active    idle   10.1.233.205         
+traefik-k8s/0*     active    idle   10.1.233.207         Serving at http://juju.local
 ```
 
 <!-- SPREAD SKIP END -->
