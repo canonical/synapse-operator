@@ -61,6 +61,7 @@ synapse/0*                 waiting   idle   10.1.74.70             Waiting for m
 Provide the integration between Synapse and PostgreSQL:
 ```
 juju integrate synapse:mas-database postgresql-k8s
+juju integrate synapse:database postgresql-k8s
 ```
 
 <!-- SPREAD 
