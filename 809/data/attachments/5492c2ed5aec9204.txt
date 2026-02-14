@@ -1,0 +1,51 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:806 Connecting to existing model github-pr-ed28f-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/postgresql-k8s-495
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] unknown: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] waiting: awaiting for cluster to start
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [executing] active: Primary
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying local:synapse-0
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] blocked: Waiting for mas-database integration.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [executing] blocked: Waiting for mas-database integration.
+  postgresql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [executing] maintenance: Configuring Synapse
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/redis-k8s-42
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse-scaling/0 [idle] active: 
+  redis/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [executing] maintenance: Configuring Synapse
+  redis/0 [executing] waiting: Waiting for Pebble in sentinel container
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] active: 
+  redis/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] active: 
+  redis/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] active: 
+  synapse-scaling/1 [executing] maintenance: Configuring Synapse
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-scaling/0 [idle] active: 
+  synapse-scaling/1 [executing] maintenance: Configuring Synapse
