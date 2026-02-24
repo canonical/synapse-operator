@@ -1141,16 +1141,16 @@ wheels = [
 
 [[package]]
 name = "ops"
-version = "3.5.1"
+version = "3.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "opentelemetry-api" },
     { name = "pyyaml" },
     { name = "websocket-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/72/d7/86b0b4db046221db85d8c8bc4c1df22aa3915b17081530f6c25ede7243e7/ops-3.5.1.tar.gz", hash = "sha256:376ef51d35d45b376795196851550e209565e922e58af8ac491cf23bc8b46498", size = 577928, upload-time = "2026-01-28T03:10:52.817Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/72/50bdb29831b8ed92034e9657fec89301d8df3aa8da3da1d37ecbdf1baab6/ops-3.5.2.tar.gz", hash = "sha256:849c9ed85eadf265b8a927d5e857cd112221dd71b35e4b13329ccb938c3afd18", size = 578181, upload-time = "2026-02-11T01:49:48.345Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/77/e9ba7bd69917bf481dd8f3162ec37b028021d605f8e17a1fd05a5ec103e8/ops-3.5.1-py3-none-any.whl", hash = "sha256:890dd7bf33d1381afeed0e484d02c7bb13ad3945dcc7b723e8d73e4bba0ff94c", size = 211691, upload-time = "2026-01-28T03:10:48.778Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/5c/84b41a67c2dc904f92f424e981eb65641ce095936fb9e6d7b4a315072d1a/ops-3.5.2-py3-none-any.whl", hash = "sha256:c715128a51ddcdf0fff463428b0f56a93e5963187e599b66594b4fc74458781b", size = 211688, upload-time = "2026-02-11T01:49:43.935Z" },
 ]
 
 [package.optional-dependencies]
@@ -1160,16 +1160,16 @@ testing = [
 
 [[package]]
 name = "ops-scenario"
-version = "8.5.1"
+version = "8.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ops" },
     { name = "pyyaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bc/de/b6de767862bcdfce2e68eeedc578dd0b1332eb0a73af0da6ee9244c5b514/ops_scenario-8.5.1.tar.gz", hash = "sha256:9b9a3cd67b5704f58d17952ca9327d11391a3b3ce7daea26d040458165e1117f", size = 112317, upload-time = "2026-01-28T03:10:54.486Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/27/a999aa877a34fc1b2c07b0f51cb1dc58a89e23bcaf4f626e28bec39825fd/ops_scenario-8.5.2.tar.gz", hash = "sha256:ebcdc4f8837f9a1cd42624f49d9d8b2502ebeeedad552516225b3420f989c369", size = 71693, upload-time = "2026-02-11T01:49:49.59Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/c3/5c84236fa8054ebad8b371582cecadfe9a03e77625176db37501a529f8d2/ops_scenario-8.5.1-py3-none-any.whl", hash = "sha256:909be01c223726019659b5454b4792c38b1d6ed5e8835d1d71794d6202b0f0ec", size = 64069, upload-time = "2026-01-28T03:10:50.077Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/b1/57816b48087fa391d0b113e067ca80fdd36a2103c57cf9cf28fe5a82f52e/ops_scenario-8.5.2-py3-none-any.whl", hash = "sha256:79125d82ca753394d9d9e4a53c55931d3d0114421c1b745f5611cb5827d37012", size = 64241, upload-time = "2026-02-11T01:49:45.753Z" },
 ]
 
 [[package]]
@@ -2088,7 +2088,7 @@ requires-dist = [
     { name = "deepdiff", specifier = "==8.6.1" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "jsonschema", specifier = "==4.26.0" },
-    { name = "ops", specifier = "==3.5.1" },
+    { name = "ops", specifier = "==3.5.2" },
     { name = "psycopg2-binary", specifier = "==2.9.11" },
     { name = "pydantic", specifier = "==2.12.5" },
     { name = "python-ulid", specifier = "==3.1.0" },
