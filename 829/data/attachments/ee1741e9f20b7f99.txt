@@ -1,0 +1,133 @@
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/s3-integrator-255
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  s3-integrator-backup/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  postgresql-k8s/0 [idle] active: Primary
+  synapse-s3/0 [idle] active: 
+  s3-integrator-backup/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/s3-integrator-255
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  s3-integrator-media/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  s3-integrator-media/0 [idle] active:
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-s3/0 [idle] active: 
+  s3-integrator-media/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-s3/0 [idle] active: 
+  s3-integrator-media/0 [idle] active: 
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-s3/0 [idle] active: 
+  s3-integrator-backup/0 [idle] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse-s3/0 [idle] active: 
+  s3-integrator-backup/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-ed28f-microk8s  microk8s/localhost  3.6.14   unsupported  06:54:30Z
+
+App             Version  Status  Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable  495  10.152.183.127  no       
+synapse-s3      1.146.0  active      1  synapse                      0  10.152.183.135  no       
+
+Unit               Workload  Agent  Address      Ports  Message
+postgresql-k8s/0*  active    idle   10.1.76.140         Primary
+synapse-s3/0*      active    idle   10.1.76.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-synapse-s3-0: 06:39:44 ERROR unit.synapse-s3/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/charm.py", line 517, in _on_leader_elected
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-s3-0: 06:39:46 ERROR unit.synapse-s3/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/charm.py", line 365, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-s3-0: 06:39:54 ERROR unit.synapse-s3/0.juju-log Error initializing charm state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/charm.py", line 365, in _on_config_changed
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 147, in from_charm
+    cls.validate(charm)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 205, in validate
+    raise MASDatasourceMissingError("Waiting for mas-database integration.")
+state.mas.MASDatasourceMissingError: Waiting for mas-database integration.
+unit-synapse-s3-0: 06:40:00 ERROR unit.synapse-s3/0.juju-log Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/charm.py", line 401, in _on_synapse_pebble_ready
+    mas_configuration = MASConfiguration.from_charm(self)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-s3-0: 06:40:02 ERROR unit.synapse-s3/0.juju-log database:4: Waiting for the charm to settle into a correct state.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/validation.py", line 102, in wrapper
+    return method(instance, event)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/database_observer.py", line 116, in _on_database_created
+    mas_configuration = MASConfiguration.from_charm(charm)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 150, in from_charm
+    validate_datasource(datasource)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/state/mas.py", line 225, in validate_datasource
+    raise MASDatasourceInvalidError("Missing values in postgresql datasource.")
+state.mas.MASDatasourceInvalidError: Missing values in postgresql datasource.
+unit-synapse-s3-0: 06:41:24 ERROR unit.synapse-s3/0.juju-log backup:7: Bucket backups-bucket doesn't exist or you don't have access to it.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/backup.py", line 118, in can_use_bucket
+    self._client.head_bucket(Bucket=self._s3_parameters.bucket)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/venv/lib/python3.10/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/venv/lib/python3.10/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/venv/lib/python3.10/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (404) when calling the HeadBucket operation: Not Found
+unit-synapse-s3-0: 06:41:25 ERROR unit.synapse-s3/0.juju-log backup:7: Bucket backups-bucket doesn't exist or you don't have access to it.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/src/backup.py", line 118, in can_use_bucket
+    self._client.head_bucket(Bucket=self._s3_parameters.bucket)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/venv/lib/python3.10/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/venv/lib/python3.10/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-synapse-s3-0/charm/venv/lib/python3.10/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (404) when calling the HeadBucket operation: Not Found
+unit-synapse-s3-0: 06:42:49 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+model-e40f2fab-feed-43dd-8184-5af5d4d46173: 06:42:54 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-postgresql-k8s-0: 06:42:57 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-synapse-s3-0: 06:45:10 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+model-e40f2fab-feed-43dd-8184-5af5d4d46173: 06:45:36 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-postgresql-k8s-0: 06:45:37 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-synapse-s3-0: 06:46:53 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-s3-integrator-backup-0: 06:47:04 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-synapse-s3-0: 06:49:11 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+model-e40f2fab-feed-43dd-8184-5af5d4d46173: 06:50:07 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-postgresql-k8s-0: 06:50:17 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+model-e40f2fab-feed-43dd-8184-5af5d4d46173: 06:53:18 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-synapse-s3-0: 06:53:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
