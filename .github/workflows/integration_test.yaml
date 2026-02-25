@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: tj-actions/changed-files@v47.0.1
+      - uses: tj-actions/changed-files@v47.0.4
         id: changed-files
 
       - name: Set output if non-terraform files changed
