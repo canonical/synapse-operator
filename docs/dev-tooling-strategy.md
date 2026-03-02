@@ -265,14 +265,14 @@ Key properties:
 `vex.yaml` gains an `env_file` property. Crucially, the file is resolved from the **caller's CWD** (the charm repo), not from the embedded workspace. This is the key design decision that makes a generic binary work with per-repo configuration:
 
 ```yaml
-# vex.yaml (inside the charm binary)
-name: charm
+# vex.yaml (inside the pfe-workflow binary)
+name: pfe-workflow
 env_file: charm.env  # resolved from wherever the binary is invoked
 ```
 
 In each charm repo:
 ```bash
-# charm.env (in the repo root, checked in or gitignored per preference)
+# charm.env (in the repo root, checked in)
 CHARM_NAME=synapse
 ROCK_NAME=synapse
 OCI_RESOURCE_NAME=synapse-image
@@ -287,7 +287,7 @@ If no `env_file` is specified, Vex automatically tries `.env` in CWD. Variables 
 
 ```yaml
 # vex.yaml
-name: charm
+name: pfe-workflow
 version: 1.2.0
 version_file: .charm-version
 ```
@@ -307,18 +307,18 @@ With PR #2 merged, the complete picture for our charm tooling looks like this:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  User interface:  charm <command> [flags]                       │  ← compiled Vex binary
+│  User interface:  pfe-workflow <command> [flags]                       │  ← compiled Vex binary
 │  Produced by:     vex build charm-workspace/                    │
-│  Distributed via: snap / apt / GH release / brew               │
+│  Distributed via: GitHub releases               │
 ├─────────────────────────────────────────────────────────────────┤
 │  Inside the binary (invisible to users):                        │
 │  ├── vex.yaml             workspace config, env_file, version   │
-│  ├── build/rock.yaml      'charm build rock'                    │
-│  ├── build/charm.yaml     'charm build charm'                   │
-│  ├── test/lint.yaml       'charm test lint'                     │
-│  ├── test/unit.yaml       'charm test unit'                     │
-│  ├── test/integration.yaml 'charm test integration'             │
-│  ├── deploy.yaml          'charm deploy'                        │
+│  ├── build/rock.yaml      'pfe-workflow build rock'                    │
+│  ├── build/charm.yaml     'pfe-workflow build charm'                   │
+│  ├── test/lint.yaml       'pfe-workflow test lint'                     │
+│  ├── test/unit.yaml       'pfe-workflow test unit'                     │
+│  ├── test/integration.yaml 'pfe-workflow test integration'             │
+│  ├── deploy.yaml          'pfe-workflow deploy'                        │
 │  ├── make/                generic makefiles (rock, charm, tox…) │
 │  └── (no scripts — components call make targets directly)      │
 ├─────────────────────────────────────────────────────────────────┤
@@ -333,22 +333,22 @@ With PR #2 merged, the complete picture for our charm tooling looks like this:
 Developer experience:
 
 ```bash
-charm help
-charm build
-charm build rock
-charm build charm
-charm test lint
-charm test unit
-charm test integration --filter test_active
-charm test integration --charm-version rev211-rc1
-charm deploy
+pfe-workflow help
+pfe-workflow build
+pfe-workflow build rock
+pfe-workflow build charm
+pfe-workflow test lint
+pfe-workflow test unit
+pfe-workflow test integration --filter test_active
+pfe-workflow test integration --charm-version rev211-rc1
+pfe-workflow deploy
 ```
 
 ### Example workspace internals
 
 **`vex.yaml`:**
 ```yaml
-name: charm
+name: pfe-workflow
 description: Canonical charm development CLI
 version: 1.0.0
 env_file: charm.env
@@ -390,7 +390,7 @@ The `deploy-charm-post` hook in the makefile checks for `scripts/charm-deploy-po
 
 | | |
 |---|---|
-| ✅ **Tech agnosticism** | `charm build`, `charm test` stay stable even if the internals move from Make to Just or uv |
+| ✅ **Tech agnosticism** | `pfe-workflow build`, `pfe-workflow test` stay stable even if the internals move from Make to Just or uv |
 | ✅ **Dependency validation** | Early, clear failure with install hints before any script runs |
 | ✅ **Typed arguments** | `--filter`, `--charm-version` become first-class typed flags |
 | ✅ **Single distributable binary** | `./pfe-workflow` works without Vex, Make, or Python installed separately by the user |
@@ -597,7 +597,7 @@ make deploy         # should build, publish, deploy, and call deploy-charm-post 
 **Prerequisite:** Phase 1 complete and verified.  
 **Prerequisite:** Vex PR #2 merged.
 
-**Goal:** A `charm-workspace/` directory that bundles the Phase 1 `make/` files and Vex component YAMLs into a workspace. `vex build charm-workspace/` produces a `charm` binary. That binary, when invoked from any charm repo containing `charm.env`, provides the full developer CLI.
+**Goal:** A `charm-workspace/` directory that bundles the Phase 1 `make/` files and Vex component YAMLs into a workspace. `vex build charm-workspace/` produces the `pfe-workflow` binary. That binary, when invoked from any charm repo containing `charm.env`, provides the full developer CLI.
 
 #### Files to create in `charm-workspace/`
 
@@ -630,7 +630,7 @@ Each component YAML uses Vex's `make` runtime and calls the corresponding `make`
 
 **`vex.yaml`:**
 ```yaml
-name: charm
+name: pfe-workflow
 description: Canonical charm development CLI
 version: 1.0.0
 env_file: charm.env
