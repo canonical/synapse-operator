@@ -1,24 +1,24 @@
 # Developer Tooling Strategy
 
 > **Context:** This document analyses three inter-connected topics around standardising the local development workflow for our charm repositories:
-> 1. Adapting the existing `raw_makefiles` set to work with `synapse-operator`, including how to handle the genuine differences between charm deployments
+> 1. Adapting the shared makefile set to work with `synapse-operator`, including how to handle the genuine differences between charm deployments
 > 2. What a cleaner, more production-ready Makefile architecture would look like — framed in the context of those files living inside a Vex binary rather than copy-pasted per repo
 > 3. Whether [Vex](https://github.com/srbouffard/vex) is a good candidate for a team-wide charm development CLI, updated to reflect [PR #2](https://github.com/srbouffard/vex/pull/2) which adds native `.env` file loading and version pinning
 >
-> The baseline for this analysis is the Makefile set introduced in [canonical/discourse-k8s-operator#379](https://github.com/canonical/discourse-k8s-operator/pull/379), copied into `raw_makefiles/`.
+> The baseline for this analysis is the Makefile set introduced in [canonical/discourse-k8s-operator#379](https://github.com/canonical/discourse-k8s-operator/pull/379), now used from the top-level `make/` directory.
 
 ---
 
 ## Table of Contents
 
-1. [Adapting `raw_makefiles` for synapse-operator](#1-adapting-raw_makefiles-for-synapse-operator)
+1. [Adapting the makefiles for synapse-operator](#1-adapting-the-makefiles-for-synapse-operator)
 2. [A Cleaner Makefile Architecture](#2-a-cleaner-makefile-architecture)
 3. [Vex as a Team CLI](#3-vex-as-a-team-cli)
 4. [Recommendation Summary](#4-recommendation-summary)
 
 ---
 
-## 1. Adapting `raw_makefiles` for synapse-operator
+## 1. Adapting the makefiles for synapse-operator
 
 ### What the makefiles actually do (and don't do)
 
@@ -81,7 +81,7 @@ This pattern — **generic logic in the makefiles, charm-specific hooks in the r
 
 ### What needs to change for synapse today
 
-Only a **single new file** at the repo root is needed for build/test/lint. The `raw_makefiles/Makefile` was written for discourse and should not be modified. Create a `Makefile` at the synapse repo root:
+Only a **single new file** at the repo root is needed for build/test/lint. Create a `Makefile` at the synapse repo root:
 
 ```makefile
 # Copyright 2025 Canonical Ltd.
@@ -109,7 +109,7 @@ deploy-charm-post:
 # Makefile common logic
 # ==============================================================================
 
-MAKE_DIR := raw_makefiles/make
+MAKE_DIR := make
 include $(MAKE_DIR)/common.mk
 ```
 
@@ -119,7 +119,7 @@ include $(MAKE_DIR)/common.mk
 - `OCI_RESOURCE_NAME` → matches `resources.synapse-image` in `metadata.yaml`
 - `ROCK_DIR` → overrides the `rock/` default in `rock.mk`
 
-> **Note:** `deploy-charm-pre` / `deploy-charm-post` hooks don't yet exist in the current `raw_makefiles/` — they need to be added as part of the v2 improvements described in §2.
+> **Note:** `deploy-charm-pre` / `deploy-charm-post` hooks were originally missing and are now added in the current `make/` set.
 
 ### Known issues in the current makefiles (inherited from the PR)
 
@@ -409,7 +409,7 @@ The `deploy-charm-post` hook in the makefile checks for `scripts/charm-deploy-po
 
 ### For immediate use (synapse today)
 
-Create a single `Makefile` at the synapse repo root (shown in §1) pointing to `raw_makefiles/make`. Override the `lint` target to skip `docs-check` until vale/lychee are configured. Add `deploy-charm-pre` and `deploy-charm-post` override targets for synapse-specific setup (this requires adding the hook targets to `juju.mk` first). This is a ~15-line change.
+Create a single `Makefile` at the synapse repo root (shown in §1) pointing to `make/`. Override the `lint` target to skip `docs-check` until vale/lychee are configured. Add `deploy-charm-pre` and `deploy-charm-post` override targets for synapse-specific setup (this requires adding the hook targets to `juju.mk` first). This is a ~15-line change.
 
 ### For a v2 Makefile refactor (do once, in the Vex workspace repo)
 
@@ -450,7 +450,7 @@ The work now splits into four sequential phases: 1.0 (implementation), 1.5 (non-
 
 **Goal:** A corrected, self-contained `make/` directory that works with synapse (and any other charm) with zero bugs from the known issue list. Verified by running all targets against the synapse repo.
 
-**Inputs:** `raw_makefiles/make/` (current v1 files)  
+**Inputs:** `make/` (current v1 files)  
 **Output:** A new `make/` directory at the repo root (or a standalone repo if we want the submodule path), plus a synapse-specific root `Makefile`
 
 #### Ordered work items
@@ -569,7 +569,7 @@ MAKE_DIR := make
 include $(MAKE_DIR)/common.mk
 ```
 
-> At this point, the `make/` directory should be moved from `raw_makefiles/make/` to a top-level `make/` directory so `MAKE_DIR := make` works from the repo root. `raw_makefiles/` can be kept for reference or removed.
+> The `make/` directory now lives at the repo root (`MAKE_DIR := make`). The legacy `raw_makefiles/` directory is no longer required.
 
 #### Acceptance criteria for Phase 1
 
