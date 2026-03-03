@@ -15,7 +15,7 @@ JUJU_LOGGING_CONFIG ?= "<root>=INFO;unit=DEBUG"
 
 setup-juju-model: ## Create and configure the Juju model for development.
 	@$(call msg,"--> Setting up Juju model: $(JUJU_MODEL_NAME)...")
-	@juju models | grep -q "^$(JUJU_MODEL_NAME) " || juju add-model $(JUJU_MODEL_NAME)
+	@juju show-model $(JUJU_MODEL_NAME) >/dev/null 2>&1 || juju add-model $(JUJU_MODEL_NAME)
 	@juju model-config -m $(JUJU_MODEL_NAME) logging-config=$(JUJU_LOGGING_CONFIG)
 
 check-microk8s-registry: ## Check if the MicroK8s registry addon is enabled.

@@ -13,7 +13,7 @@ TOX := $(VENV_DIR)/bin/tox
 # These can be overridden in the root Makefile.
 TOX_LINT_ARGS ?=
 TOX_UNIT_ARGS ?=
-TOX_INTEGRATION_ARGS ?=
+TOX_INTEGRATION_ARGS ?= --charm-file=./$(CHARM_DYNAMIC_ARTIFACT) --synapse-image=$(ROCK_IMAGE)
 
 INTEGRATION_TEST_ENV ?= \
 	CHARM_FILE=./$(CHARM_DYNAMIC_ARTIFACT) \

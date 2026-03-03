@@ -6,8 +6,9 @@
 # ==============================================================================
 
 ROCKCRAFT_PACK_CMD 	:= rockcraft pack
+SKOPEO_CMD 			:= rockcraft.skopeo
 SKOPEO_ARGS 		?= --insecure-policy copy --dest-tls-verify=false
-SKOPEO_COPY_CMD 	:= skopeo $(SKOPEO_ARGS)
+SKOPEO_COPY_CMD 	:= $(SKOPEO_CMD) $(SKOPEO_ARGS)
 K8S_BACKEND ?= microk8s
 
 ##@ ROCK
@@ -27,7 +28,7 @@ $(ROCK_DIR)/$(ROCK_DYNAMIC_ARTIFACT):
 publish-rock: $(ROCK_DIR)/$(ROCK_DYNAMIC_ARTIFACT) check-microk8s-registry ## Push the ROCK OCI image to the registry, if not already present.
 	@$(call msg,"--> Publishing ROCK: $(ROCK_IMAGE)")
 	@{ \
-		if skopeo --insecure-policy inspect --tls-verify=false docker://$(ROCK_IMAGE) >/dev/null 2>&1; then \
+		if $(SKOPEO_CMD) --insecure-policy inspect --tls-verify=false docker://$(ROCK_IMAGE) >/dev/null 2>&1; then \
 			$(call warnmsg, Image $(ROCK_IMAGE) already exists in registry, skipping upload); \
 			exit 0; \
 		fi; \
