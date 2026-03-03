@@ -442,7 +442,7 @@ The CI alignment goal — "same command in CI as locally" — is most cleanly ac
 
 > **Status (as of 2026-03-02):** Not started. All items below are pending. Start at Step 1 of Phase 1 — it unblocks everything else.
 
-The work splits into two sequential phases. Phase 1 must be confirmed working before Phase 2 begins.
+The work now splits into four sequential phases: 1.0 (implementation), 1.5 (non-integration validation), 1.6 (integration/deploy validation), then 2.0 (Vex). Phase 1.6 must be confirmed working before Phase 2 begins.
 
 ---
 
@@ -583,7 +583,42 @@ make build-rock     # produces synapse_rock/synapse_<version>-<hash>_amd64.rock
 make build-charm    # produces synapse_<git-version>_ubuntu-22.04_amd64.charm
 ```
 
-For the deployment targets, verify dry-run behaviour:
+---
+
+### Phase 1.5: Verify All Non-Integration Make Targets
+
+**Goal:** Validate that all non-integration make workflows resolve and execute as expected in the synapse repo.
+
+#### Acceptance criteria for Phase 1.5
+
+Run the following and verify each succeeds:
+
+```bash
+make help
+make lint
+make unit
+make build-rock
+make build-charm
+make clean
+```
+
+This phase explicitly excludes integration/deploy workflows so they can be validated separately in Phase 1.6.
+
+---
+
+### Phase 1.6: Integration and Deployment Verification
+
+**Goal:** Validate integration/deploy orchestration independently from the core make target validation.
+
+#### Acceptance criteria for Phase 1.6
+
+For integration and deployment targets, verify behaviour:
+
+```bash
+make integration   # should orchestrate build-charm + publish-rock + tox-integration
+```
+
+For deployment verification:
 ```bash
 # With juju available and a model set up:
 make setup-juju-model
@@ -594,7 +629,7 @@ make deploy         # should build, publish, deploy, and call deploy-charm-post 
 
 ### Phase 2: Vexify the Makefile Set
 
-**Prerequisite:** Phase 1 complete and verified.  
+**Prerequisite:** Phase 1.6 complete and verified.  
 **Prerequisite:** Vex PR #2 merged.
 
 **Goal:** A `charm-workspace/` directory that bundles the Phase 1 `make/` files and Vex component YAMLs into a workspace. `vex build charm-workspace/` produces the `pfe-workflow` binary. That binary, when invoked from any charm repo containing `charm.env`, provides the full developer CLI.

@@ -15,7 +15,7 @@ K8S_BACKEND ?= microk8s
 
 .check-rockcraft:
 	@command -v rockcraft >/dev/null 2>&1 || \
-		$(call errmsg,"rockcraft not found. Install with: snap install rockcraft --classic")
+		( $(call errmsg,"rockcraft not found. Install with: snap install rockcraft --classic") )
 
 build-rock: .check-rockcraft $(ROCK_DIR)/$(ROCK_DYNAMIC_ARTIFACT) ## Build the ROCK OCI image.
 

@@ -12,7 +12,7 @@ CHARMCRAFT_PACK_CMD 	:= charmcraft pack --bases-index=$(CHARM_BASE_INDEX)
 
 .check-charmcraft:
 	@command -v charmcraft >/dev/null 2>&1 || \
-		$(call errmsg,"charmcraft not found. Install with: snap install charmcraft --classic")
+		( $(call errmsg,"charmcraft not found. Install with: snap install charmcraft --classic") )
 
 build-charm: .check-charmcraft $(CHARM_DYNAMIC_ARTIFACT) ## Build the charm if it's out of date.
 
