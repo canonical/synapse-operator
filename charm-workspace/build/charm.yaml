@@ -3,3 +3,31 @@ description: "Build the charm"
 runtime: make
 script: ../make/common.mk
 target: build-charm
+args:
+  - name: charm-name
+    type: string
+    env: CHARM_NAME
+    envbind: CHARM_NAME
+    help: "Charm name used for artifact naming"
+  - name: charm-version
+    type: string
+    env: CHARM_VERSION
+    envbind: CHARM_VERSION
+    help: "Charm version tag"
+  - name: charm-platform
+    type: string
+    env: CHARM_PLATFORM
+    envbind: CHARM_PLATFORM
+    help: "Charm platform (e.g. amd64)"
+  - name: charm-base-index
+    type: int
+    env: CHARM_BASE_INDEX
+    envbind: CHARM_BASE_INDEX
+    help: "Base index from charmcraft.yaml"
+  - name: charmcraft-file
+    type: string
+    env: CHARMCRAFT_FILE
+    envbind: CHARMCRAFT_FILE
+    help: "Path to charmcraft.yaml"
+dependencies:
+  bins: [make, yq, charmcraft]

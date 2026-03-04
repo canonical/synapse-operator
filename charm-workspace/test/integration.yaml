@@ -24,3 +24,5 @@ args:
     env: CHARM_VERSION
     envbind: CHARM_VERSION
     help: "Override the charm version tag (default: git describe)"
+dependencies:
+  bins: [make, python3, yq, charmcraft, rockcraft, juju]

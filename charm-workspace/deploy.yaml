@@ -3,3 +3,51 @@ description: "Build, publish, and deploy the charm"
 runtime: make
 script: make/common.mk
 target: deploy
+args:
+  - name: juju-model-name
+    type: string
+    env: JUJU_MODEL_NAME
+    envbind: JUJU_MODEL_NAME
+    help: "Juju model name used for deployment"
+  - name: juju-logging-config
+    type: string
+    env: JUJU_LOGGING_CONFIG
+    envbind: JUJU_LOGGING_CONFIG
+    help: "Juju model logging-config value applied by setup-juju-model"
+  - name: oci-resource-name
+    type: string
+    env: OCI_RESOURCE_NAME
+    envbind: OCI_RESOURCE_NAME
+    help: "Charm OCI resource name for image attachment"
+  - name: charm-version
+    type: string
+    env: CHARM_VERSION
+    envbind: CHARM_VERSION
+    help: "Charm version tag override"
+  - name: charm-base-index
+    type: int
+    env: CHARM_BASE_INDEX
+    envbind: CHARM_BASE_INDEX
+    help: "Base index from charmcraft.yaml"
+  - name: charmcraft-file
+    type: string
+    env: CHARMCRAFT_FILE
+    envbind: CHARMCRAFT_FILE
+    help: "Path to charmcraft.yaml"
+  - name: container-registry
+    type: string
+    env: CONTAINER_REGISTRY
+    envbind: CONTAINER_REGISTRY
+    help: "Target container registry"
+  - name: skopeo-cmd
+    type: string
+    env: SKOPEO_CMD
+    envbind: SKOPEO_CMD
+    help: "Skopeo command override for publish step"
+  - name: skopeo-args
+    type: string
+    env: SKOPEO_ARGS
+    envbind: SKOPEO_ARGS
+    help: "Additional skopeo arguments"
+dependencies:
+  bins: [make, yq, charmcraft, rockcraft, juju]

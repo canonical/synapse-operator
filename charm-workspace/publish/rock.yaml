@@ -3,3 +3,36 @@ description: "Publish the ROCK OCI image"
 runtime: make
 script: ../make/common.mk
 target: publish-rock
+args:
+  - name: container-registry
+    type: string
+    env: CONTAINER_REGISTRY
+    envbind: CONTAINER_REGISTRY
+    help: "Target container registry"
+  - name: skopeo-cmd
+    type: string
+    env: SKOPEO_CMD
+    envbind: SKOPEO_CMD
+    help: "Skopeo command override"
+  - name: skopeo-args
+    type: string
+    env: SKOPEO_ARGS
+    envbind: SKOPEO_ARGS
+    help: "Extra skopeo arguments"
+  - name: k8s-backend
+    type: string
+    env: K8S_BACKEND
+    envbind: K8S_BACKEND
+    help: "Container backend used by force-publish cleanup"
+  - name: container-cli
+    type: string
+    env: CONTAINER_CLI
+    envbind: CONTAINER_CLI
+    help: "Container CLI used for force-publish cleanup"
+  - name: registry-check-target
+    type: string
+    env: REGISTRY_CHECK_TARGET
+    envbind: REGISTRY_CHECK_TARGET
+    help: "Make target used to validate registry readiness"
+dependencies:
+  bins: [make, yq, rockcraft]
