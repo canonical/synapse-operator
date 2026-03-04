@@ -1,0 +1,5 @@
+command: "build rock"
+description: "Build the ROCK OCI image"
+runtime: make
+script: ../make/common.mk
+target: build-rock

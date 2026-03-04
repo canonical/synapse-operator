@@ -24,5 +24,5 @@ deploy-charm-post:
 # Makefile common logic
 # ==============================================================================
 
-MAKE_DIR := make
+MAKE_DIR := charm-workspace/make
 include $(MAKE_DIR)/common.mk
