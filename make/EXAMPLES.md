@@ -30,16 +30,21 @@ LINT_TARGETS="tox-lint" make lint
 
 ## 4) Integration: run only a focused subset
 
-Example using suite-specific pytest options through `TOX_INTEGRATION_ARGS`:
+Example using split integration channels:
 
 ```bash
-TOX_INTEGRATION_ARGS="--charm-file=./my-charm_1.2.3_ubuntu-22.04_amd64.charm --synapse-image=localhost:32000/my-charm:1.2.3-abcd123 -k test_active" make tox-integration
+TOX_INTEGRATION_PROJECT_ARGS="--charm-file=./my-charm_1.2.3_ubuntu-22.04_amd64.charm --synapse-image=localhost:32000/my-charm:1.2.3-abcd123" \
+TOX_INTEGRATION_FILTER="test_active" \
+TOX_INTEGRATION_EXTRA_ARGS="--maxfail=1 -x" \
+make tox-integration
 ```
 
 Minimal smoke pattern used during validation:
 
 ```bash
-TOX_INTEGRATION_ARGS="--charm-file=./<artifact>.charm --synapse-image=<registry>/<image>:<tag> -k test_synapse_is_up" make integration
+TOX_INTEGRATION_PROJECT_ARGS="--charm-file=./<artifact>.charm --synapse-image=<registry>/<image>:<tag>" \
+TOX_INTEGRATION_FILTER="test_synapse_is_up" \
+make integration
 ```
 
 ## 5) Deploy in a specific model
@@ -93,7 +98,7 @@ make build-rock ROCK_IMAGE_TAG=1.2.3-dev
 Wrapper CLIs should call make targets and pass configuration via env/args, for example:
 
 ```bash
-TOX_INTEGRATION_ARGS="-k test_active" make tox-integration
+TOX_INTEGRATION_FILTER="test_active" make tox-integration
 JUJU_MODEL_NAME=ci-model make setup-juju-model
 JUJU_MODEL_NAME=ci-model make deploy
 ```

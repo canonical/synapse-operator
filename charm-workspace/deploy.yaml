@@ -1,0 +1,5 @@
+command: deploy
+description: "Build, publish, and deploy the charm"
+runtime: make
+script: make/common.mk
+target: deploy

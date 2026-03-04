@@ -112,7 +112,10 @@ Validation targets:
 - Generic argument pass-through variables:
   - `TOX_LINT_ARGS`
   - `TOX_UNIT_ARGS`
-  - `TOX_INTEGRATION_ARGS`
+  - `TOX_INTEGRATION_PROJECT_ARGS` (project defaults from `.env`, e.g. charm/image args)
+  - `TOX_INTEGRATION_FILTER` (maps to `-k` filter expression)
+  - `TOX_INTEGRATION_EXTRA_ARGS` (user-supplied extra pytest args)
+  - `TOX_INTEGRATION_ARGS` (composed final args; can still be overridden directly)
 - Generic env for integration runs:
   - `CHARM_FILE`, `ROCK_IMAGE`, `OCI_RESOURCE_NAME`, `JUJU_DEPLOY_BASE`
 
@@ -127,7 +130,7 @@ Shared makefiles should remain generic by following these rules:
 
 1. Project-specific names/resources stay in root `Makefile` variables.
 2. Project-specific behavior uses hook overrides (`deploy-charm-pre/post`) or external scripts called by those hooks.
-3. Test selection and suite-specific flags are passed via `TOX_*_ARGS`, not hardcoded in shared modules.
+3. Test selection and suite-specific flags are passed via `TOX_*_ARGS` / integration arg channels, not hardcoded in shared modules.
 4. Backend/tooling assumptions are configurable via variables (`SKOPEO_CMD`, `K8S_BACKEND`, `CONTAINER_CLI`, `REGISTRY_CHECK_TARGET`, etc.).
 
 For concrete commands, see `make/EXAMPLES.md`.

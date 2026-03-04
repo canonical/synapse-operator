@@ -1,0 +1,5 @@
+command: "test unit"
+description: "Run unit tests"
+runtime: make
+script: ../make/common.mk
+target: tox-unit

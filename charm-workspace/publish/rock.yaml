@@ -1,0 +1,5 @@
+command: "publish rock"
+description: "Publish the ROCK OCI image"
+runtime: make
+script: ../make/common.mk
+target: publish-rock

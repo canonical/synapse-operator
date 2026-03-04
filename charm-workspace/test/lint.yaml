@@ -1,0 +1,5 @@
+command: "test lint"
+description: "Run lint checks"
+runtime: make
+script: ../make/common.mk
+target: tox-lint

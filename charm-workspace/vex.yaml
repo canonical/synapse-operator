@@ -1,0 +1,7 @@
+name: pfe-workflow
+description: Canonical charm development CLI
+version: 1.0.0
+env_file: charm.env
+version_file: .charm-version
+dependencies:
+  bins: [make, yq, charmcraft, rockcraft, juju]
