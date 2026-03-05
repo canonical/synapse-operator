@@ -102,11 +102,12 @@ address). Run:
 juju status traefik-k8s
 ```
 
-In the `Unit` section, copy the `Address` value of `traefik-k8s/0`, then add
+In the **`Unit`** section, copy the `Address` value of `traefik-k8s/0`, then add
 it to `/etc/hosts`:
 
 ```bash
-echo "<traefik-unit-ip> synapse-tutorial-synapse.juju.local" | sudo tee -a /etc/hosts
+TRAEFIK_UNIT_IP=$(juju status --format json | jq -r '.applications["traefik-k8s"].units | to_entries[0].value.address')
+echo "$TRAEFIK_UNIT_IP synapse-tutorial-synapse.juju.local" | sudo tee -a /etc/hosts
 ```
 
 Then verify access:
