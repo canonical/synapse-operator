@@ -221,6 +221,12 @@ the welcome page.
 Well done! You've successfully completed the Synapse tutorial. To remove the
 model environment you created during this tutorial, use the following command.
 
-```
+<!-- SPREAD SKIP -->
+```bash
 juju destroy-model synapse-tutorial
 ```
+<!-- SPREAD SKIP END -->
+
+<!-- SPREAD
+juju destroy-model synapse-tutorial --release-storage --no-prompt --no-wait
+-->
