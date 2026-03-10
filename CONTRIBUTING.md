@@ -3,7 +3,7 @@
 To contribute to this charm, start with a working Juju/Charmcraft/Rockcraft setup:
 <https://juju.is/docs/sdk/dev-setup>.
 
-This guide documents the **vanilla workflow** for `tox`, `charmcraft`, `rockcraft`, and `juju` commands.
+This guide documents workflow for `tox`, `charmcraft`, `rockcraft`, and `juju` commands.
 
 ## 1) Developer environment
 
@@ -66,7 +66,7 @@ tox -e static       # bandit
 tox -e src-docs     # regenerate src docs
 ```
 
-## 4) Integration tests (vanilla)
+## 4) Integration tests
 
 ### Required integration inputs
 
@@ -135,7 +135,7 @@ tox -e integration -- --use-existing
 When using `--use-existing`, ensure the model already contains the expected apps (notably `synapse`, and typically `postgresql-k8s` for DB-backed tests).  
 If required apps are missing, tests that rely on them will fail.
 
-## 5) Deploy locally with Juju (vanilla)
+## 5) Deploy locally with Juju
 
 ```bash
 JUJU_MODEL_NAME="synapse-dev"
