@@ -25,7 +25,7 @@ Multipass instance run ``multipass info my-juju-vm``.
 To manage resources effectively and to separate this tutorial's workload from
 your usual work, create a new model using the following command.
 
-```
+```bash
 juju add-model synapse-tutorial
 ```
 
@@ -33,7 +33,8 @@ juju add-model synapse-tutorial
 Synapse requires connections to PostgreSQL. Deploy both charm applications.
 
 ### Deploy and integrate the charms
-```
+
+```bash
 juju deploy postgresql-k8s --trust
 juju deploy synapse
 ```
@@ -42,20 +43,22 @@ Run `juju status` to see the current status of the deployment. The Synapse
 unit should be in a `blocked` status.
 
 Set the server name by running the following command:
-```
+
+```bash
 juju config synapse server_name=synapse-tutorial-synapse.juju.local
 ```
 
 Run `juju status` again to see that the message has changed:
 
 <!-- SPREAD SKIP -->
-```
+```bash
 synapse/0*                 waiting   idle   10.1.74.70             Waiting for database availability
 ```
 <!-- SPREAD SKIP END -->
 
 Provide the integration between Synapse and PostgreSQL:
-```
+
+```bash
 juju integrate synapse:database postgresql-k8s
 ```
 
@@ -64,17 +67,20 @@ juju wait-for application synapse --query='status=="active"' --timeout 10m
 juju wait-for application postgresql-k8s --query='status=="active"' --timeout 10m
 -->
 
-Run `juju status` and wait until the Application status is `Active` as the
+Run `juju status` and wait until the both applications become `Active` as the
 following example:
 
 <!-- SPREAD SKIP -->
-```
-App                       Version                       Status  Scale  Charm                     Channel  Rev  Address         Exposed  Message
-synapse                 3.2                           active      1  synapse                              17  10.152.183.68   no
+```bash
+Model             Controller          Cloud/Region        Version  SLA          Timestamp
+synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  18:10:46Z
+
+App             Version  Status  Scale  Charm           Channel        Rev  Address         Exposed  Message
+postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable      495  10.152.183.23   no       
+synapse                  active      1  synapse         2/edge         871  10.152.183.189  no   
 ```
 <!-- SPREAD SKIP END -->
 
-The deployment is complete when the status is `Active`.
 
 ## Integrate with Traefik
 
@@ -86,12 +92,13 @@ If you want to make Synapse charm available to external clients, you need to
 deploy the Traefik charm and integrate Synapse with it.
 
 ### Deploy the Traefik charm
-```
+
+```bash
 juju deploy traefik-k8s --trust
 ```
 
-Configure `external_hostname` as the same set for Synapse and the routing_mode:
-```
+Configure `external_hostname` (same set for Synapse) and `routing_mode`:
+```bash
 juju config traefik-k8s external_hostname=juju.local
 juju config traefik-k8s routing_mode=subdomain
 ```
@@ -100,7 +107,8 @@ With these settings, the Synapse hostname will have the Juju model name
 appended to the front like `synapse-tutorial-synapse.juju.local`. 
 
 Provide integration between Synapse and Traefik:
-```
+
+```bash
 juju integrate synapse traefik-k8s
 ```
 
@@ -114,7 +122,7 @@ Traefik charm to the DNS entry you’re setting up. Getting the IP address can b
 done using `juju status`.
 
 <!-- SPREAD SKIP -->
-```
+```bash
 Model             Controller          Cloud/Region        Version  SLA          Timestamp
 synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  18:10:46Z
 
@@ -130,9 +138,12 @@ traefik-k8s/0*     active    idle   10.1.233.207         Serving at http://juju.
 ```
 <!-- SPREAD SKIP END -->
 
-<!-- SPREAD
-TRAEFIK_APP_IP=$(juju status --format json | jq -r '.applications."traefik-k8s".units."traefik-k8s/0".address')
--->
+In the **`Unit`** section, copy the `Address` value of `traefik-k8s/0`:
+
+```bash
+TRAEFIK_UNIT_IP=$(juju status --format json | jq -r '.applications["traefik-k8s"].units | to_entries[0].value.address')
+echo "$TRAEFIK_UNIT_IP synapse-tutorial-synapse.juju.local" | sudo tee -a /etc/hosts
+```
 
 You can configure the resolution of "synapse-tutorial-synapse.juju.local" by adding an
 "A" record with the IP address "10.1.233.207" to the appropriate zone in your
@@ -146,32 +157,40 @@ In case you don’t have access to a DNS: The browser uses entries in the
 `/etc/hosts` file to override what is returned by a DNS server. So, to resolve
 it to your Traefik IP, open the `/etc/hosts` file and add the following line
 accordingly:
-```
-10.1.233.207 synapse-tutorial-synapse.juju.local
+
+```bash
+echo "$TRAEFIK_UNIT_IP synapse-tutorial-synapse.juju.local" | sudo tee -a /etc/hosts
 ```
 
-> Optional: run `echo "10.1.233.207 synapse-tutorial-synapse.juju.local" >> /etc/hosts`
-to redirect the output of the command `echo` to the end of the file `/etc/hosts`.
+Then verify access:
 
-After that, visit http://synapse-tutorial-synapse.juju.local in a browser and you'll be
-presented with a screen with the following text: "It works! Synapse is running".
+```bash
+curl -H 'Host: synapse-tutorial-synapse.juju.local' http://synapse-tutorial-synapse.juju.local/
+```
+
+After that, visit `http://synapse-tutorial-synapse.juju.local` in your browser.
+You should see: "It works! Synapse is running".
 
 ## Create a user
 Create a user by running the following command:
+
+```bash
+juju run synapse/0 register-user username=alice admin=no
 ```
-juju run-action synapse/0 register-user username=alice password=<secure-password> admin=no
-```
+
+The action output includes `user-password: <password>`. Save that password for
+the next step.
 
 ## Access via Element Desktop
 
 Follow the [instructions](https://element.io/download) to
 install Element Desktop.
 
-Open it and click on “Sign in”. Then click on “Edit” to provide which server you
- want to use (synapse-tutorial-synapse.juju.local).
+Open Element and click **Sign in**. Click **Edit** and set the homeserver to
+`synapse-tutorial-synapse.juju.local`.
 
-Now, you can fill in the username and password fields accordingly to the action
-output. Then you should see a welcome page and it's ready to chat.
+Fill in the username and password from the previous step. You should then see
+the welcome page.
 
 ## Clean up the Environment
 
