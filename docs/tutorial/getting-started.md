@@ -228,5 +228,5 @@ juju destroy-model synapse-tutorial
 <!-- SPREAD SKIP END -->
 
 <!-- SPREAD
-juju destroy-model synapse-tutorial --release-storage --no-prompt --no-wait
+juju destroy-model synapse-tutorial --release-storage --no-prompt
 -->
