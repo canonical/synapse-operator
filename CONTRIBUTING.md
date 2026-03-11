@@ -5,7 +5,7 @@ To contribute to this charm, start with a working Juju/Charmcraft/Rockcraft setu
 
 This guide documents workflow for `tox`, `charmcraft`, `rockcraft`, and `juju` commands.
 
-## 1) Developer environment
+## Developer environment
 
 Use tox-managed environments:
 
@@ -21,7 +21,7 @@ tox devenv -e integration
 source venv/bin/activate
 ```
 
-## 2) Build artifacts manually
+## Build artifacts manually
 
 ### Build the charm
 
@@ -48,7 +48,7 @@ SKOPEO_BIN="$(command -v skopeo || command -v rockcraft.skopeo)"
   "oci-archive:${ROCK_FILE}" "docker://${ROCK_IMAGE}"
 ```
 
-## 3) Run tox environments
+## Run tox environments
 
 Available environments include:
 
@@ -66,7 +66,7 @@ tox -e static       # bandit
 tox -e src-docs     # regenerate src docs
 ```
 
-## 4) Integration tests
+## Integration tests
 
 ### Required integration inputs
 
@@ -135,7 +135,7 @@ tox -e integration -- --use-existing
 When using `--use-existing`, ensure the model already contains the expected apps (notably `synapse`, and typically `postgresql-k8s` for DB-backed tests).  
 If required apps are missing, tests that rely on them will fail.
 
-## 5) Deploy locally with Juju
+## Deploy locally with Juju
 
 ```bash
 JUJU_MODEL_NAME="synapse-dev"
@@ -152,7 +152,7 @@ Optional common follow-up:
 juju config -m "${JUJU_MODEL_NAME}" synapse server_name=my.synapse.local
 ```
 
-## 6) Optional pre-commit hook for src docs
+## Optional pre-commit hook for src docs
 
 ```bash
 echo -e "tox -e src-docs\ngit add src-docs\n" > .git/hooks/pre-commit
