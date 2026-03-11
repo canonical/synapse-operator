@@ -113,7 +113,7 @@ deploy the Traefik charm and integrate Synapse with it.
 juju deploy traefik-k8s --trust
 ```
 
-Wait until traefik is active:
+Wait until Traefik is active:
 
 ```bash
 juju wait-for application traefik-k8s --query='status=="active"' --timeout 10m
@@ -125,7 +125,7 @@ juju config traefik-k8s external_hostname=juju.local
 juju config traefik-k8s routing_mode=subdomain
 ```
 
-Wait until traefik has completed it's configuration change:
+Wait until Traefik has completed its configuration change:
 
 ```bash
 juju wait-for application traefik-k8s --query='status=="active"' --timeout 10m
@@ -140,7 +140,7 @@ Provide integration between Synapse and Traefik:
 juju integrate synapse traefik-k8s
 ```
 
-Wait until traefik and synapse have completed the integration request:
+Wait until Traefik and synapse have completed the integration request:
 
 ```bash
 juju wait-for application synapse --query='status=="active"' --timeout 10m
