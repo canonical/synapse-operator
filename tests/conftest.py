@@ -34,4 +34,9 @@ def pytest_addoption(parser: Parser) -> None:
         default=False,
         help="This parameter will skip deploy of Synapse and PostgreSQL",
     )
-    parser.addoption("--localstack-address", action="store", default=os.getenv("LOCALSTACK_ADDRESS"))
+    parser.addoption(
+        "--localstack-address", 
+        action="store", 
+        default=os.getenv("LOCALSTACK_ADDRESS"),
+        help="Address of the LocalStack instance to be used in tests",
+    )
