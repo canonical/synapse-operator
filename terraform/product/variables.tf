@@ -221,7 +221,7 @@ variable "lego_secret" {
   }
 }
 
-variable "model" {
+variable "model_uuid" {
   description = "Partial overrides for the model configuration."
   type        = map(string)
   default     = {}

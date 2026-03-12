@@ -23,6 +23,7 @@
             ]
         }
     },
+  "ignorePaths": [],
   "regexManagers": [
     {
       "fileMatch": ["(^|/)rockcraft.yaml$"],
@@ -53,10 +54,9 @@
     },
     {
       "fileMatch": ["(^|/)main.tftest.hcl$"],
-      "matchStrings": ["# renovate: depName=\"(?<packageName>[^\"]+)\"\\s*\\n\\s*(?<fieldName>[a-zA-Z0-9_]+)\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "matchStrings": ["# renovate: depName=\"(?<packageName>[^\"]+)\"\\s*\\n\\s*(?<fieldName>[a-zA-Z0-9_]+)\\s*=\\s*(?<currentValue>\\d+)"],
       "versioningTemplate": "semver-coerced",
-      "datasourceTemplate": "custom.charmhub",
-      "matchStringsStrategy": "recursive"
+      "datasourceTemplate": "custom.charmhub"
     },
 	{
       "fileMatch": ["(^|/)src/charm\\.py$"],
@@ -83,16 +83,6 @@
       "enabled": true
     },
     {
-      "matchDatasources": ["terraform-provider"],
-      "matchPackageNames": ["juju/juju"],
-      "enabled": true
-    },
-	{
-      "matchPackageNames": ["boto3"],
-      "matchUpdateTypes": ["patch"],
-	  "enabled": false
-    },
-	{
       "matchDatasources": ["github-releases"],
       "labels": ["workload-update"]
     }

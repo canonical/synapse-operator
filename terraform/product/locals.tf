@@ -100,7 +100,7 @@ locals {
     constraints  = "root-disk-source=volume"
   }
 
-  model = merge(local.model_defaults, var.model)
+  model = merge(local.model_defaults, var.model_uuid)
 
   offer_urls_defaults = {}
   offer_urls          = merge(local.offer_urls_defaults, var.offer_urls)
