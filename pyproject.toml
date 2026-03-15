@@ -22,7 +22,7 @@ dependencies = [
   "deepdiff==8.6.1",
   "jinja2==3.1.6",
   "jsonschema==4.26.0",
-  "ops==3.5.2",
+  "ops==3.6.0",
   "psycopg2-binary==2.9.11",
   "pydantic==2.12.5",
   "python-ulid==3.1.0",
