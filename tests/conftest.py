@@ -35,8 +35,8 @@ def pytest_addoption(parser: Parser) -> None:
         help="This parameter will skip deploy of Synapse and PostgreSQL",
     )
     parser.addoption(
-        "--localstack-address",
+        "--s3-address",
         action="store",
-        default=os.getenv("LOCALSTACK_ADDRESS"),
-        help="Address of the LocalStack instance to be used in tests",
+        default=os.getenv("S3_ADDRESS"),
+        help="Address of the S3-compatible service (MicroCeph radosgw) to be used in tests",
     )
