@@ -28,7 +28,6 @@ from tests.integration.helpers import get_access_token, register_user
 ACTIVE_STATUS_NAME = typing.cast(str, ActiveStatus.name)  # type: ignore
 WAITING_STATUS_NAME = "waiting"
 
-## TODO: Remove this line, its only there to trigger the integration tests workflow
 
 @pytest_asyncio.fixture(scope="module", name="server_name")
 async def server_name_fixture() -> str:
