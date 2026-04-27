@@ -19,9 +19,11 @@ Synapse instance via Element Desktop application.
 * Juju 3 installed and bootstrapped to a MicroK8s controller. You can accomplish
 this process by using a [Multipass](https://multipass.run/) VM as outlined in this guide: [Set up / Tear down your test environment](https://juju.is/docs/juju/set-up--tear-down-your-test-environment)
 
-:warning: When using a Multipass VM, make sure to replace IP addresses with the
+```{warning}
+When using a Multipass VM, make sure to replace IP addresses with the
 VM IP in steps that assume you're running locally. To get the IP address of the
 Multipass instance run ``multipass info my-juju-vm``.
+```
 
 ## Set up a Tutorial Model
 
@@ -61,7 +63,9 @@ Running `juju status` again, you will see Synapse move into `maintenance` status
 
 <!-- SPREAD SKIP -->
 
-```bash
+```{terminal}
+:output-only:
+
 Unit               Workload     Agent      Address      Ports  Message
 synapse/0*         maintenance  executing  10.1.65.170         Configuring Synapse
 ```
@@ -84,7 +88,9 @@ Running `juju status`, you will see Synapse and Postgres both start executing th
 
 <!-- SPREAD SKIP -->
 
-```bash
+```{terminal}
+:output-only:
+
 Model             Controller          Cloud/Region        Version  SLA          Timestamp
 synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  14:58:26-04:00
 
@@ -108,7 +114,7 @@ juju wait-for application postgresql-k8s --query='status=="active"' --timeout 10
 
 ## Integrate with Traefik
 
-The [Traefik charm](https://github.com/canonical/traefik-k8s-operator) exposes
+The {ref}`Traefik charm <traefik-k8s-charm:index>` exposes
 Juju applications to the outside of a Kubernetes cluster, without relying on the
 ingress resource of Kubernetes.
 
@@ -162,7 +168,9 @@ done using `juju status`.
 
 <!-- SPREAD SKIP -->
 
-```bash
+```{terminal}
+:output-only:
+
 Model             Controller          Cloud/Region        Version  SLA          Timestamp
 synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  18:10:46Z
 
