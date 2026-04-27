@@ -24,7 +24,7 @@ For DevOps or SRE teams this charm will make operating Synapse simple and straig
 Synapse is an open-source project that welcomes community contributions, suggestions, fixes and constructive feedback.
 
 - [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
-- [Join the Discourse forum](https://discourse.charmhub.io/tag/synapse)
+- [Join the Discourse forum](https://discourse.charmhub.io/)
 - [Discuss on the Matrix chat service](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 - [Contribute and report bugs](https://github.com/canonical/synapse-operator/issues)
 - Check the [release notes](https://github.com/canonical/synapse-operator/releases)
