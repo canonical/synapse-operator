@@ -17,7 +17,7 @@ For DevOps or SRE teams this charm will make operating Synapse simple and straig
 | | |
 |--|--|
 | {ref}`Tutorials <tutorial_index>` </br> Get started - a hands-on introduction to using the charm for new users | {ref}`How-to guides <how_to_index>` </br> Step-by-step guides covering key operations and common tasks |
-| {ref}`Reference <reference_index>` </br> Technical information - specifications, APIs, architecture | {ref}`Explanation <explanation_index>` </br> Concepts - discussion and clarification of key topics |
+| {ref}`Reference <reference_index>` </br> Technical information - specifications, APIs, architecture |  |
 
 ## Project and community
 
@@ -26,7 +26,7 @@ Synapse is an open-source project that welcomes community contributions, suggest
 - [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
 - [Join the Discourse forum](https://discourse.charmhub.io/tag/synapse)
 - [Discuss on the Matrix chat service](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-- Contribute and report bugs to [the Synapse operator](https://github.com/canonical/synapse-operator)
+- [Contribute and report bugs](https://github.com/canonical/synapse-operator/issues)
 - Check the [release notes](https://github.com/canonical/synapse-operator/releases)
 
 ```{toctree}
