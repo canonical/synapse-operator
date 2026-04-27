@@ -4,6 +4,7 @@
 """Fixtures for Synapse charm integration tests."""
 
 import json
+import socket
 import typing
 from secrets import token_hex
 
@@ -266,24 +267,37 @@ async def access_token_fixture(
     return get_access_token(synapse_ip, user_username, user_password)
 
 
-@pytest.fixture(scope="module", name="localstack_address")
-def localstack_address_fixture(pytestconfig: Config):
-    """Provides localstack IP address to be used in the integration test."""
-    address = pytestconfig.getoption("--localstack-address")
-    if not address:
-        raise ValueError("--localstack-address argument is required for selected test cases")
-    yield address
+def _host_ip() -> str | None:
+    """Return the host's primary outbound IP, reachable from microk8s pods."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None
+
+
+@pytest.fixture(scope="module", name="s3_address")
+def s3_address_fixture(pytestconfig: Config):
+    """Provides the S3 service IP address to be used in integration tests.
+
+    Defaults to the host's primary IP so microk8s pods can reach radosgw
+    on the runner without needing --s3-address to be passed explicitly.
+    """
+    yield pytestconfig.getoption("--s3-address") or _host_ip()
 
 
 @pytest.fixture(scope="module", name="s3_backup_configuration")
-def s3_backup_configuration_fixture(localstack_address: str) -> dict:
+def s3_backup_configuration_fixture(s3_address: str) -> dict:
     """Return the S3 configuration to use for backups
 
     Returns:
         The S3 configuration as a dict
     """
     return {
-        "endpoint": f"http://{localstack_address}:4566",
+        "endpoint": f"http://{s3_address}:7480",
         "bucket": "backups-bucket",
         "path": "/synapse",
         "region": "us-east-1",
@@ -292,15 +306,15 @@ def s3_backup_configuration_fixture(localstack_address: str) -> dict:
 
 
 @pytest.fixture(scope="module", name="s3_backup_credentials")
-def s3_backup_credentials_fixture(localstack_address: str) -> dict:
+def s3_backup_credentials_fixture() -> dict:
     """Return the S3 AWS credentials to use for backups
 
     Returns:
         The S3 credentials as a dict
     """
     return {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
+        "access-key": "my-lovely-key",
+        "secret-key": "this-is-very-secret",
     }
 
 
@@ -395,14 +409,14 @@ async def redis_fixture(
 
 
 @pytest.fixture(scope="function", name="s3_media_configuration")
-def s3_media_configuration_fixture(localstack_address: str) -> dict:
+def s3_media_configuration_fixture(s3_address: str) -> dict:
     """Return the S3 configuration to use for media
 
     Returns:
         The S3 configuration as a dict
     """
     return {
-        "endpoint": f"http://{localstack_address}:4566",
+        "endpoint": f"http://{s3_address}:7480",
         "bucket": "synapse-media-bucket",
         "path": "/media",
         "region": "us-east-1",
@@ -411,15 +425,15 @@ def s3_media_configuration_fixture(localstack_address: str) -> dict:
 
 
 @pytest.fixture(scope="module", name="s3_media_credentials")
-def s3_media_credentials_fixture(localstack_address: str) -> dict:
+def s3_media_credentials_fixture() -> dict:
     """Return the S3 AWS credentials to use for media
 
     Returns:
         The S3 credentials as a dict
     """
     return {
-        "access-key": token_hex(16),
-        "secret-key": token_hex(16),
+        "access-key": "my-lovely-key",
+        "secret-key": "this-is-very-secret",
     }
 
 
