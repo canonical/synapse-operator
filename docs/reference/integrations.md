@@ -4,14 +4,14 @@
 
 ## `backup`
 
-_Interface_: s3
+_Interface_: `s3`
 
 _Supported charms_: [s3-integrator](https://charmhub.io/s3-integrator/)
 
 In order to perform backups, Synapse has to be integrated with the s3-integrator charm using the
 endpoint backup. Backups will be stored, listed and recovered from the location
 indicated in the S3 compatible object storage provider configuration provided by the integration.
-The Synapse charm will back up the media files, signing keys and sqlite database file if applicable.
+The Synapse charm will back up the media files, signing keys and SQLite database file if applicable.
 If Synapse database integration is used, the Synapse charm will not back up the related database.
 
 Example backup integrate command: 
@@ -22,7 +22,7 @@ juju integrate synapse:backup s3-integrator
 
 ## `db`
 
-_Interface_: pgsql
+_Interface_: `pgsql`
 
 _Supported charms_: [postgresql-k8s](https://charmhub.io/postgresql-k8s),
 [postgresql](https://charmhub.io/postgresql)
@@ -39,7 +39,7 @@ juju integrate synapse postgresql-k8s:db
 
 ## `grafana-dashboard`
 
-_Interface_: grafana-dashboard
+_Interface_: `grafana-dashboard`
 
 _Supported charms_: [grafana-k8s](https://charmhub.io/grafana-k8s)
 
@@ -66,7 +66,7 @@ juju integrate synapse grafana-dashboard`
 
 ## `ingress`
 
-_Interface_: ingress
+_Interface_: `ingress`
 
 _Supported charms_: [nginx-ingress-integrator](https://charmhub.io/nginx-ingress-integrator),
 [traefik](https://charmhub.io/traefik-k8s)
@@ -84,7 +84,7 @@ juju integrate synapse nginx-ingress-integrator
 
 ## `metrics-endpoint`
 
-_Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape-v0)
+_Interface_: [`prometheus_scrape`](https://charmhub.io/interfaces/prometheus_scrape-v0)
 
 _Supported charms_: [prometheus-k8s](https://charmhub.io/prometheus-k8s)
 
@@ -100,7 +100,7 @@ juju integrate synapse prometheus-k8s
 
 ## `redis`
 
-_Interface_: redis
+_Interface_: `redis`
 
 _Supported charms_: [redis-k8s](https://charmhub.io/redis-k8s)
 
@@ -117,7 +117,7 @@ juju integrate synapse redis-k8s
 
 ## `saml`
 
-_Interface_: saml
+_Interface_: `saml`
 
 _Supported charms_: [saml-integrator](https://charmhub.io/saml-integrator/)
 
@@ -138,7 +138,7 @@ See more information in {ref}`Charm Architecture <reference_charm_architecture>`
 
 ## `smtp`
 
-_Interface_: smtp
+_Interface_: `smtp`
 
 _Supported charms_: [smtp-integrator](https://charmhub.io/smtp-integrator/)
 

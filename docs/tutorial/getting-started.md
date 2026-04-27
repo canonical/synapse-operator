@@ -84,7 +84,7 @@ Provide the integration between Synapse and PostgreSQL:
 juju integrate synapse:database postgresql-k8s
 ```
 
-Running `juju status`, you will see Synapse and Postgres both start executing the integration request.
+Running `juju status`, you will see Synapse and PostgreSQL both start executing the integration request.
 
 <!-- SPREAD SKIP -->
 

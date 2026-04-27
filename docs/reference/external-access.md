@@ -10,7 +10,7 @@ There are two configurations that changes Synapse behavior regarding external ac
 
 - [trusted_key_servers](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#trusted_key_servers): comma separated list of trusted servers to download signing keys from.
 Synapse configuration sets default to matrix.org.
-- [report_stats](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#report_stats): configures whether to report statistics. See [Reporting Homeserver Usage Statistics](https://matrix-org.github.io/synapse/latest/usage/administration/monitoring/reporting_homeserver_usage_statistics.html) in Matrix documentation for information on what data is reported.
+- [report_stats](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#report_stats): configures whether to report statistics. See [Reporting Homeserver Usage Statistics](https://element-hq.github.io/synapse/latest/usage/administration/monitoring/reporting_homeserver_usage_statistics.html) in Matrix documentation for information on what data is reported.
 - enable_irc_bridge: configures whether to enable IRC bridging for Matrix.
 
 ## Federation required
