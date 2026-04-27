@@ -2,7 +2,7 @@
 
 # Integrations
 
-## backup
+## `backup`
 
 _Interface_: s3
 
@@ -20,7 +20,7 @@ Example backup integrate command:
 juju integrate synapse:backup s3-integrator
 ```
 
-## db
+## `db`
 
 _Interface_: pgsql
 
@@ -37,7 +37,7 @@ Example db integrate command:
 juju integrate synapse postgresql-k8s:db
 ```
 
-## grafana-dashboard
+## `grafana-dashboard`
 
 _Interface_: grafana-dashboard
 
@@ -64,7 +64,7 @@ Grafana-dashboard integrate command:
 juju integrate synapse grafana-dashboard`
 ```
 
-## ingress
+## `ingress`
 
 _Interface_: ingress
 
@@ -82,7 +82,7 @@ Example ingress integrate command:
 juju integrate synapse nginx-ingress-integrator
 ```
 
-## metrics-endpoint
+## `metrics-endpoint`
 
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape-v0)
 
@@ -98,7 +98,7 @@ Metrics-endpoint integrate command:
 juju integrate synapse prometheus-k8s
 ```
 
-## redis
+## `redis`
 
 _Interface_: redis
 
@@ -115,7 +115,7 @@ Example redis integrate command:
 juju integrate synapse redis-k8s
 ```
 
-## saml
+## `saml`
 
 _Interface_: saml
 
@@ -134,9 +134,9 @@ Note that `public_baseurl` configuration set the public-facing base URL that
 clients use to access this Homeserver. It's used as `entity_id` if set instead of
 https://server_name.
 
-See more information in {ref}`Charm Architecture <explanation_charm_architecture>`.
+See more information in {ref}`Charm Architecture <reference_charm_architecture>`.
 
-## smtp
+## `smtp`
 
 _Interface_: smtp
 
@@ -158,4 +158,4 @@ is set with the Synapse configuration option `notif_from`.
 For the smtp-integrator, insecure configurations with `transport_security=none` or not
 authenticated connections with `auth_type=none` are not supported.
 
-See more information in {ref}`Charm Architecture <explanation_charm_architecture>`.
+See more information in {ref}`Charm Architecture <reference_charm_architecture>`.

@@ -16,4 +16,5 @@ actions
 configurations
 external-access
 integrations
+charm-architecture
 ```
