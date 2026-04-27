@@ -34,6 +34,5 @@ Synapse is an open-source project that welcomes community contributions, suggest
 tutorial/index
 how-to/index
 reference/index
-explanation/index
 changelog
 ```
