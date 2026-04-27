@@ -1,6 +1,8 @@
+(reference_integrations)=
+
 # Integrations
 
-### backup
+## backup
 
 _Interface_: s3
 
@@ -13,11 +15,12 @@ The Synapse charm will back up the media files, signing keys and sqlite database
 If Synapse database integration is used, the Synapse charm will not back up the related database.
 
 Example backup integrate command: 
+
 ```
 juju integrate synapse:backup s3-integrator
 ```
 
-### db
+## db
 
 _Interface_: pgsql
 
@@ -29,11 +32,12 @@ structured data
 storage for Synapse.
 
 Example db integrate command: 
+
 ```
 juju integrate synapse postgresql-k8s:db
 ```
 
-### grafana-dashboard
+## grafana-dashboard
 
 _Interface_: grafana-dashboard
 
@@ -49,15 +53,18 @@ found as “Synapse Operator” under the General section of the dashboard brows
 persisted upon restart/redeployment of the charm.
 
 Grafana-Prometheus integrate command:
+
 ```
 juju integrate grafana-k8s:grafana-source prometheus-k8s:grafana-source
 ```
+
 Grafana-dashboard integrate command:
+
 ```
 juju integrate synapse grafana-dashboard`
 ```
 
-### ingress
+## ingress
 
 _Interface_: ingress
 
@@ -70,11 +77,12 @@ already deployed. Documentation to enable ingress in MicroK8s can be found in
 [Addon: Ingress](https://microk8s.io/docs/addon-ingress).
 
 Example ingress integrate command: 
+
 ```
 juju integrate synapse nginx-ingress-integrator
 ```
 
-### metrics-endpoint
+## metrics-endpoint
 
 _Interface_: [prometheus_scrape](https://charmhub.io/interfaces/prometheus_scrape-v0)
 
@@ -85,11 +93,12 @@ Synapse. The metrics are exposed in the [open metrics format](https://github.com
 relation becomes active. For more information about the metrics exposed, refer to ["How to monitor Synapse metrics using Prometheus"](https://github.com/matrix-org/synapse/blob/master/docs/metrics-howto.md).
 
 Metrics-endpoint integrate command: 
+
 ```
 juju integrate synapse prometheus-k8s
 ```
 
-### redis
+## redis
 
 _Interface_: redis
 
@@ -101,11 +110,12 @@ If the integration is not present, the charm will be blocked.
 See more information in [Scaling synapse via workers](https://matrix-org.github.io/synapse/latest/workers.html) in documentation repository for Synapse.
 
 Example redis integrate command: 
+
 ```
 juju integrate synapse redis-k8s
 ```
 
-### saml
+## saml
 
 _Interface_: saml
 
@@ -115,6 +125,7 @@ Integrating Synapse with SAML Integrator provides SAML configuration details so
 users can be authenticated in via a SAML server.
 
 Example saml integrate command: 
+
 ```
 juju integrate synapse saml-integrator:saml
 ```
@@ -123,10 +134,9 @@ Note that `public_baseurl` configuration set the public-facing base URL that
 clients use to access this Homeserver. It's used as `entity_id` if set instead of
 https://server_name.
 
-See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
+See more information in {ref}`Charm Architecture <explanation_charm_architecture>`.
 
-
-### smtp
+## smtp
 
 _Interface_: smtp
 
@@ -136,6 +146,7 @@ Integrating Synapse with SMTP Integrator provides SMTP configuration details so
 a smtp server can be used in Synapse.
 
 Example smtp integrate command: 
+
 ```
 juju integrate synapse smtp-integrator:smtp
 ```
@@ -147,4 +158,4 @@ is set with the Synapse configuration option `notif_from`.
 For the smtp-integrator, insecure configurations with `transport_security=none` or not
 authenticated connections with `auth_type=none` are not supported.
 
-See more information in [Charm Architecture](https://charmhub.io/synapse/docs/explanation-charm-architecture).
+See more information in {ref}`Charm Architecture <explanation_charm_architecture>`.

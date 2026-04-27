@@ -1,3 +1,5 @@
+(how_to_horizontally_scale)=
+
 # How to horizontally scale
 
 A Synapse deployment can scale horizontally by running multiple Synapse processes called workers.

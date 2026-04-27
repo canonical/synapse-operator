@@ -1,6 +1,9 @@
+(tutorial_getting_started)=
+
 # Deploy the Synapse charm for the first time
 
 ## What you’ll do
+
 - Deploy the Synapse charm.
 - Integrate with the PostgreSQL K8s charm.
 - Expose the Synapse charm by using Traefik K8s charm.
@@ -30,6 +33,7 @@ juju add-model synapse-tutorial
 ```
 
 ## Deploy the Synapse charm
+
 Synapse requires connections to PostgreSQL. Deploy both charm applications.
 
 ### Deploy and integrate the charms
@@ -56,10 +60,12 @@ juju config synapse server_name=synapse-tutorial-synapse.juju.local
 Running `juju status` again, you will see Synapse move into `maintenance` status.
 
 <!-- SPREAD SKIP -->
+
 ```bash
 Unit               Workload     Agent      Address      Ports  Message
 synapse/0*         maintenance  executing  10.1.65.170         Configuring Synapse
 ```
+
 <!-- SPREAD SKIP END -->
 
 Wait until the Synapse unit is in back to an `active` status:
@@ -77,6 +83,7 @@ juju integrate synapse:database postgresql-k8s
 Running `juju status`, you will see Synapse and Postgres both start executing the integration request.
 
 <!-- SPREAD SKIP -->
+
 ```bash
 Model             Controller          Cloud/Region        Version  SLA          Timestamp
 synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  14:58:26-04:00
@@ -89,6 +96,7 @@ Unit               Workload     Agent      Address      Ports  Message
 postgresql-k8s/0*  active       executing  10.1.65.156         Primary
 synapse/0*         maintenance  executing  10.1.65.170         Configuring Synapse 
 ```
+
 <!-- SPREAD SKIP END -->
 
 Wait until the both applications become `active`:
@@ -120,6 +128,7 @@ juju wait-for application traefik-k8s --query='status=="active"' --timeout 10m
 ```
 
 Configure `external_hostname` (same set for Synapse) and `routing_mode`:
+
 ```bash
 juju config traefik-k8s external_hostname=juju.local
 juju config traefik-k8s routing_mode=subdomain
@@ -152,6 +161,7 @@ Traefik charm to the DNS entry you’re setting up. Getting the IP address can b
 done using `juju status`.
 
 <!-- SPREAD SKIP -->
+
 ```bash
 Model             Controller          Cloud/Region        Version  SLA          Timestamp
 synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  18:10:46Z
@@ -166,13 +176,14 @@ postgresql-k8s/0*  active    idle   10.1.233.203         Primary
 synapse/0*         active    idle   10.1.233.205         
 traefik-k8s/0*     active    idle   10.1.233.207         Serving at http://juju.local
 ```
+
 <!-- SPREAD SKIP END -->
 
-You can configure the resolution of "synapse-tutorial-synapse.juju.local" by adding an
+You can configure the resolution of `synapse-tutorial-synapse.juju.local` by adding an
 "A" record with the **Unit** IP address "10.1.233.207" to the appropriate zone in your
 DNS server's configuration. Save the changes and ensure that DNS caches are
 flushed or DNS services are restarted if necessary. This will allow clients
-querying your DNS server to resolve "synapse-tutorial-synapse.juju.local" to the
+querying your DNS server to resolve `synapse-tutorial-synapse.juju.local` to the
 specified IP address. Note that it might take a few minutes for the DNS changes
 to take effect.
 
@@ -196,6 +207,7 @@ After that, visit `http://synapse-tutorial-synapse.juju.local` in your browser.
 You should see: "It works! Synapse is running".
 
 ## Create a user
+
 Create a user by running the following command:
 
 ```bash
@@ -222,9 +234,11 @@ Well done! You've successfully completed the Synapse tutorial. To remove the
 model environment you created during this tutorial, use the following command.
 
 <!-- SPREAD SKIP -->
+
 ```bash
 juju destroy-model synapse-tutorial
 ```
+
 <!-- SPREAD SKIP END -->
 
 <!-- SPREAD

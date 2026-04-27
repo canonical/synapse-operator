@@ -46,4 +46,6 @@ header:
     - 'synapse_rock/patches/*'
     - 'templates/*'
     - 'uv.lock'
+    - '.readthedocs.yaml'
+    - 'docs/**'
   comment: on-failure
