@@ -1,14 +1,14 @@
 ---
 myst:
   html_meta:
-    "description lang=en": "How-to guides for operating the Synapse K8s charm, including SMTP, backups, and scaling."
+    "description lang=en": "How-to guides for operating the Synapse charm, including SMTP, backups, and scaling."
 ---
 
 (how_to_index)=
 
 # How-to guides
 
-Step-by-step guides for key operations and common tasks with the Synapse K8s charm.
+Step-by-step guides for key operations and common tasks with the Synapse charm.
 
 ```{toctree}
 :maxdepth: 1

@@ -1,14 +1,14 @@
 ---
 myst:
   html_meta:
-    "description lang=en": "Follow step-by-step tutorials to get started with the Synapse K8s charm."
+    "description lang=en": "Follow step-by-step tutorials to get started with the Synapse charm."
 ---
 
 (tutorial_index)=
 
 # Tutorial
 
-Learn how to deploy and operate the Synapse K8s charm for the first time.
+Learn how to deploy and operate the Synapse charm for the first time.
 
 ```{toctree}
 :maxdepth: 1

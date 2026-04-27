@@ -1,10 +1,10 @@
 ---
 myst:
   html_meta:
-    "description lang=en": "Learn how to deploy, configure and operate the Synapse K8s charm using Juju."
+    "description lang=en": "Learn how to deploy, configure and operate the Synapse charm using Juju."
 ---
 
-# Synapse K8s charm
+# Synapse charm
 
 A Juju charm deploying and managing [Synapse](https://github.com/matrix-org/synapse) on Kubernetes. Synapse is a drop-in replacement for other chat servers like Mattermost and Slack.
 
