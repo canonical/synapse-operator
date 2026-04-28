@@ -1,3 +1,5 @@
+(reference_charm_architecture)=
+
 # Charm architecture
 
 Synapse is a drop in replacement for other chat servers like Mattermost and
@@ -77,17 +79,17 @@ number of users.
 
 ## Integrations
 
-See [Integrations](https://charmhub.io/synapse/docs/reference/integrations).
+See {ref}`Integrations <reference_integrations>`.
 
 ## Charm code overview
 
 The `src/charm.py` is the default entry point for a charm and has the
 `SynapseOperatorCharm` Python class which inherits from the `CharmBase`.
 
-CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops)
+CharmBase is the base class from which all Charms are formed, defined by [Ops](https://documentation.ubuntu.com/ops/latest/)
 (Python framework for developing charms).
 
-See more information in [Charm](https://juju.is/docs/sdk/constructs#heading--charm).
+See more information in {ref}`juju:charm`.
 
 The `__init__` method guarantees that the charm observes all events relevant to
 its operation and handles them.
@@ -95,13 +97,18 @@ its operation and handles them.
 Take, for example, when a configuration is changed by using the CLI.
 
 1. User runs the command
+
 ```bash
 juju config synapse server_name=myserver.myserver.com
 ```
+
 2. A `config-changed` event is emitted
 3. Event handlers are defined in the charm's framework observers. An example looks like the following:
+
 ```python
 self.framework.observe(self.on.config_changed, self._on_config_changed)
+```
+
 4. The method `_on_config_changed` will take the necessary actions. 
 The actions include waiting for all the relations to be ready and then configuring
 the containers.

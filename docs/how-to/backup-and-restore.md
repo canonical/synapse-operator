@@ -1,3 +1,5 @@
+(how_to_backup_and_restore)=
+
 # How to back up and restore Synapse
 
 This document shows how to back up and restore Synapse.
@@ -31,6 +33,7 @@ Integrate with Synapse using:
 
 The backup will be encrypted before being sent using symmetric encryption. You need
 to set the desired password with:
+
 ```
 juju config synapse backup_passphrase=<secret passphase>
 ```
@@ -38,14 +41,15 @@ juju config synapse backup_passphrase=<secret passphase>
 ### Create the backup
 
 Create the backup:
+
 ```
 juju run synapse/leader create-backup
 ```
 
 A new object should be placed in the S3 compatible object storage, a tar file encrypted with the `gpg` command.
 
-
 You can list the available backups with the `list-backups` command:
+
 ```
 juju run synapse/leader list-backups
 ```
@@ -53,14 +57,15 @@ juju run synapse/leader list-backups
 ### Back up PostgreSQL
 
 Follow the instructions of the PostgreSQL charm:
- - For [postgresql-k8s](https://charmhub.io/postgresql-k8s/docs/h-create-backup).
- - For [postgresql](https://charmhub.io/postgresql/docs/h-create-backup).
+
+ - For {ref}`PostgreSQL K8s: Create a backup <postgresql-k8s-charm:create-a-backup>`.
+ - For {ref}`PostgreSQL: Create a backup <postgresql-charm:create-a-backup>`.
 
 If you plan to restore PostgreSQL in a different model or cluster, you will need
 to also back up the cluster passwords. See:
- - For [postgresql-k8s](https://charmhub.io/postgresql-k8s/docs/h-migrate-cluster).
- - For [postgresql](https://charmhub.io/postgresql/docs/h-migrate-cluster).
 
+ - For {ref}`PostgreSQL K8s: Migrate a cluster <postgresql-k8s-charm:migrate-a-cluster>`.
+ - For {ref}`PostgreSQL: Migrate a cluster <postgresql-charm:migrate-a-cluster>`.
 
 ## Restore
 
@@ -73,13 +78,11 @@ for the backup. The configuration for Synapse before restoring the backup should
 match the configuration in the original application. This is specially important for 
 the configuration option `server_name` and any other configuration related to the filesystem.
 
-
 ### Restore PostgreSQL
 
-
 If you use the PostgreSQL integration, follow the instructions given by PostgreSQL:
- - For postgresql-k8s: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster).
- - for postgresql: [local restore](https://charmhub.io/postgresql/docs/h-restore-backup), [foreign backup](https://charmhub.io/postgresql/docs/h-migrate-cluster).
+ - For `postgresql-k8s`: {ref}`local restore <postgresql-k8s-charm:restore-a-backup>`, {ref}`foreign backup <postgresql-k8s-charm:migrate-a-cluster>`.
+ - for `postgresql`: {ref}`local restore <postgresql-charm:restore-a-backup>`, {ref}`foreign backup <postgresql-charm:migrate-a-cluster>`.
 
 If you used the foreign backup, once the backup for PostgreSQL is restored, you should remove the S3 integration,
 as it was created in a different cluster:
@@ -95,8 +98,8 @@ has already been restored.
 
 ### Restore Synapse
 
-
 Set the `backup_passphrase` to the passphrase used for the backup.
+
 ```
 juju config synapse backup_passphrase=<secret passphase>
 ```
@@ -114,11 +117,13 @@ Integrate with Synapse with:
 `juju integrate synapse:backup s3-integrator`
 
 List the backups and take note of the desired `backup-id`
+
 ```
 juju run synapse/leader list-backups
 ```
 
 Restore the backup:
+
 ```
 juju run synapse/leader restore-backup backup-id=<backup-id from the list of backups>
 ```

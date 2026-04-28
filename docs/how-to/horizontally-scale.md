@@ -1,3 +1,5 @@
+(how_to_horizontally_scale)=
+
 # How to horizontally scale
 
 A Synapse deployment can scale horizontally by running multiple Synapse processes called workers.
@@ -10,11 +12,9 @@ For more details about scaling, refer to ["Scaling synapse via workers"](https:/
 
 - Synapse charm deployed and integrated with PostgreSQL charm.
 
-The tutorial ["Getting started"](https://discourse.charmhub.io/t/synapse-docs-getting-started/12737) can be used to meet this requirement.
+The tutorial {ref}`tutorial_getting_started` can be used to meet this requirement.
 
-## Steps
-
-### Deploy Redis and integrate it with Synapse
+## Deploy Redis and integrate it with Synapse
 
 Run the following commands.
 
@@ -26,7 +26,7 @@ juju integrate synapse redis
 Once the output of the `juju status` command shows that the units are active and idle, proceed with
 the next step.
 
-### Deploy S3-integrator and integrate it with Synapse
+## Deploy S3-integrator and integrate it with Synapse
 
 This will enable S3 storage provider so media will be stored on a S3 bucket.
 
@@ -44,7 +44,7 @@ juju integrate synapse:media s3-integrator-media
 Once the output of the `juju status` command shows that the units are active and idle, proceed with
 the next step.
 
-### Scale Synapse application
+## Scale Synapse application
 
 With all integrations set, scale Synapse up by running the following command.
 
@@ -52,12 +52,13 @@ With all integrations set, scale Synapse up by running the following command.
 juju scale-application synapse 3
 ```
 
-### Verify status
+## Verify status
 
 The output of `juju status --relations` should look like this now.
 
-```
-$ juju status --relations
+```{terminal}
+juju status --relations
+
 Model             Controller    Cloud/Region         Version  SLA          Timestamp
 prod-synapse-k8s  ctr1          cloud1/default  3.1.8    unsupported  20:04:20Z
 
