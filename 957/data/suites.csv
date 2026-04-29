@@ -1,0 +1,84 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    arrange: scale Synapse to two units and check if all units are working.
+    act:  Scale the application down to 1 unit.
+    assert: the Synapse application (remaining unit) should return a correct response.
+    ","","test_synapse_scaling_down","tests.integration","","unknown","","","test_scaling","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create a backup.
+    act: Run action restore-backup
+    assert: Should not fail. Synapse should be started.
+    ","","test_synapse_backup_restore","tests.integration","","unknown","","","test_s3","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator together with media.
+        enable_media_sync_cleanup and backup_passphrase set.
+    act: Run create-backup action
+    assert: Correct response from the action that includes the backup-id.
+       An encrypted object was created in S3 with the correct name.
+    ","","test_synapse_create_backup_correct_media_sync_cleanup","tests.integration","","unknown","","","test_s3","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create two backups.
+    act: Run action list-backups
+    assert: There should be two backups, with the same keys as the ones created.
+    ","","test_synapse_list_backups","tests.integration","","unknown","","","test_s3","",""
+"
+    arrange: integrate Synapse with Redis and scale 1 unit.
+    act:  get the second unit IP address and request via ports 8080 and 8008.
+    assert: 8080 should work because goes to the main unit and 8008 should fail.
+    ","","test_synapse_scaling_nginx_configured","tests.integration","","unknown","","","test_scaling","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. backup_passphrase set.
+    act: Run create-backup action
+    assert: Correct response from the action that includes the backup-id.
+       An encrypted object was created in S3 with the correct name.
+    ","","test_synapse_create_backup_correct","tests.integration","","unknown","","","test_s3","",""
+"
+    arrange: build and deploy the Synapse charm.
+    act: send a request to the Synapse application managed by the Synapse charm.
+    assert: the Synapse application should return a correct response.
+    ","","test_synapse_is_up","tests.integration","","unknown","","","test_charm","",""
+"
+    arrange: build and deploy the Synapse charm.
+    act: scale Synapse.
+    assert: the Synapse application is blocked since there is no Redis integration.
+    ","","test_synapse_scale_blocked","tests.integration","","unknown","","","test_charm","",""
+"
+    arrange: build and deploy the Synapse charm, and deploy the nginx-integrator.
+    act: relate the nginx-integrator charm with the Synapse charm.
+    assert: requesting the charm through nginx-integrator should return a correct response.
+    ","","test_nginx_route_integration","tests.integration","","unknown","","","test_charm","",""
+"
+    arrange: deploy the Synapse charm, create offer, deploy any-charm as consumer
+        in a different model and consume offer.
+    act: integrate them via matrix-auth offer.
+    assert: Synapse set the registration file received via matrix-auth.
+    ","","test_synapse_cmr_matrix_auth","tests.integration","","unknown","","","test_matrix_auth","",""
+"
+    arrange: Synapse App deployed and related with s3-integrator. Set backup_passphrase
+        and create a backup.
+    act: Run action delete-backup with the created backup.
+    assert: In list-backups, there should be no backup.
+    ","","test_synapse_backup_delete","tests.integration","","unknown","","","test_s3","",""
+"
+    arrange: build and deploy the Synapse charm.
+    act: send a request to the Synapse application managed by the Synapse charm.
+    assert: the Synapse application should return a correct response.
+    ","","test_oauth","tests.integration","","unknown","","","test_charm","",""
+"
+    arrange: deploy the charm, create user and moderation room and create the
+        moderation secret.
+    act: set moderation_access_token_secret_id
+    assert: the Draupnir health endpoint should return OK.
+    ","","test_moderation","tests.integration","","unknown","","","test_charm","",""
+"
+    arrange: Synapse App deployed and s3-integrator deployed with bucket created.
+    act:  Assert media can be uploaded, and retrieved, from the S3 media bucket.
+    assert: The media file is uploaded to the S3 bucket, and retrieved successfully.
+    ","","test_synapse_enable_media","tests.integration","","unknown","","","test_s3","",""
+"
+    arrange: Synapse App deployed and s3-integrator deployed.
+    act:  integrate s3-integrator with Synapse.
+    assert: Synapse gets into blocked status because the bucket does not exist.
+    ","","test_synapse_enable_s3_backup_integration_no_bucket","tests.integration","","unknown","","","test_s3","",""
