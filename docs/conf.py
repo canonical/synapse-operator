@@ -249,9 +249,10 @@ linkcheck_ignore = [
     r"https://.*\.sourceforge\.(net|io)/.*",
     # Canonical domains blocked by Cloudflare DDoS mitigation from outside Canonical's network.
     # TODO: Remove once Canonical's heightened DDoS protection is lifted.
-    r"https://ubuntu\.com/.*",
-    r"https://microk8s\.io/.*",
-    r"https://multipass\.run/.*",
+    r"https://ubuntu\.com.*",
+    r"https://microk8s\.io.*",
+    r"https://multipass\.run.*",
+    r"https://juju\.is.*",
     ]
 
 
