@@ -249,6 +249,17 @@ linkcheck_ignore = [
     r"https://.*\.sourceforge\.(net|io)/.*",
     ]
 
+# Use a browser-like User-Agent for Canonical domains protected by Cloudflare DDoS mitigation.
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-linkcheck_request_headers
+_browser_ua = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+}
+linkcheck_request_headers = {
+    r"https://ubuntu\.com/.*": _browser_ua,
+    r"https://microk8s\.io/.*": _browser_ua,
+    r"https://multipass\.run/.*": _browser_ua,
+}
+
 
 # A regex list of URLs where anchors are ignored by 'make linkcheck'
 
