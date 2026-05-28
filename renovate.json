@@ -32,7 +32,20 @@
     }
 
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["(^|/)charmcraft\\.yaml$"],
+      "matchStrings": ["- (?<depName>[a-z0-9_-]+)==(?<currentValue>[^\\s]+)"],
+      "datasourceTemplate": "pypi"
+    }
+  ],
   "packageRules": [
+    {
+      "description": "Group charmcraft.yaml and requirements.txt updates for charm-binary-python-packages so both files are bumped atomically.",
+      "matchPackageNames": ["psycopg2-binary", "cryptography"],
+      "groupName": "charm-binary-python-packages"
+    },
     {
       "enabled": true,
       "matchDatasources": [
