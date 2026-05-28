@@ -30,5 +30,5 @@ parts:
       rustup default stable
       craftctl default
     charm-binary-python-packages:
-    - psycopg2-binary==2.9.10
+    - psycopg2-binary==2.9.12
     - cryptography==46.0.4
