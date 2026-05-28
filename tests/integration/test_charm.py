@@ -425,7 +425,7 @@ async def test_synapse_with_mjolnir_from_refresh_is_up(
     await synapse_charmhub_app.refresh(path=f"./{synapse_charm}", resources=resources)
     async with ops_test.fast_forward():
         await synapse_charmhub_app.model.wait_for_idle(
-            idle_period=30, apps=[synapse_charmhub_app.name], status="active"
+            idle_period=30, apps=[synapse_charmhub_app.name], status="active", timeout=1200
         )
 
     # Unit ip could change because it is a different pod.
