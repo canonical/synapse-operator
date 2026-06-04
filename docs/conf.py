@@ -27,6 +27,10 @@ import yaml
 project = "Synapse charm"
 author = "Canonical Ltd."
 
+# Version
+
+version = f"{os.environ.get('READTHEDOCS_VERSION', 'local')}"
+
 # The year in the copyright statement defaults to the current year, so
 # individual document versions show when they were built.
 # TODO: If the date must be a range, like in a software license, replace 
@@ -52,7 +56,7 @@ html_title = project + " documentation"
 # NOTE: The Open Graph Protocol (OGP) enhances page display in a social graph
 #       and is used by social media platforms; see https://ogp.me/
 
-ogp_site_url = "https://documentation.ubuntu.com/synapse-charm/"
+ogp_site_url = f"https://canonical.com/juju/docs/synapse-charm/{version}/"
 
 
 # Preview name of the documentation website
@@ -178,7 +182,7 @@ html_theme_options = {
 # TODO: If your documentation is hosted on https://docs.ubuntu.com/,
 #       uncomment and update as needed.
 
-slug = 'synapse-charm'
+slug = 'juju/docs/synapse-charm'
 
 #######################
 # Sitemap configuration: https://sphinx-sitemap.readthedocs.io/
@@ -186,7 +190,7 @@ slug = 'synapse-charm'
 
 # Use RTD canonical URL to ensure duplicate pages have a specific canonical URL
 
-html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
+html_baseurl = f"https://canonical.com/juju/docs/synapse-charm/{version}/"
 
 # sphinx-sitemap uses html_baseurl to generate the full URL for each page:
 
@@ -211,7 +215,7 @@ sitemap_excludes = [
 # Template and asset locations #
 ################################
 
-# html_static_path = ["_static"]
+html_static_path = ["_static"]
 templates_path = ["_templates"]
 
 
@@ -324,6 +328,7 @@ html_css_files = [
 
 html_js_files = [
     "https://assets.ubuntu.com/v1/287a5e8f-bundle.js",
+    "js/overwrite_links.js",
 ]
 
 
