@@ -25,7 +25,7 @@ into multiple environments for testing of changes.
 
 ## Get started
 
-To begin, refer to the [Getting Started](https://charmhub.io/synapse/docs/tutorial-getting-started)
+To begin, refer to the [Getting Started](https://canonical.com/juju/docs/synapse-charm/latest/tutorial/getting-started/)
 tutorial for step-by-step instructions.
 
 ### Basic operations
@@ -59,7 +59,7 @@ juju run synapse/0 promote-user-admin username=alice
 ```
 
 ## Learn more
-* [Read more](https://charmhub.io/synapse)
+* [Read more](https://canonical.com/juju/docs/synapse-charm/)
 * [Developer documentation](https://element-hq.github.io/synapse/latest/development/contributing_guide.html)
 * [Official webpage](https://github.com/element-hq/synapse)
 * [Troubleshooting](https://element-hq.github.io/synapse/latest/usage/administration/admin_faq.html)
@@ -67,13 +67,14 @@ juju run synapse/0 promote-user-admin username=alice
 
 ## Project and community
 * [Issues](https://github.com/canonical/synapse-operator/issues)
-* [Contributing](https://charmhub.io/synapse/docs/contributing)
+* [Contributing](CONTRIBUTING.md)
 * [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
 ## Documentation
 
-Our documentation is stored in the `docs` directory.
-It is based on the Canonical starter pack
+Our documentation is stored in the `docs` directory
+and can be viewed at https://canonical.com/juju/docs/synapse-charm/.
+It is based on the Canonical Sphinx Stack
 and hosted on [Read the Docs](https://about.readthedocs.com/). In structuring,
 the documentation employs the [Diátaxis](https://diataxis.fr/) approach.
 
