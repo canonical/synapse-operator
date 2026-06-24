@@ -11,6 +11,4 @@ jobs:
       pull-requests: write
     secrets: inherit
     with:
-      self-hosted-runner: false
-      self-hosted-runner-label: "edge"
       vale-style-check: false
