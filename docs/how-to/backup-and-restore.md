@@ -75,6 +75,7 @@ the configuration option `server_name` and any other configuration related to th
 ### Restore PostgreSQL
 
 If you use the PostgreSQL integration, follow the instructions given by PostgreSQL:
+
  - {ref}`local restore <postgresql-charms:restore-a-backup>`
  - {ref}`foreign backup <postgresql-charms:migrate-a-cluster>`
 
