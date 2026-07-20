@@ -56,16 +56,10 @@ juju run synapse/leader list-backups
 
 ### Back up PostgreSQL
 
-Follow the instructions of the PostgreSQL charm:
-
- - For {ref}`PostgreSQL K8s: Create a backup <postgresql-k8s-charm:create-a-backup>`.
- - For {ref}`PostgreSQL: Create a backup <postgresql-charm:create-a-backup>`.
+Follow the instructions of the PostgreSQL charm in {ref}`Create a backup <postgresql-charms:create-a-backup>`.
 
 If you plan to restore PostgreSQL in a different model or cluster, you will need
-to also back up the cluster passwords. See:
-
- - For {ref}`PostgreSQL K8s: Migrate a cluster <postgresql-k8s-charm:migrate-a-cluster>`.
- - For {ref}`PostgreSQL: Migrate a cluster <postgresql-charm:migrate-a-cluster>`.
+to also back up the cluster passwords. See {ref}`Migrate a cluster <postgresql-charms:migrate-a-cluster>`.
 
 ## Restore
 
@@ -81,8 +75,9 @@ the configuration option `server_name` and any other configuration related to th
 ### Restore PostgreSQL
 
 If you use the PostgreSQL integration, follow the instructions given by PostgreSQL:
- - For `postgresql-k8s`: {ref}`local restore <postgresql-k8s-charm:restore-a-backup>`, {ref}`foreign backup <postgresql-k8s-charm:migrate-a-cluster>`.
- - for `postgresql`: {ref}`local restore <postgresql-charm:restore-a-backup>`, {ref}`foreign backup <postgresql-charm:migrate-a-cluster>`.
+
+ - {ref}`local restore <postgresql-charms:restore-a-backup>`
+ - {ref}`foreign backup <postgresql-charms:migrate-a-cluster>`
 
 If you used the foreign backup, once the backup for PostgreSQL is restored, you should remove the S3 integration,
 as it was created in a different cluster:

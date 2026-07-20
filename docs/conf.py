@@ -196,6 +196,8 @@ html_baseurl = f"https://canonical.com/juju/docs/synapse-charm/{version}/"
 
 sitemap_url_scheme = '{link}'
 
+sitemap_filename = "doc-sitemap.xml"
+
 # Include `lastmod` dates in the sitemap:
 
 sitemap_show_lastmod = True
@@ -388,9 +390,8 @@ if os.path.exists('./reuse/substitutions.yaml'):
 # Add configuration for intersphinx mapping
 # Map only the Sphinx documentation sets that you need to link to from your docs set.
 intersphinx_mapping = {
-    'starter-pack': ('https://canonical-starter-pack.readthedocs-hosted.com/stable/', None),
-    'juju': ('https://documentation.ubuntu.com/juju/3.6/', None),
-    'traefik-k8s-charm': ('https://documentation.ubuntu.com/traefik-k8s-charm/latest/', None),
-    'postgresql-k8s-charm': ('https://canonical-charmed-postgresql-k8s.readthedocs-hosted.com/14/', None),
-    'postgresql-charm': ('https://canonical-charmed-postgresql.readthedocs-hosted.com/14/', None),
+    'starter-pack': ('https://documentation.ubuntu.com/sphinx-stack/latest/', None),
+    'juju': ('https://canonical.com/juju/docs/juju-cli/3.6/', None),
+    'traefik-k8s-charm': ('https://canonical.com/juju/docs/traefik-k8s-charm/latest/', None),
+    'postgresql-charms': ('https://canonical.com/data/postgresql/docs/16/', None),
 }
