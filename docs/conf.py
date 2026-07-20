@@ -196,6 +196,8 @@ html_baseurl = f"https://canonical.com/juju/docs/synapse-charm/{version}/"
 
 sitemap_url_scheme = '{link}'
 
+sitemap_filename = "doc-sitemap.xml"
+
 # Include `lastmod` dates in the sitemap:
 
 sitemap_show_lastmod = True
