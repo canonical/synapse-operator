@@ -41,7 +41,7 @@ processes startup as explained above.
 
 ## OCI images
 
-We use [Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/en/latest/)
+We use [Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/latest/)
 to build OCI Image for Synapse.
 The image is defined in [Synapse rock](https://github.com/canonical/synapse-operator/tree/main/synapse_rock) and is published to [Charmhub](https://charmhub.io/), the official repository
 of charms.
