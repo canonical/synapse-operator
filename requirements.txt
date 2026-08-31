@@ -4,7 +4,7 @@ cryptography ==50.0.1
 deepdiff ==9.1.0
 jinja2 ==3.1.6
 jsonschema ==4.26.0
-ops ==3.8.1
+ops ==3.8.2
 pydantic ==2.13.4
 # Must match charm-binary-python-packages in charmcraft.yaml (Renovate keeps them in sync).
 psycopg2-binary ==2.9.12
