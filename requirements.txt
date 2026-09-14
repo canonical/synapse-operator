@@ -7,5 +7,5 @@ jsonschema ==4.26.0
 ops ==3.8.1
 pydantic ==2.13.4
 # Must match charm-binary-python-packages in charmcraft.yaml (Renovate keeps them in sync).
-psycopg2-binary ==2.9.12
+psycopg2-binary ==2.9.13
 requests ==2.34.2
