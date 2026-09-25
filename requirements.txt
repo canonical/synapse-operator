@@ -1,4 +1,4 @@
-boto3 ==1.43.95
+boto3 ==1.43.102
 cosl ==1.10.3
 cryptography ==50.0.1
 deepdiff ==9.1.0
