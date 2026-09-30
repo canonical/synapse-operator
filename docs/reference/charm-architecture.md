@@ -36,8 +36,7 @@ synapse-0                         3/3     Running   0         6h4m
 This shows there are 3 containers - the two named above, as well as a container
 for the charm code itself.
 
-All containers will have the command `/charm/bin/pebble`. Pebble is responsible for service management, as explained above.
-processes startup as explained above.
+All containers will have the command `/charm/bin/pebble`. Pebble is responsible for service management and process startup, as explained above.
 
 ## OCI images
 
