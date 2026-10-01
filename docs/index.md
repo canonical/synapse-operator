@@ -8,9 +8,9 @@ myst:
 
 A Juju charm deploying and managing [Synapse](https://github.com/matrix-org/synapse) on Kubernetes. Synapse is a drop-in replacement for other chat servers like Mattermost and Slack.
 
-This charm simplifies initial deployment and "day N" operations of Synapse on Kubernetes, such as integration with SSO, access to S3 for redundant file storage and more. It allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://microk8s.io) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) to public cloud Kubernetes offerings.
+This charm simplifies the deployment and ongoing operations of Synapse on Kubernetes, such as integration with SSO, access to S3 for redundant file storage and more. It allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://microk8s.io) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) to public cloud Kubernetes offerings.
 
-For DevOps or SRE teams this charm will make operating Synapse simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing of changes.
+For DevOps or SRE teams this charm will make operating Synapse straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing of changes.
 
 ## In this documentation
 
@@ -25,9 +25,7 @@ For DevOps or SRE teams this charm will make operating Synapse simple and straig
 * - **Deployment**
   - {ref}`Integrate with SMTP <how_to_configure_smtp>` | {ref}`Configurations <reference_configurations>` | {ref}`Actions <reference_actions>`
 * - **Operations**
-  - {ref}`Back up and restore <how_to_backup_and_restore>` | {ref}`Horizontally scale <how_to_horizontally_scale>`
-* - **Integrations**
-  - {ref}`Relation endpoints <reference_integrations>`
+  - {ref}`Back up and restore <how_to_backup_and_restore>` | {ref}`Horizontally scale <how_to_horizontally_scale>` | {ref}`Relation endpoints <reference_integrations>`
 * - **Design**
   - {ref}`Charm architecture <reference_charm_architecture>`
 * - **Security**
