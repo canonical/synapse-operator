@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-10-19
+
+- Moved the documentation tooling to the centrally managed `platform-engineering-documentation-files` Copier template and added a scheduled workflow that keeps it in sync. There is no change to the charm.
+
 ## 2026-09-30
 
 - Reworked the home page to follow the standard "In this documentation" and "How this documentation is organized" pattern.
