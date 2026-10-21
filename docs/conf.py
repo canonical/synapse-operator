@@ -68,7 +68,7 @@ html_context = {
     # each page.
     "github_url": "https://github.com/canonical/synapse-operator",
     # Docs branch in the repo; used in links for viewing the source files
-    "repo_default_branch": "main",
+    "repo_default_branch": "track/1",
     # Docs location in the repo; used in links for viewing the source files
     "repo_folder": "/docs/",
     # TODO: To enable or disable the Previous / Next buttons at the bottom of pages

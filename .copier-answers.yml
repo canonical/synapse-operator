@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
-_commit: d2d1381
+_commit: 3ebfd46
 _src_path: gh:canonical/platform-engineering-documentation-files.git
 author: Canonical Ltd.
 discourse: https://discourse.charmhub.io
@@ -21,7 +21,7 @@ old_domain: canonical-synapse-juju-charm.readthedocs-hosted.com
 product_page: charmhub.io/synapse
 product_tag: ''
 project: Synapse charm
-repo_default_branch: main
+repo_default_branch: track/1
 repo_folder: /docs/
 rtd_slug: juju/docs/synapse-charm
 source_edit_link: https://github.com/canonical/synapse-operator
