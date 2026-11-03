@@ -25,6 +25,25 @@ markers = [
     "s3: mark tests that require an s3 integration (via localstack)",
     "irc: mark tests that require an irc integration"
 ]
+filterwarnings = [
+    # Pytest prepends each entry to warnings.filters, so later entries take
+    # precedence at runtime. Put "error" first, then more specific ignores below.
+    "error",
+    # TODO: migrate tests/unit_harness from Harness to Scenario.
+    "ignore:Harness is deprecated:PendingDeprecationWarning",
+    # TODO: use self.model.juju_version in src/admin_access_token.py; the
+    # data_platform_libs data_interfaces lib also still calls from_environ().
+    "ignore:JujuVersion.from_environ:DeprecationWarning",
+    # TODO: fix leaked file handles and Harness instances, then remove this.
+    "ignore::ResourceWarning",
+    # Third-party warnings from the pytest-operator / python-libjuju integration
+    # test stack (protobuf/macaroonbakery, paramiko, websockets, juju).
+    "ignore::DeprecationWarning:google.*",
+    "ignore::DeprecationWarning:macaroonbakery.*",
+    "ignore::DeprecationWarning:paramiko.*",
+    "ignore::DeprecationWarning:websockets.*",
+    "ignore::DeprecationWarning:juju.*",
+]
 
 [tool.pylint.'MESSAGES CONTROL']
 extension-pkg-whitelist = "pydantic"
