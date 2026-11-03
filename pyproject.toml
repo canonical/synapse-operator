@@ -45,6 +45,9 @@ filterwarnings = [
     "ignore::DeprecationWarning:paramiko.*",
     "ignore::DeprecationWarning:websockets.*",
     "ignore::DeprecationWarning:juju.*",
+    # TODO: fix Juju/websockets receive tasks surviving event-loop shutdown.
+    # Match the third-party traceback too; other unraisable exceptions stay fatal.
+    'ignore:(?s)^Exception ignored in\x3a <coroutine object Connection\.recv at 0x[0-9a-f]+>.*[/\\]websockets[/\\]asyncio[/\\]connection\.py.*\nRuntimeError\x3a Event loop is closed\n:pytest.PytestUnraisableExceptionWarning',
 ]
 
 [tool.pylint.'MESSAGES CONTROL']
