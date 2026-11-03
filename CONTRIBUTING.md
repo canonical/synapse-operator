@@ -153,6 +153,10 @@ tox -a
 
 ### Integration tests
 
+The `integration` and `lint` tox environments constrain pytest to `<9.2` because
+`pytest-operator` currently requires `pytest-asyncio<0.23`, which relies on pytest
+internals removed in 9.2. Revisit this constraint when upgrading those plugins.
+
 #### Required integration inputs
 
 Integration tests require a charm file and image unless you use `--use-existing`:

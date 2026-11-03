@@ -23,7 +23,31 @@ markers = [
     "cos: mark tests that require a COS integration",
     "nginx: mark tests that require an nginx integration",
     "s3: mark tests that require an s3 integration (via localstack)",
-    "irc: mark tests that require an irc integration"
+    "irc: mark tests that require an irc integration",
+    "mjolnir: mark tests that require a Mjolnir deployment",
+    "redis: mark tests that require a redis integration",
+]
+filterwarnings = [
+    # Pytest prepends each entry to warnings.filters, so later entries take
+    # precedence at runtime. Put "error" first, then more specific ignores below.
+    "error",
+    # TODO: migrate tests/unit_harness from Harness to Scenario.
+    "ignore:Harness is deprecated:PendingDeprecationWarning",
+    # TODO: use self.model.juju_version in src/admin_access_token.py; the
+    # data_platform_libs data_interfaces lib also still calls from_environ().
+    "ignore:JujuVersion.from_environ:DeprecationWarning",
+    # TODO: fix leaked file handles and Harness instances, then remove this.
+    "ignore::ResourceWarning",
+    # Third-party warnings from the pytest-operator / python-libjuju integration
+    # test stack (protobuf/macaroonbakery, paramiko, websockets, juju).
+    "ignore::DeprecationWarning:google.*",
+    "ignore::DeprecationWarning:macaroonbakery.*",
+    "ignore::DeprecationWarning:paramiko.*",
+    "ignore::DeprecationWarning:websockets.*",
+    "ignore::DeprecationWarning:juju.*",
+    # TODO: fix Juju/websockets receive tasks surviving event-loop shutdown.
+    # Match the third-party traceback too; other unraisable exceptions stay fatal.
+    'ignore:(?s)^Exception ignored in\x3a <coroutine object Connection\.recv at 0x[0-9a-f]+>.*[/\\]websockets[/\\]asyncio[/\\]connection\.py.*\nRuntimeError\x3a Event loop is closed\n:pytest.PytestUnraisableExceptionWarning',
 ]
 
 [tool.pylint.'MESSAGES CONTROL']
