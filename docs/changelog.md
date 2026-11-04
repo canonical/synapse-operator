@@ -11,6 +11,7 @@ Each revision is versioned by the date of the revision.
 ## 2026-11-04
 
 - Updated the getting started tutorial to deploy `postgresql-k8s` from `14/stable` and `synapse` from `1/stable`, because the default channels no longer produce a working deployment. There is no change to the charm.
+- Added `--destroy-storage` to the tutorial's cleanup command, because Juju refuses to destroy a model with persistent storage without it.
 
 ## 2026-10-19
 

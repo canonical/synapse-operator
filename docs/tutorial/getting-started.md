@@ -244,7 +244,7 @@ model environment you created during this tutorial, use the following command.
 <!-- SPREAD SKIP -->
 
 ```bash
-juju destroy-model synapse-tutorial
+juju destroy-model synapse-tutorial --destroy-storage
 ```
 
 <!-- SPREAD SKIP END -->
