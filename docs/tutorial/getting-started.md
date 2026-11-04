@@ -41,8 +41,8 @@ Synapse requires connections to PostgreSQL. Deploy both charm applications.
 ### Deploy and integrate the charms
 
 ```bash
-juju deploy postgresql-k8s --trust
-juju deploy synapse
+juju deploy postgresql-k8s --channel 14/stable --trust
+juju deploy synapse --channel 1/stable
 ```
 
 Run `juju status` to see the current status of the deployment.
@@ -94,9 +94,9 @@ Running `juju status`, you will see Synapse and PostgreSQL both start executing 
 Model             Controller          Cloud/Region        Version  SLA          Timestamp
 synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  14:58:26-04:00
 
-App             Version  Status       Scale  Charm           Channel        Rev  Address         Exposed  Message
-postgresql-k8s  14.20    active           1  postgresql-k8s  14/stable      774  10.152.183.189  no       
-synapse         1.115.0  maintenance      1  synapse         latest/stable  426  10.152.183.212  no       Configuring Synapse
+App             Version  Status       Scale  Charm           Channel    Rev  Address         Exposed  Message
+postgresql-k8s  14.24    active           1  postgresql-k8s  14/stable  960  10.152.183.189  no       
+synapse         1.146.0  maintenance      1  synapse         1/stable   935  10.152.183.212  no       Configuring Synapse
 
 Unit               Workload     Agent      Address      Ports  Message
 postgresql-k8s/0*  active       executing  10.1.65.156         Primary
@@ -175,8 +175,8 @@ Model             Controller          Cloud/Region        Version  SLA          
 synapse-tutorial  concierge-microk8s  microk8s/localhost  3.6.14   unsupported  18:10:46Z
 
 App             Version  Status  Scale  Charm           Channel        Rev  Address         Exposed  Message
-postgresql-k8s  14.15    active      1  postgresql-k8s  14/stable      495  10.152.183.23   no       
-synapse                  active      1  synapse         2/edge         871  10.152.183.189  no       
+postgresql-k8s  14.24    active      1  postgresql-k8s  14/stable      960  10.152.183.23   no       
+synapse         1.146.0  active      1  synapse         1/stable       935  10.152.183.189  no       
 traefik-k8s     2.11.0   active      1  traefik-k8s     latest/stable  263  10.152.183.88   no       Serving at http://juju.local
 
 Unit               Workload  Agent  Address       Ports  Message
