@@ -16,7 +16,7 @@ Synapse instance via Element Desktop application.
 
 ## Requirements
 
-You need a working station, e.g., a laptop, with amd64 architecture, at least
+You need a working station, e.g., a laptop, with AMD64 architecture, at least
 4 CPU cores, 8 GB of RAM, and 50 GB of disk space.
 
 <!-- SPREAD SKIP -->
