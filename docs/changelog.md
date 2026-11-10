@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-11-10
+
+- Fixed requests timing out after the main unit's pod is replaced, for example by a refresh. The main unit now publishes its IP to the other units, which makes them restart NGINX and find it at its new address.
+
 ## 2026-11-04
 
 - Updated the getting started tutorial to deploy `postgresql-k8s` from `14/stable` and `synapse` from `1/stable`, because the default channels no longer produce a working deployment. There is no change to the charm.
