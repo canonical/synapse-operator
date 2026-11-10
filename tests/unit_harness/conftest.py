@@ -161,8 +161,11 @@ def harness_fixture(request, monkeypatch) -> typing.Generator[Harness, None, Non
                     ],
                     "server_name": TEST_SERVER_NAME,
                 }
+                # migrate_config renders the template where the charm asks for it.
                 synapse_container.push(
-                    synapse.SYNAPSE_CONFIG_PATH, yaml.safe_dump(config_content), make_dirs=True
+                    synapse.SYNAPSE_NEW_CONFIG_PATH,
+                    yaml.safe_dump(config_content),
+                    make_dirs=True,
                 )
                 return synapse.ExecResult(exit_code, "", "")
             case _:

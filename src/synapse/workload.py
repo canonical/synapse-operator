@@ -30,6 +30,10 @@ SYNAPSE_EXPORTER_PORT = "9000"
 STATS_EXPORTER_PORT = "9877"
 SYNAPSE_COMMAND_PATH = "/start.py"
 SYNAPSE_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.yaml"
+# The charm builds and checks a new configuration here before it replaces the live one.
+SYNAPSE_NEW_CONFIG_PATH = f"{SYNAPSE_CONFIG_DIR}/homeserver.new.yaml"
+# Hash of the files that Synapse read the last time the charm restarted it.
+SYNAPSE_STARTED_CONFIG_HASH_PATH = f"{SYNAPSE_CONFIG_DIR}/.started-config-hash"
 SYNAPSE_CONTAINER_NAME = "synapse"
 SYNAPSE_CRON_SERVICE_NAME = "synapse-cron"
 SYNAPSE_DATA_DIR = "/data"
@@ -250,6 +254,10 @@ def get_environment(charm_state: CharmState) -> typing.Dict[str, str]:
 def execute_migrate_config(container: ops.Container, charm_state: CharmState) -> None:
     """Run the Synapse command migrate_config.
 
+    The command renders the image's configuration template. It writes the result to
+    SYNAPSE_NEW_CONFIG_PATH, not to the live configuration, so Synapse never reads the bare
+    template.
+
     Args:
         container: Container of the charm.
         charm_state: Instance of CharmState.
@@ -260,10 +268,12 @@ def execute_migrate_config(container: ops.Container, charm_state: CharmState) ->
     _check_server_name(container=container, charm_state=charm_state)
     # TODO validate if is possible to use SDK instead of command  # pylint: disable=fixme
     migrate_config_command = [SYNAPSE_COMMAND_PATH, COMMAND_MIGRATE_CONFIG]
+    environment = get_environment(charm_state)
+    environment["SYNAPSE_CONFIG_PATH"] = SYNAPSE_NEW_CONFIG_PATH
     migrate_config_result = _exec(
         container,
         migrate_config_command,
-        environment=get_environment(charm_state),
+        environment=environment,
     )
     if migrate_config_result.exit_code:
         logger.error(
@@ -276,17 +286,18 @@ def execute_migrate_config(container: ops.Container, charm_state: CharmState) ->
         )
 
 
-def validate_config(container: ops.Container) -> None:
+def validate_config(container: ops.Container, config_path: str = SYNAPSE_CONFIG_PATH) -> None:
     """Run the Synapse command to validate the configuration file.
 
     Args:
         container: Container of the charm.
+        config_path: Path of the configuration file to validate.
 
     Raises:
         WorkloadError: something went wrong running migrate_config.
     """
     validate_config_result = _exec(
-        container, ["/usr/bin/python3", "-m", "synapse.config", "-c", SYNAPSE_CONFIG_PATH]
+        container, ["/usr/bin/python3", "-m", "synapse.config", "-c", config_path]
     )
     if validate_config_result.exit_code:
         logger.error(
