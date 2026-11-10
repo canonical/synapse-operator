@@ -12,6 +12,7 @@ Each revision is versioned by the date of the revision.
 
 - Updated the getting started tutorial to deploy `postgresql-k8s` from `14/stable` and `synapse` from `1/stable`, because the default channels no longer produce a working deployment. There is no change to the charm.
 - Added `--destroy-storage` to the tutorial's cleanup command, because Juju refuses to destroy a model with persistent storage without it.
+- Added Juju and MicroK8s setup steps to the getting started tutorial, replacing the link to the Juju setup guide, so that the tutorial and its Spread test use the same environment. There is no change to the charm.
 
 ## 2026-10-19
 

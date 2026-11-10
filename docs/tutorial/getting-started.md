@@ -4,6 +4,7 @@
 
 ## What you’ll do
 
+- Set up Juju and MicroK8s.
 - Deploy the Synapse charm.
 - Integrate with the PostgreSQL K8s charm.
 - Expose the Synapse charm by using Traefik K8s charm.
@@ -15,15 +16,73 @@ Synapse instance via Element Desktop application.
 
 ## Requirements
 
-* A working station, e.g., a laptop, with amd64 architecture.
-* Juju 3 installed and bootstrapped to a MicroK8s controller. You can accomplish
-this process by using a [Multipass](https://multipass.run/) VM as outlined in this guide: {ref}`Set up your test environment <juju:set-things-up>`
+You need a working station, e.g., a laptop, with AMD64 architecture, at least
+4 CPU cores, 8 GB of RAM, and 50 GB of disk space.
+
+<!-- SPREAD SKIP -->
+
+````{tip}
+You can use [Multipass](https://multipass.run/) to create an isolated environment.
+Launch a VM, open a shell in it, and run the rest of this tutorial's commands there:
+
+```bash
+multipass launch 24.04 --name my-juju-vm --cpus 4 --memory 8G --disk 50G
+multipass shell my-juju-vm
+```
+````
+
+<!-- SPREAD SKIP END -->
 
 ```{warning}
 When using a Multipass VM, make sure to replace IP addresses with the
 VM IP in steps that assume you're running locally. To get the IP address of the
 Multipass instance run ``multipass info my-juju-vm``.
 ```
+
+## Set up the environment
+
+This tutorial runs on Juju 3.6 and MicroK8s 1.34. You'll use
+[Concierge](https://github.com/canonical/concierge) to install and configure them.
+
+Install Concierge:
+
+```bash
+sudo snap install --classic concierge
+```
+
+Create a Concierge configuration file. It enables the MicroK8s add-ons this tutorial
+needs and gives the MetalLB add-on your machine's IP address, so that you can reach
+Traefik through that address later on:
+
+```bash
+IP_ADDRESS=$(ip -4 route get 2.2.2.2 | grep -oP 'src \K\S+')
+cat > concierge.yaml <<EOF
+juju:
+  channel: 3.6/stable
+providers:
+  microk8s:
+    enable: true
+    bootstrap: true
+    channel: 1.34-strict/stable
+    addons:
+      - hostpath-storage
+      - dns
+      - rbac
+      - metallb:$IP_ADDRESS-$IP_ADDRESS
+host:
+  snaps:
+    jq:
+EOF
+```
+
+Run Concierge to install Juju, MicroK8s, and `jq`, and to bootstrap a Juju controller.
+This can take several minutes:
+
+```bash
+sudo concierge prepare -c concierge.yaml
+```
+
+When it finishes, `juju controllers` lists a controller called `concierge-microk8s`.
 
 ## Set up a Tutorial Model
 
