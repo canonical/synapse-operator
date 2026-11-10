@@ -90,8 +90,7 @@ prepare: |
     systemctl mask unattended-upgrades.service
   fi
 
-  sudo snap install --classic concierge
-  sudo concierge prepare -p microk8s
+  # Juju and MicroK8s are set up by the tutorial's own commands, so don't install them here.
 
 suites:
   tests/spread/: 
