@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-11-10
+
+- Synapse now restarts only when its configuration, environment or the files it reads change, or when it isn't running. Before, every reconcile restarted it, including peer relation changes, because the environment check always reported a change.
+- The charm checks a new configuration before it replaces the live one, so an invalid configuration no longer reaches Synapse.
+
 ## 2026-11-04
 
 - Updated the getting started tutorial to deploy `postgresql-k8s` from `14/stable` and `synapse` from `1/stable`, because the default channels no longer produce a working deployment. There is no change to the charm.

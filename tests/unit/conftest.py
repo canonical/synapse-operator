@@ -14,9 +14,7 @@ from ops import pebble, testing
 @pytest.fixture(scope="function", name="base_state")
 def base_state_fixture(tmp_path: Path):
     """State with container and config file set."""
-    config_file_path = tmp_path / "config.yaml"
-    config_file_path.write_text(
-        textwrap.dedent("""
+    config_content = textwrap.dedent("""
         server_name: "test.synapse"
         listeners:
           - port: 8008
@@ -28,9 +26,12 @@ def base_state_fixture(tmp_path: Path):
               - names: [client, federation]
                 compress: false
         signing_key_path: "/data/SERVERNAME.signing.key"
-        """),
-        encoding="utf-8",
-    )
+        """)
+    config_file_path = tmp_path / "config.yaml"
+    config_file_path.write_text(config_content, encoding="utf-8")
+    # The /start.py exec does nothing here, so the template it renders is already in place.
+    new_config_file_path = tmp_path / "new-config.yaml"
+    new_config_file_path.write_text(config_content, encoding="utf-8")
 
     pebble_layer = pebble.Layer(
         {
@@ -66,7 +67,10 @@ def base_state_fixture(tmp_path: Path):
                 mounts={
                     "data": testing.Mount(
                         location="/data/homeserver.yaml", source=config_file_path
-                    )
+                    ),
+                    "new-config": testing.Mount(
+                        location="/data/homeserver.new.yaml", source=new_config_file_path
+                    ),
                 },
                 layers={"synapse": pebble_layer},
                 service_statuses={"synapse": pebble.ServiceStatus.ACTIVE},

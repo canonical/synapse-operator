@@ -8,6 +8,7 @@
 
 """Class to interact with pebble."""
 
+import hashlib
 import logging
 import typing
 
@@ -89,13 +90,26 @@ def restart_synapse(
         is_main: if unit is main.
     """
     logger.debug("Restarting the Synapse container. Main: %s", str(is_main))
+    _add_synapse_layers(charm_state=charm_state, container=container, is_main=is_main)
+    container.restart(synapse.SYNAPSE_SERVICE_NAME)
+
+
+def _add_synapse_layers(
+    charm_state: CharmState, container: ops.model.Container, is_main: bool = True
+) -> None:
+    """Add the Synapse and cron layers to the plan.
+
+    Args:
+        charm_state: Instance of CharmState
+        container: Synapse container.
+        is_main: if unit is main.
+    """
     container.add_layer(
         synapse.SYNAPSE_SERVICE_NAME, _pebble_layer(charm_state, is_main), combine=True
     )
     container.add_layer(
         synapse.SYNAPSE_CRON_SERVICE_NAME, _cron_pebble_layer(charm_state), combine=True
     )
-    container.restart(synapse.SYNAPSE_SERVICE_NAME)
 
 
 def check_nginx_ready() -> ops.pebble.CheckDict:
@@ -202,11 +216,14 @@ def replan_synapse_federation_sender(
     container.replan()
 
 
-def _get_synapse_config(container: ops.model.Container) -> dict:
+def _get_synapse_config(
+    container: ops.model.Container, config_path: str = synapse.SYNAPSE_CONFIG_PATH
+) -> dict:
     """Get the current Synapse configuration.
 
     Args:
         container: Synapse container.
+        config_path: Synapse configuration file path.
 
     Returns:
         dict: Synapse configuration.
@@ -215,7 +232,7 @@ def _get_synapse_config(container: ops.model.Container) -> dict:
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        config = container.pull(synapse.SYNAPSE_CONFIG_PATH).read()
+        config = container.pull(config_path).read()
         current_synapse_config = yaml.safe_load(config)
         return current_synapse_config
     except ops.pebble.PathError as exc:
@@ -262,14 +279,116 @@ def _environment_has_changed(
     existing_env = existing_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
     current_env = current_services.get(synapse.SYNAPSE_SERVICE_NAME, {}).get("environment", {})
 
-    env_has_changed = DeepDiff(
-        existing_env,
-        current_env,
-        ignore_order=True,
-        ignore_string_case=True,
+    env_has_changed = DeepDiff(existing_env, current_env)
+    if env_has_changed:
+        # Log only the names, because the values include the database password.
+        logger.info(
+            "The Synapse environment has changed: %s",
+            ", ".join(sorted(str(key) for key in env_has_changed.affected_root_keys)),
+        )
+    return bool(env_has_changed)
+
+
+def _synapse_is_running(container: ops.model.Container) -> bool:
+    """Check if the Synapse service is running.
+
+    Args:
+        container: Synapse container.
+
+    Returns:
+        True if the Synapse service is running.
+    """
+    service = container.get_services(synapse.SYNAPSE_SERVICE_NAME).get(
+        synapse.SYNAPSE_SERVICE_NAME
     )
-    logging.debug("The environment change is: %s", env_has_changed)
-    return env_has_changed is not None
+    return service is not None and service.is_running()
+
+
+def _hash_synapse_files(
+    container: ops.model.Container, synapse_config: dict, worker_config: dict
+) -> str:
+    """Hash the files that Synapse reads when it starts.
+
+    The configuration names some files that the charm writes directly, such as the signing key
+    and the application service registrations, so their content is hashed too.
+
+    Args:
+        container: Synapse container.
+        synapse_config: Synapse configuration.
+        worker_config: Synapse worker configuration.
+
+    Returns:
+        The hash of the configuration and of the files it names.
+
+    Raises:
+        PathError: if a file can't be read for a reason other than not existing.
+    """
+    digest = hashlib.sha256()
+    for config in (synapse_config, worker_config):
+        digest.update(yaml.dump(config).encode("utf-8"))
+        digest.update(b"\0")
+    paths = [
+        synapse_config.get("signing_key_path"),
+        synapse_config.get("log_config"),
+        *(synapse_config.get("app_service_config_files") or []),
+    ]
+    for path in paths:
+        if not path:
+            continue
+        digest.update(f"{path}\0".encode("utf-8"))
+        try:
+            digest.update(str(container.pull(path).read()).encode("utf-8"))
+        except ops.pebble.PathError as exc:
+            if exc.kind != "not-found":
+                raise
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _get_started_config_hash(container: ops.model.Container) -> str | None:
+    """Get the hash of the files that Synapse read the last time the charm restarted it.
+
+    Args:
+        container: Synapse container.
+
+    Returns:
+        The hash, or None if there's no record of it.
+
+    Raises:
+        PathError: if the hash can't be read for a reason other than not existing.
+    """
+    try:
+        return str(container.pull(synapse.SYNAPSE_STARTED_CONFIG_HASH_PATH).read()).strip()
+    except ops.pebble.PathError as exc:
+        if exc.kind == "not-found":
+            return None
+        raise
+
+
+def _describe_config_change(container: ops.model.Container, new_config: dict) -> str:
+    """Describe what changed since Synapse started, naming settings but not their values.
+
+    Args:
+        container: Synapse container.
+        new_config: the new Synapse configuration.
+
+    Returns:
+        A description of the change.
+    """
+    try:
+        live_config = yaml.safe_load(container.pull(synapse.SYNAPSE_CONFIG_PATH).read())
+    except (ops.pebble.PathError, yaml.YAMLError):
+        live_config = None
+    if not isinstance(live_config, dict):
+        return "its configuration file is missing or can't be read"
+    changed = sorted(
+        str(key)
+        for key in live_config.keys() | new_config.keys()
+        if live_config.get(key) != new_config.get(key)
+    )
+    if changed:
+        return f"these settings have changed: {', '.join(changed)}"
+    return "the files that its configuration names have changed"
 
 
 # The complexity of this method will be reviewed.
@@ -281,7 +400,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
 ) -> None:
     """Reconcile Synapse configuration with charm state.
 
-    This is the main entry for changes that require a restart done via Pebble.
+    This is the main entry for changes that require a restart done via Pebble. Synapse is
+    restarted only if its environment or the files it reads have changed, or if it isn't running.
 
     Args:
         charm_state: Instance of CharmState
@@ -293,13 +413,13 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         PebbleServiceError: if something goes wrong while interacting with Pebble.
     """
     try:
-        if _environment_has_changed(container=container, charm_state=charm_state, is_main=is_main):
-            # Configurations set via environment variables:
-            # synapse_report_stats, database, and proxy
-            logging.info("Environment has changed, configuration will be recreated.")
-            synapse.execute_migrate_config(container=container, charm_state=charm_state)
-        existing_synapse_config = _get_synapse_config(container)
-        current_synapse_config = _get_synapse_config(container)
+        environment_has_changed = _environment_has_changed(
+            container=container, charm_state=charm_state, is_main=is_main
+        )
+        # Build the configuration from the image's template every time, so that settings the
+        # charm no longer applies, such as those of a removed relation, are dropped.
+        synapse.execute_migrate_config(container=container, charm_state=charm_state)
+        current_synapse_config = _get_synapse_config(container, synapse.SYNAPSE_NEW_CONFIG_PATH)
 
         synapse.add_default_configurations(current_synapse_config)
         synapse.set_rate_limiting_level(current_synapse_config, charm_state)
@@ -368,29 +488,43 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         if charm_state.datasource and is_main:
             logger.info("Synapse Stats Exporter enabled.")
             replan_stats_exporter(container=container, charm_state=charm_state)
-        config_has_changed = DeepDiff(
-            existing_synapse_config,
-            current_synapse_config,
-            ignore_order=True,
-            ignore_string_case=True,
-        )
-        if config_has_changed:
-            logging.info("Configuration has changed, Synapse will be restarted.")
-            logging.debug("The change is: %s", config_has_changed)
-            # Push worker configuration
+
+        worker_config = synapse.generate_worker_config(unit_number, is_main)
+        config_hash = _hash_synapse_files(container, current_synapse_config, worker_config)
+        started_config_hash = _get_started_config_hash(container)
+        restart_reasons = []
+        if environment_has_changed:
+            restart_reasons.append("its environment has changed")
+        if started_config_hash is None:
+            restart_reasons.append("there's no record of the files it started with")
+        elif config_hash != started_config_hash:
+            restart_reasons.append(_describe_config_change(container, current_synapse_config))
+        if not _synapse_is_running(container):
+            restart_reasons.append("it isn't running")
+
+        if restart_reasons:
+            logger.info("Restarting Synapse because %s.", " and ".join(restart_reasons))
+            # Validate the new configuration before Synapse can read it.
             _push_synapse_config(
-                container,
-                synapse.generate_worker_config(unit_number, is_main),
-                config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH,
+                container, current_synapse_config, config_path=synapse.SYNAPSE_NEW_CONFIG_PATH
             )
-            # Push main configuration
+            synapse.validate_config(
+                container=container, config_path=synapse.SYNAPSE_NEW_CONFIG_PATH
+            )
+            _push_synapse_config(
+                container, worker_config, config_path=synapse.SYNAPSE_WORKER_CONFIG_PATH
+            )
             _push_synapse_config(container, current_synapse_config)
-            synapse.validate_config(container=container)
             restart_synapse(container=container, charm_state=charm_state, is_main=is_main)
             if is_main and charm_state.instance_map_config is not None:
                 restart_federation_sender(container=container, charm_state=charm_state)
+            # Record what Synapse started with only now, so a failed restart is retried.
+            container.push(synapse.SYNAPSE_STARTED_CONFIG_HASH_PATH, config_hash)
         else:
-            logging.info("Configuration has not changed, no action.")
+            logger.info("Configuration has not changed, no action.")
+            # Changes to the health checks apply without a restart.
+            _add_synapse_layers(charm_state=charm_state, container=container, is_main=is_main)
+        container.remove_path(synapse.SYNAPSE_NEW_CONFIG_PATH)
     except (synapse.WorkloadError, ops.pebble.PathError) as exc:
         raise PebbleServiceError(str(exc)) from exc
 
