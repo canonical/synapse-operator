@@ -140,19 +140,88 @@ async def test_synapse_prometheus_configured(
         assert "python_gc_objects_collected_total" in response.text
 
 
-async def _get_unit_addresses(ops_test: OpsTest, app_name: str) -> dict[str, str]:
-    """Get the address of each unit of an application.
+def _get_pod(namespace: str, name: str) -> typing.Optional[kubernetes.client.V1Pod]:
+    """Get a pod from Kubernetes.
+
+    Args:
+        namespace: the pod's namespace, which is the model name.
+        name: the pod name.
+
+    Returns:
+        The pod, or None if there is no pod with that name.
+    """
+    pods = kubernetes.client.CoreV1Api().list_namespaced_pod(
+        namespace, field_selector=f"metadata.name={name}"
+    )
+    return pods.items[0] if pods.items else None
+
+
+async def _wait_for_replaced_pod(
+    namespace: str, name: str, old_uid: str
+) -> typing.Optional[kubernetes.client.V1Pod]:
+    """Wait until Kubernetes replaces a deleted pod with one that has an IP.
+
+    The new pod has the same name and a new UID. Its IP is usually new, but can be the old one.
+
+    Args:
+        namespace: the pod's namespace, which is the model name.
+        name: the pod name.
+        old_uid: the deleted pod's UID.
+
+    Returns:
+        The new pod, or None if no new pod has an IP within ten minutes.
+    """
+    for _ in range(60):
+        pod = _get_pod(namespace, name)
+        if pod and pod.metadata.uid != old_uid and pod.status.pod_ip:
+            return pod
+        await asyncio.sleep(10)
+    return None
+
+
+async def _get_juju_unit_address(
+    ops_test: OpsTest, app_name: str, unit_name: str
+) -> typing.Optional[str]:
+    """Get the address that Juju reports for a unit.
 
     Args:
         ops_test: the pytest-operator helper.
         app_name: the application name.
+        unit_name: the unit name.
 
     Returns:
-        The address of each unit, by unit name.
+        The address, or None if Juju doesn't report the unit or its address.
     """
-    _, stdout, _ = await ops_test.juju("status", "--format", "json")
-    units = json.loads(stdout)["applications"][app_name]["units"]
-    return {name: unit.get("address", "") for name, unit in units.items()}
+    return_code, stdout, _ = await ops_test.juju("status", "--format", "json")
+    if return_code != 0:
+        return None
+    units = json.loads(stdout).get("applications", {}).get(app_name, {}).get("units", {})
+    return units.get(unit_name, {}).get("address") or None
+
+
+async def _wait_for_juju_unit_address(
+    ops_test: OpsTest, app_name: str, unit_name: str, address: str
+) -> typing.Optional[str]:
+    """Wait until Juju reports an address for a unit.
+
+    The charm gets the unit's address from Juju, so it can only act on a new one once Juju has it.
+
+    Args:
+        ops_test: the pytest-operator helper.
+        app_name: the application name.
+        unit_name: the unit name.
+        address: the address to wait for.
+
+    Returns:
+        The address that Juju reported last, or None if it reported none.
+    """
+    reported = None
+    for _ in range(30):
+        reported = await _get_juju_unit_address(ops_test, app_name, unit_name)
+        if reported == address:
+            break
+        await asyncio.sleep(10)
+    return reported
 
 
 async def _nginx_reaches_main_unit(address: str, host: str) -> bool:
@@ -188,30 +257,43 @@ async def test_synapse_nginx_follows_replaced_main_unit(
 ):
     """
     arrange: integrate Synapse with Redis and scale to two units.
-    act: delete the main unit's pod, so that it comes back with a new address.
-    assert: NGINX on every unit forwards requests to the main unit's new address.
+    act: delete the main unit's pod, so that Kubernetes replaces it.
+    assert: NGINX on every unit forwards requests to the main unit's new IP.
     """
-    apps = [synapse_app.name, redis_app.name]
-    await model.wait_for_idle(idle_period=30, apps=apps, status=ACTIVE_STATUS_NAME)
-    await synapse_app.scale(2)
-    await model.wait_for_idle(idle_period=30, apps=apps, status=ACTIVE_STATUS_NAME)
-    main_unit = f"{synapse_app.name}/0"
-    old_address = (await _get_unit_addresses(ops_test, synapse_app.name))[main_unit]
-
-    kubernetes.config.load_kube_config()
-    kubernetes.client.CoreV1Api().delete_namespaced_pod(
-        name=f"{synapse_app.name}-0", namespace=model_name
+    await model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name, redis_app.name], status=ACTIVE_STATUS_NAME
     )
-    new_address = old_address
-    for _ in range(60):
-        await asyncio.sleep(10)
-        new_address = (await _get_unit_addresses(ops_test, synapse_app.name)).get(main_unit, "")
-        if new_address and new_address != old_address:
-            break
-    assert new_address != old_address, "the main unit kept its address, so this can't be checked"
-    await model.wait_for_idle(idle_period=30, apps=apps, status=ACTIVE_STATUS_NAME)
+    await synapse_app.scale(2)
+    await model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME, wait_for_exact_units=2
+    )
+    kubernetes.config.load_kube_config()
+    pod_names = [f"{synapse_app.name}-{number}" for number in range(2)]
+    old_main_pod = _get_pod(model_name, pod_names[0])
+    assert old_main_pod, f"there's no pod {pod_names[0]}"
 
-    for unit, address in (await _get_unit_addresses(ops_test, synapse_app.name)).items():
+    kubernetes.client.CoreV1Api().delete_namespaced_pod(name=pod_names[0], namespace=model_name)
+    main_pod = await _wait_for_replaced_pod(model_name, pod_names[0], old_main_pod.metadata.uid)
+
+    assert main_pod, f"{pod_names[0]} wasn't replaced by a pod with an IP"
+    main_ip = main_pod.status.pod_ip
+    if main_ip == old_main_pod.status.pod_ip:
+        # Not a failure: the address NGINX already has is still right.
+        pytest.skip(f"the new {pod_names[0]} pod got the old IP {main_ip} back, nothing to follow")
+    main_unit = f"{synapse_app.name}/0"
+    juju_address = await _wait_for_juju_unit_address(
+        ops_test, synapse_app.name, main_unit, main_ip
+    )
+    assert juju_address == main_ip, (
+        f"Juju hasn't caught up with {main_unit}'s new pod at {main_ip}: "
+        f"it reports {juju_address or 'no address for the unit'}"
+    )
+    await model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME, wait_for_exact_units=2
+    )
+    for pod_name in pod_names:
+        pod = _get_pod(model_name, pod_name)
+        assert pod and pod.status.pod_ip, f"there's no pod {pod_name} with an IP"
         assert await _nginx_reaches_main_unit(
-            address, synapse_app.name
-        ), f"NGINX on {unit} doesn't reach the main unit at {new_address}"
+            pod.status.pod_ip, synapse_app.name
+        ), f"NGINX on {pod_name} doesn't reach the main unit at {main_ip}"
