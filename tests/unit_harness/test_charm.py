@@ -307,6 +307,57 @@ def test_nginx_replan_failure(harness: Harness, monkeypatch: pytest.MonkeyPatch)
     assert isinstance(harness.model.unit.status, ops.MaintenanceStatus)
 
 
+def test_main_unit_publishes_its_ip(harness: Harness) -> None:
+    """
+    arrange: start the Synapse charm as the main unit, with the peer relation.
+    act: fire that the Synapse container is ready, which reconciles.
+    assert: the main unit's IP is in its peer relation data.
+    """
+    relation_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.begin()
+
+    harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
+
+    assert harness.get_relation_data(relation_id, "synapse/0")["main-unit-ip"] == "10.0.0.10"
+
+
+def test_other_units_do_not_publish_an_ip(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm as a unit that isn't the main unit, with the peer relation.
+    act: fire that the Synapse container is ready, which reconciles.
+    assert: the unit publishes no IP.
+    """
+    monkeypatch.setattr(SynapseCharm, "is_main", property(lambda _: False))
+    relation_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.begin()
+
+    harness.container_pebble_ready(synapse.SYNAPSE_CONTAINER_NAME)
+
+    assert "main-unit-ip" not in harness.get_relation_data(relation_id, "synapse/0")
+
+
+def test_peer_data_change_restarts_nginx(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    arrange: start the Synapse charm with the peer relation and another unit, mock restart_nginx.
+    act: change the other unit's peer data, as the main unit does when its IP changes.
+    assert: NGINX is restarted, so it looks up the main unit's address again.
+    """
+    relation_id = harness.add_relation(synapse.SYNAPSE_PEER_RELATION_NAME, "synapse")
+    harness.add_relation_unit(relation_id, "synapse/1")
+    harness.set_planned_units(1)
+    harness.begin()
+    restart_nginx_mock = MagicMock()
+    monkeypatch.setattr(pebble, "restart_nginx", restart_nginx_mock)
+
+    harness.update_relation_data(relation_id, "synapse/1", {"main-unit-ip": "10.1.2.3"})
+
+    restart_nginx_mock.assert_called_once()
+
+
 def test_nginx_replan_sets_status_to_active(harness: Harness) -> None:
     """
     arrange: start Synapse charm with Synapse container and with pebble service ready.

@@ -62,6 +62,7 @@ from user import User
 logger = logging.getLogger(__name__)
 
 INGRESS_INTEGRATION_NAME = "ingress"
+MAIN_UNIT_IP_KEY = "main-unit-ip"
 # This constant is updated by Renovate.
 SYNAPSE_VERSION = "1.146.0"
 S3_CANNOT_ACCESS_BUCKET = "Media: S3 bucket does not exist or cannot be accessed"
@@ -203,6 +204,29 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.reconcile(charm_state)
 
+    def _publish_main_unit_ip(self) -> None:
+        """Publish the main unit's IP in the peer relation.
+
+        NGINX on every unit looks up the main unit's address only when it starts. When the main
+        unit's pod is replaced, it gets a new IP, and the other units keep sending requests to
+        the old one. Publishing the new IP changes the peer relation data, which makes the other
+        units reconcile and restart NGINX, so they look up the address again.
+        """
+        if not self.is_main or not self.peer_relation:
+            return
+        try:
+            binding = self.model.get_binding(self.peer_relation)
+            address = binding.network.bind_address if binding else None
+        except ops.ModelError as exc:
+            logger.warning("Unable to get the main unit's IP: %s", exc)
+            return
+        if address is None:
+            logger.warning("The main unit's IP isn't available yet")
+            return
+        if self.peer_relation.data[self.unit].get(MAIN_UNIT_IP_KEY) != str(address):
+            logger.info("Publishing the main unit's IP %s", address)
+            self.peer_relation.data[self.unit][MAIN_UNIT_IP_KEY] = str(address)
+
     def reconcile(
         self, charm_state: CharmState, maintenance_status: str = "Configuring Synapse"
     ) -> None:
@@ -215,6 +239,7 @@ class SynapseCharm(CharmBaseWithState):
             maintenance_status: message to display during the reconcile.
         """
         self.unit.set_workload_version(SYNAPSE_VERSION)
+        self._publish_main_unit_ip()
 
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
         if not container.can_connect():
