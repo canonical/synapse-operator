@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-11-16
+
+- Updated Synapse to 1.165.0. Valkey requires a username, which Synapse supports from 1.162.0.
+
 ## 2026-11-10
 
 - Fixed requests timing out after the main unit's pod is replaced, for example by a refresh. The main unit now publishes its IP to the other units, which makes them restart NGINX and find it at its new address.

@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 INGRESS_INTEGRATION_NAME = "ingress"
 MAIN_UNIT_IP_KEY = "main-unit-ip"
 # This constant is updated by Renovate.
-SYNAPSE_VERSION = "1.146.0"
+SYNAPSE_VERSION = "1.165.0"
 S3_CANNOT_ACCESS_BUCKET = "Media: S3 bucket does not exist or cannot be accessed"
 S3_INVALID_CONFIGURATION = "Media: S3 configuration is invalid"
 
