@@ -10,7 +10,10 @@ Each revision is versioned by the date of the revision.
 
 ## 2026-11-16
 
+- Added the `valkey` integration, as a replacement for the `redis` integration. When both exist, the charm uses Valkey, so a deployment can add Valkey first and remove Redis later.
 - Updated Synapse to 1.165.0. Valkey requires a username, which Synapse supports from 1.162.0.
+- Fixed the charm writing the Redis host `None` when the `redis` integration has no address yet. The charm now waits.
+- Stopped writing the values of changed Synapse settings to the debug log, because they can contain passwords.
 
 ## 2026-11-10
 

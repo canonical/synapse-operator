@@ -88,12 +88,18 @@ class MediaConfiguration(typing.TypedDict):
 
 @dataclass(frozen=True)
 class RedisConfiguration(typing.TypedDict):
-    """A named tuple representing Redis configuration.
+    """A named tuple representing the configuration of the Redis or Valkey server.
+
+    Synapse talks to both with the same settings, under the redis key of its configuration.
 
     Attributes:
-        host: The hostname of the Redis server.
-        port: The port on the Redis server.
+        host: The hostname of the server.
+        port: The port on the server.
+        username: The username to authenticate with, None if the server needs none.
+        password: The password to authenticate with, None if the server needs none.
     """
 
     host: str
     port: int
+    username: typing.Optional[str]
+    password: typing.Optional[str]
