@@ -103,6 +103,39 @@ def _pod_ips(namespace: str, app_name: str, units: int) -> list[str]:
     return ips
 
 
+def _pod_uids(namespace: str, app_name: str, units: int) -> dict[str, typing.Optional[str]]:
+    """Get the UID of every pod of an application.
+
+    Args:
+        namespace: the pods' namespace, which is the model name.
+        app_name: the application name.
+        units: the number of units.
+
+    Returns:
+        The UID of each pod, by pod name.
+    """
+    api = kubernetes.client.CoreV1Api()
+    pod_names = [f"{app_name}-{number}" for number in range(units)]
+    return {name: _pod_uid(api.read_namespaced_pod(name, namespace)) for name in pod_names}
+
+
+def _synapse_config(namespace: str, app_name: str, units: int) -> list[dict]:
+    """Get the Synapse configuration of every unit.
+
+    Args:
+        namespace: the pods' namespace, which is the model name.
+        app_name: the application name.
+        units: the number of units.
+
+    Returns:
+        The configuration of each unit, in unit order.
+    """
+    return [
+        yaml.safe_load(_exec(namespace, f"{app_name}-{number}", ["cat", "/data/homeserver.yaml"]))
+        for number in range(units)
+    ]
+
+
 def _cache_config(namespace: str, app_name: str, units: int) -> list[dict]:
     """Get the redis section of the Synapse configuration of every unit.
 
@@ -116,12 +149,7 @@ def _cache_config(namespace: str, app_name: str, units: int) -> list[dict]:
     Returns:
         The redis section of each unit, in unit order.
     """
-    return [
-        yaml.safe_load(_exec(namespace, f"{app_name}-{number}", ["cat", "/data/homeserver.yaml"]))[
-            "redis"
-        ]
-        for number in range(units)
-    ]
+    return [config["redis"] for config in _synapse_config(namespace, app_name, units)]
 
 
 def _synapse_started(namespace: str, app_name: str, units: int) -> list[str]:
@@ -147,6 +175,30 @@ def _synapse_started(namespace: str, app_name: str, units: int) -> list[str]:
     ]
 
 
+async def _wait_for_new_pods(namespace: str, old_uids: dict[str, typing.Optional[str]]) -> None:
+    """Wait until Kubernetes has replaced every given pod with one that has an IP.
+
+    Args:
+        namespace: the pods' namespace, which is the model name.
+        old_uids: the UID of each pod before it was replaced, by pod name.
+
+    Raises:
+        AssertionError: if a pod wasn't replaced within 15 minutes.
+    """
+    api = kubernetes.client.CoreV1Api()
+    waiting = list(old_uids)
+    for _ in range(90):
+        waiting = []
+        for pod_name, old_uid in old_uids.items():
+            pods = api.list_namespaced_pod(namespace, field_selector=f"metadata.name={pod_name}")
+            if not (pods.items and _pod_uid(pods.items[0]) != old_uid and _pod_ip(pods.items[0])):
+                waiting.append(pod_name)
+        if not waiting:
+            return
+        await asyncio.sleep(10)
+    raise AssertionError(f"not replaced by a pod with an IP: {', '.join(waiting)}")
+
+
 async def _replace_pod(namespace: str, pod_name: str) -> None:
     """Delete a pod and wait until Kubernetes has replaced it with one that has an IP.
 
@@ -157,12 +209,7 @@ async def _replace_pod(namespace: str, pod_name: str) -> None:
     api = kubernetes.client.CoreV1Api()
     old_uid = _pod_uid(api.read_namespaced_pod(pod_name, namespace))
     api.delete_namespaced_pod(name=pod_name, namespace=namespace)
-    for _ in range(60):
-        pods = api.list_namespaced_pod(namespace, field_selector=f"metadata.name={pod_name}")
-        if pods.items and _pod_uid(pods.items[0]) != old_uid and _pod_ip(pods.items[0]):
-            return
-        await asyncio.sleep(10)
-    raise AssertionError(f"{pod_name} wasn't replaced by a pod with an IP")
+    await _wait_for_new_pods(namespace, {pod_name: old_uid})
 
 
 async def _wait_for_synapse(model: Model, synapse_app: Application, units: int = UNITS) -> None:
@@ -273,13 +320,18 @@ async def test_synapse_pod_replaced(
     """
     arrange: two Synapse units that use Valkey.
     act: delete one Synapse pod, so that Kubernetes replaces it with one that has a new IP.
-    assert: every unit uses Valkey and has all the data.
+    assert: every unit keeps the same Valkey host, user and password, and has all the data.
     """
+    config_before = _cache_config(model_name, synapse_app.name, UNITS)
+    for section in config_before:
+        assert section["host"].startswith(f"{VALKEY_APP_NAME}-primary"), section["host"]
+
     await _replace_pod(model_name, f"{synapse_app.name}-{unit_number}")
     await _wait_for_synapse(model, synapse_app)
 
-    for section in _cache_config(model_name, synapse_app.name, UNITS):
-        assert section["host"].startswith(f"{VALKEY_APP_NAME}-primary"), section["host"]
+    # The leader asks Valkey for the user. A new request would get new credentials and
+    # restart every unit, so the same user must still be in use.
+    assert _cache_config(model_name, synapse_app.name, UNITS) == config_before
     matrix_data.check(_pod_ips(model_name, synapse_app.name, UNITS))
 
 
@@ -289,18 +341,23 @@ async def test_synapse_scaling_with_valkey(
     """
     arrange: two Synapse units that use Valkey.
     act: scale to three units, then back to two.
-    assert: after each change, every unit uses Valkey and has all the data.
+    assert: after each change, every unit, the new one included, uses the same Valkey host, user
+        and password, and has all the data.
     """
+    config_before = _cache_config(model_name, synapse_app.name, UNITS)
+
     await synapse_app.scale(UNITS + 1)
     await _wait_for_synapse(model, synapse_app, UNITS + 1)
 
-    for section in _cache_config(model_name, synapse_app.name, UNITS + 1):
-        assert section["host"].startswith(f"{VALKEY_APP_NAME}-primary"), section["host"]
+    assert _cache_config(model_name, synapse_app.name, UNITS + 1) == [config_before[0]] * (
+        UNITS + 1
+    )
     matrix_data.check(_pod_ips(model_name, synapse_app.name, UNITS + 1))
 
     await synapse_app.scale(UNITS)
     await _wait_for_synapse(model, synapse_app)
 
+    assert _cache_config(model_name, synapse_app.name, UNITS) == config_before
     matrix_data.check(_pod_ips(model_name, synapse_app.name, UNITS))
 
 
@@ -385,4 +442,68 @@ async def test_remove_and_add_valkey_without_redis(
     for before, after in zip(config_before, config_after):
         assert after["host"] == before["host"]
         assert after["username"] != before["username"]
+    matrix_data.check(_pod_ips(model_name, synapse_app.name, UNITS))
+
+
+async def test_config_change_keeps_valkey(
+    model: Model, model_name: str, synapse_app: Application, matrix_data: MatrixData
+):
+    """
+    arrange: two Synapse units that use Valkey, with no Redis integration.
+    act: enable a charm option, then reset it.
+    assert: each time, every unit's Synapse configuration follows the option, keeps the same
+        Valkey host, user and password, and has all the data.
+    """
+    # Every reconcile renders the Synapse configuration again from the template, so the
+    # Valkey settings must be added back each time.
+    config_before = _cache_config(model_name, synapse_app.name, UNITS)
+
+    await synapse_app.set_config({"block_non_admin_invites": "true"})
+    await _wait_for_synapse(model, synapse_app)
+
+    configs = _synapse_config(model_name, synapse_app.name, UNITS)
+    assert [config["block_non_admin_invites"] for config in configs] == [True] * UNITS
+    assert [config["redis"] for config in configs] == config_before
+    matrix_data.check(_pod_ips(model_name, synapse_app.name, UNITS))
+
+    await synapse_app.reset_config(["block_non_admin_invites"])
+    await _wait_for_synapse(model, synapse_app)
+
+    # The charm writes the option only when it is enabled, so the rebuilt file has none.
+    configs = _synapse_config(model_name, synapse_app.name, UNITS)
+    assert all("block_non_admin_invites" not in config for config in configs)
+    assert [config["redis"] for config in configs] == config_before
+    matrix_data.check(_pod_ips(model_name, synapse_app.name, UNITS))
+
+
+# pylint: disable-next=too-many-arguments,too-many-positional-arguments
+async def test_rolling_refresh_on_valkey(
+    ops_test: OpsTest,
+    model: Model,
+    model_name: str,
+    synapse_app: Application,
+    synapse_charm: str,
+    matrix_data: MatrixData,
+):
+    """
+    arrange: two Synapse units that use Valkey, with no Redis integration.
+    act: refresh Synapse to the same charm. Kubernetes replaces the pods one at a time, the
+        main unit last, as it does in every refresh and every rollback.
+    assert: every pod was replaced. Every unit keeps the same Valkey host, user and password,
+        and has all the data, and the units deliver new messages to each other.
+    """
+    uids_before = _pod_uids(model_name, synapse_app.name, UNITS)
+    config_before = _cache_config(model_name, synapse_app.name, UNITS)
+
+    return_code, _, stderr = await ops_test.juju(
+        "refresh", synapse_app.name, "--path", f"./{synapse_charm}"
+    )
+    assert return_code == 0, stderr
+    await _wait_for_new_pods(model_name, uids_before)
+    await _wait_for_synapse(model, synapse_app)
+
+    assert _cache_config(model_name, synapse_app.name, UNITS) == config_before
+    # Every unit is checked through its own NGINX, and the media file and the account data
+    # come from the main unit. A unit whose NGINX still points at the main unit's old pod
+    # fails here, although it reports active.
     matrix_data.check(_pod_ips(model_name, synapse_app.name, UNITS))
