@@ -218,7 +218,7 @@ def test_config_changed_multiple_units_no_redis(base_state: dict, monkeypatch: M
 
     out = context.run(context.on.config_changed(), state)
 
-    assert out.unit_status == testing.BlockedStatus("Redis integration is required.")
+    assert out.unit_status == testing.BlockedStatus("Valkey or Redis integration is required.")
 
 
 def test_config_changed_multiple_units_with_redis(

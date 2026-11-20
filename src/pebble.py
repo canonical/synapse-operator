@@ -376,7 +376,8 @@ def reconcile(  # noqa: C901 pylint: disable=too-many-branches,too-many-statemen
         )
         if config_has_changed:
             logging.info("Configuration has changed, Synapse will be restarted.")
-            logging.debug("The change is: %s", config_has_changed)
+            # Only the changed keys are logged: the values include passwords.
+            logging.debug("The changed keys are: %s", sorted(config_has_changed.affected_paths))
             # Push worker configuration
             _push_synapse_config(
                 container,

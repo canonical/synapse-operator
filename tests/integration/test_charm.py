@@ -176,7 +176,7 @@ async def test_synapse_enable_smtp(
     """
     arrange: build and deploy the Synapse charm. Create an user and get the access token
         Deploy, configure and integrate with Synapse the smtp-integrator charm.
-    act:  try to check if a given email address is not already associated.
+    act:  ask Synapse to send the email that validates a new address for the user's account.
     assert: the Synapse application is active and the error returned is the one expected.
     """
     if "smtp-integrator" in model.applications:
@@ -209,20 +209,22 @@ async def test_synapse_enable_smtp(
     sample_check = {
         "client_secret": "this_is_my_secret_string",  # nosec B105
         "email": "example@example.com",
-        "id_server": "id.matrix.org",
-        "send_attempt": "1",
+        "send_attempt": 1,
     }
     sess = requests.session()
+    # Synapse sends this email whether or not registration is enabled. The registration
+    # endpoint used here before now answers 403 when registration is disabled, as it is in
+    # this deployment, before it tries to send anything.
     res = sess.post(
-        f"http://{synapse_ip}:8080/_matrix/client/r0/register/email/requestToken",
+        f"http://{synapse_ip}:8080/_matrix/client/v3/account/3pid/email/requestToken",
         json=sample_check,
         headers=headers,
         timeout=5,
     )
 
-    assert res.status_code == 500
+    assert res.status_code == 500, res.text
     # If the configuration change fails, will return something like:
-    # "Email-based registration has been disabled on this server".
+    # "Adding an email to your account is disabled on this server".
     # The expected error confirms that the e-mail is configured but failed since
     # is not a real SMTP server.
     assert "error was encountered when sending the email" in res.text
