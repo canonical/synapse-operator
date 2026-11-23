@@ -18,10 +18,12 @@ from charms.smtp_integrator.v0.smtp import AuthType, TransportSecurity
 from ops.pebble import ExecError
 from ops.testing import Harness
 
+import main_service
 import signing_key
 import synapse
 from charm import SynapseCharm
 from s3_parameters import S3Parameters
+from tests.fake_kubernetes import FakeKubernetes
 
 TEST_SERVER_NAME = "server-name-configured.synapse.com"
 
@@ -112,6 +114,15 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
     monkeypatch.setattr(
         harness, "register_command_handler", register_command_handler, raising=False
     )
+
+
+@pytest.fixture(autouse=True, name="kubernetes")
+def kubernetes_fixture(monkeypatch: pytest.MonkeyPatch) -> FakeKubernetes:
+    """Replace the Kubernetes API with an in-memory one, so no test reaches a real cluster."""
+    fake = FakeKubernetes()
+    monkeypatch.setattr(main_service, "Client", fake.new_client)
+    monkeypatch.setattr(main_service, "KubeConfig", MagicMock())
+    return fake
 
 
 @pytest.fixture(name="harness")

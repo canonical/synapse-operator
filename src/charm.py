@@ -49,6 +49,12 @@ from charm_types import (
     SMTPConfiguration,
 )
 from database_observer import DatabaseObserver
+from main_service import (
+    MainService,
+    MainServiceConflictError,
+    MainServiceError,
+    MainServiceNotPermittedError,
+)
 from matrix_auth_observer import MatrixAuthObserver
 from mjolnir import (
     Mjolnir,
@@ -63,6 +69,7 @@ from valkey_observer import VALKEY_RELATION_NAME, ValkeyNotUsableError, ValkeyOb
 logger = logging.getLogger(__name__)
 
 INGRESS_INTEGRATION_NAME = "ingress"
+MAIN_SERVICE_IP_KEY = "main-service-ip"
 MAIN_UNIT_IP_KEY = "main-unit-ip"
 REDIS_RELATION_NAME = "redis"
 # This constant is updated by Renovate.
@@ -112,6 +119,9 @@ class SynapseCharm(CharmBaseWithState):
         self._smtp = SmtpRequires(self, relation_name="smtp")
         self._redis = RedisRequires(self)
         self._valkey = ValkeyObserver(self)
+        self._main_service = MainService(
+            app_name=self.app.name, namespace=self.model.name, unit_name=self.unit.name
+        )
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
@@ -210,15 +220,72 @@ class SynapseCharm(CharmBaseWithState):
             return
         self.reconcile(charm_state)
 
+    @property
+    def _uses_main_service(self) -> bool:
+        """Check if the units reach the main unit through its Service.
+
+        Returns:
+            True if the leader published the cluster IP of the Service.
+        """
+        if not self.peer_relation:
+            return False
+        return bool(self.peer_relation.data[self.app].get(MAIN_SERVICE_IP_KEY))
+
+    def _reconcile_main_service(self) -> None:
+        """Keep the Service that routes to the main unit, and tell the units to use it.
+
+        The leader publishes the cluster IP of the Service in the peer relation. The units use
+        the Service while the IP is there, and a change of the IP makes them reconcile and
+        restart NGINX, so they look up the Service again.
+
+        Creating the Service needs a trusted application. Without trust, the units keep sending
+        requests to the main unit's pod address and follow it through its IP in the peer
+        relation, as before.
+        """
+        if not self.unit.is_leader() or not self.peer_relation:
+            return
+        app_data = self.peer_relation.data[self.app]
+        try:
+            cluster_ip = self._main_service.ensure()
+        except MainServiceNotPermittedError:
+            logger.info(
+                "Not allowed to create the Service %s, so the units follow the main unit "
+                "through the peer relation. To use the Service, run: "
+                "juju trust %s --scope=cluster",
+                self._main_service.name,
+                self.app.name,
+            )
+            app_data.pop(MAIN_SERVICE_IP_KEY, None)
+            return
+        except MainServiceConflictError as exc:
+            logger.error("%s, so the units follow the main unit through the peer relation", exc)
+            app_data.pop(MAIN_SERVICE_IP_KEY, None)
+            return
+        except MainServiceError as exc:
+            logger.warning(
+                "Unable to check the Service %s, leaving the units as they are: %s",
+                self._main_service.name,
+                exc,
+            )
+            return
+        if app_data.get(MAIN_SERVICE_IP_KEY) != cluster_ip:
+            logger.info("Using the Service %s at %s", self._main_service.name, cluster_ip)
+            app_data[MAIN_SERVICE_IP_KEY] = cluster_ip
+
     def _publish_main_unit_ip(self) -> None:
-        """Publish the main unit's IP in the peer relation.
+        """Publish the main unit's IP in the peer relation, unless its Service is used.
 
         NGINX on every unit looks up the main unit's address only when it starts. When the main
         unit's pod is replaced, it gets a new IP, and the other units keep sending requests to
         the old one. Publishing the new IP changes the peer relation data, which makes the other
         units reconcile and restart NGINX, so they look up the address again.
+
+        With the Service, the other units have nothing to follow, so the IP is removed.
         """
         if not self.is_main or not self.peer_relation:
+            return
+        if self._uses_main_service:
+            self.peer_relation.data[self.unit].pop(MAIN_UNIT_IP_KEY, None)
             return
         try:
             binding = self.model.get_binding(self.peer_relation)
@@ -245,6 +312,7 @@ class SynapseCharm(CharmBaseWithState):
             maintenance_status: message to display during the reconcile.
         """
         self.unit.set_workload_version(SYNAPSE_VERSION)
+        self._reconcile_main_service()
         self._publish_main_unit_ip()
 
         container = self.unit.get_container(synapse.SYNAPSE_CONTAINER_NAME)
@@ -295,10 +363,21 @@ class SynapseCharm(CharmBaseWithState):
                 )
         unit_number = self.unit.name.split("/")[1]
         pebble.reconcile(charm_state, container, is_main=self.is_main, unit_number=unit_number)
-        pebble.restart_nginx(container, self._get_unit_address(MAIN_UNIT_ID))
+        pebble.restart_nginx(container, self._get_main_address())
         if self.peer_relation:
             signing_key.write_to_secret(self.peer_relation, self, charm_state, container)
             macaroon_key.write_to_secret(self.peer_relation, self, charm_state, container)
+
+    def _get_main_address(self) -> str:
+        """Get the address that NGINX sends the main unit's requests to.
+
+        Returns:
+            The Service if the units use it, the main unit's pod address otherwise. The main
+            unit always gets its pod address, so it doesn't reach itself through the Service.
+        """
+        if self._uses_main_service and not self.is_main:
+            return self._main_service.name
+        return self._get_unit_address(MAIN_UNIT_ID)
 
     def _get_unit_address(self, unit_id: int) -> str:
         """Get unit address.

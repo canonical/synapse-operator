@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Each revision is versioned by the date of the revision.
 
+## 2026-11-23
+
+- Added a Kubernetes Service that routes to the main unit's pod. When the application is trusted (`juju trust <application> --scope=cluster`), NGINX on the other units sends the main unit's requests to this Service. The Service keeps its address when the pod is replaced, so the other units no longer restart NGINX to follow the main unit. Without trust, nothing changes.
+
 ## 2026-11-16
 
 - Added the `valkey` integration, as a replacement for the `redis` integration. When both exist, the charm uses Valkey, so a deployment can add Valkey first and remove Redis later.

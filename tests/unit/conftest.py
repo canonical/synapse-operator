@@ -6,9 +6,22 @@
 import textwrap
 from pathlib import Path
 from secrets import token_hex
+from unittest.mock import MagicMock
 
 import pytest
 from ops import pebble, testing
+
+import main_service
+from tests.fake_kubernetes import FakeKubernetes
+
+
+@pytest.fixture(autouse=True, name="kubernetes")
+def kubernetes_fixture(monkeypatch: pytest.MonkeyPatch) -> FakeKubernetes:
+    """Replace the Kubernetes API with an in-memory one, so no test reaches a real cluster."""
+    fake = FakeKubernetes()
+    monkeypatch.setattr(main_service, "Client", fake.new_client)
+    monkeypatch.setattr(main_service, "KubeConfig", MagicMock())
+    return fake
 
 
 @pytest.fixture(scope="function", name="base_state")
