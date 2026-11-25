@@ -297,3 +297,140 @@ async def test_synapse_nginx_follows_replaced_main_unit(
         assert await _nginx_reaches_main_unit(
             pod.status.pod_ip, synapse_app.name
         ), f"NGINX on {pod_name} doesn't reach the main unit at {main_ip}"
+
+
+def _get_main_service(namespace: str, name: str) -> typing.Optional[kubernetes.client.V1Service]:
+    """Get the Service that routes to the main unit.
+
+    Args:
+        namespace: the Service's namespace, which is the model name.
+        name: the Service name.
+
+    Returns:
+        The Service, or None if there is no Service with that name.
+    """
+    services = kubernetes.client.CoreV1Api().list_namespaced_service(
+        namespace, field_selector=f"metadata.name={name}"
+    )
+    return services.items[0] if services.items else None
+
+
+def _get_service_addresses(namespace: str, name: str) -> list[str]:
+    """Get the pod IPs that a Service routes to.
+
+    Args:
+        namespace: the Service's namespace, which is the model name.
+        name: the Service name.
+
+    Returns:
+        The IPs, sorted.
+    """
+    slices = kubernetes.client.DiscoveryV1Api().list_namespaced_endpoint_slice(
+        namespace, label_selector=f"kubernetes.io/service-name={name}"
+    )
+    return sorted(
+        address
+        for endpoint_slice in slices.items
+        for endpoint in endpoint_slice.endpoints or []
+        for address in endpoint.addresses
+    )
+
+
+async def _get_nginx_main_location(ops_test: OpsTest, unit_name: str) -> str:
+    """Get the NGINX configuration for requests that go to the main unit.
+
+    Args:
+        ops_test: the pytest-operator helper.
+        unit_name: the unit name.
+
+    Returns:
+        The content of the file in the unit's Synapse container, or an empty string if it can't
+        be read.
+    """
+    return_code, stdout, _ = await ops_test.juju(
+        "ssh", "--container", "synapse", unit_name, "cat", "/etc/nginx/main_location.conf"
+    )
+    return stdout if return_code == 0 else ""
+
+
+async def _nginx_uses(ops_test: OpsTest, unit_name: str, proxy_pass: str) -> bool:
+    """Wait until NGINX on a unit sends the main unit's requests to an address.
+
+    Args:
+        ops_test: the pytest-operator helper.
+        unit_name: the unit name.
+        proxy_pass: the directive to wait for.
+
+    Returns:
+        True if the configuration has the directive within five minutes.
+    """
+    for _ in range(30):
+        if proxy_pass in await _get_nginx_main_location(ops_test, unit_name):
+            return True
+        await asyncio.sleep(10)
+    return False
+
+
+@pytest.mark.redis
+async def test_synapse_nginx_reaches_replaced_main_unit_through_service(
+    ops_test: OpsTest,
+    model: Model,
+    model_name: str,
+    synapse_app: Application,
+    redis_app: Application,
+):
+    """
+    arrange: integrate Synapse with Redis, scale to two units, and trust the application, so that
+        the charm creates the Service that routes to the main unit.
+    act: delete the main unit's pod, so that Kubernetes replaces it.
+    assert: NGINX on the other unit sends the main unit's requests to the Service, the Service
+        routes to the new pod only, and NGINX on every unit reaches the main unit.
+    """
+    await model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name, redis_app.name], status=ACTIVE_STATUS_NAME
+    )
+    await synapse_app.scale(2)
+    await model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME, wait_for_exact_units=2
+    )
+    kubernetes.config.load_kube_config()
+    pod_names = [f"{synapse_app.name}-{number}" for number in range(2)]
+    service_name = f"{synapse_app.name}-main"
+
+    trust = await ops_test.juju("trust", synapse_app.name, "--scope=cluster")
+    assert trust[0] == 0, f"juju trust failed: {trust[2]}"
+    proxy_pass = f"proxy_pass http://{service_name}:8008;"
+    other_unit = f"{synapse_app.name}/1"
+    assert await _nginx_uses(
+        ops_test, other_unit, proxy_pass
+    ), f"NGINX on {other_unit} doesn't use the Service"
+    await model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME, wait_for_exact_units=2
+    )
+
+    service = _get_main_service(model_name, service_name)
+    assert service, f"there's no Service {service_name}"
+    assert service.spec.selector == {
+        "app.kubernetes.io/name": synapse_app.name,
+        "statefulset.kubernetes.io/pod-name": pod_names[0],
+    }
+    old_main_pod = _get_pod(model_name, pod_names[0])
+    assert old_main_pod, f"there's no pod {pod_names[0]}"
+
+    kubernetes.client.CoreV1Api().delete_namespaced_pod(name=pod_names[0], namespace=model_name)
+    main_pod = await _wait_for_replaced_pod(model_name, pod_names[0], old_main_pod.metadata.uid)
+
+    assert main_pod, f"{pod_names[0]} wasn't replaced by a pod with an IP"
+    await model.wait_for_idle(
+        idle_period=30, apps=[synapse_app.name], status=ACTIVE_STATUS_NAME, wait_for_exact_units=2
+    )
+    assert _get_service_addresses(model_name, service_name) == [main_pod.status.pod_ip]
+    assert proxy_pass in await _get_nginx_main_location(
+        ops_test, other_unit
+    ), f"NGINX on {other_unit} stopped using the Service"
+    for pod_name in pod_names:
+        pod = _get_pod(model_name, pod_name)
+        assert pod and pod.status.pod_ip, f"there's no pod {pod_name} with an IP"
+        assert await _nginx_reaches_main_unit(
+            pod.status.pod_ip, synapse_app.name
+        ), f"NGINX on {pod_name} doesn't reach the main unit through {service_name}"
