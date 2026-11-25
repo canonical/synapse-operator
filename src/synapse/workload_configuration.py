@@ -252,7 +252,7 @@ def enable_media(current_yaml: dict, charm_state: CharmState) -> None:
 
 
 def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
-    """Change the Synapse configuration to enable Redis.
+    """Change the Synapse configuration to enable Redis or Valkey.
 
     Args:
         current_yaml: current configuration.
@@ -274,6 +274,11 @@ def enable_redis(current_yaml: dict, charm_state: CharmState) -> None:
         current_yaml["redis"]["enabled"] = True
         current_yaml["redis"]["host"] = redis_config["host"]
         current_yaml["redis"]["port"] = redis_config["port"]
+        # Valkey gives each client a username and a password. Synapse refuses a username
+        # without a password, so they are only written together.
+        if redis_config["username"] and redis_config["password"]:
+            current_yaml["redis"]["username"] = redis_config["username"]
+            current_yaml["redis"]["password"] = redis_config["password"]
     except KeyError as exc:
         raise WorkloadError(str(exc)) from exc
 

@@ -107,10 +107,10 @@ parts:
         plugin: nil
         source: https://github.com/element-hq/synapse/
         source-type: git
-        source-tag: v1.146.0
+        source-tag: v1.165.0
         build-environment:
-          - RUST_VERSION: "1.82.0"
-          - POETRY_VERSION: "2.1.1"
+          - RUST_VERSION: "1.85.0"
+          - POETRY_VERSION: "2.4.1"
         override-build: |
             craftctl default
             export RUSTUP_HOME=/rust

@@ -2,3 +2,4 @@ Addon
 AI
 homeserver
 Homeserver
+Valkey

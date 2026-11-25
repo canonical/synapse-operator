@@ -58,13 +58,15 @@ from mjolnir import (
 from observability import Observability
 from s3_parameters import S3Parameters
 from user import User
+from valkey_observer import VALKEY_RELATION_NAME, ValkeyNotUsableError, ValkeyObserver
 
 logger = logging.getLogger(__name__)
 
 INGRESS_INTEGRATION_NAME = "ingress"
 MAIN_UNIT_IP_KEY = "main-unit-ip"
+REDIS_RELATION_NAME = "redis"
 # This constant is updated by Renovate.
-SYNAPSE_VERSION = "1.146.0"
+SYNAPSE_VERSION = "1.165.0"
 S3_CANNOT_ACCESS_BUCKET = "Media: S3 bucket does not exist or cannot be accessed"
 S3_INVALID_CONFIGURATION = "Media: S3 configuration is invalid"
 
@@ -109,6 +111,7 @@ class SynapseCharm(CharmBaseWithState):
         self._saml = SamlRequires(self)
         self._smtp = SmtpRequires(self, relation_name="smtp")
         self._redis = RedisRequires(self)
+        self._valkey = ValkeyObserver(self)
         self.token_service = AdminAccessTokenService(app=self.app, model=self.model)
         # service-hostname is a required field so we're hardcoding to the same
         # value as service-name. service-hostname should be set via Nginx
@@ -142,6 +145,9 @@ class SynapseCharm(CharmBaseWithState):
         )
         self.framework.observe(self.on.anonymize_user_action, self._on_anonymize_user_action)
         self.framework.observe(self.on.redis_relation_updated, self._trigger_reconcile)
+        self.framework.observe(
+            self.on[VALKEY_RELATION_NAME].relation_created, self._on_valkey_relation_created
+        )
         self.framework.observe(self._smtp.on.smtp_data_available, self._trigger_reconcile)
         self.framework.observe(
             self._media.on.credentials_changed, self._on_media_credentials_changed
@@ -247,7 +253,8 @@ class SynapseCharm(CharmBaseWithState):
             return
 
         if charm_state.redis_required:
-            self.unit.status = ops.BlockedStatus("Redis integration is required.")
+            # Synapse is left as it is: if it runs, it keeps the cache it was configured with.
+            self.unit.status = self._get_missing_cache_status()
             return
 
         self.model.unit.status = ops.MaintenanceStatus(maintenance_status)
@@ -369,33 +376,105 @@ class SynapseCharm(CharmBaseWithState):
             # ModelError is raised if service not found
             logger.info("mjolnir not found, skipping")
 
-        self.unit.status = ops.ActiveStatus()
+        self.unit.status = ops.ActiveStatus(self._get_cache_message(charm_state))
 
     # Integrations
     def get_relation_as_redis_conf(self) -> Optional[RedisConfiguration]:
+        """Get the connection details of the cache that Synapse should use.
+
+        Valkey is used as soon as its relation has everything needed to connect. Until then, and
+        when there is no Valkey relation, Redis is used. This lets an operator add Valkey first
+        and remove Redis later, and go back to Redis by removing the Valkey relation.
+
+        Returns:
+            The configuration for Valkey or Redis, or None if neither relation can be used.
+        """
+        try:
+            valkey_config = self._valkey.get_relation_as_redis_conf()
+        except ValkeyNotUsableError as exc:
+            logger.info("Not using Valkey: %s", exc.msg)
+            valkey_config = None
+        return valkey_config or self._get_redis_relation_as_redis_conf()
+
+    def _get_redis_relation_as_redis_conf(self) -> Optional[RedisConfiguration]:
         """Get the hostname and port from the redis relation data.
 
         Returns:
             RedisConfiguration instance with the hostname and port of the related redis or None
             if not found.
         """
-        redis_config = None
-        try:
-            if self._redis.relation_data:
-                redis_hostname = str(self._redis.relation_data.get("hostname"))
-                redis_port = int(self._redis.relation_data.get("port", "6379"))
-                logger.debug(
-                    "Got redis connection details from relation %s:%s", redis_hostname, redis_port
-                )
-                redis_config = RedisConfiguration(host=redis_hostname, port=redis_port)
-        except (KeyError, ValueError, TypeError) as exc:
-            # the relation databag is empty at that point.
-            logger.exception("Failed to get Redis relation data: %s", str(exc))
+        relation_data = self._redis.relation_data
+        # The relation databag is empty until Redis publishes its address.
+        hostname = relation_data.get("hostname") if relation_data else None
+        if not relation_data or not hostname:
+            logger.info("Redis databag has no hostname.")
             return None
+        try:
+            port = int(relation_data.get("port", "6379"))
+        except ValueError:
+            logger.warning("Redis published a port that isn't a number.")
+            return None
+        logger.debug("Got redis connection details from relation %s:%s", hostname, port)
+        return RedisConfiguration(host=hostname, port=port, username=None, password=None)
 
-        if not redis_config:
-            logger.info("Redis databag is empty.")
-        return redis_config
+    @inject_charm_state
+    def _on_valkey_relation_created(self, _: ops.HookEvent, charm_state: CharmState) -> None:
+        """Report that the unit waits for Valkey, without reconfiguring Synapse.
+
+        Valkey answers some time after the relation is created. Until then the charm has no
+        reason to reconcile, so without this the status would still describe the time before
+        the relation existed.
+
+        Args:
+            charm_state: charm state.
+        """
+        if charm_state.redis_required:
+            self.unit.status = self._get_missing_cache_status()
+        elif isinstance(self.unit.status, ops.ActiveStatus):
+            self.unit.status = ops.ActiveStatus(self._get_cache_message(charm_state))
+
+    def _get_valkey_problem(self) -> Optional[ValkeyNotUsableError]:
+        """Get the reason why the Valkey relation can't be used.
+
+        Returns:
+            The reason, or None if the relation can be used or there is none.
+        """
+        try:
+            self._valkey.get_relation_as_redis_conf()
+        except ValkeyNotUsableError as exc:
+            return exc
+        return None
+
+    def _get_missing_cache_status(self) -> ops.StatusBase:
+        """Get the status of a unit that needs Valkey or Redis and can use neither.
+
+        Returns:
+            Waiting if a relation exists and its data isn't complete yet, blocked otherwise.
+        """
+        problem = self._get_valkey_problem()
+        if problem:
+            if problem.needs_operator:
+                return ops.BlockedStatus(problem.msg)
+            return ops.WaitingStatus(problem.msg)
+        if self.model.relations[REDIS_RELATION_NAME]:
+            return ops.WaitingStatus("Waiting for Redis")
+        return ops.BlockedStatus("Valkey or Redis integration is required.")
+
+    def _get_cache_message(self, charm_state: CharmState) -> str:
+        """Get the message of an active unit when both Valkey and Redis are related.
+
+        Args:
+            charm_state: charm state.
+
+        Returns:
+            Which of the two is in use and why, or an empty string if there is nothing to say.
+        """
+        problem = self._get_valkey_problem()
+        if problem:
+            return f"Using Redis. {problem.msg}" if charm_state.redis_config else problem.msg
+        if self._valkey.is_related() and self.model.relations[REDIS_RELATION_NAME]:
+            return "Using Valkey. The redis integration is no longer used"
+        return ""
 
     @inject_charm_state
     def _on_media_credentials_changed(
